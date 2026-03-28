@@ -45,3 +45,26 @@ app.*.map.json
 /android/app/release
 
 /.github/
+
+# Flutter app dentro de /frontend
+/frontend/.dart_tool/
+/frontend/.flutter-plugins-dependencies
+/frontend/.pub/
+/frontend/.pub-cache/
+/frontend/build/
+/frontend/coverage/
+/frontend/.github/
+
+# Logs temporarios
+/frontend/*.log
+/frontend/**/dart_build*.json
+/frontend/**/dart_build*.d
+/frontend/**/dart_build*.stamp
+
+# Arquivos gerados por plataforma
+/frontend/linux/flutter/generated_plugin_registrant.*
+/frontend/linux/flutter/generated_plugins.cmake
+/frontend/windows/flutter/generated_plugin_registrant.*
+/frontend/windows/flutter/generated_plugins.cmake
+/frontend/macos/Flutter/GeneratedPluginRegistrant.swift
+/frontend/**/.last_build_id
