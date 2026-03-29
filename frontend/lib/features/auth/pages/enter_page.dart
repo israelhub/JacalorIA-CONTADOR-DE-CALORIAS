@@ -47,19 +47,6 @@ class EnterPage extends StatelessWidget {
               ),
             ),
             const EnterMascot(),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Center(
-                child: Container(
-                  width: 108,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.brand900,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
