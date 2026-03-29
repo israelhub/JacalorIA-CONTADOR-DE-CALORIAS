@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/auth/pages/enter_page.dart';
+import 'package:jacaloria/features/auth/pages/sign_up_page.dart';
 import 'package:jacaloria/features/auth/widgets/enter_form.dart';
 import 'package:jacaloria/features/auth/widgets/enter_header.dart';
 import 'package:jacaloria/features/auth/widgets/enter_mascot.dart';
@@ -84,10 +85,21 @@ void main() {
     ) async {
       await _pumpEnterPage(tester);
 
-      await tester.tap(find.text('Continuar com Google'));
-      await tester.tap(find.text('Criar conta'));
-      await tester.tap(find.text('Já tenho uma conta'));
+      final buttons = find.byType(AppButton);
+      await tester.tap(buttons.at(0));
+      await tester.tap(buttons.at(2));
       await tester.pump();
+    });
+
+    testWidgets('navega para SignUpPage ao tocar em Criar conta', (
+      tester,
+    ) async {
+      await _pumpEnterPage(tester);
+
+      await tester.tap(find.text('Criar conta'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SignUpPage), findsOneWidget);
     });
   });
 }
