@@ -3,17 +3,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/auth/pages/enter_page.dart';
 import 'package:jacaloria/features/auth/widgets/enter_header.dart';
 import 'package:jacaloria/features/auth/widgets/enter_mascot.dart';
+import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
 import 'package:jacaloria/shared/widgets/or_divider.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
+
+Future<void> _pumpEnterPage(WidgetTester tester) async {
+  tester.view.physicalSize = const Size(1080, 1920);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  await tester.pumpWidget(_wrap(const EnterPage()));
+}
 
 void main() {
   group('EnterPage - estrutura', () {
     testWidgets('renderiza EnterHeader, EnterMascot e OrDivider', (
       tester,
     ) async {
-      await tester.pumpWidget(_wrap(const EnterPage()));
+      await _pumpEnterPage(tester);
 
       expect(find.byType(EnterHeader), findsOneWidget);
       expect(find.byType(EnterMascot), findsOneWidget);
@@ -23,7 +33,7 @@ void main() {
     testWidgets('exibe os três AppButtons com as variantes corretas', (
       tester,
     ) async {
-      await tester.pumpWidget(_wrap(const EnterPage()));
+      await _pumpEnterPage(tester);
 
       final buttons = tester
           .widgetList<AppButton>(find.byType(AppButton))
@@ -35,7 +45,7 @@ void main() {
     });
 
     testWidgets('exibe os labels corretos nos botões', (tester) async {
-      await tester.pumpWidget(_wrap(const EnterPage()));
+      await _pumpEnterPage(tester);
 
       expect(find.text('Continuar com Google'), findsOneWidget);
       expect(find.text('Criar conta'), findsOneWidget);
@@ -53,13 +63,24 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('aplica espaçamento superior para afastar da status bar', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrap(const EnterHeader()));
+
+      final padding = tester.widget<Padding>(find.byType(Padding).first);
+      final edgeInsets = padding.padding as EdgeInsets;
+
+      expect(edgeInsets.top, AppSpacing.huge);
+    });
   });
 
   group('EnterPage - comportamento', () {
     testWidgets('os três botões são tocáveis sem lançar exceção', (
       tester,
     ) async {
-      await tester.pumpWidget(_wrap(const EnterPage()));
+      await _pumpEnterPage(tester);
 
       await tester.tap(find.text('Continuar com Google'));
       await tester.tap(find.text('Criar conta'));
