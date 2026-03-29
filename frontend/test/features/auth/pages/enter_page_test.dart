@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/auth/pages/enter_page.dart';
+import 'package:jacaloria/features/auth/widgets/enter_form.dart';
 import 'package:jacaloria/features/auth/widgets/enter_header.dart';
 import 'package:jacaloria/features/auth/widgets/enter_mascot.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
@@ -20,12 +21,13 @@ Future<void> _pumpEnterPage(WidgetTester tester) async {
 
 void main() {
   group('EnterPage - estrutura', () {
-    testWidgets('renderiza EnterHeader, EnterMascot e OrDivider', (
+    testWidgets('renderiza EnterHeader, EnterForm e EnterMascot', (
       tester,
     ) async {
       await _pumpEnterPage(tester);
 
       expect(find.byType(EnterHeader), findsOneWidget);
+      expect(find.byType(EnterForm), findsOneWidget);
       expect(find.byType(EnterMascot), findsOneWidget);
       expect(find.byType(OrDivider), findsOneWidget);
     });
