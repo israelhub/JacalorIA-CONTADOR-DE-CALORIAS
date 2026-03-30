@@ -168,7 +168,8 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                       child: Padding(
                         padding: const EdgeInsets.only(top: (AppSpacing.huge * 2) + AppSpacing.xl),
                         child: SizedBox(
-                          width: (AppSpacing.huge * 5) + AppSpacing.xl + AppSpacing.xs + (AppSpacing.xs / 2),
+                          key: const ValueKey('activity-finish-button-box'),
+                          width: double.infinity,
                           height: AppSpacing.huge + AppSpacing.xs,
                           child: AppButton(
                             label: 'Finalizar',

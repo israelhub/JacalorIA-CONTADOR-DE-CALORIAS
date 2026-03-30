@@ -53,5 +53,20 @@ void main() {
       expect(loseDecoration.color, AppColors.surface);
       expect(maintainDecoration.color, AppColors.surface);
     });
+
+    testWidgets('botão avançar ocupa toda a largura disponível da página', (
+      tester,
+    ) async {
+      await _pumpObjectivePage(tester);
+
+      final buttonBox = tester.getSize(
+        find.byKey(const ValueKey('objective-next-button-box')),
+      );
+      final viewWidth =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      final expectedWidth = viewWidth - (AppSpacing.xxl * 2);
+
+      expect(buttonBox.width, expectedWidth);
+    });
   });
 }

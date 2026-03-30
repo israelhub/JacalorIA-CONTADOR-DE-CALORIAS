@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/onboarding/pages/objective_page.dart';
 import 'package:jacaloria/features/onboarding/pages/personal_data_page.dart';
+import 'package:jacaloria/shared/theme/app_theme.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
 
@@ -62,6 +63,21 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(ObjectivePage), findsOneWidget);
+    });
+
+    testWidgets('botão avançar ocupa toda a largura disponível do formulário', (
+      tester,
+    ) async {
+      await _pumpPersonalDataPage(tester);
+
+      final buttonBox = tester.getSize(
+        find.byKey(const ValueKey('personal-next-button-box')),
+      );
+      final viewWidth =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      final expectedWidth = viewWidth - (AppSpacing.xxl * 2);
+
+      expect(buttonBox.width, expectedWidth);
     });
   });
 }
