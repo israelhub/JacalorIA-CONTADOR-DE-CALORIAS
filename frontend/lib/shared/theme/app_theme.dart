@@ -17,12 +17,14 @@ class AppColors {
   static const Color textPrimary = Color(0xFF1D1B20);
   static const Color textSecondary = Color(0xFF717171);
   static const Color textMuted = Color(0xFF4D6559);
+  static const Color textError = Color(0xFFB3261E);
 
   static const Color borderLight = Color(0xFFD6D6D6);
   static const Color borderAlt = Color(0xFFDDDDDD);
   static const Color borderBrand = Color.fromRGBO(30, 81, 62, 0.14);
   static const Color borderBrandAlt = Color.fromRGBO(30, 81, 62, 0.10);
   static const Color divider = Color(0xFFCAC4D0);
+  static const Color inputSurface = Color(0xFFEAEAEA);
 
   static const Color shadowButton = Color(0xFFC0C0C0);
   static const Color shadowButtonAlt = Color(0xFFDFDFDF);
@@ -51,6 +53,18 @@ class AppTextStyles {
     fontSize: 28.8,
     fontWeight: FontWeight.w700,
     height: 1,
+  );
+
+  static TextStyle get confirmationTitle => GoogleFonts.baloo2(
+    fontSize: 32,
+    fontWeight: FontWeight.w700,
+    height: 36.8 / 32,
+  );
+
+  static TextStyle get confirmationResendLink => GoogleFonts.nunito(
+    fontSize: 13.76,
+    fontWeight: FontWeight.w600,
+    height: 19.952 / 13.76,
   );
 
   static TextStyle get headingSmall => GoogleFonts.baloo2(

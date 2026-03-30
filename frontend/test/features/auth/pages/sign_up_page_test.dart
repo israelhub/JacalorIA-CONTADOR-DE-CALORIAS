@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jacaloria/features/auth/pages/email_confirmation_page.dart';
 import 'package:jacaloria/features/auth/pages/sign_up_page.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
@@ -22,7 +23,7 @@ void main() {
       expect(find.text('Digite sua senha'), findsOneWidget);
       expect(find.text('Confirme sua senha'), findsOneWidget);
 
-      expect(find.byType(TextFormField), findsNWidgets(4));
+      expect(find.byType(TextField), findsNWidgets(4));
       expect(find.text('Criar conta'), findsOneWidget);
       expect(find.text('Continuar com Google'), findsOneWidget);
       expect(find.text('Já tem uma conta?'), findsOneWidget);
@@ -63,6 +64,35 @@ void main() {
         expect(border.right.width, AppSpacing.xs / 4);
         expect(border.bottom.width, AppSpacing.xs / 2);
       }
+    });
+
+    testWidgets('não navega quando formulário está inválido', (tester) async {
+      await tester.pumpWidget(_wrap(const SignUpPage()));
+
+      await tester.ensureVisible(find.text('Criar conta'));
+      await tester.tap(find.text('Criar conta'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SignUpPage), findsOneWidget);
+      expect(find.byType(EmailConfirmationPage), findsNothing);
+    });
+
+    testWidgets('navega para confirmação de e-mail quando formulário está válido', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrap(const SignUpPage()));
+
+      final fields = find.byType(TextField);
+      await tester.enterText(fields.at(0), 'Jon');
+      await tester.enterText(fields.at(1), 'jon@email.com');
+      await tester.enterText(fields.at(2), '123456');
+      await tester.enterText(fields.at(3), '123456');
+
+      await tester.ensureVisible(find.text('Criar conta'));
+      await tester.tap(find.text('Criar conta'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EmailConfirmationPage), findsOneWidget);
     });
   });
 }
