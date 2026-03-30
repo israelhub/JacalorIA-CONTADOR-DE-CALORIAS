@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'objective_page.dart';
+import '../widgets/onboarding_input_field.dart';
+import '../widgets/onboarding_step_header.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 
@@ -107,51 +109,6 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
     _birthDateController.text = '$day/$month/$year';
   }
 
-  InputDecoration _fieldDecoration({required String hint, Widget? suffixIcon}) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: AppTextStyles.bodyLarge.copyWith(
-        color: AppColors.textSecondary,
-      ),
-      isDense: true,
-      filled: true,
-      fillColor: AppColors.surface,
-      suffixIcon: suffixIcon,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.lg,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: BorderSide(color: AppColors.borderAlt),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: BorderSide(color: AppColors.borderAlt),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: BorderSide(color: AppColors.borderAlt),
-      ),
-    );
-  }
-
-  Widget _fieldContainer({required Widget child}) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowButtonAlt,
-            offset: Offset(0, 4),
-            blurRadius: 0,
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-
   Future<void> _openSexMenu() async {
     final fieldContext = _sexFieldKey.currentContext;
     if (fieldContext == null) {
@@ -252,71 +209,13 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: AppSpacing.lg),
-                SizedBox(
-                  height: AppSpacing.huge,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Transform.translate(
-                          offset: const Offset(-AppSpacing.lg, 0),
-                          child: IconButton(
-                            onPressed: () {
-                              if (Navigator.of(context).canPop()) {
-                                Navigator.of(context).pop();
-                              }
-                            },
-                            icon: const Icon(Icons.arrow_back),
-                            color: AppColors.brand900,
-                            splashRadius: AppSpacing.xl,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: AppSpacing.huge * 7,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                height: AppSpacing.xs,
-                                decoration: BoxDecoration(
-                                  color: AppColors.brand900,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.pill,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Container(
-                                height: AppSpacing.xs,
-                                decoration: BoxDecoration(
-                                  color: AppColors.borderAlt,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.pill,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Container(
-                                height: AppSpacing.xs,
-                                decoration: BoxDecoration(
-                                  color: AppColors.borderAlt,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.pill,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                OnboardingStepHeader(
+                  activeStep: 1,
+                  onBack: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
+                  },
                 ),
                 const SizedBox(height: AppSpacing.xxxl),
                 Text(
@@ -326,15 +225,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxxl),
-                Text(
-                  'Data de nascimento',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _fieldContainer(
+                OnboardingInputField(
+                  label: 'Data de nascimento',
                   child: TextField(
                     key: const ValueKey('personal-birthdate-field'),
                     controller: _birthDateController,
@@ -343,7 +235,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                     style: AppTextStyles.bodyLarge.copyWith(
                       color: AppColors.textPrimary,
                     ),
-                    decoration: _fieldDecoration(
+                    decoration: onboardingInputDecoration(
                       hint: 'Selecione sua data de nascimento',
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.calendar_today_outlined),
@@ -354,15 +246,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
-                Text(
-                  'Peso',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _fieldContainer(
+                OnboardingInputField(
+                  label: 'Peso',
                   child: TextField(
                     controller: _weightController,
                     keyboardType: const TextInputType.numberWithOptions(
@@ -371,19 +256,14 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                     style: AppTextStyles.bodyLarge.copyWith(
                       color: AppColors.textPrimary,
                     ),
-                    decoration: _fieldDecoration(hint: 'Digite seu peso'),
+                    decoration: onboardingInputDecoration(
+                      hint: 'Digite seu peso',
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
-                Text(
-                  'Altura',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _fieldContainer(
+                OnboardingInputField(
+                  label: 'Altura',
                   child: TextField(
                     controller: _heightController,
                     keyboardType: const TextInputType.numberWithOptions(
@@ -392,27 +272,22 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                     style: AppTextStyles.bodyLarge.copyWith(
                       color: AppColors.textPrimary,
                     ),
-                    decoration: _fieldDecoration(hint: 'Digite sua altura'),
+                    decoration: onboardingInputDecoration(
+                      hint: 'Digite sua altura',
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
-                Text(
-                  'Sexo',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                KeyedSubtree(
-                  key: _sexFieldKey,
-                  child: _fieldContainer(
+                OnboardingInputField(
+                  label: 'Sexo',
+                  child: KeyedSubtree(
+                    key: _sexFieldKey,
                     child: InkWell(
                       key: const ValueKey('personal-sex-field'),
                       onTap: _openSexMenu,
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       child: InputDecorator(
-                        decoration: _fieldDecoration(
+                        decoration: onboardingInputDecoration(
                           hint: 'Selecione seu sexo',
                           suffixIcon: const Icon(
                             Icons.keyboard_arrow_down,

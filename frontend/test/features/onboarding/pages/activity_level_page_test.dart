@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/onboarding/pages/activity_level_page.dart';
+import 'package:jacaloria/features/onboarding/widgets/onboarding_step_header.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
@@ -23,6 +24,7 @@ void main() {
 
       expect(find.text('Nível de\natividade física'), findsOneWidget);
       expect(find.text('Sedentário (não pratico exercícios)'), findsOneWidget);
+      expect(find.byType(OnboardingStepHeader), findsOneWidget);
       expect(find.byType(IconButton), findsOneWidget);
       expect(find.text('Finalizar'), findsOneWidget);
     });
