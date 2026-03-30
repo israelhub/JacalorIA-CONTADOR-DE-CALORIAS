@@ -3,13 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
 
-enum ActivityLevelType {
-  sedentary,
-  lightly,
-  moderate,
-  very,
-  extreme,
-}
+enum ActivityLevelType { sedentary, lightly, moderate, very, extreme }
 
 class ActivityLevelPage extends StatefulWidget {
   const ActivityLevelPage({super.key});
@@ -39,15 +33,18 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                   children: [
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: IconButton(
-                        onPressed: () {
-                          if (Navigator.of(context).canPop()) {
-                            Navigator.of(context).pop();
-                          }
-                        },
-                        icon: const Icon(Icons.arrow_back),
-                        color: AppColors.brand900,
-                        splashRadius: AppSpacing.xl,
+                      child: Transform.translate(
+                        offset: const Offset(-AppSpacing.lg, 0),
+                        child: IconButton(
+                          onPressed: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            }
+                          },
+                          icon: const Icon(Icons.arrow_back),
+                          color: AppColors.brand900,
+                          splashRadius: AppSpacing.xl,
+                        ),
                       ),
                     ),
                     SizedBox(
@@ -59,7 +56,9 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                               height: AppSpacing.xs,
                               decoration: BoxDecoration(
                                 color: AppColors.borderAlt,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                               ),
                             ),
                           ),
@@ -69,7 +68,9 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                               height: AppSpacing.xs,
                               decoration: BoxDecoration(
                                 color: AppColors.borderAlt,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                               ),
                             ),
                           ),
@@ -79,7 +80,9 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                               height: AppSpacing.xs,
                               decoration: BoxDecoration(
                                 color: AppColors.brand900,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                               ),
                             ),
                           ),
@@ -105,12 +108,17 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                       children: [
                         _ActivityLevelOptionButton(
                           key: const ValueKey('activity-option-sedentary'),
-                          boxKey: const ValueKey('activity-option-box-sedentary'),
+                          boxKey: const ValueKey(
+                            'activity-option-box-sedentary',
+                          ),
                           label: 'Sedentário (não pratico exercícios)',
-                          isSelected: _selectedActivityLevel == ActivityLevelType.sedentary,
+                          isSelected:
+                              _selectedActivityLevel ==
+                              ActivityLevelType.sedentary,
                           onTap: () {
                             setState(() {
-                              _selectedActivityLevel = ActivityLevelType.sedentary;
+                              _selectedActivityLevel =
+                                  ActivityLevelType.sedentary;
                             });
                           },
                         ),
@@ -119,22 +127,30 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                           key: const ValueKey('activity-option-lightly'),
                           boxKey: const ValueKey('activity-option-box-lightly'),
                           label: 'Levemente ativo (1-2 dias por semana)',
-                          isSelected: _selectedActivityLevel == ActivityLevelType.lightly,
+                          isSelected:
+                              _selectedActivityLevel ==
+                              ActivityLevelType.lightly,
                           onTap: () {
                             setState(() {
-                              _selectedActivityLevel = ActivityLevelType.lightly;
+                              _selectedActivityLevel =
+                                  ActivityLevelType.lightly;
                             });
                           },
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         _ActivityLevelOptionButton(
                           key: const ValueKey('activity-option-moderate'),
-                          boxKey: const ValueKey('activity-option-box-moderate'),
+                          boxKey: const ValueKey(
+                            'activity-option-box-moderate',
+                          ),
                           label: 'Moderadamente ativo (3-4 dias por semana)',
-                          isSelected: _selectedActivityLevel == ActivityLevelType.moderate,
+                          isSelected:
+                              _selectedActivityLevel ==
+                              ActivityLevelType.moderate,
                           onTap: () {
                             setState(() {
-                              _selectedActivityLevel = ActivityLevelType.moderate;
+                              _selectedActivityLevel =
+                                  ActivityLevelType.moderate;
                             });
                           },
                         ),
@@ -143,7 +159,8 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                           key: const ValueKey('activity-option-very'),
                           boxKey: const ValueKey('activity-option-box-very'),
                           label: 'Muito ativo (5-6 dias por semana)',
-                          isSelected: _selectedActivityLevel == ActivityLevelType.very,
+                          isSelected:
+                              _selectedActivityLevel == ActivityLevelType.very,
                           onTap: () {
                             setState(() {
                               _selectedActivityLevel = ActivityLevelType.very;
@@ -155,10 +172,13 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                           key: const ValueKey('activity-option-extreme'),
                           boxKey: const ValueKey('activity-option-box-extreme'),
                           label: 'Extremamente ativo (todos os dias)',
-                          isSelected: _selectedActivityLevel == ActivityLevelType.extreme,
+                          isSelected:
+                              _selectedActivityLevel ==
+                              ActivityLevelType.extreme,
                           onTap: () {
                             setState(() {
-                              _selectedActivityLevel = ActivityLevelType.extreme;
+                              _selectedActivityLevel =
+                                  ActivityLevelType.extreme;
                             });
                           },
                         ),
@@ -166,7 +186,9 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                     ),
                     Center(
                       child: Padding(
-                        padding: const EdgeInsets.only(top: (AppSpacing.huge * 2) + AppSpacing.xl),
+                        padding: const EdgeInsets.only(
+                          top: (AppSpacing.huge * 2) + AppSpacing.xl,
+                        ),
                         child: SizedBox(
                           key: const ValueKey('activity-finish-button-box'),
                           width: double.infinity,
@@ -214,10 +236,7 @@ class _ActivityLevelOptionButton extends StatelessWidget {
         height: AppSpacing.huge + AppSpacing.lg,
         decoration: BoxDecoration(
           color: isSelected ? AppColors.brand900 : AppColors.surface,
-          border: Border.all(
-            color: AppColors.brand900,
-            width: 2,
-          ),
+          border: Border.all(color: AppColors.brand900, width: 2),
           borderRadius: BorderRadius.circular(AppRadius.pill),
         ),
         child: Align(

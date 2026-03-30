@@ -34,15 +34,18 @@ class _ObjectivePageState extends State<ObjectivePage> {
                   children: [
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: IconButton(
-                        onPressed: () {
-                          if (Navigator.of(context).canPop()) {
-                            Navigator.of(context).pop();
-                          }
-                        },
-                        icon: const Icon(Icons.arrow_back),
-                        color: AppColors.brand900,
-                        splashRadius: AppSpacing.xl,
+                      child: Transform.translate(
+                        offset: const Offset(-AppSpacing.lg, 0),
+                        child: IconButton(
+                          onPressed: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            }
+                          },
+                          icon: const Icon(Icons.arrow_back),
+                          color: AppColors.brand900,
+                          splashRadius: AppSpacing.xl,
+                        ),
                       ),
                     ),
                     SizedBox(
@@ -54,7 +57,9 @@ class _ObjectivePageState extends State<ObjectivePage> {
                               height: AppSpacing.xs,
                               decoration: BoxDecoration(
                                 color: AppColors.borderAlt,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                               ),
                             ),
                           ),
@@ -64,7 +69,9 @@ class _ObjectivePageState extends State<ObjectivePage> {
                               height: AppSpacing.xs,
                               decoration: BoxDecoration(
                                 color: AppColors.brand900,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                               ),
                             ),
                           ),
@@ -74,7 +81,9 @@ class _ObjectivePageState extends State<ObjectivePage> {
                               height: AppSpacing.xs,
                               decoration: BoxDecoration(
                                 color: AppColors.borderAlt,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                               ),
                             ),
                           ),
@@ -100,7 +109,8 @@ class _ObjectivePageState extends State<ObjectivePage> {
                       key: const ValueKey('objective-option-lose'),
                       boxKey: const ValueKey('objective-option-box-lose'),
                       label: 'Emagrecer',
-                      isSelected: _selectedObjective == ObjectiveType.loseWeight,
+                      isSelected:
+                          _selectedObjective == ObjectiveType.loseWeight,
                       onTap: () {
                         setState(() {
                           _selectedObjective = ObjectiveType.loseWeight;
@@ -124,7 +134,8 @@ class _ObjectivePageState extends State<ObjectivePage> {
                       key: const ValueKey('objective-option-maintain'),
                       boxKey: const ValueKey('objective-option-box-maintain'),
                       label: 'Manter peso',
-                      isSelected: _selectedObjective == ObjectiveType.maintainWeight,
+                      isSelected:
+                          _selectedObjective == ObjectiveType.maintainWeight,
                       onTap: () {
                         setState(() {
                           _selectedObjective = ObjectiveType.maintainWeight;
