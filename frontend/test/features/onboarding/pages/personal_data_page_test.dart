@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jacaloria/features/auth/pages/objective_page.dart';
-import 'package:jacaloria/features/auth/pages/personal_data_page.dart';
+import 'package:jacaloria/features/onboarding/pages/objective_page.dart';
+import 'package:jacaloria/features/onboarding/pages/personal_data_page.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
 
