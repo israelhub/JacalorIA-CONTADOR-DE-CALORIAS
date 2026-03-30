@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jacaloria/features/auth/pages/objective_page.dart';
+import 'package:jacaloria/features/onboarding/pages/objective_page.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
@@ -27,7 +27,9 @@ void main() {
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
     });
 
-    testWidgets('permite somente uma opção selecionada por vez', (tester) async {
+    testWidgets('permite somente uma opção selecionada por vez', (
+      tester,
+    ) async {
       await _pumpObjectivePage(tester);
 
       await tester.tap(find.byKey(const ValueKey('objective-option-gain')));
