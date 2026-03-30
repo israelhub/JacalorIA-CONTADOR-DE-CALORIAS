@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/auth/pages/email_confirmation_page.dart';
-import 'package:jacaloria/features/auth/pages/welcome_page.dart';
+import 'package:jacaloria/features/onboarding/pages/welcome_page.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
