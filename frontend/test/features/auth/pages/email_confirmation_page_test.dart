@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/auth/pages/email_confirmation_page.dart';
+import 'package:jacaloria/features/auth/pages/welcome_page.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
@@ -70,6 +71,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('navega para WelcomePage ao tocar em Confirmar', (tester) async {
+      await _pumpEmailConfirmation(tester);
+
+      await tester.ensureVisible(find.text('Confirmar'));
+      await tester.tap(find.text('Confirmar'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(WelcomePage), findsOneWidget);
     });
   });
 }
