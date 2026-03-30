@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/auth/pages/email_confirmation_page.dart';
+import 'package:jacaloria/features/auth/pages/login_page.dart';
 import 'package:jacaloria/features/auth/pages/sign_up_page.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
@@ -93,6 +94,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(EmailConfirmationPage), findsOneWidget);
+    });
+
+    testWidgets('navega para login ao tocar em Entrar', (tester) async {
+      await tester.pumpWidget(_wrap(const SignUpPage()));
+
+      await tester.ensureVisible(find.text('Entrar'));
+      await tester.tap(find.text('Entrar'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LoginPage), findsOneWidget);
     });
   });
 }

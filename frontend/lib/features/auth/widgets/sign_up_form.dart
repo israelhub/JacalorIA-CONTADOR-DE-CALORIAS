@@ -6,9 +6,14 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/or_divider.dart';
 
 class SignUpForm extends StatefulWidget {
-  const SignUpForm({super.key, this.onCreateAccountPressed});
+  const SignUpForm({
+    super.key,
+    this.onCreateAccountPressed,
+    this.onLoginPressed,
+  });
 
   final VoidCallback? onCreateAccountPressed;
+  final VoidCallback? onLoginPressed;
 
   @override
   State<SignUpForm> createState() => _SignUpFormState();
@@ -121,7 +126,7 @@ class _SignUpFormState extends State<SignUpForm> {
                 ),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: widget.onLoginPressed ?? () {
                   if (Navigator.of(context).canPop()) {
                     Navigator.of(context).pop();
                   }
@@ -166,7 +171,13 @@ class _SignUpTextField extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: AppTextStyles.subtitleLarge),
+            Text(
+              label,
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: AppSpacing.sm),
             Container(
               decoration: BoxDecoration(
@@ -241,3 +252,6 @@ class _SignUpTextField extends StatelessWidget {
     );
   }
 }
+
+
+
