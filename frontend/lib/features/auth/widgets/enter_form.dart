@@ -4,9 +4,14 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/or_divider.dart';
 
 class EnterForm extends StatelessWidget {
-  const EnterForm({super.key, this.onCreateAccountPressed});
+  const EnterForm({
+    super.key,
+    this.onCreateAccountPressed,
+    this.onLoginPressed,
+  });
 
   final VoidCallback? onCreateAccountPressed;
+  final VoidCallback? onLoginPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +35,7 @@ class EnterForm extends StatelessWidget {
         AppButton(
           variant: AppButtonVariant.outline,
           label: 'Já tenho uma conta',
-          onPressed: () {},
+          onPressed: onLoginPressed ?? () {},
         ),
       ],
     );
