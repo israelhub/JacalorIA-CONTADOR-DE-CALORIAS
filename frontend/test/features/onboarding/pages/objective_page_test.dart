@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/onboarding/pages/objective_page.dart';
+import 'package:jacaloria/features/onboarding/widgets/onboarding_step_header.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
@@ -24,6 +25,7 @@ void main() {
       expect(find.text('Ganhar massa'), findsOneWidget);
       expect(find.text('Manter peso'), findsOneWidget);
       expect(find.text('Avançar'), findsOneWidget);
+      expect(find.byType(OnboardingStepHeader), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
     });
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:jacaloria/features/onboarding/widgets/onboarding_step_header.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
 
@@ -26,71 +27,13 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                height: AppSpacing.huge,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Transform.translate(
-                        offset: const Offset(-AppSpacing.lg, 0),
-                        child: IconButton(
-                          onPressed: () {
-                            if (Navigator.of(context).canPop()) {
-                              Navigator.of(context).pop();
-                            }
-                          },
-                          icon: const Icon(Icons.arrow_back),
-                          color: AppColors.brand900,
-                          splashRadius: AppSpacing.xl,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: AppSpacing.huge * 7,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: AppSpacing.xs,
-                              decoration: BoxDecoration(
-                                color: AppColors.borderAlt,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.pill,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Container(
-                              height: AppSpacing.xs,
-                              decoration: BoxDecoration(
-                                color: AppColors.borderAlt,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.pill,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Container(
-                              height: AppSpacing.xs,
-                              decoration: BoxDecoration(
-                                color: AppColors.brand900,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.pill,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              OnboardingStepHeader(
+                activeStep: 3,
+                onBack: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                },
               ),
               const SizedBox(height: AppSpacing.xxxl),
               Text(
