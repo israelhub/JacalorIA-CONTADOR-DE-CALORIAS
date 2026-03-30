@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import 'email_confirmation_page.dart';
+import 'login_page.dart';
 import '../widgets/sign_up_form.dart';
 
 class SignUpPage extends StatelessWidget {
@@ -32,6 +33,13 @@ class SignUpPage extends StatelessWidget {
                     ),
                   );
                 },
+                onLoginPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const LoginPage(),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: AppSpacing.xl),
             ],
@@ -41,3 +49,7 @@ class SignUpPage extends StatelessWidget {
     );
   }
 }
+
+
+
+
