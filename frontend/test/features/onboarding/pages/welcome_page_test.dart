@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jacaloria/features/auth/pages/personal_data_page.dart';
-import 'package:jacaloria/features/auth/pages/welcome_page.dart';
+import 'package:jacaloria/features/onboarding/pages/personal_data_page.dart';
+import 'package:jacaloria/features/onboarding/pages/welcome_page.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
@@ -86,7 +86,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final pageCenterX = tester.getCenter(find.byType(Scaffold)).dx;
-      final titleCenterX = tester.getCenter(find.text('Seja bem vindo(a) ao')).dx;
+      final titleCenterX = tester
+          .getCenter(find.text('Seja bem vindo(a) ao'))
+          .dx;
       final logoCenterX = tester
           .getCenter(find.byKey(const ValueKey('welcome-logo-image')))
           .dx;
@@ -97,11 +99,15 @@ void main() {
       expect((buttonCenterX - pageCenterX).abs(), lessThan(1.0));
     });
 
-    testWidgets('mantem jaca e balao grandes com sobreposicao forte', (tester) async {
+    testWidgets('mantem jaca e balao grandes com sobreposicao forte', (
+      tester,
+    ) async {
       await _pumpWelcomePage(tester, size: const Size(360, 800));
       await tester.pumpAndSettle();
 
-      final jacaRect = tester.getRect(find.byKey(const ValueKey('welcome-jaca-asset')));
+      final jacaRect = tester.getRect(
+        find.byKey(const ValueKey('welcome-jaca-asset')),
+      );
       final bubbleRect = tester.getRect(
         find.byKey(const ValueKey('welcome-bubble-container')),
       );
@@ -126,7 +132,9 @@ void main() {
       expect(bubble.constraints?.maxHeight, greaterThanOrEqualTo(50));
     });
 
-    testWidgets('navega para PersonalDataPage ao tocar em Começar', (tester) async {
+    testWidgets('navega para PersonalDataPage ao tocar em Começar', (
+      tester,
+    ) async {
       await _pumpWelcomePage(tester);
 
       await tester.tap(find.text('Começar'));

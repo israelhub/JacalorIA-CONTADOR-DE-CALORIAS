@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
-import 'welcome_page.dart';
+import '../../onboarding/pages/welcome_page.dart';
 
 class EmailConfirmationPage extends StatefulWidget {
   const EmailConfirmationPage({super.key});
@@ -80,7 +80,9 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                 children: [
                   const Spacer(flex: 6),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xxl,
+                    ),
                     child: Text(
                       'Confirme o seu e-mail',
                       textAlign: TextAlign.center,
@@ -91,7 +93,9 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                   ),
                   const SizedBox(height: AppSpacing.sm + 1),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xxl,
+                    ),
                     child: Text(
                       'Enviamos um código para o seu e-mail.',
                       textAlign: TextAlign.center,
@@ -114,7 +118,9 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                               height: AppSpacing.huge + AppSpacing.sm,
                               decoration: BoxDecoration(
                                 color: AppColors.inputSurface,
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.sm,
+                                ),
                               ),
                               child: Center(
                                 child: TextField(
@@ -130,7 +136,8 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                                   style: AppTextStyles.headingSmall.copyWith(
                                     color: AppColors.brand900Variant,
                                   ),
-                                  onChanged: (value) => _onDigitChanged(index, value),
+                                  onChanged: (value) =>
+                                      _onDigitChanged(index, value),
                                   decoration: const InputDecoration(
                                     counterText: '',
                                     border: InputBorder.none,
