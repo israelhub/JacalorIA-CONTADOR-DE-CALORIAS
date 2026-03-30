@@ -259,15 +259,18 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                     children: [
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: IconButton(
-                          onPressed: () {
-                            if (Navigator.of(context).canPop()) {
-                              Navigator.of(context).pop();
-                            }
-                          },
-                          icon: const Icon(Icons.arrow_back),
-                          color: AppColors.brand900,
-                          splashRadius: AppSpacing.xl,
+                        child: Transform.translate(
+                          offset: const Offset(-AppSpacing.lg, 0),
+                          child: IconButton(
+                            onPressed: () {
+                              if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              }
+                            },
+                            icon: const Icon(Icons.arrow_back),
+                            color: AppColors.brand900,
+                            splashRadius: AppSpacing.xl,
+                          ),
                         ),
                       ),
                       SizedBox(
