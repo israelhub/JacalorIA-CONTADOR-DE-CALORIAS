@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import 'login_page.dart';
+import 'sign_up_page.dart';
 import '../widgets/enter_form.dart';
 import '../widgets/enter_header.dart';
 import '../widgets/enter_mascot.dart';
@@ -20,7 +22,22 @@ class EnterPage extends StatelessWidget {
             const EnterHeader(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 26.5),
-              child: const EnterForm(),
+              child: EnterForm(
+                onCreateAccountPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SignUpPage(),
+                    ),
+                  );
+                },
+                onLoginPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const LoginPage(),
+                    ),
+                  );
+                },
+              ),
             ),
             const EnterMascot(),
           ],
