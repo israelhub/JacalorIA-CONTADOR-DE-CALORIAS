@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import 'welcome_page.dart';
 
 class EmailConfirmationPage extends StatefulWidget {
   const EmailConfirmationPage({super.key});
@@ -156,7 +157,13 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                       height: AppSpacing.huge + AppSpacing.xs,
                       child: AppButton(
                         label: 'Confirmar',
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const WelcomePage(),
+                            ),
+                          );
+                        },
                         variant: AppButtonVariant.primary,
                       ),
                     ),
