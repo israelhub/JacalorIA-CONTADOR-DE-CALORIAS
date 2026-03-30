@@ -4,10 +4,10 @@ import 'package:jacaloria/features/auth/pages/login_page.dart';
 
 void main() {
   group('LoginPage', () {
-    testWidgets('renderiza campos de email, senha e botão entrar', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: LoginPage()),
-      );
+    testWidgets('renderiza campos de email, senha e botão entrar', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: LoginPage()));
 
       expect(find.byType(Image), findsWidgets);
       expect(find.text('E-mail'), findsOneWidget);
@@ -18,9 +18,7 @@ void main() {
     });
 
     testWidgets('link cadastre-se é presente', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: LoginPage()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: LoginPage()));
 
       expect(find.byKey(const ValueKey('signup-link')), findsOneWidget);
     });
