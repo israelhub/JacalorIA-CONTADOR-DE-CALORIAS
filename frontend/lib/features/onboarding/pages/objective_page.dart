@@ -135,21 +135,20 @@ class _ObjectivePageState extends State<ObjectivePage> {
                 ),
               ),
               const SizedBox(height: AppSpacing.huge + AppSpacing.huge),
-              Center(
-                child: SizedBox(
-                  width: (AppSpacing.huge * 5) + AppSpacing.xl + AppSpacing.xs + (AppSpacing.xs / 2),
-                  height: AppSpacing.huge + AppSpacing.xs,
-                  child: AppButton(
-                    label: 'Avançar',
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const ActivityLevelPage(),
-                        ),
-                      );
-                    },
-                    variant: AppButtonVariant.primary,
-                  ),
+              SizedBox(
+                key: const ValueKey('objective-next-button-box'),
+                width: double.infinity,
+                height: AppSpacing.huge + AppSpacing.xs,
+                child: AppButton(
+                  label: 'Avançar',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const ActivityLevelPage(),
+                      ),
+                    );
+                  },
+                  variant: AppButtonVariant.primary,
                 ),
               ),
             ],
