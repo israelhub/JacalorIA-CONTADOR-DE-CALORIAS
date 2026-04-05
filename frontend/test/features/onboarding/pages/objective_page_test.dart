@@ -20,7 +20,7 @@ void main() {
     testWidgets('renderiza título, opções e botão avançar', (tester) async {
       await _pumpObjectivePage(tester);
 
-      expect(find.text('Objetivo'), findsOneWidget);
+      expect(find.text('Qual seu objetivo?'), findsOneWidget);
       expect(find.text('Emagrecer'), findsOneWidget);
       expect(find.text('Ganhar massa'), findsOneWidget);
       expect(find.text('Manter peso'), findsOneWidget);
@@ -69,6 +69,32 @@ void main() {
       final expectedWidth = viewWidth - (AppSpacing.xxl * 2);
 
       expect(buttonBox.width, expectedWidth);
+    });
+
+    testWidgets('opções ficam empilhadas e ocupam a largura do container', (
+      tester,
+    ) async {
+      await _pumpObjectivePage(tester);
+
+      final loseRect = tester.getRect(
+        find.byKey(const ValueKey('objective-option-box-lose')),
+      );
+      final gainRect = tester.getRect(
+        find.byKey(const ValueKey('objective-option-box-gain')),
+      );
+      final maintainRect = tester.getRect(
+        find.byKey(const ValueKey('objective-option-box-maintain')),
+      );
+      final buttonRect = tester.getRect(
+        find.byKey(const ValueKey('objective-next-button-box')),
+      );
+
+      expect(loseRect.width, buttonRect.width);
+      expect(gainRect.width, buttonRect.width);
+      expect(maintainRect.width, buttonRect.width);
+      expect(gainRect.top, greaterThan(loseRect.bottom));
+      expect(maintainRect.top, greaterThan(gainRect.bottom));
+      expect(buttonRect.top - maintainRect.bottom, AppSpacing.huge);
     });
   });
 }
