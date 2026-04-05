@@ -22,7 +22,7 @@ void main() {
     ) async {
       await _pumpActivityLevelPage(tester);
 
-      expect(find.text('Nível de\natividade física'), findsOneWidget);
+      expect(find.text('Qual seu nível de atividade física?'), findsOneWidget);
       expect(find.text('Sedentário (não pratico exercícios)'), findsOneWidget);
       expect(find.byType(OnboardingStepHeader), findsOneWidget);
       expect(find.byType(IconButton), findsOneWidget);
@@ -75,6 +75,26 @@ void main() {
       final expectedWidth = viewWidth - (AppSpacing.xxl * 2);
 
       expect(buttonBox.width, expectedWidth);
+    });
+
+    testWidgets('opções ocupam a largura do container e não há scroll', (
+      WidgetTester tester,
+    ) async {
+      await _pumpActivityLevelPage(tester);
+
+      final sedentaryRect = tester.getRect(
+        find.byKey(const ValueKey('activity-option-box-sedentary')),
+      );
+      final extremeRect = tester.getRect(
+        find.byKey(const ValueKey('activity-option-box-extreme')),
+      );
+      final buttonRect = tester.getRect(
+        find.byKey(const ValueKey('activity-finish-button-box')),
+      );
+
+      expect(find.byType(Scrollable), findsNothing);
+      expect(sedentaryRect.width, buttonRect.width);
+      expect(buttonRect.top - extremeRect.bottom, AppSpacing.huge);
     });
   });
 }
