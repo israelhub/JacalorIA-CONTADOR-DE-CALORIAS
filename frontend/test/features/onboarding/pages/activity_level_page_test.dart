@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jacaloria/features/home/pages/home_page.dart';
 import 'package:jacaloria/features/onboarding/pages/activity_level_page.dart';
 import 'package:jacaloria/features/onboarding/widgets/onboarding_step_header.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
@@ -95,6 +96,17 @@ void main() {
       expect(find.byType(Scrollable), findsNothing);
       expect(sedentaryRect.width, buttonRect.width);
       expect(buttonRect.top - extremeRect.bottom, AppSpacing.huge);
+    });
+
+    testWidgets('navega para HomePage ao tocar em Finalizar', (
+      WidgetTester tester,
+    ) async {
+      await _pumpActivityLevelPage(tester);
+
+      await tester.tap(find.text('Finalizar'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HomePage), findsOneWidget);
     });
   });
 }
