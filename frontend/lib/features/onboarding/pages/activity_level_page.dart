@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:jacaloria/features/home/pages/home_page.dart';
 import 'package:jacaloria/features/onboarding/widgets/onboarding_select_option_button.dart';
 import 'package:jacaloria/features/onboarding/widgets/onboarding_step_header.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
@@ -127,7 +128,11 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                 height: AppSpacing.huge + AppSpacing.xs,
                 child: AppButton(
                   label: 'Finalizar',
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const HomePage()),
+                    );
+                  },
                   variant: AppButtonVariant.primary,
                 ),
               ),
