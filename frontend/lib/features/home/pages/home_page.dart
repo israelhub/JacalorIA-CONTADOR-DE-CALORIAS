@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../widgets/home_meal_card.dart';
@@ -16,14 +15,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
-        systemNavigationBarColor: AppColors.surface,
-        systemNavigationBarIconBrightness: Brightness.dark,
-        systemNavigationBarDividerColor: AppColors.surface,
-      ),
-      child: _HomeBody(),
-    );
+    return const _HomeBody();
   }
 }
 
