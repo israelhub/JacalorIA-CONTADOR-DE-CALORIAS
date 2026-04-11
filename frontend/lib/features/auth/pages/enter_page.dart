@@ -6,6 +6,7 @@ import 'sign_up_page.dart';
 import '../widgets/enter_form.dart';
 import '../widgets/enter_header.dart';
 import '../widgets/enter_mascot.dart';
+import '../widgets/enter_pages_shortcut_button.dart';
 
 class EnterPage extends StatelessWidget {
   const EnterPage({super.key});
@@ -19,23 +20,22 @@ class EnterPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const EnterHeader(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [const EnterHeader(), const EnterPagesShortcutButton()],
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 26.5),
               child: EnterForm(
                 onCreateAccountPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const SignUpPage(),
-                    ),
-                  );
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const SignUpPage()));
                 },
                 onLoginPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const LoginPage(),
-                    ),
-                  );
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
                 },
               ),
             ),
