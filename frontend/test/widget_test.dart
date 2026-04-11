@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:jacaloria/main.dart' as app;
+import 'package:jacaloria/shared/theme/app_theme.dart';
 
 void main() {
   testWidgets('Bootstrap trava o app em retrato', (WidgetTester tester) async {
@@ -49,6 +50,24 @@ void main() {
       ),
     );
 
+    final styleCalls = calls
+        .where(
+          (MethodCall call) =>
+              call.method == 'SystemChrome.setSystemUIOverlayStyle',
+        )
+        .toList();
+
+    expect(styleCalls, isNotEmpty);
+
+    final hasWhiteSystemNavStyle = styleCalls.any((MethodCall call) {
+      final args = call.arguments as Map<dynamic, dynamic>;
+      return args['systemNavigationBarColor'] == AppColors.surface.toARGB32() &&
+          args['systemNavigationBarDividerColor'] ==
+              AppColors.surface.toARGB32() &&
+          args['systemNavigationBarIconBrightness'] == 'Brightness.dark';
+    });
+
+    expect(hasWhiteSystemNavStyle, isTrue);
   });
 
   testWidgets('App inicia na tela de entrada', (WidgetTester tester) async {
