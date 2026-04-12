@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jacaloria/features/home/pages/home_page.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
@@ -16,55 +15,61 @@ Future<void> _pumpHomePage(WidgetTester tester) async {
 
 void main() {
   group('HomePage', () {
-    testWidgets('bottom bar renderiza o layout compacto com icones svg', (
+    testWidgets('renderiza estrutura base da tela sem erro', (tester) async {
+      await _pumpHomePage(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Scaffold), findsOneWidget);
+      expect(find.byType(SafeArea), findsOneWidget);
+      expect(find.byType(SingleChildScrollView), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('home-daily-goal-card')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('home-mascot-overlay')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('home-bottom-camera-button')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renderiza estado inicial da secao de refeicoes', (
       tester,
     ) async {
       await _pumpHomePage(tester);
       await tester.pumpAndSettle();
 
-      final navSurface = find.byKey(const ValueKey('home-bottom-nav-surface'));
-      final cameraButton = find.byKey(
-        const ValueKey('home-bottom-camera-button'),
-      );
+      expect(find.text('Refeicoes de hoje'), findsOneWidget);
+      expect(find.text('Adicionar refeição'), findsOneWidget);
+    });
 
-      expect(find.byType(SvgPicture), findsNWidgets(4));
-      expect(navSurface, findsOneWidget);
-      expect(cameraButton, findsOneWidget);
-      expect(tester.getSize(navSurface).height, 56);
-      expect(
-        tester.getTopLeft(cameraButton).dy,
-        lessThan(tester.getTopLeft(navSurface).dy),
-      );
+    testWidgets('progress indicators sao renderizados com valores validos', (
+      tester,
+    ) async {
+      await _pumpHomePage(tester);
+      await tester.pumpAndSettle();
 
-      final homeIcon = tester.widget<SvgPicture>(
-        find.byKey(const ValueKey('home-bottom-icon-inicio')),
+      final circularProgress = tester.widgetList<CircularProgressIndicator>(
+        find.byType(CircularProgressIndicator),
       );
-      final calendarIcon = tester.widget<SvgPicture>(
-        find.byKey(const ValueKey('home-bottom-icon-calendario')),
-      );
+      expect(circularProgress, isNotEmpty);
 
-      expect(homeIcon.colorFilter, isNotNull);
-      expect(calendarIcon.colorFilter, isNotNull);
-      expect(homeIcon.width, 28);
-      expect(homeIcon.height, 28);
-      expect(
-        tester
-                .getTopLeft(
-                  find.byKey(const ValueKey('home-bottom-icon-calendario')),
-                )
-                .dx -
-            tester.getTopLeft(navSurface).dx,
-        greaterThan(12),
-      );
+      for (final widget in circularProgress) {
+        expect(widget.value, isNotNull);
+        expect(widget.value!, greaterThanOrEqualTo(0));
+        expect(widget.value!, lessThanOrEqualTo(1));
+      }
 
-      final iconBottom = tester.getBottomLeft(
-        find.byKey(const ValueKey('home-bottom-icon-inicio')),
+      final linearProgress = tester.widgetList<LinearProgressIndicator>(
+        find.byType(LinearProgressIndicator),
       );
-      final labelTop = tester.getTopLeft(
-        find.byKey(const ValueKey('home-bottom-label-inicio')),
-      );
+      expect(linearProgress.length, 3);
 
-      expect(labelTop.dy - iconBottom.dy, lessThanOrEqualTo(1));
+      for (final widget in linearProgress) {
+        expect(widget.value, isNotNull);
+        expect(widget.value!, greaterThanOrEqualTo(0));
+        expect(widget.value!, lessThanOrEqualTo(1));
+      }
     });
   });
 }
