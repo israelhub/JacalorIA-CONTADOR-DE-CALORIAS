@@ -20,12 +20,12 @@ class _PageShortcut {
 class EnterPagesShortcutButton extends StatelessWidget {
   const EnterPagesShortcutButton({super.key});
 
-  static const List<_PageShortcut> _pageShortcuts = [
+  static final List<_PageShortcut> _pageShortcuts = [
     _PageShortcut(label: 'Criar conta', builder: SignUpPage.new),
     _PageShortcut(label: 'Login', builder: LoginPage.new),
     _PageShortcut(
       label: 'Confirmação de e-mail',
-      builder: EmailConfirmationPage.new,
+      builder: () => const EmailConfirmationPage(email: 'teste@jacaloria.app'),
     ),
     _PageShortcut(label: 'Boas-vindas', builder: WelcomePage.new),
     _PageShortcut(label: 'Dados pessoais', builder: PersonalDataPage.new),

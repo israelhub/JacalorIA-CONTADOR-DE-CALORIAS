@@ -10,10 +10,16 @@ class SignUpForm extends StatefulWidget {
     super.key,
     this.onCreateAccountPressed,
     this.onLoginPressed,
+    this.isLoading = false,
   });
 
-  final VoidCallback? onCreateAccountPressed;
+  final Future<bool> Function({
+    required String name,
+    required String email,
+    required String password,
+  })? onCreateAccountPressed;
   final VoidCallback? onLoginPressed;
+  final bool isLoading;
 
   @override
   State<SignUpForm> createState() => _SignUpFormState();
@@ -39,7 +45,11 @@ class _SignUpFormState extends State<SignUpForm> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    widget.onCreateAccountPressed?.call();
+    widget.onCreateAccountPressed?.call(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
   }
 
   @override
@@ -53,6 +63,7 @@ class _SignUpFormState extends State<SignUpForm> {
             label: 'Nome',
             hint: 'Digite seu nome',
             controller: _nameController,
+            enabled: !widget.isLoading,
             validator: (value) {
               if ((value ?? '').trim().isEmpty) {
                 return 'Informe seu nome';
@@ -65,6 +76,7 @@ class _SignUpFormState extends State<SignUpForm> {
             label: 'E-mail',
             hint: 'Digite seu email',
             controller: _emailController,
+            enabled: !widget.isLoading,
             validator: (value) {
               if (!AuthHelpers.isValidEmail((value ?? '').trim())) {
                 return 'Informe um e-mail válido';
@@ -78,6 +90,7 @@ class _SignUpFormState extends State<SignUpForm> {
             hint: 'Digite sua senha',
             obscureText: true,
             controller: _passwordController,
+            enabled: !widget.isLoading,
             validator: (value) {
               if (!AuthHelpers.isValidPassword((value ?? '').trim())) {
                 return 'A senha deve ter ao menos 6 dígitos';
@@ -91,6 +104,7 @@ class _SignUpFormState extends State<SignUpForm> {
             hint: 'Confirme sua senha',
             obscureText: true,
             controller: _confirmPasswordController,
+            enabled: !widget.isLoading,
             validator: (value) {
               if ((value ?? '') != _passwordController.text) {
                 return 'As senhas não conferem';
@@ -102,8 +116,8 @@ class _SignUpFormState extends State<SignUpForm> {
           SizedBox(
             height: AppSpacing.huge + AppSpacing.xs,
             child: AppButton(
-              label: 'Criar conta',
-              onPressed: _submit,
+              label: widget.isLoading ? 'Criando conta...' : 'Criar conta',
+              onPressed: widget.isLoading ? null : _submit,
               variant: AppButtonVariant.primary,
             ),
           ),
@@ -126,11 +140,13 @@ class _SignUpFormState extends State<SignUpForm> {
                 ),
               ),
               TextButton(
-                onPressed: widget.onLoginPressed ?? () {
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-                  }
-                },
+                onPressed:
+                    widget.onLoginPressed ??
+                    () {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
+                    },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.action500,
                   padding: const EdgeInsets.only(left: AppSpacing.xs),
@@ -152,6 +168,7 @@ class _SignUpTextField extends StatelessWidget {
     required this.label,
     required this.hint,
     required this.controller,
+    this.enabled = true,
     this.obscureText = false,
     this.validator,
   });
@@ -159,6 +176,7 @@ class _SignUpTextField extends StatelessWidget {
   final String label;
   final String hint;
   final TextEditingController controller;
+  final bool enabled;
   final bool obscureText;
   final String? Function(String?)? validator;
 
@@ -209,11 +227,16 @@ class _SignUpTextField extends StatelessWidget {
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.md - (AppSpacing.xs / 4)),
+                borderRadius: BorderRadius.circular(
+                  AppRadius.md - (AppSpacing.xs / 4),
+                ),
                 child: TextField(
                   controller: controller,
+                  enabled: enabled,
                   obscureText: obscureText,
-                  style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                   onChanged: state.didChange,
                   decoration: InputDecoration(
                     hintText: hint,
@@ -252,6 +275,3 @@ class _SignUpTextField extends StatelessWidget {
     );
   }
 }
-
-
-
