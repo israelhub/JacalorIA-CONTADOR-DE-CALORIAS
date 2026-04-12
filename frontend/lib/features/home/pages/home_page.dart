@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../widgets/home_meal_card.dart';
@@ -538,112 +537,76 @@ class _DashedBorderPainter extends CustomPainter {
 class _BottomNavigation extends StatelessWidget {
   const _BottomNavigation();
 
-  static const String _calendarIconAsset = 'assets/icons/calendar.svg';
-  static const String _homeIconAsset = 'assets/icons/home.svg';
-  static const String _missionIconAsset = 'assets/icons/mission.svg';
-  static const String _profileIconAsset = 'assets/icons/profile.svg';
-  static const double _surfaceHeight = 56;
-  static const double _cameraButtonSize = AppSpacing.huge + AppSpacing.xl;
-  static const double _cameraOverlap = AppSpacing.lg;
-  static const double _contentHorizontalPadding = AppSpacing.sm;
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: _surfaceHeight + _cameraOverlap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
+    return Container(
+      height: 84,
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.borderBrandAlt)),
+      ),
+      child: Row(
         children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              key: const ValueKey('home-bottom-nav-surface'),
-              height: _surfaceHeight,
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
-                border: Border(
-                  top: BorderSide(color: AppColors.borderBrandAlt),
-                ),
+          Expanded(
+            child: Center(
+              child: _BottomItem(
+                label: 'Calendário',
+                icon: Icons.calendar_month,
+                color: AppColors.divider,
+                keyLabel: const ValueKey('home-bottom-label-calendario'),
+                keyIcon: const ValueKey('home-bottom-icon-calendario'),
               ),
-              child: Padding(
-                key: const ValueKey('home-bottom-nav-content'),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: _contentHorizontalPadding,
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: _BottomItem(
+                label: 'Inicio',
+                icon: Icons.home_rounded,
+                color: AppColors.action500,
+                keyLabel: const ValueKey('home-bottom-label-inicio'),
+                keyIcon: const ValueKey('home-bottom-icon-inicio'),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Container(
+                key: const ValueKey('home-bottom-camera-button'),
+                width: AppSpacing.huge + AppSpacing.xl,
+                height: AppSpacing.huge + AppSpacing.xl,
+                decoration: BoxDecoration(
+                  color: AppColors.action500,
+                  shape: BoxShape.circle,
+                  boxShadow: AppShadows.homeActionCircle,
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Center(
-                        child: _BottomItem(
-                          label: 'Calendário',
-                          iconAsset: _calendarIconAsset,
-                          color: AppColors.divider,
-                          keyLabel: const ValueKey(
-                            'home-bottom-label-calendario',
-                          ),
-                          keyIcon: const ValueKey(
-                            'home-bottom-icon-calendario',
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: _BottomItem(
-                          label: 'Inicio',
-                          iconAsset: _homeIconAsset,
-                          color: AppColors.action500,
-                          keyLabel: const ValueKey('home-bottom-label-inicio'),
-                          keyIcon: const ValueKey('home-bottom-icon-inicio'),
-                        ),
-                      ),
-                    ),
-                    const Expanded(child: SizedBox()),
-                    Expanded(
-                      child: Center(
-                        child: _BottomItem(
-                          label: 'Missões',
-                          iconAsset: _missionIconAsset,
-                          color: AppColors.divider,
-                          keyLabel: const ValueKey('home-bottom-label-missoes'),
-                          keyIcon: const ValueKey('home-bottom-icon-missoes'),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: _BottomItem(
-                          label: 'Social',
-                          iconAsset: _profileIconAsset,
-                          color: AppColors.divider,
-                          keyLabel: const ValueKey('home-bottom-label-social'),
-                          keyIcon: const ValueKey('home-bottom-icon-social'),
-                        ),
-                      ),
-                    ),
-                  ],
+                child: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: AppColors.surface,
+                  size: AppSpacing.xxxl,
                 ),
               ),
             ),
           ),
-          Positioned(
-            top: 0,
-            child: Container(
-              key: const ValueKey('home-bottom-camera-button'),
-              width: _cameraButtonSize,
-              height: _cameraButtonSize,
-              decoration: BoxDecoration(
-                color: AppColors.action500,
-                shape: BoxShape.circle,
-                boxShadow: AppShadows.homeActionCircle,
+          Expanded(
+            child: Center(
+              child: _BottomItem(
+                label: 'Missões',
+                icon: Icons.track_changes,
+                color: AppColors.divider,
+                keyLabel: const ValueKey('home-bottom-label-missoes'),
+                keyIcon: const ValueKey('home-bottom-icon-missoes'),
               ),
-              child: const Icon(
-                Icons.camera_alt_outlined,
-                color: AppColors.surface,
-                size: AppSpacing.xxxl,
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: _BottomItem(
+                label: 'Social',
+                icon: Icons.person_outline,
+                color: AppColors.divider,
+                keyLabel: const ValueKey('home-bottom-label-social'),
+                keyIcon: const ValueKey('home-bottom-icon-social'),
               ),
             ),
           ),
@@ -656,38 +619,29 @@ class _BottomNavigation extends StatelessWidget {
 class _BottomItem extends StatelessWidget {
   const _BottomItem({
     required this.label,
-    required this.iconAsset,
+    required this.icon,
     required this.color,
     required this.keyLabel,
     required this.keyIcon,
   });
 
   final String label;
-  final String iconAsset;
+  final IconData icon;
   final Color color;
   final Key keyLabel;
   final Key keyIcon;
-
-  static const double _iconSize = AppSpacing.xxl + AppSpacing.xs;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SvgPicture.asset(
-          iconAsset,
-          key: keyIcon,
-          width: _iconSize,
-          height: _iconSize,
-          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        ),
-        const SizedBox(height: 1),
+        Icon(icon, key: keyIcon, color: color, size: AppSpacing.xxxl),
+        const SizedBox(height: AppSpacing.xs - 1),
         Text(
           label,
           key: keyLabel,
-          style: AppTextStyles.homeBottomNav.copyWith(color: color, height: 1),
+          style: AppTextStyles.homeBottomNav.copyWith(color: color),
         ),
       ],
     );
