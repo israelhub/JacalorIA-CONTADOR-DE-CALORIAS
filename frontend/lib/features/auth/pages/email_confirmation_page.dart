@@ -6,7 +6,9 @@ import '../../../shared/widgets/app_button.dart';
 import '../../onboarding/pages/welcome_page.dart';
 
 class EmailConfirmationPage extends StatefulWidget {
-  const EmailConfirmationPage({super.key});
+  const EmailConfirmationPage({super.key, required this.email});
+
+  final String email;
 
   @override
   State<EmailConfirmationPage> createState() => _EmailConfirmationPageState();
@@ -15,6 +17,7 @@ class EmailConfirmationPage extends StatefulWidget {
 class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
   late final List<TextEditingController> _controllers;
   late final List<FocusNode> _focusNodes;
+  bool _isApplyingCode = false;
 
   @override
   void initState() {
@@ -35,14 +38,81 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
   }
 
   void _onDigitChanged(int index, String value) {
-    if (value.isNotEmpty && index < _focusNodes.length - 1) {
-      _focusNodes[index + 1].requestFocus();
+    if (_isApplyingCode) {
       return;
     }
 
-    if (value.isEmpty && index > 0) {
-      _focusNodes[index - 1].requestFocus();
+    final digitsOnly = value.replaceAll(RegExp(r'\D'), '');
+
+    if (digitsOnly.isEmpty) {
+      if (_controllers[index].text.isNotEmpty) {
+        _controllers[index].clear();
+      }
+      return;
     }
+
+    if (digitsOnly.length > 1) {
+      _applyCodeFrom(index, digitsOnly);
+      return;
+    }
+
+    _controllers[index].value = TextEditingValue(
+      text: digitsOnly,
+      selection: TextSelection.collapsed(offset: digitsOnly.length),
+    );
+
+    if (index < _focusNodes.length - 1) {
+      _focusNodes[index + 1].requestFocus();
+    } else {
+      FocusScope.of(context).unfocus();
+    }
+  }
+
+  void _applyCodeFrom(int startIndex, String digits) {
+    _isApplyingCode = true;
+    try {
+      final chars = digits.split('');
+      var slot = startIndex;
+
+      for (final char in chars) {
+        if (slot >= _controllers.length) {
+          break;
+        }
+        _controllers[slot].value = TextEditingValue(
+          text: char,
+          selection: const TextSelection.collapsed(offset: 1),
+        );
+        slot++;
+      }
+
+      if (slot < _focusNodes.length) {
+        _focusNodes[slot].requestFocus();
+      } else {
+        FocusScope.of(context).unfocus();
+      }
+    } finally {
+      _isApplyingCode = false;
+    }
+  }
+
+  KeyEventResult _onCodeFieldKeyEvent(int index, KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    if (event.logicalKey != LogicalKeyboardKey.backspace) {
+      return KeyEventResult.ignored;
+    }
+
+    final isCurrentEmpty = _controllers[index].text.isEmpty;
+    if (!isCurrentEmpty || index == 0) {
+      return KeyEventResult.ignored;
+    }
+
+    final previousIndex = index - 1;
+    _controllers[previousIndex].clear();
+    _focusNodes[previousIndex].requestFocus();
+    return KeyEventResult.handled;
   }
 
   @override
@@ -54,27 +124,7 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: AppSpacing.lg),
-            SizedBox(
-              height: AppSpacing.huge - AppSpacing.sm,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: AppSpacing.md),
-                  child: IconButton(
-                    key: const ValueKey('email-back-button'),
-                    onPressed: () {
-                      if (Navigator.of(context).canPop()) {
-                        Navigator.of(context).pop();
-                      }
-                    },
-                    icon: const Icon(Icons.arrow_back),
-                    color: AppColors.brand900,
-                    iconSize: AppSpacing.xl,
-                    splashRadius: AppSpacing.xl,
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox(height: AppSpacing.huge - AppSpacing.sm),
             Expanded(
               child: Column(
                 children: [
@@ -97,7 +147,7 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                       horizontal: AppSpacing.xxl,
                     ),
                     child: Text(
-                      'Enviamos um código para o seu e-mail.',
+                      'Enviamos um código para ${widget.email}.',
                       textAlign: TextAlign.center,
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.textMuted,
@@ -123,27 +173,29 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                                 ),
                               ),
                               child: Center(
-                                child: TextField(
-                                  controller: _controllers[index],
-                                  focusNode: _focusNodes[index],
-                                  maxLength: 1,
-                                  keyboardType: TextInputType.number,
-                                  textAlign: TextAlign.center,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                    LengthLimitingTextInputFormatter(1),
-                                  ],
-                                  style: AppTextStyles.headingSmall.copyWith(
-                                    color: AppColors.brand900Variant,
-                                  ),
-                                  onChanged: (value) =>
-                                      _onDigitChanged(index, value),
-                                  decoration: const InputDecoration(
-                                    counterText: '',
-                                    border: InputBorder.none,
-                                    focusedBorder: InputBorder.none,
-                                    enabledBorder: InputBorder.none,
-                                    contentPadding: EdgeInsets.zero,
+                                child: Focus(
+                                  onKeyEvent: (node, event) =>
+                                      _onCodeFieldKeyEvent(index, event),
+                                  child: TextField(
+                                    controller: _controllers[index],
+                                    focusNode: _focusNodes[index],
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                    ],
+                                    style: AppTextStyles.headingSmall.copyWith(
+                                      color: AppColors.brand900Variant,
+                                    ),
+                                    onChanged: (value) =>
+                                        _onDigitChanged(index, value),
+                                    decoration: const InputDecoration(
+                                      counterText: '',
+                                      border: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
                                   ),
                                 ),
                               ),
