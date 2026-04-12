@@ -1,12 +1,58 @@
 import 'package:flutter/material.dart';
 
+import '../controllers/auth_controller.dart';
 import '../../../shared/theme/app_theme.dart';
 import 'email_confirmation_page.dart';
 import 'login_page.dart';
 import '../widgets/sign_up_form.dart';
 
-class SignUpPage extends StatelessWidget {
+class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
+
+  @override
+  State<SignUpPage> createState() => _SignUpPageState();
+}
+
+class _SignUpPageState extends State<SignUpPage> {
+  final AuthController _authController = AuthController();
+
+  @override
+  void dispose() {
+    _authController.dispose();
+    super.dispose();
+  }
+
+  Future<bool> _handleCreateAccount({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    final created = await _authController.createAccount(
+      name: name,
+      email: email,
+      password: password,
+    );
+
+    if (!mounted) {
+      return created;
+    }
+
+    if (created) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => EmailConfirmationPage(
+            email: email,
+          ),
+        ),
+      );
+    } else if (_authController.error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_authController.error!)));
+    }
+
+    return created;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,19 +71,17 @@ class SignUpPage extends StatelessWidget {
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: AppSpacing.xxl),
-              SignUpForm(
-                onCreateAccountPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const EmailConfirmationPage(),
-                    ),
-                  );
-                },
-                onLoginPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const LoginPage(),
-                    ),
+              AnimatedBuilder(
+                animation: _authController,
+                builder: (context, _) {
+                  return SignUpForm(
+                    onCreateAccountPressed: _handleCreateAccount,
+                    isLoading: _authController.isLoading,
+                    onLoginPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                      );
+                    },
                   );
                 },
               ),
@@ -49,7 +93,3 @@ class SignUpPage extends StatelessWidget {
     );
   }
 }
-
-
-
-
