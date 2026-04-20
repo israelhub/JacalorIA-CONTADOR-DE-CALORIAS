@@ -17,8 +17,25 @@ async function bootstrap() {
   );
 
   const corsOrigin = configService.get<string>('CORS_ORIGIN', '*');
+  const allowedOrigins = corsOrigin
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: corsOrigin === '*' ? true : corsOrigin.split(','),
+    origin: (origin, callback) => {
+      if (!origin || corsOrigin === '*') {
+        callback(null, true);
+        return;
+      }
+
+      const isConfiguredOrigin = allowedOrigins.includes(origin);
+      const isLocalDevOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
+        origin,
+      );
+
+      callback(null, isConfiguredOrigin || isLocalDevOrigin);
+    },
     credentials: true,
   });
 
@@ -26,6 +43,6 @@ async function bootstrap() {
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
-  console.log(`🚀 Backend rodando em http://localhost:${port}/api`);
+  console.log(`Backend rodando em http://localhost:${port}/api`);
 }
 bootstrap();
