@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../controllers/auth_controller.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../onboarding/pages/welcome_page.dart';
 
 class EmailConfirmationPage extends StatefulWidget {
-  const EmailConfirmationPage({super.key, required this.email});
+  const EmailConfirmationPage({
+    super.key,
+    required this.email,
+    this.onVerifyEmail,
+    this.onResendCode,
+  });
 
   final String email;
+  final Future<bool> Function(String email, String code)? onVerifyEmail;
+  final Future<bool> Function(String email)? onResendCode;
 
   @override
   State<EmailConfirmationPage> createState() => _EmailConfirmationPageState();
 }
 
 class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
+  final AuthController _authController = AuthController();
   late final List<TextEditingController> _controllers;
   late final List<FocusNode> _focusNodes;
   bool _isApplyingCode = false;
@@ -28,6 +37,7 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
 
   @override
   void dispose() {
+    _authController.dispose();
     for (final controller in _controllers) {
       controller.dispose();
     }
@@ -113,6 +123,56 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
     _controllers[previousIndex].clear();
     _focusNodes[previousIndex].requestFocus();
     return KeyEventResult.handled;
+  }
+
+  String get _verificationCode => _controllers.map((controller) => controller.text).join();
+
+  Future<void> _handleConfirm() async {
+    final code = _verificationCode;
+    if (code.length != _controllers.length) {
+      _showMessage('Digite o código de 6 dígitos.');
+      return;
+    }
+
+    final isVerified = widget.onVerifyEmail != null
+        ? await widget.onVerifyEmail!(widget.email, code)
+        : await _authController.verifyEmail(email: widget.email, code: code);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (isVerified) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const WelcomePage(),
+        ),
+      );
+      return;
+    }
+
+    _showMessage(_authController.error ?? 'Código inválido ou expirado.');
+  }
+
+  Future<void> _handleResendCode() async {
+    final isResent = widget.onResendCode != null
+        ? await widget.onResendCode!(widget.email)
+        : await _authController.resendCode(email: widget.email);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (isResent) {
+      _showMessage('Código reenviado com sucesso.');
+      return;
+    }
+
+    _showMessage(_authController.error ?? 'Erro ao reenviar código.');
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -211,38 +271,48 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                     padding: const EdgeInsets.symmetric(
                       horizontal: (AppSpacing.xxl * 2) + AppSpacing.sm,
                     ),
-                    child: SizedBox(
-                      key: const ValueKey('email-confirm-button'),
-                      height: AppSpacing.huge + AppSpacing.xs,
-                      child: AppButton(
-                        label: 'Confirmar',
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const WelcomePage(),
-                            ),
-                          );
-                        },
-                        variant: AppButtonVariant.primary,
-                      ),
+                    child: AnimatedBuilder(
+                      animation: _authController,
+                      builder: (context, _) {
+                        return SizedBox(
+                          key: const ValueKey('email-confirm-button'),
+                          height: AppSpacing.huge + AppSpacing.xs,
+                          child: AppButton(
+                            label: _authController.isLoading
+                                ? 'Confirmando...'
+                                : 'Confirmar',
+                            onPressed: _authController.isLoading
+                                ? null
+                                : _handleConfirm,
+                            variant: AppButtonVariant.primary,
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg + 2),
-                  TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xs,
-                      ),
-                    ),
-                    child: Text(
-                      'Reenviar código',
-                      style: AppTextStyles.confirmationResendLink,
-                    ),
+                  AnimatedBuilder(
+                    animation: _authController,
+                    builder: (context, _) {
+                      return TextButton(
+                        onPressed: _authController.isLoading
+                            ? null
+                            : _handleResendCode,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textPrimary,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xs,
+                          ),
+                        ),
+                        child: Text(
+                          'Reenviar código',
+                          style: AppTextStyles.confirmationResendLink,
+                        ),
+                      );
+                    },
                   ),
                   const Spacer(flex: 7),
                 ],

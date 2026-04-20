@@ -8,6 +8,7 @@ import { buildVerificationEmailHtml } from './verification-email.template';
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
+  private readonly logoCid = 'jacaloria-logo@jacaloria.app';
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -56,7 +57,7 @@ export class MailService {
       const hasLogo = fs.existsSync(logoPath);
       const emailHtml = buildVerificationEmailHtml({
         code,
-        logoCid: 'jacaloria-logo',
+        logoCid: this.logoCid,
       });
 
       await transporter.sendMail({
@@ -70,7 +71,9 @@ export class MailService {
               {
                 filename: 'logo_horizontal.png',
                 path: logoPath,
-                cid: 'jacaloria-logo',
+                cid: this.logoCid,
+                contentType: 'image/png',
+                contentDisposition: 'inline',
               },
             ]
           : undefined,
