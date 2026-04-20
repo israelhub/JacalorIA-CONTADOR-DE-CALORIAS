@@ -6,13 +6,25 @@ import 'package:jacaloria/shared/theme/app_theme.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
 
-Future<void> _pumpEmailConfirmation(WidgetTester tester) async {
+Future<void> _pumpEmailConfirmation(
+  WidgetTester tester, {
+  Future<bool> Function(String email, String code)? onVerifyEmail,
+  Future<bool> Function(String email)? onResendCode,
+}) async {
   tester.view.physicalSize = const Size(412, 917);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
-  await tester.pumpWidget(_wrap(const EmailConfirmationPage()));
+  await tester.pumpWidget(
+    _wrap(
+      EmailConfirmationPage(
+        email: 'teste@jacaloria.app',
+        onVerifyEmail: onVerifyEmail,
+        onResendCode: onResendCode,
+      ),
+    ),
+  );
 }
 
 void main() {
@@ -23,14 +35,18 @@ void main() {
       await _pumpEmailConfirmation(tester);
 
       expect(find.text('Confirme o seu e-mail'), findsOneWidget);
-      expect(find.text('Enviamos um código para o seu e-mail.'), findsOneWidget);
+      expect(
+        find.text('Enviamos um código para teste@jacaloria.app.'),
+        findsOneWidget,
+      );
       expect(find.byType(TextField), findsNWidgets(6));
       expect(find.text('Confirmar'), findsOneWidget);
       expect(find.text('Reenviar código'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
     });
 
-    testWidgets('slots de código seguem dimensão esperada do Figma', (tester) async {
+    testWidgets('slots de código seguem dimensão esperada do Figma', (
+      tester,
+    ) async {
       await _pumpEmailConfirmation(tester);
 
       final firstSlot = find.byKey(const ValueKey('email-code-slot-0'));
@@ -42,7 +58,9 @@ void main() {
       expect(size.width <= AppSpacing.huge + AppSpacing.sm, isTrue);
     });
 
-    testWidgets('botão confirmar fica inteiro visível sem corte', (tester) async {
+    testWidgets('botão confirmar fica inteiro visível sem corte', (
+      tester,
+    ) async {
       await _pumpEmailConfirmation(tester);
 
       final confirmButton = find.byKey(const ValueKey('email-confirm-button'));
@@ -64,19 +82,38 @@ void main() {
       expect(controller.text, '1');
     });
 
-    testWidgets('toque no botão voltar não lança erro', (tester) async {
-      await _pumpEmailConfirmation(tester);
+    testWidgets('não navega para WelcomePage quando confirmação falha', (
+      tester,
+    ) async {
+      await _pumpEmailConfirmation(
+        tester,
+        onVerifyEmail: (_, __) async => false,
+      );
 
-      await tester.tap(find.byIcon(Icons.arrow_back));
-      await tester.pumpAndSettle();
-
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('navega para WelcomePage ao tocar em Confirmar', (tester) async {
-      await _pumpEmailConfirmation(tester);
+      for (var index = 0; index < 6; index++) {
+        await tester.enterText(find.byType(TextField).at(index), '${index + 1}');
+      }
 
       await tester.ensureVisible(find.text('Confirmar'));
+      await tester.tap(find.text('Confirmar'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(WelcomePage), findsNothing);
+      expect(find.text('Código inválido ou expirado.'), findsOneWidget);
+    });
+
+    testWidgets('navega para WelcomePage quando confirmação tem sucesso', (
+      tester,
+    ) async {
+      await _pumpEmailConfirmation(
+        tester,
+        onVerifyEmail: (_, __) async => true,
+      );
+
+      for (var index = 0; index < 6; index++) {
+        await tester.enterText(find.byType(TextField).at(index), '${index + 1}');
+      }
+
       await tester.tap(find.text('Confirmar'));
       await tester.pumpAndSettle();
 
