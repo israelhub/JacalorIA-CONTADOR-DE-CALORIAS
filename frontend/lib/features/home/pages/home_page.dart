@@ -3,10 +3,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../food_analysis/models/food_meal_record.dart';
+import '../../food_analysis/pages/food_capture_page.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../widgets/home_meal_card.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   static const _mealAsset =
@@ -15,13 +17,72 @@ class HomePage extends StatelessWidget {
       AppSpacing.huge + AppSpacing.xxxl + AppSpacing.md - 1;
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final List<FoodMealRecord> _records = <FoodMealRecord>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _records.addAll(_seedRecords());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const _HomeBody();
+    return _HomeBody(records: _records, onAddMealPressed: _openFoodCapture);
+  }
+
+  List<FoodMealRecord> _seedRecords() {
+    return <FoodMealRecord>[
+      FoodMealRecord(
+        imageBytes: null,
+        imageAsset: HomePage._mealAsset,
+        title: 'Lanche da tarde',
+        description: 'Maca e mix de castanhas',
+        kcalLabel: '180 kcal',
+        timeLabel: '15:00',
+      ),
+      FoodMealRecord(
+        imageBytes: null,
+        imageAsset: HomePage._mealAsset,
+        title: 'Almoco',
+        description: 'Frango grelhado, arroz e salada',
+        kcalLabel: '580 kcal',
+        timeLabel: '12:15',
+      ),
+      FoodMealRecord(
+        imageBytes: null,
+        imageAsset: HomePage._mealAsset,
+        title: 'Cafe da manha',
+        description: 'Aveia, banana e mel',
+        kcalLabel: '320 kcal',
+        timeLabel: '07:30',
+      ),
+    ];
+  }
+
+  Future<void> _openFoodCapture() async {
+    final record = await Navigator.of(context).push<FoodMealRecord>(
+      MaterialPageRoute(builder: (_) => const FoodCapturePage()),
+    );
+
+    if (record == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _records.insert(0, record);
+    });
   }
 }
 
 class _HomeBody extends StatelessWidget {
-  const _HomeBody();
+  const _HomeBody({required this.records, required this.onAddMealPressed});
+
+  final List<FoodMealRecord> records;
+  final VoidCallback onAddMealPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -49,37 +110,27 @@ class _HomeBody extends StatelessWidget {
                           const SizedBox(height: AppSpacing.xl),
                           const _MealsHeader(),
                           const SizedBox(height: AppSpacing.sm),
-                          const _AddMealAction(),
+                          _AddMealAction(onTap: onAddMealPressed),
                           const SizedBox(height: AppSpacing.lg),
-                          HomeMealCard(
-                            cardKey: const ValueKey('home-meal-card-0'),
-                            title: 'Lanche da tarde',
-                            description: 'Maca e mix de castanhas',
-                            kcal: '180 kcal',
-                            time: '15:00',
-                            imageAsset: HomePage._mealAsset,
-                            height: HomePage._mealCardHeight,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          HomeMealCard(
-                            cardKey: const ValueKey('home-meal-card-1'),
-                            title: 'Almoco',
-                            description: 'Frango grelhado, arroz e salada',
-                            kcal: '580 kcal',
-                            time: '12:15',
-                            imageAsset: HomePage._mealAsset,
-                            height: HomePage._mealCardHeight,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          HomeMealCard(
-                            cardKey: const ValueKey('home-meal-card-2'),
-                            title: 'Cafe da manha',
-                            description: 'Aveia, banana e mel',
-                            kcal: '320 kcal',
-                            time: '07:30',
-                            imageAsset: HomePage._mealAsset,
-                            height: HomePage._mealCardHeight,
-                          ),
+                          ...records.asMap().entries.expand((entry) {
+                            final index = entry.key;
+                            final record = entry.value;
+
+                            return <Widget>[
+                              HomeMealCard(
+                                cardKey: ValueKey('home-meal-card-$index'),
+                                title: record.title,
+                                description: record.description,
+                                kcal: record.kcalLabel,
+                                time: record.timeLabel,
+                                imageAsset: record.imageAsset,
+                                imageBytes: record.imageBytes,
+                                height: HomePage._mealCardHeight,
+                              ),
+                              if (index != records.length - 1)
+                                const SizedBox(height: AppSpacing.lg),
+                            ];
+                          }),
                           const SizedBox(height: AppSpacing.xxxl),
                         ],
                       ),
@@ -88,7 +139,7 @@ class _HomeBody extends StatelessWidget {
                 ),
               ),
             ),
-            const _BottomNavigation(),
+            _BottomNavigation(onCameraTap: onAddMealPressed),
           ],
         ),
       ),
@@ -452,49 +503,56 @@ class _MealsHeader extends StatelessWidget {
 }
 
 class _AddMealAction extends StatelessWidget {
-  const _AddMealAction();
+  const _AddMealAction({required this.onTap});
+
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: HomePage._mealCardHeight,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadius.lg - AppSpacing.xs),
+      child: InkWell(
+        key: const ValueKey('home-add-meal-action'),
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.lg - AppSpacing.xs),
-      ),
-      child: CustomPaint(
-        painter: _DashedBorderPainter(
-          color: AppColors.homeDashedBorder,
-          borderRadius: AppRadius.lg - AppSpacing.xs,
-        ),
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: AppSpacing.xxl + AppSpacing.xs,
-                height: AppSpacing.xxl + AppSpacing.xs,
-                decoration: const BoxDecoration(
-                  color: AppColors.action500,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '+',
-                  style: AppTextStyles.buttonMedium.copyWith(
-                    color: AppColors.surface,
+        child: SizedBox(
+          width: double.infinity,
+          height: HomePage._mealCardHeight,
+          child: CustomPaint(
+            painter: _DashedBorderPainter(
+              color: AppColors.homeDashedBorder,
+              borderRadius: AppRadius.lg - AppSpacing.xs,
+            ),
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: AppSpacing.xxl + AppSpacing.xs,
+                    height: AppSpacing.xxl + AppSpacing.xs,
+                    decoration: const BoxDecoration(
+                      color: AppColors.action500,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '+',
+                      style: AppTextStyles.buttonMedium.copyWith(
+                        color: AppColors.surface,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: AppSpacing.md),
+                  Text(
+                    'Adicionar refeição',
+                    style: AppTextStyles.homeAction.copyWith(
+                      color: AppColors.action500,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: AppSpacing.md),
-              Text(
-                'Adicionar refeição',
-                style: AppTextStyles.homeAction.copyWith(
-                  color: AppColors.action500,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -536,7 +594,9 @@ class _DashedBorderPainter extends CustomPainter {
 }
 
 class _BottomNavigation extends StatelessWidget {
-  const _BottomNavigation();
+  const _BottomNavigation({required this.onCameraTap});
+
+  final VoidCallback onCameraTap;
 
   static const String _calendarIconAsset = 'assets/icons/calendar.svg';
   static const String _homeIconAsset = 'assets/icons/home.svg';
@@ -631,19 +691,28 @@ class _BottomNavigation extends StatelessWidget {
           ),
           Positioned(
             top: 0,
-            child: Container(
-              key: const ValueKey('home-bottom-camera-button'),
-              width: _cameraButtonSize,
-              height: _cameraButtonSize,
-              decoration: BoxDecoration(
-                color: AppColors.action500,
-                shape: BoxShape.circle,
-                boxShadow: AppShadows.homeActionCircle,
-              ),
-              child: const Icon(
-                Icons.camera_alt_outlined,
-                color: AppColors.surface,
-                size: AppSpacing.xxxl,
+            child: Material(
+              color: AppColors.action500,
+              shape: const CircleBorder(),
+              elevation: 0,
+              child: InkWell(
+                key: const ValueKey('home-bottom-camera-button'),
+                onTap: onCameraTap,
+                customBorder: const CircleBorder(),
+                child: Container(
+                  width: _cameraButtonSize,
+                  height: _cameraButtonSize,
+                  decoration: BoxDecoration(
+                    color: AppColors.action500,
+                    shape: BoxShape.circle,
+                    boxShadow: AppShadows.homeActionCircle,
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_outlined,
+                    color: AppColors.surface,
+                    size: AppSpacing.xxxl,
+                  ),
+                ),
               ),
             ),
           ),
