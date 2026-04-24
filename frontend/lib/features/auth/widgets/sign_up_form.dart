@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../helpers/auth_helpers.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/or_divider.dart';
 
 class SignUpForm extends StatefulWidget {
@@ -59,7 +60,7 @@ class _SignUpFormState extends State<SignUpForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _SignUpTextField(
+          AppInputField(
             label: 'Nome',
             hint: 'Digite seu nome',
             controller: _nameController,
@@ -72,7 +73,7 @@ class _SignUpFormState extends State<SignUpForm> {
             },
           ),
           const SizedBox(height: AppSpacing.lg),
-          _SignUpTextField(
+          AppInputField(
             label: 'E-mail',
             hint: 'Digite seu email',
             controller: _emailController,
@@ -85,7 +86,7 @@ class _SignUpFormState extends State<SignUpForm> {
             },
           ),
           const SizedBox(height: AppSpacing.lg),
-          _SignUpTextField(
+          AppInputField(
             label: 'Senha',
             hint: 'Digite sua senha',
             obscureText: true,
@@ -99,7 +100,7 @@ class _SignUpFormState extends State<SignUpForm> {
             },
           ),
           const SizedBox(height: AppSpacing.lg),
-          _SignUpTextField(
+          AppInputField(
             label: 'Confirmar senha',
             hint: 'Confirme sua senha',
             obscureText: true,
@@ -159,119 +160,6 @@ class _SignUpFormState extends State<SignUpForm> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SignUpTextField extends StatelessWidget {
-  const _SignUpTextField({
-    required this.label,
-    required this.hint,
-    required this.controller,
-    this.enabled = true,
-    this.obscureText = false,
-    this.validator,
-  });
-
-  final String label;
-  final String hint;
-  final TextEditingController controller;
-  final bool enabled;
-  final bool obscureText;
-  final String? Function(String?)? validator;
-
-  @override
-  Widget build(BuildContext context) {
-    return FormField<String>(
-      initialValue: controller.text,
-      validator: validator,
-      builder: (state) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: const Border(
-                  top: BorderSide(
-                    color: AppColors.borderLight,
-                    width: AppSpacing.xs / 4,
-                  ),
-                  left: BorderSide(
-                    color: AppColors.borderLight,
-                    width: AppSpacing.xs / 4,
-                  ),
-                  right: BorderSide(
-                    color: AppColors.borderLight,
-                    width: AppSpacing.xs / 4,
-                  ),
-                  bottom: BorderSide(
-                    color: AppColors.borderLight,
-                    width: AppSpacing.xs / 2,
-                  ),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.shadowButtonAlt,
-                    offset: Offset(0, AppSpacing.xs / 2),
-                    blurRadius: 0,
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(
-                  AppRadius.md - (AppSpacing.xs / 4),
-                ),
-                child: TextField(
-                  controller: controller,
-                  enabled: enabled,
-                  obscureText: obscureText,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                  onChanged: state.didChange,
-                  decoration: InputDecoration(
-                    hintText: hint,
-                    hintStyle: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.md,
-                    ),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                  ),
-                ),
-              ),
-            ),
-            if (state.hasError)
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.md,
-                  top: AppSpacing.xs,
-                ),
-                child: Text(
-                  state.errorText!,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textError,
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
     );
   }
 }
