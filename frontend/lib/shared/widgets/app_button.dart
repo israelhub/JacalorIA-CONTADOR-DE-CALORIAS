@@ -11,11 +11,13 @@ class AppButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.variant = AppButtonVariant.primary,
+    this.trailingIcon,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
+  final IconData? trailingIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -23,10 +25,12 @@ class AppButton extends StatelessWidget {
       AppButtonVariant.primary => _PrimaryButton(
         label: label,
         onPressed: onPressed,
+        trailingIcon: trailingIcon,
       ),
       AppButtonVariant.outline => _OutlineButton(
         label: label,
         onPressed: onPressed,
+        trailingIcon: trailingIcon,
       ),
       AppButtonVariant.google => _GoogleButton(
         label: label,
@@ -37,10 +41,15 @@ class AppButton extends StatelessWidget {
 }
 
 class _PrimaryButton extends StatelessWidget {
-  const _PrimaryButton({required this.label, required this.onPressed});
+  const _PrimaryButton({
+    required this.label,
+    required this.onPressed,
+    this.trailingIcon,
+  });
 
   final String label;
   final VoidCallback? onPressed;
+  final IconData? trailingIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -61,20 +70,39 @@ class _PrimaryButton extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         alignment: Alignment.center,
-        child: Text(
-          label,
-          style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
-        ),
+        child: trailingIcon == null
+            ? Text(
+                label,
+                style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    style: AppTextStyles.buttonLarge.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Icon(trailingIcon, color: Colors.white, size: 20),
+                ],
+              ),
       ),
     );
   }
 }
 
 class _OutlineButton extends StatelessWidget {
-  const _OutlineButton({required this.label, required this.onPressed});
+  const _OutlineButton({
+    required this.label,
+    required this.onPressed,
+    this.trailingIcon,
+  });
 
   final String label;
   final VoidCallback? onPressed;
+  final IconData? trailingIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -96,12 +124,26 @@ class _OutlineButton extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 17),
         alignment: Alignment.center,
-        child: Text(
-          label,
-          style: AppTextStyles.buttonMedium.copyWith(
-            color: AppColors.action500,
-          ),
-        ),
+        child: trailingIcon == null
+            ? Text(
+                label,
+                style: AppTextStyles.buttonMedium.copyWith(
+                  color: AppColors.action500,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    style: AppTextStyles.buttonMedium.copyWith(
+                      color: AppColors.action500,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Icon(trailingIcon, color: AppColors.action500, size: 18),
+                ],
+              ),
       ),
     );
   }
