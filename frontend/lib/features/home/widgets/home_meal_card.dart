@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
@@ -10,7 +12,8 @@ class HomeMealCard extends StatelessWidget {
     required this.description,
     required this.kcal,
     required this.time,
-    required this.imageAsset,
+    this.imageAsset,
+    this.imageBytes,
     required this.height,
   });
 
@@ -19,7 +22,8 @@ class HomeMealCard extends StatelessWidget {
   final String description;
   final String kcal;
   final String time;
-  final String imageAsset;
+  final String? imageAsset;
+  final Uint8List? imageBytes;
   final double height;
 
   @override
@@ -46,7 +50,24 @@ class HomeMealCard extends StatelessWidget {
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.brand300),
             ),
-            child: Image.asset(imageAsset, fit: BoxFit.cover),
+            child: imageBytes != null
+                ? Image.memory(imageBytes!, fit: BoxFit.cover)
+                : Builder(
+                    builder: (context) {
+                      final asset = imageAsset;
+                      if (asset != null) {
+                        return Image.asset(asset, fit: BoxFit.cover);
+                      }
+
+                      return const ColoredBox(
+                        color: AppColors.homeMetaCardSurface,
+                        child: Icon(
+                          Icons.restaurant_outlined,
+                          color: AppColors.action500,
+                        ),
+                      );
+                    },
+                  ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
