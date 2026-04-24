@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
+import 'package:jacaloria/shared/widgets/app_input.dart';
 import 'sign_up_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -49,127 +50,17 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxxl),
-                Text(
-                  'E-mail',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: const Border(
-                      top: BorderSide(
-                        color: AppColors.borderLight,
-                        width: AppSpacing.xs / 4,
-                      ),
-                      left: BorderSide(
-                        color: AppColors.borderLight,
-                        width: AppSpacing.xs / 4,
-                      ),
-                      right: BorderSide(
-                        color: AppColors.borderLight,
-                        width: AppSpacing.xs / 4,
-                      ),
-                      bottom: BorderSide(
-                        color: AppColors.borderLight,
-                        width: AppSpacing.xs / 2,
-                      ),
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.shadowButtonAlt,
-                        offset: Offset(0, AppSpacing.xs / 2),
-                        blurRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.md - (AppSpacing.xs / 4)),
-                    child: TextField(
-                      controller: _emailController,
-                      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Digite seu email',
-                        hintStyle: AppTextStyles.bodyLarge.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: AppColors.surface,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.md,
-                        ),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                      ),
-                    ),
-                  ),
+                AppInputField(
+                  label: 'E-mail',
+                  hint: 'Digite seu email',
+                  controller: _emailController,
                 ),
                 const SizedBox(height: AppSpacing.xxl),
-                Text(
-                  'Senha',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: const Border(
-                      top: BorderSide(
-                        color: AppColors.borderLight,
-                        width: AppSpacing.xs / 4,
-                      ),
-                      left: BorderSide(
-                        color: AppColors.borderLight,
-                        width: AppSpacing.xs / 4,
-                      ),
-                      right: BorderSide(
-                        color: AppColors.borderLight,
-                        width: AppSpacing.xs / 4,
-                      ),
-                      bottom: BorderSide(
-                        color: AppColors.borderLight,
-                        width: AppSpacing.xs / 2,
-                      ),
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.shadowButtonAlt,
-                        offset: Offset(0, AppSpacing.xs / 2),
-                        blurRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.md - (AppSpacing.xs / 4)),
-                    child: TextField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Digite sua senha',
-                        hintStyle: AppTextStyles.bodyLarge.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: AppColors.surface,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.md,
-                        ),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                      ),
-                    ),
-                  ),
+                AppInputField(
+                  label: 'Senha',
+                  hint: 'Digite sua senha',
+                  controller: _passwordController,
+                  obscureText: true,
                 ),
                 const SizedBox(height: AppSpacing.xxxl),
                 SizedBox(
