@@ -5,6 +5,7 @@ import '../widgets/onboarding_input_field.dart';
 import '../widgets/onboarding_step_header.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_input.dart';
 
 class PersonalDataPage extends StatefulWidget {
   const PersonalDataPage({super.key});
@@ -225,56 +226,35 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxxl),
-                OnboardingInputField(
+                AppInputField(
+                  key: const ValueKey('personal-birthdate-field'),
                   label: 'Data de nascimento',
-                  child: TextField(
-                    key: const ValueKey('personal-birthdate-field'),
-                    controller: _birthDateController,
-                    readOnly: true,
-                    onTap: _pickBirthDate,
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                    decoration: onboardingInputDecoration(
-                      hint: 'Selecione sua data de nascimento',
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.calendar_today_outlined),
-                        color: AppColors.textSecondary,
-                        onPressed: _pickBirthDate,
-                      ),
-                    ),
+                  hint: 'Selecione sua data de nascimento',
+                  controller: _birthDateController,
+                  readOnly: true,
+                  onTap: _pickBirthDate,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.calendar_today_outlined),
+                    color: AppColors.textSecondary,
+                    onPressed: _pickBirthDate,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
-                OnboardingInputField(
+                AppInputField(
                   label: 'Peso',
-                  child: TextField(
-                    controller: _weightController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                    decoration: onboardingInputDecoration(
-                      hint: 'Digite seu peso',
-                    ),
+                  hint: 'Digite seu peso',
+                  controller: _weightController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
-                OnboardingInputField(
+                AppInputField(
                   label: 'Altura',
-                  child: TextField(
-                    controller: _heightController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                    decoration: onboardingInputDecoration(
-                      hint: 'Digite sua altura',
-                    ),
+                  hint: 'Digite sua altura',
+                  controller: _heightController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
