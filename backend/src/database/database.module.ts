@@ -18,6 +18,7 @@ import { User } from '../auth/models/user.model';
         const isDev = nodeEnv === 'development';
         const isProd = nodeEnv === 'production';
         const isHml = nodeEnv === 'homologation';
+        const useDatabaseUrl = !!databaseUrl?.trim();
 
         const needsSsl =
           isProd ||
@@ -27,7 +28,11 @@ import { User } from '../auth/models/user.model';
 
         return {
           dialect: 'postgres',
-          ...(dbHost && dbUser && dbName
+          ...(useDatabaseUrl
+            ? {
+                uri: databaseUrl,
+              }
+            : dbHost && dbUser && dbName
             ? {
                 host: dbHost,
                 port: dbPort,
