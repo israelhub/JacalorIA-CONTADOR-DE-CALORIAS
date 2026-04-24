@@ -13,7 +13,7 @@ class AppColors {
   static const Color action500 = Color(0xFF7CBF4D);
   static const Color action500Shadow = Color(0xFF1E513E);
 
-  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surface = Color(0xFFFFFFFD);
   static const Color textPrimary = Color(0xFF1D1B20);
   static const Color textSecondary = Color(0xFF717171);
   static const Color textMuted = Color(0xFF4D6559);
@@ -21,12 +21,16 @@ class AppColors {
 
   static const Color borderLight = Color(0xFFD6D6D6);
   static const Color borderAlt = Color(0xFFDDDDDD);
+  static const Color inputFieldBorder = Color(0xFFD9D9D9);
   static const Color borderBrand = Color.fromRGBO(30, 81, 62, 0.14);
   static const Color borderBrandAlt = Color.fromRGBO(30, 81, 62, 0.10);
   static const Color divider = Color(0xFFCAC4D0);
-  static const Color inputSurface = Color(0xFFEAEAEA);
+  static const Color inputSurface = Color(0xFFFFFFFD);
   static const Color surfaceAlt = Color(0xFFFAFAFA);
   static const Color textTertiary = Color(0xFFB0B0B0);
+  static const Color foodReviewFieldBorder = Color(0xFFEFE3D7);
+  static const Color foodReviewDeleteIcon = Color(0xFFE88D8D);
+  static const Color foodReviewFieldShadow = Color(0x40000000);
 
   static const Color homeMetaCardSurface = Color(0xFFF5FAF0);
   static const Color homeMetaCardBorder = Color(0xFFD4ECC4);
@@ -262,6 +266,14 @@ class AppShadows {
   static const List<BoxShadow> homeActionCircle = [
     BoxShadow(
       color: AppColors.action500Shadow,
+      offset: Offset(0, 4),
+      blurRadius: 0,
+    ),
+  ];
+
+  static const List<BoxShadow> foodReviewField = [
+    BoxShadow(
+      color: AppColors.foodReviewFieldShadow,
       offset: Offset(0, 4),
       blurRadius: 0,
     ),
