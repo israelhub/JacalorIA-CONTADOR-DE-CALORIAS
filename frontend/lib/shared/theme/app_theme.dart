@@ -21,7 +21,8 @@ class AppColors {
 
   static const Color borderLight = Color(0xFFD6D6D6);
   static const Color borderAlt = Color(0xFFDDDDDD);
-  static const Color inputFieldBorder = Color(0xFFD9D9D9);
+  static const Color inputBorder = Color(0xFFCED6D1);
+  static const Color confirmationCodeBorder = Color(0xFFD4DDD8);
   static const Color borderBrand = Color.fromRGBO(30, 81, 62, 0.14);
   static const Color borderBrandAlt = Color.fromRGBO(30, 81, 62, 0.10);
   static const Color divider = Color(0xFFCAC4D0);
@@ -32,16 +33,34 @@ class AppColors {
   static const Color foodReviewDeleteIcon = Color(0xFFE88D8D);
   static const Color foodReviewFieldShadow = Color(0x40000000);
 
-  static const Color homeMetaCardSurface = Color(0xFFF5FAF0);
+  static const Color homeCardSurface = surface;
+  static const Color homeMetaCardSurface = homeCardSurface;
   static const Color homeMetaCardBorder = Color(0xFFD4ECC4);
   static const Color homeMetaCardShadow = Color(0xFFB4CEA3);
   static const Color homeDashedBorder = Color(0xFFC4E4A8);
-  static const Color homeMealCardBorder = Color(0xFFEBEBEB);
-  static const Color homeMealCardShadow = Color(0xFFE8E8E8);
+  static const Color homeMealCardBorder = foodReviewFieldBorder;
+  static const Color homeMealCardShadow = foodReviewFieldShadow;
   static const Color homeProgressTrack = Color(0xFFE8F5E1);
+  static const Color homeAddMealSurface = surface;
   static const Color homeMacroCarbs = action500;
   static const Color homeMacroProtein = Color(0xFFF4C842);
   static const Color homeMacroFat = Color(0xFFE86060);
+
+  static const Color performanceCardBorder = Color(0xFFEFE3D7);
+  static const Color performanceLegendMeal = Color(0xFFF4DB98);
+  static const Color performanceLegendNoRecordBorder = Color(0xFFD9D9D9);
+  static const Color performanceTrack = Color(0xFFF4F4F0);
+  static const Color performanceMacroFat = Color(0xFFF2A8A8);
+
+  static const Color missionsChallenge = Color(0xFFA855F7);
+  static const Color missionsActionIconBg = Color.fromRGBO(124, 191, 77, 0.13);
+  static const Color missionsAccentIconBg = Color.fromRGBO(227, 182, 64, 0.13);
+  static const Color missionsChallengeIconBg = Color.fromRGBO(168, 85, 247, 0.13);
+  static const Color missionsGoldPill = Color(0xFFFDF6E3);
+  static const Color missionsXpPill = Color(0xFFEEF7E6);
+  static const Color missionsIntroIcon = Color.fromRGBO(255, 255, 255, 0.20);
+  static const Color missionsRewardGold = Color(0xFFB8902A);
+  static const Color missionsRewardXp = Color(0xFF5FA036);
 
   static const Color shadowButton = Color(0xFFC0C0C0);
   static const Color shadowButtonAlt = Color(0xFFDFDFDF);
@@ -203,6 +222,157 @@ class AppTextStyles {
     fontWeight: FontWeight.w700,
     height: 14 / 11,
   );
+
+  static TextStyle get performanceTitle => GoogleFonts.baloo2(
+    fontSize: 28,
+    fontWeight: FontWeight.w600,
+    height: 36 / 28,
+  );
+
+  static TextStyle get performanceSectionTitle => GoogleFonts.baloo2(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    height: 28 / 20,
+  );
+
+  static TextStyle get performanceMonthTitle => GoogleFonts.baloo2(
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    height: 26 / 18,
+  );
+
+  static TextStyle get performanceCardCaption => GoogleFonts.nunito(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    height: 18 / 12,
+  );
+
+  static TextStyle get performanceCardValue => GoogleFonts.baloo2(
+    fontSize: 22,
+    fontWeight: FontWeight.w700,
+    height: 27.5 / 22,
+  );
+
+  static TextStyle get performanceCardMicro => GoogleFonts.nunito(
+    fontSize: 11,
+    fontWeight: FontWeight.w400,
+    height: 16.5 / 11,
+  );
+
+  static TextStyle get performanceDayNumber => GoogleFonts.nunito(
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    height: 19.5 / 13,
+  );
+
+  static TextStyle get performanceHighlightTitle => GoogleFonts.baloo2(
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    height: 24 / 16,
+  );
+
+  static TextStyle get performanceBody => GoogleFonts.nunito(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    height: 17.875 / 13,
+  );
+
+  static TextStyle get performanceMacroLabel => GoogleFonts.nunito(
+    fontSize: 11,
+    fontWeight: FontWeight.w400,
+    height: 16.5 / 11,
+  );
+
+  static TextStyle get performanceStreakLabel => GoogleFonts.nunito(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    height: 19.5 / 13,
+  );
+
+  static TextStyle get performanceStreakValue => GoogleFonts.baloo2(
+    fontSize: 36,
+    fontWeight: FontWeight.w700,
+    height: 45 / 36,
+  );
+
+  static TextStyle get performanceStreakMicro => GoogleFonts.nunito(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    height: 18 / 12,
+  );
+
+  static TextStyle get missionsTitle => GoogleFonts.baloo2(
+    fontSize: 28,
+    fontWeight: FontWeight.w600,
+    height: 36 / 28,
+    letterSpacing: -0.28,
+  );
+
+  static TextStyle get missionsSectionTitle => GoogleFonts.baloo2(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    height: 28 / 20,
+    letterSpacing: -0.1,
+  );
+
+  static TextStyle get missionsSectionSubtitle => GoogleFonts.inter(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    height: 18 / 12,
+  );
+
+  static TextStyle get missionsCardTitle => GoogleFonts.baloo2(
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    height: 26 / 18,
+    letterSpacing: -0.045,
+  );
+
+  static TextStyle get missionsCardDescription => GoogleFonts.inter(
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    height: 16 / 11,
+    letterSpacing: 0.0825,
+  );
+
+  static TextStyle get missionsProgress => GoogleFonts.nunito(
+    fontSize: 11,
+    fontWeight: FontWeight.w400,
+    height: 16.5 / 11,
+  );
+
+  static TextStyle get missionsRewardGold => GoogleFonts.baloo2(
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
+    height: 19.5 / 13,
+    color: AppColors.missionsRewardGold,
+  );
+
+  static TextStyle get missionsRewardXp => GoogleFonts.baloo2(
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
+    height: 19.5 / 13,
+    color: AppColors.missionsRewardXp,
+  );
+
+  static TextStyle get missionsPillValue => GoogleFonts.baloo2(
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    height: 21 / 14,
+  );
+
+  static TextStyle get missionsIntroTitle => GoogleFonts.baloo2(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    height: 28 / 20,
+    letterSpacing: -0.1,
+  );
+
+  static TextStyle get missionsIntroDescription => GoogleFonts.inter(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    height: 18 / 12,
+  );
 }
 
 class AppRadius {
@@ -258,7 +428,7 @@ class AppShadows {
   static const List<BoxShadow> homeMealCard = [
     BoxShadow(
       color: AppColors.homeMealCardShadow,
-      offset: Offset(0, 2),
+      offset: Offset(0, 4),
       blurRadius: 0,
     ),
   ];
@@ -274,6 +444,30 @@ class AppShadows {
   static const List<BoxShadow> foodReviewField = [
     BoxShadow(
       color: AppColors.foodReviewFieldShadow,
+      offset: Offset(0, 4),
+      blurRadius: 0,
+    ),
+  ];
+
+  static const List<BoxShadow> performanceCard = [
+    BoxShadow(
+      color: Color.fromRGBO(0, 0, 0, 0.08),
+      offset: Offset(0, 4),
+      blurRadius: 0,
+    ),
+  ];
+
+  static const List<BoxShadow> performanceStreak = [
+    BoxShadow(
+      color: AppColors.action500Shadow,
+      offset: Offset(0, 4),
+      blurRadius: 0,
+    ),
+  ];
+
+  static const List<BoxShadow> missionsIntro = [
+    BoxShadow(
+      color: AppColors.action500Shadow,
       offset: Offset(0, 4),
       blurRadius: 0,
     ),
