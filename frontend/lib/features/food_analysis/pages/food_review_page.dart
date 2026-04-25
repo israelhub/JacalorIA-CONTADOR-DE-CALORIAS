@@ -2,11 +2,16 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../../home/services/meal_service.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_page_route.dart';
 import '../helpers/food_review_helpers.dart';
 import '../models/food_analysis_result.dart';
 import '../models/food_meal_record.dart';
 import '../services/food_analysis_service.dart';
+import 'food_analysis_processing_page.dart';
+import 'food_meal_details_page.dart';
+import '../widgets/food_analysis_page_header.dart';
 import '../widgets/food_review_add_item_button.dart';
 import '../widgets/food_review_ai_title.dart';
 import '../widgets/food_review_confirm_button.dart';
@@ -30,15 +35,20 @@ class FoodReviewPage extends StatefulWidget {
 }
 
 class _FoodReviewPageState extends State<FoodReviewPage> {
-  late final List<TextEditingController> _nameControllers;
-  late final List<TextEditingController> _quantityControllers;
-  late final List<TextEditingController> _unitControllers;
+  late final GlobalKey<AnimatedListState> _itemsListKey;
+  late final List<_ReviewItemEntry> _items;
   late FoodAnalysisResult _analysis;
   late String _confirmedSignature;
   late final String _mealTitle;
+  late final DateTime _recordedAt;
   late final String _previewTime;
+  final _mealService = const MealService();
   bool _isBusy = false;
   String? _error;
+  int _nextItemId = 0;
+
+  static const Duration _itemInsertDuration = Duration(milliseconds: 220);
+  static const Duration _itemRemoveDuration = Duration(milliseconds: 180);
 
   bool get _hasChanges => _currentSignature != _confirmedSignature;
 
@@ -47,14 +57,14 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   }
 
   List<FoodAnalysisItem> get _currentItems {
-    return List<FoodAnalysisItem>.generate(_nameControllers.length, (index) {
-      final grams = int.tryParse(_quantityControllers[index].text.trim()) ?? 0;
-      final unit = _unitControllers[index].text.trim().toLowerCase();
+    return List<FoodAnalysisItem>.generate(_items.length, (index) {
+      final item = _items[index];
+      final measurement = parseFoodMeasurement(item.measurementController.text);
 
       return FoodAnalysisItem(
-        name: _nameControllers[index].text.trim(),
-        grams: grams,
-        unit: unit.isEmpty ? 'g' : unit,
+        name: item.nameController.text.trim(),
+        grams: measurement.grams,
+        unit: measurement.unit,
         calories: 0,
         protein: 0,
         carbs: 0,
@@ -69,29 +79,16 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
     _analysis = widget.analysis;
     _confirmedSignature = widget.analysis.itemsSignature();
     _mealTitle = foodReviewMealTitleFromNow();
-    _previewTime = formatFoodReviewTime(DateTime.now());
-    _nameControllers = widget.analysis.items
-        .map((item) => TextEditingController(text: item.name))
-        .toList();
-    _quantityControllers = widget.analysis.items
-        .map((item) => TextEditingController(text: item.grams.toString()))
-        .toList();
-    _unitControllers = widget.analysis.items
-        .map((item) => TextEditingController(text: item.unit))
-        .toList();
+    _recordedAt = DateTime.now();
+    _previewTime = formatFoodReviewTime(_recordedAt);
+    _itemsListKey = GlobalKey<AnimatedListState>();
+    _items = widget.analysis.items.map(_createEntry).toList(growable: true);
   }
 
   @override
   void dispose() {
-    for (final controller in _nameControllers) {
-      controller.dispose();
-    }
-    for (final controller in _quantityControllers) {
-      controller.dispose();
-    }
-
-    for (final controller in _unitControllers) {
-      controller.dispose();
+    for (final item in _items) {
+      item.dispose();
     }
 
     super.dispose();
@@ -100,20 +97,8 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
-      appBar: AppBar(
-        backgroundColor: AppColors.surfaceAlt,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        titleSpacing: 0,
-        title: Text(
-          'Revisar análise',
-          style: AppTextStyles.homeSectionTitle.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+      backgroundColor: AppColors.surface,
+      appBar: const FoodAnalysisPageHeader(title: 'Revisar análise'),
       body: SafeArea(
         child: Column(
           children: [
@@ -140,25 +125,35 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
                   const SizedBox(height: AppSpacing.xl),
                   const FoodReviewAiTitle(),
                   const SizedBox(height: AppSpacing.xl),
-                  ...List<Widget>.generate(
-                    _nameControllers.length,
-                    (index) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-                      child: FoodReviewItemRow(
-                        index: index,
-                        nameController: _nameControllers[index],
-                        quantityController: _quantityControllers[index],
-                        unitController: _unitControllers[index],
-                        onRemove: _nameControllers.length > 1
-                            ? () => _removeItem(index)
-                            : null,
-                        onChanged: () {
-                          setState(() {
-                            _error = null;
-                          });
-                        },
-                      ),
-                    ),
+                  AnimatedList(
+                    key: _itemsListKey,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    initialItemCount: _items.length,
+                    itemBuilder: (context, index, animation) {
+                      final item = _items[index];
+
+                      return _AnimatedFoodReviewRow(
+                        animation: animation,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+                          child: FoodReviewItemRow(
+                            key: ValueKey(item.id),
+                            index: index,
+                            nameController: item.nameController,
+                            measurementController: item.measurementController,
+                            onRemove: _items.length > 1
+                                ? () => _removeItem(index)
+                                : null,
+                            onChanged: () {
+                              setState(() {
+                                _error = null;
+                              });
+                            },
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   FoodReviewAddItemButton(onTap: _isBusy ? null : _addItem),
                   if (_error != null) ...[
@@ -192,71 +187,203 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   }
 
   Future<void> _submit() async {
-    final items = _currentItems;
+    setState(() {
+      _isBusy = true;
+      _error = null;
+    });
 
-    if (_hasChanges) {
-      setState(() {
-        _isBusy = true;
-        _error = null;
-      });
-
-      try {
-        final recalculated = await widget.analysisService.recalculate(
-          items: items,
-        );
-
-        if (!mounted) {
-          return;
-        }
-
-        setState(() {
-          _analysis = recalculated;
-          _confirmedSignature = _currentSignature;
-          _isBusy = false;
-        });
-      } catch (error) {
-        if (!mounted) {
-          return;
-        }
-
-        setState(() {
-          _isBusy = false;
-          _error = error.toString().replaceFirst('Exception: ', '');
-        });
+    try {
+      await _saveAndOpenDetails();
+    } catch (error) {
+      if (!mounted) {
+        return;
       }
 
-      return;
-    }
-
-    final mealRecord = FoodMealRecord.fromAnalysis(
-      imageBytes: widget.imageBytes,
-      analysis: _analysis,
-      recordedAt: DateTime.now(),
-    );
-
-    if (mounted) {
-      Navigator.of(context).pop(mealRecord);
+      setState(() {
+        _isBusy = false;
+        _error = error.toString().replaceFirst('Exception: ', '');
+      });
     }
   }
 
   void _addItem() {
+    final index = _items.length;
+
     setState(() {
-      _nameControllers.add(TextEditingController(text: 'Novo alimento'));
-      _quantityControllers.add(TextEditingController(text: '100'));
-      _unitControllers.add(TextEditingController(text: 'g'));
+      _items.add(
+        _createEntry(
+          const FoodAnalysisItem(
+            name: 'Novo alimento',
+            grams: 100,
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+          ),
+        ),
+      );
       _error = null;
     });
+
+    _itemsListKey.currentState?.insertItem(
+      index,
+      duration: _itemInsertDuration,
+    );
   }
 
   void _removeItem(int index) {
+    final removedItem = _items.removeAt(index);
+
     setState(() {
-      _nameControllers[index].dispose();
-      _quantityControllers[index].dispose();
-      _unitControllers[index].dispose();
-      _nameControllers.removeAt(index);
-      _quantityControllers.removeAt(index);
-      _unitControllers.removeAt(index);
       _error = null;
     });
+
+    _itemsListKey.currentState?.removeItem(
+      index,
+      (context, animation) => _AnimatedFoodReviewRow(
+        animation: animation,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+          child: FoodReviewItemRow(
+            index: index,
+            nameController: removedItem.nameController,
+            measurementController: removedItem.measurementController,
+            onRemove: null,
+            onChanged: () {},
+          ),
+        ),
+      ),
+      duration: _itemRemoveDuration,
+    );
+
+    Future<void>.delayed(_itemRemoveDuration).then((_) {
+      removedItem.dispose();
+    });
+  }
+
+  _ReviewItemEntry _createEntry(FoodAnalysisItem item) {
+    return _ReviewItemEntry(
+      id: _nextItemId++,
+      nameController: TextEditingController(text: item.name),
+      measurementController: TextEditingController(
+        text: '${item.grams} ${item.unit}',
+      ),
+    );
+  }
+
+  Future<void> _saveAndOpenDetails(
+  ) async {
+    final currentItems = _currentItems;
+    final shouldReanalyze = _hasChanges;
+
+    final savedAnalysis = await context.pushSlidePage<FoodAnalysisResult>(
+      FoodAnalysisProcessingPage(
+        imageBytes: widget.imageBytes,
+        appBarTitle: 'Detalhes da refeição',
+        title: 'Carregando calorias...',
+        message: 'Estamos salvando e atualizando os dados nutricionais.',
+        statusIcon: Icons.local_fire_department,
+        showScanner: false,
+        operation: () async {
+          final analysisToSave = shouldReanalyze
+              ? await widget.analysisService.recalculate(items: currentItems)
+              : _analysis;
+
+          final mealRecordToSave = FoodMealRecord.fromAnalysis(
+            imageBytes: widget.imageBytes,
+            analysis: analysisToSave,
+            recordedAt: _recordedAt,
+          );
+
+          await _mealService.saveMeal(
+            record: mealRecordToSave,
+            analysis: analysisToSave,
+          );
+
+          return analysisToSave;
+        },
+      ),
+    );
+
+    if (savedAnalysis == null) {
+      if (mounted) {
+        setState(() {
+          _isBusy = false;
+          _error = 'Não foi possível carregar os detalhes da refeição.';
+        });
+      }
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _analysis = savedAnalysis;
+      _confirmedSignature = _currentSignature;
+      _isBusy = false;
+    });
+
+    final mealRecord = FoodMealRecord.fromAnalysis(
+      imageBytes: widget.imageBytes,
+      analysis: savedAnalysis,
+      recordedAt: _recordedAt,
+    );
+
+    final confirmedMeal = await context.pushSlidePage<FoodMealRecord>(
+      FoodMealDetailsPage(record: mealRecord),
+    );
+
+    if (mounted) {
+      Navigator.of(context).pop(confirmedMeal ?? mealRecord);
+    }
+  }
+}
+
+class _ReviewItemEntry {
+  _ReviewItemEntry({
+    required this.id,
+    required this.nameController,
+    required this.measurementController,
+  });
+
+  final int id;
+  final TextEditingController nameController;
+  final TextEditingController measurementController;
+
+  void dispose() {
+    nameController.dispose();
+    measurementController.dispose();
+  }
+}
+
+class _AnimatedFoodReviewRow extends StatelessWidget {
+  const _AnimatedFoodReviewRow({required this.animation, required this.child});
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final curvedAnimation = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+    );
+
+    return FadeTransition(
+      opacity: curvedAnimation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, -0.08),
+          end: Offset.zero,
+        ).animate(curvedAnimation),
+        child: SizeTransition(
+          sizeFactor: curvedAnimation,
+          axisAlignment: -1,
+          child: child,
+        ),
+      ),
+    );
   }
 }

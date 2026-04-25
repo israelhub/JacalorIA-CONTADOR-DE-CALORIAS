@@ -1,14 +1,19 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/app_page_route.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_input.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../helpers/food_review_helpers.dart';
 import '../models/food_analysis_result.dart';
 import '../models/food_meal_record.dart';
 import '../services/food_analysis_service.dart';
+import 'food_analysis_processing_page.dart';
 import 'food_review_page.dart';
+import '../widgets/food_analysis_page_header.dart';
+import '../widgets/food_review_confirm_button.dart';
 
 abstract class FoodImagePicker {
   Future<XFile?> pickImage(ImageSource source);
@@ -65,17 +70,8 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
-      appBar: AppBar(
-        backgroundColor: AppColors.surfaceAlt,
-        elevation: 0,
-        title: Text(
-          'Nova refeição',
-          style: AppTextStyles.homeSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
-          ),
-        ),
-      ),
+      backgroundColor: AppColors.surface,
+      appBar: const FoodAnalysisPageHeader(title: 'Nova refeição'),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(
@@ -241,22 +237,25 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       return;
     }
 
-    final manualAnalysis = await widget._analysisService.recalculate(
-      items: typedItems,
+    final manualAnalysis = await _pushAnalysisLoadingPage(
+      imageBytes: null,
+      title: 'Analisando...',
+      message: 'A inteligência artificial está analisando sua refeição...',
+      operation: () => widget._analysisService.recalculate(items: typedItems),
     );
 
-    if (!mounted) {
+    if (!mounted || manualAnalysis == null) {
       return;
     }
 
-    final updatedMeal = await Navigator.of(context).push<FoodMealRecord>(
-      MaterialPageRoute(
-        builder: (_) => FoodReviewPage(
-          imageBytes: null,
-          analysis: manualAnalysis,
-          analysisService: widget._analysisService,
-        ),
-      ),
+    final canProceed = await _handleAnalysisResult(manualAnalysis);
+    if (!canProceed || !mounted) {
+      return;
+    }
+
+    final updatedMeal = await _pushReviewPage(
+      imageBytes: null,
+      analysis: manualAnalysis,
     );
 
     if (updatedMeal != null && mounted) {
@@ -279,23 +278,29 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
     try {
       final picture = await _cameraController!.takePicture();
       final bytes = await picture.readAsBytes();
-      final analysis = await widget._analysisService.analyzeImage(
+
+      final analysis = await _pushAnalysisLoadingPage(
         imageBytes: bytes,
-        mimeType: _guessMimeType(picture.name),
+        title: 'Analisando...',
+        message: 'A inteligência artificial está analisando sua refeição...',
+        operation: () => widget._analysisService.analyzeImage(
+          imageBytes: bytes,
+          mimeType: _guessMimeType(picture.name),
+        ),
       );
 
-      if (!mounted) {
+      if (!mounted || analysis == null) {
         return;
       }
 
-      final updatedMeal = await Navigator.of(context).push<FoodMealRecord>(
-        MaterialPageRoute(
-          builder: (_) => FoodReviewPage(
-            imageBytes: bytes,
-            analysis: analysis,
-            analysisService: widget._analysisService,
-          ),
-        ),
+      final canProceed = await _handleAnalysisResult(analysis);
+      if (!canProceed || !mounted) {
+        return;
+      }
+
+      final updatedMeal = await _pushReviewPage(
+        imageBytes: bytes,
+        analysis: analysis,
       );
 
       if (!mounted) {
@@ -344,23 +349,32 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       }
 
       final bytes = await image.readAsBytes();
-      final analysis = await widget._analysisService.analyzeImage(
+
+      final analysis = await _pushAnalysisLoadingPage(
         imageBytes: bytes,
-        mimeType: _guessMimeType(image.name),
+        title: 'Analisando...',
+        message: 'A inteligência artificial está analisando sua refeição...',
+        operation: () => widget._analysisService.analyzeImage(
+          imageBytes: bytes,
+          mimeType: _guessMimeType(image.name),
+        ),
       );
 
-      if (!mounted) {
+      if (!mounted || analysis == null) {
         return;
       }
 
-      final updatedMeal = await Navigator.of(context).push<FoodMealRecord>(
-        MaterialPageRoute(
-          builder: (_) => FoodReviewPage(
-            imageBytes: bytes,
-            analysis: analysis,
-            analysisService: widget._analysisService,
-          ),
-        ),
+      final canProceed = await _handleAnalysisResult(analysis);
+      if (!canProceed || !mounted) {
+        setState(() {
+          _isBusy = false;
+        });
+        return;
+      }
+
+      final updatedMeal = await _pushReviewPage(
+        imageBytes: bytes,
+        analysis: analysis,
       );
 
       if (!mounted) {
@@ -398,7 +412,66 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
     return 'image/jpeg';
   }
+
+  Future<FoodAnalysisResult?> _pushAnalysisLoadingPage({
+    required Uint8List? imageBytes,
+    required String title,
+    required String message,
+    required Future<FoodAnalysisResult> Function() operation,
+  }) {
+    return context.pushSlidePage<FoodAnalysisResult>(
+      FoodAnalysisProcessingPage(
+        imageBytes: imageBytes,
+        title: title,
+        message: message,
+        operation: operation,
+      ),
+    );
+  }
+
+  Future<FoodMealRecord?> _pushReviewPage({
+    required Uint8List? imageBytes,
+    required FoodAnalysisResult analysis,
+  }) {
+    return context.pushSlidePage<FoodMealRecord>(
+      FoodReviewPage(
+        imageBytes: imageBytes,
+        analysis: analysis,
+        analysisService: widget._analysisService,
+      ),
+    );
+  }
+
+  bool _hasIdentifiedFood(FoodAnalysisResult analysis) {
+    return analysis.items.any(
+      (item) => item.name.trim().isNotEmpty && item.grams > 0,
+    );
+  }
+
+  Future<bool> _handleAnalysisResult(FoodAnalysisResult analysis) async {
+    if (_hasIdentifiedFood(analysis)) {
+      return true;
+    }
+
+    final action = await showModalBottomSheet<_NoFoodAction>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      builder: (_) => const _NoFoodIdentifiedSheet(),
+    );
+
+    if (!mounted) {
+      return false;
+    }
+
+    if (action == _NoFoodAction.goHome) {
+      Navigator.of(context).pop();
+    }
+
+    return false;
+  }
 }
+
+enum _NoFoodAction { goHome, retry }
 
 class _CaptureActions extends StatelessWidget {
   const _CaptureActions({
@@ -476,17 +549,12 @@ class _CaptureActionButton extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: AppColors.borderLight,
-            ),
+            border: Border.all(color: AppColors.borderLight),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                color: AppColors.brand900Variant,
-              ),
+              Icon(icon, color: AppColors.brand900Variant),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 label,
@@ -519,10 +587,7 @@ class _CameraShutterButton extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.action500,
-              width: 4,
-            ),
+            border: Border.all(color: AppColors.action500, width: 4),
             boxShadow: AppShadows.md,
           ),
           child: Center(
@@ -575,22 +640,16 @@ class _ManualFoodEntrySheet extends StatefulWidget {
 }
 
 class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
-  final List<TextEditingController> _nameControllers = <TextEditingController>[
-    TextEditingController(),
-  ];
+  static const String _entryInstructions =
+      'Escreva um alimento por linha no formato: Nome - quantidade em gramas.\n'
+      'Exemplo:\nArroz - 120 g\nFeijão - 90 g\nFrango grelhado - 150 g';
 
-  final List<TextEditingController> _gramsControllers = <TextEditingController>[
-    TextEditingController(),
-  ];
+  final TextEditingController _manualEntryController = TextEditingController();
+  String? _error;
 
   @override
   void dispose() {
-    for (final controller in _nameControllers) {
-      controller.dispose();
-    }
-    for (final controller in _gramsControllers) {
-      controller.dispose();
-    }
+    _manualEntryController.dispose();
     super.dispose();
   }
 
@@ -606,45 +665,79 @@ class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Digitar alimentos',
-              style: AppTextStyles.homeSectionTitle.copyWith(
-                color: AppColors.brand900Variant,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Digitar alimentos',
+                  style: AppTextStyles.homeSectionTitle.copyWith(
+                    color: AppColors.brand900Variant,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Tooltip(
+                  message: _entryInstructions,
+                  triggerMode: TooltipTriggerMode.tap,
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 18,
+                    color: AppColors.brand900Variant,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.md),
-            Flexible(
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: _nameControllers.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(height: AppSpacing.md),
-                itemBuilder: (context, index) {
-                  return _ManualEntryRow(
-                    nameController: _nameControllers[index],
-                    gramsController: _gramsControllers[index],
-                    onRemove: _nameControllers.length > 1
-                        ? () => _removeRow(index)
-                        : null,
-                  );
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.foodReviewFieldBorder),
+                boxShadow: AppShadows.foodReviewField,
+              ),
+              child: TextField(
+                key: const ValueKey('manual-food-entry-field'),
+                controller: _manualEntryController,
+                minLines: 6,
+                maxLines: 10,
+                textAlign: TextAlign.left,
+                textAlignVertical: TextAlignVertical.top,
+                textCapitalization: TextCapitalization.sentences,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: _entryInstructions,
+                  hintStyle: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(AppSpacing.md),
+                ),
+                onChanged: (_) {
+                  if (_error != null) {
+                    setState(() {
+                      _error = null;
+                    });
+                  }
                 },
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                TextButton.icon(
-                  onPressed: _addRow,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Adicionar linha'),
+            if (_error != null)
+              Text(
+                _error!,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textError,
                 ),
-                const Spacer(),
-                FilledButton(
-                  onPressed: _submit,
-                  child: const Text('Continuar'),
-                ),
-              ],
+                textAlign: TextAlign.left,
+              ),
+            if (_error != null) const SizedBox(height: AppSpacing.md),
+            FoodReviewConfirmButton(
+              isBusy: false,
+              onTap: _submit,
+              label: 'Continuar',
             ),
           ],
         ),
@@ -652,87 +745,87 @@ class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
     );
   }
 
-  void _addRow() {
-    setState(() {
-      _nameControllers.add(TextEditingController());
-      _gramsControllers.add(TextEditingController());
-    });
-  }
-
-  void _removeRow(int index) {
-    setState(() {
-      _nameControllers[index].dispose();
-      _gramsControllers[index].dispose();
-      _nameControllers.removeAt(index);
-      _gramsControllers.removeAt(index);
-    });
-  }
-
   void _submit() {
-    final items = <FoodAnalysisItem>[];
+    final parsedItems = parseManualFoodBlock(_manualEntryController.text);
 
-    for (var index = 0; index < _nameControllers.length; index++) {
-      final name = _nameControllers[index].text.trim();
-      final grams = int.tryParse(_gramsControllers[index].text.trim()) ?? 0;
-      if (name.isEmpty || grams <= 0) {
-        continue;
-      }
-
-      items.add(
-        FoodAnalysisItem(
-          name: name,
-          grams: grams,
-          unit: 'g',
-          calories: 0,
-          protein: 0,
-          carbs: 0,
-          fat: 0,
-        ),
-      );
+    if (parsedItems.isEmpty) {
+      setState(() {
+        _error =
+            'Use o formato Nome - quantidade em gramas. Exemplo: Arroz - 120 g';
+      });
+      return;
     }
+
+    final items = parsedItems
+        .map(
+          (item) => FoodAnalysisItem(
+            name: item.name,
+            grams: item.grams,
+            unit: item.unit,
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+          ),
+        )
+        .toList(growable: false);
 
     Navigator.of(context).pop(items);
   }
 }
 
-class _ManualEntryRow extends StatelessWidget {
-  const _ManualEntryRow({
-    required this.nameController,
-    required this.gramsController,
-    required this.onRemove,
-  });
-
-  final TextEditingController nameController;
-  final TextEditingController gramsController;
-  final VoidCallback? onRemove;
+class _NoFoodIdentifiedSheet extends StatelessWidget {
+  const _NoFoodIdentifiedSheet();
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: AppInputField(
-            label: '',
-            hint: 'Alimento',
-            controller: nameController,
-          ),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.xl,
+          AppSpacing.xl,
+          AppSpacing.xl,
         ),
-        const SizedBox(width: AppSpacing.sm),
-        SizedBox(
-          width: 96,
-          child: AppInputField(
-            label: '',
-            hint: 'g',
-            controller: gramsController,
-            keyboardType: TextInputType.number,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Icon(
+              Icons.no_meals_outlined,
+              size: 38,
+              color: AppColors.brand900Variant,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Não identificamos alimentos na análise.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.homeSectionTitle.copyWith(
+                color: AppColors.brand900Variant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Você pode voltar para a home ou tentar novamente na nova refeição.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              label: 'Voltar para home',
+              variant: AppButtonVariant.outline,
+              onPressed: () => Navigator.of(context).pop(_NoFoodAction.goHome),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppButton(
+              label: 'Tentar novamente',
+              onPressed: () => Navigator.of(context).pop(_NoFoodAction.retry),
+            ),
+          ],
         ),
-        if (onRemove != null) ...[
-          const SizedBox(width: AppSpacing.sm),
-          IconButton(onPressed: onRemove, icon: const Icon(Icons.close)),
-        ],
-      ],
+      ),
     );
   }
 }
