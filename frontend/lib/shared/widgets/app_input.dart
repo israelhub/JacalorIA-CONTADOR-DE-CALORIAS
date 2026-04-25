@@ -7,24 +7,50 @@ class AppInput extends StatelessWidget {
   const AppInput({
     super.key,
     required this.controller,
+    this.hintText,
     this.onChanged,
     this.keyboardType,
     this.textAlign = TextAlign.start,
     this.inputFormatters,
     this.textCapitalization = TextCapitalization.sentences,
-    this.contentPadding = const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+    this.contentPadding,
+    this.isCollapsed = false,
+    this.centerContent = false,
   });
 
   final TextEditingController controller;
+  final String? hintText;
   final ValueChanged<String>? onChanged;
   final TextInputType? keyboardType;
   final TextAlign textAlign;
   final List<TextInputFormatter>? inputFormatters;
   final TextCapitalization textCapitalization;
-  final EdgeInsetsGeometry contentPadding;
+  final EdgeInsetsGeometry? contentPadding;
+  final bool isCollapsed;
+  final bool centerContent;
 
   @override
   Widget build(BuildContext context) {
+    final field = TextField(
+      controller: controller,
+      onChanged: onChanged,
+      keyboardType: keyboardType,
+      textAlign: textAlign,
+      textAlignVertical: TextAlignVertical.center,
+      inputFormatters: inputFormatters,
+      textCapitalization: textCapitalization,
+      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: AppTextStyles.bodyLarge.copyWith(
+          color: AppColors.textSecondary,
+        ),
+        border: InputBorder.none,
+        contentPadding: contentPadding,
+        isCollapsed: isCollapsed,
+      ),
+    );
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -32,26 +58,7 @@ class AppInput extends StatelessWidget {
         border: Border.all(color: AppColors.foodReviewFieldBorder),
         boxShadow: AppShadows.foodReviewField,
       ),
-      clipBehavior: Clip.antiAlias,
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        keyboardType: keyboardType,
-        textAlign: textAlign,
-        textAlignVertical: TextAlignVertical.center,
-        inputFormatters: inputFormatters,
-        textCapitalization: textCapitalization,
-        expands: true,
-        maxLines: null,
-        minLines: null,
-        style: AppTextStyles.bodyLarge.copyWith(
-          color: AppColors.textPrimary,
-        ),
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          contentPadding: contentPadding,
-        ),
-      ),
+      child: centerContent ? Center(child: field) : field,
     );
   }
 }
@@ -92,19 +99,23 @@ class AppInputField extends StatelessWidget {
       return _buildWithValidation();
     }
 
+    final showLabel = label.trim().isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel(),
-        const SizedBox(height: AppSpacing.sm),
-        _buildContainer(
-          child: _buildTextField(onChanged: onChanged),
-        ),
+        if (showLabel) ...[
+          _buildLabel(),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        _buildContainer(child: _buildTextField(onChanged: onChanged)),
       ],
     );
   }
 
   Widget _buildWithValidation() {
+    final showLabel = label.trim().isNotEmpty;
+
     return FormField<String>(
       initialValue: controller?.text ?? '',
       validator: validator,
@@ -112,11 +123,11 @@ class AppInputField extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildLabel(),
-            const SizedBox(height: AppSpacing.sm),
-            _buildContainer(
-              child: _buildTextField(onChanged: state.didChange),
-            ),
+            if (showLabel) ...[
+              _buildLabel(),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            _buildContainer(child: _buildTextField(onChanged: state.didChange)),
             if (state.hasError)
               Padding(
                 padding: const EdgeInsets.only(
@@ -171,10 +182,9 @@ class AppInputField extends StatelessWidget {
       onTap: onTap,
       onChanged: onChanged,
       keyboardType: keyboardType,
+      textAlignVertical: TextAlignVertical.center,
       inputFormatters: inputFormatters,
-      style: AppTextStyles.bodyLarge.copyWith(
-        color: AppColors.textPrimary,
-      ),
+      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: AppTextStyles.bodyLarge.copyWith(
@@ -189,31 +199,15 @@ class AppInputField extends StatelessWidget {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(
-            color: AppColors.surface,
-            width: 1,
-          ),
+          borderSide: const BorderSide(color: AppColors.inputBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(
-            color: AppColors.surface,
-            width: 1,
-          ),
+          borderSide: const BorderSide(color: AppColors.inputBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(
-            color: AppColors.surface,
-            width: 1,
-          ),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(
-            color: AppColors.surface,
-            width: 1,
-          ),
+          borderSide: const BorderSide(color: AppColors.inputBorder),
         ),
       ),
     );

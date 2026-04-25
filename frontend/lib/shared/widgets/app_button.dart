@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme/app_theme.dart';
 
-enum AppButtonVariant { primary, outline, google }
+enum AppButtonVariant { primary, outline, google, danger }
 
 class AppButton extends StatelessWidget {
   const AppButton({
@@ -12,12 +12,14 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.variant = AppButtonVariant.primary,
     this.trailingIcon,
+    this.leadingIcon,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
   final IconData? trailingIcon;
+  final IconData? leadingIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +28,23 @@ class AppButton extends StatelessWidget {
         label: label,
         onPressed: onPressed,
         trailingIcon: trailingIcon,
+        leadingIcon: leadingIcon,
       ),
       AppButtonVariant.outline => _OutlineButton(
         label: label,
         onPressed: onPressed,
         trailingIcon: trailingIcon,
+        leadingIcon: leadingIcon,
       ),
       AppButtonVariant.google => _GoogleButton(
         label: label,
         onPressed: onPressed,
+      ),
+      AppButtonVariant.danger => _DangerButton(
+        label: label,
+        onPressed: onPressed,
+        leadingIcon: leadingIcon,
+        trailingIcon: trailingIcon,
       ),
     };
   }
@@ -45,15 +55,17 @@ class _PrimaryButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.trailingIcon,
+    this.leadingIcon,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? trailingIcon;
+  final IconData? leadingIcon;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return _PressableButtonSurface(
       onTap: onPressed,
       child: Container(
         width: double.infinity,
@@ -70,7 +82,7 @@ class _PrimaryButton extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         alignment: Alignment.center,
-        child: trailingIcon == null
+        child: (leadingIcon == null && trailingIcon == null)
             ? Text(
                 label,
                 style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
@@ -78,14 +90,20 @@ class _PrimaryButton extends StatelessWidget {
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  if (leadingIcon != null) ...[
+                    Icon(leadingIcon, color: Colors.white, size: 20),
+                    const SizedBox(width: AppSpacing.xs),
+                  ],
                   Text(
                     label,
                     style: AppTextStyles.buttonLarge.copyWith(
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Icon(trailingIcon, color: Colors.white, size: 20),
+                  if (trailingIcon != null) ...[
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(trailingIcon, color: Colors.white, size: 20),
+                  ],
                 ],
               ),
       ),
@@ -98,15 +116,17 @@ class _OutlineButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.trailingIcon,
+    this.leadingIcon,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? trailingIcon;
+  final IconData? leadingIcon;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return _PressableButtonSurface(
       onTap: onPressed,
       child: Container(
         width: double.infinity,
@@ -157,7 +177,7 @@ class _GoogleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return _PressableButtonSurface(
       onTap: onPressed,
       child: Container(
         width: double.infinity,
@@ -192,6 +212,115 @@ class _GoogleButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DangerButton extends StatelessWidget {
+  const _DangerButton({
+    required this.label,
+    required this.onPressed,
+    this.leadingIcon,
+    this.trailingIcon,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? leadingIcon;
+  final IconData? trailingIcon;
+
+  static const Color _dangerColor = Color(0xFFD32F2F);
+  static const Color _dangerShadow = Color(0xFFB71C1C);
+
+  @override
+  Widget build(BuildContext context) {
+    return _PressableButtonSurface(
+      onTap: onPressed,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: _dangerColor,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          boxShadow: const [
+            BoxShadow(
+              color: _dangerShadow,
+              offset: Offset(0, 4),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
+            ),
+            if (leadingIcon != null) ...[
+              const SizedBox(width: AppSpacing.xs),
+              Icon(leadingIcon, color: Colors.white, size: 20),
+            ],
+            if (trailingIcon != null) ...[
+              const SizedBox(width: AppSpacing.xs),
+              Icon(trailingIcon, color: Colors.white, size: 20),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PressableButtonSurface extends StatefulWidget {
+  const _PressableButtonSurface({required this.child, required this.onTap});
+
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  State<_PressableButtonSurface> createState() => _PressableButtonSurfaceState();
+}
+
+class _PressableButtonSurfaceState extends State<_PressableButtonSurface> {
+  bool _isPressed = false;
+
+  void _setPressed(bool value) {
+    if (_isPressed == value) {
+      return;
+    }
+
+    setState(() {
+      _isPressed = value;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final content = AnimatedSlide(
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOutCubic,
+      offset: Offset(0, _isPressed ? 0.012 : 0),
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutBack,
+        scale: _isPressed ? 0.965 : 1,
+        child: widget.child,
+      ),
+    );
+
+    if (widget.onTap == null) {
+      return content;
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => _setPressed(true),
+      onTapCancel: () => _setPressed(false),
+      onTapUp: (_) => _setPressed(false),
+      onTap: widget.onTap,
+      child: content,
     );
   }
 }
