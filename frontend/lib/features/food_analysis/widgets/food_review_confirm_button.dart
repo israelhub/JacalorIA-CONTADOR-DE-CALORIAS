@@ -2,22 +2,25 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import 'food_review_item_row.dart';
 
 class FoodReviewConfirmButton extends StatelessWidget {
   const FoodReviewConfirmButton({
     super.key,
     required this.isBusy,
     required this.onTap,
+    this.label = 'Confirmar',
   });
 
   final bool isBusy;
   final VoidCallback? onTap;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     if (isBusy) {
       return Container(
-        height: 40,
+        height: foodReviewControlHeight,
         decoration: BoxDecoration(
           color: AppColors.action500,
           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -44,9 +47,9 @@ class FoodReviewConfirmButton extends StatelessWidget {
 
     return SizedBox(
       key: const ValueKey('food-review-confirm-button'),
-      height: 40,
+      height: foodReviewControlHeight,
       child: AppButton(
-        label: 'Confirmar',
+        label: label,
         onPressed: onTap,
         trailingIcon: Icons.arrow_forward,
       ),
