@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/app_page_route.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import 'login_page.dart';
@@ -28,14 +29,10 @@ class EnterPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 26.5),
               child: EnterForm(
                 onCreateAccountPressed: () {
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const SignUpPage()));
+                  context.pushSlidePage(const SignUpPage());
                 },
                 onLoginPressed: () {
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
+                  context.pushSlidePage(const LoginPage());
                 },
               ),
             ),

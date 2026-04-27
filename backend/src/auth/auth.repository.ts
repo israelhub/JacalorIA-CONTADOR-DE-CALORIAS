@@ -2,17 +2,27 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, WhereOptions } from 'sequelize';
 import { User } from './models/user.model';
+import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
 
 @Injectable()
 export class AuthRepository {
   constructor(
     @InjectModel(User)
     private readonly userModel: typeof User,
+    @InjectModel(UserWeightEntry)
+    private readonly userWeightEntryModel: typeof UserWeightEntry,
   ) {}
 
   findByEmail(email: string) {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
+      attributes: [
+        'id',
+        'name',
+        'email',
+        'passwordHash',
+        'emailVerified',
+      ],
     });
   }
 
@@ -36,7 +46,10 @@ export class AuthRepository {
       verificationCodeExpiresAt: { [Op.gt]: new Date() },
     };
 
-    return this.userModel.findOne({ where });
+    return this.userModel.findOne({
+      where,
+      attributes: ['id', 'email'],
+    });
   }
 
   updateVerification(user: User, data: {
@@ -49,9 +62,63 @@ export class AuthRepository {
 
   findProfileById(userId: string) {
     return this.userModel.findByPk(userId, {
-      attributes: {
-        exclude: ['passwordHash', 'verificationCode', 'verificationCodeExpiresAt'],
-      },
+      attributes: [
+        'id',
+        'name',
+        'email',
+        'dailyCalorieGoal',
+        'dailyProteinGoal',
+        'dailyCarbsGoal',
+        'dailyFatGoal',
+        'birthDate',
+        'weight',
+        'height',
+        'weightUnit',
+        'heightUnit',
+        'sex',
+        'objective',
+        'activityLevel',
+        'avatarUrl',
+        'createdAt',
+        'updatedAt',
+      ],
     });
+  }
+
+  async updateProfile(userId: string, data: any) {
+    const user = await this.userModel.findByPk(userId);
+    if (!user) return null;
+
+    const previousWeight = this.toNumber(user.weight);
+    const nextWeight = this.toNumber(data.weight);
+
+    await user.update(data);
+
+    if (
+      Number.isFinite(nextWeight) &&
+      nextWeight > 0 &&
+      (previousWeight === null || previousWeight !== nextWeight)
+    ) {
+      await this.userWeightEntryModel.create({
+        userId,
+        weight: nextWeight,
+        recordedAt: new Date(),
+      });
+    }
+
+    return this.findProfileById(userId);
+  }
+
+  private toNumber(value: unknown): number | null {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+
+    if (typeof value === 'string') {
+      const parsed = Number(value.replace(',', '.'));
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    return null;
   }
 }

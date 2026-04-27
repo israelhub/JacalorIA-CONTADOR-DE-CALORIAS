@@ -1,15 +1,26 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/app_page_route.dart';
 
-import 'package:jacaloria/features/home/pages/home_page.dart';
+import 'package:jacaloria/features/home/pages/home_shell_page.dart';
 import 'package:jacaloria/features/onboarding/widgets/onboarding_select_option_button.dart';
 import 'package:jacaloria/features/onboarding/widgets/onboarding_step_header.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
 
+import 'package:jacaloria/features/auth/service/auth_service.dart';
+import 'package:jacaloria/shared/helpers/nutrition_goal_calculator.dart';
+
 enum ActivityLevelType { sedentary, lightly, moderate, very, extreme }
 
 class ActivityLevelPage extends StatefulWidget {
-  const ActivityLevelPage({super.key});
+  const ActivityLevelPage({
+    super.key,
+    this.onboardingData = const {},
+    this.authService,
+  });
+
+  final Map<String, dynamic> onboardingData;
+  final AuthService? authService;
 
   @override
   State<ActivityLevelPage> createState() => _ActivityLevelPageState();
@@ -17,6 +28,70 @@ class ActivityLevelPage extends StatefulWidget {
 
 class _ActivityLevelPageState extends State<ActivityLevelPage> {
   ActivityLevelType _selectedActivityLevel = ActivityLevelType.sedentary;
+  bool _isLoading = false;
+  late final AuthService _authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = widget.authService ?? AuthService();
+  }
+
+  Future<void> _submitAndFinish() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final data = Map<String, dynamic>.from(widget.onboardingData);
+      data['activityLevel'] = _selectedActivityLevel.name;
+
+      final weight = (data['weight'] as num?)?.toDouble() ?? 70.0;
+      final height = (data['height'] as num?)?.toDouble() ?? 170.0;
+      final weightUnit = (data['weightUnit'] as String?) ?? 'kg';
+      final heightUnit = (data['heightUnit'] as String?) ?? 'cm';
+      final sex = data['sex'] as String? ?? 'Masculino';
+      final objective = data['objective'] as String? ?? 'maintainWeight';
+      final birthDateStr = data['birthDate'] as String?;
+      final age = calculateAgeFromBirthDate(birthDateStr);
+      final goals = calculateNutritionGoals(
+        NutritionGoalInput(
+          weight: weight,
+          height: height,
+          age: age,
+          sex: sex,
+          objective: objective,
+          activityLevel: _selectedActivityLevel.name,
+          weightUnit: weightUnit,
+          heightUnit: heightUnit,
+        ),
+      );
+
+      data['dailyCalorieGoal'] = goals.dailyCalorieGoal;
+      data['dailyProteinGoal'] = goals.dailyProteinGoal;
+      data['dailyCarbsGoal'] = goals.dailyCarbsGoal;
+      data['dailyFatGoal'] = goals.dailyFatGoal;
+
+      // Update backend
+      await _authService.updateProfile(data);
+
+      if (mounted) {
+        context.pushAndRemoveUntilSlidePage(
+          const HomeShellPage(),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao salvar dados: $e')));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,12 +202,8 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
                 width: double.infinity,
                 height: AppSpacing.huge + AppSpacing.xs,
                 child: AppButton(
-                  label: 'Finalizar',
-                  onPressed: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const HomePage()),
-                    );
-                  },
+                  label: _isLoading ? 'Salvando...' : 'Finalizar',
+                  onPressed: _isLoading ? null : _submitAndFinish,
                   variant: AppButtonVariant.primary,
                 ),
               ),

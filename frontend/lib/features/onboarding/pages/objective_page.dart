@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/app_page_route.dart';
 
 import 'activity_level_page.dart';
 import '../widgets/onboarding_select_option_button.dart';
@@ -9,7 +10,9 @@ import '../../../shared/widgets/app_button.dart';
 enum ObjectiveType { loseWeight, gainMass, maintainWeight }
 
 class ObjectivePage extends StatefulWidget {
-  const ObjectivePage({super.key});
+  const ObjectivePage({super.key, this.onboardingData = const {}});
+
+  final Map<String, dynamic> onboardingData;
 
   @override
   State<ObjectivePage> createState() => _ObjectivePageState();
@@ -94,10 +97,13 @@ class _ObjectivePageState extends State<ObjectivePage> {
                 child: AppButton(
                   label: 'Avançar',
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ActivityLevelPage(),
-                      ),
+                    final data = Map<String, dynamic>.from(
+                      widget.onboardingData,
+                    );
+                    data['objective'] = _selectedObjective.name;
+
+                    context.pushSlidePage(
+                      ActivityLevelPage(onboardingData: data),
                     );
                   },
                   variant: AppButtonVariant.primary,
