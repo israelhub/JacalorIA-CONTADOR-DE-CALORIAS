@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/app_page_route.dart';
 
 import 'objective_page.dart';
 import '../widgets/onboarding_input_field.dart';
@@ -6,6 +7,8 @@ import '../widgets/onboarding_step_header.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
+import '../../../shared/widgets/measurement_input_field.dart';
+import '../../../shared/widgets/app_select_input_field.dart';
 
 class PersonalDataPage extends StatefulWidget {
   const PersonalDataPage({super.key});
@@ -18,9 +21,10 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   final TextEditingController _birthDateController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
-  final GlobalKey _sexFieldKey = GlobalKey();
 
   String? _selectedSex;
+  String _selectedWeightUnit = 'kg';
+  String _selectedHeightUnit = 'cm';
 
   static const List<String> _sexOptions = [
     'Masculino',
@@ -110,85 +114,6 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
     _birthDateController.text = '$day/$month/$year';
   }
 
-  Future<void> _openSexMenu() async {
-    final fieldContext = _sexFieldKey.currentContext;
-    if (fieldContext == null) {
-      return;
-    }
-
-    final fieldBox = fieldContext.findRenderObject() as RenderBox?;
-    final overlayBox =
-        Overlay.of(context).context.findRenderObject() as RenderBox?;
-
-    if (fieldBox == null || overlayBox == null) {
-      return;
-    }
-
-    final fieldOffset = fieldBox.localToGlobal(
-      Offset.zero,
-      ancestor: overlayBox,
-    );
-    final fieldRect = Rect.fromLTWH(
-      fieldOffset.dx,
-      fieldOffset.dy,
-      fieldBox.size.width,
-      fieldBox.size.height,
-    );
-    final menuItemWidth = fieldRect.width;
-
-    final selectedValue = await showMenu<String>(
-      context: context,
-      color: AppColors.surface,
-      elevation: 2,
-      constraints: BoxConstraints.tightFor(width: menuItemWidth),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      position: RelativeRect.fromLTRB(
-        fieldRect.left,
-        fieldRect.bottom + AppSpacing.xs,
-        overlayBox.size.width - fieldRect.right,
-        overlayBox.size.height - fieldRect.bottom,
-      ),
-      items: _sexOptions
-          .map(
-            (option) => PopupMenuItem<String>(
-              value: option,
-              height: AppSpacing.huge + AppSpacing.lg,
-              padding: EdgeInsets.zero,
-              child: SizedBox(
-                width: menuItemWidth,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xxl,
-                  ),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      option,
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          )
-          .toList(),
-    );
-
-    if (selectedValue == null) {
-      return;
-    }
-
-    setState(() {
-      _selectedSex = selectedValue;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final pageTheme = Theme.of(context).copyWith(
@@ -240,19 +165,39 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
-                AppInputField(
+                MeasurementInputField(
                   label: 'Peso',
                   hint: 'Digite seu peso',
                   controller: _weightController,
+                  unitSelectorKey: const ValueKey(
+                    'personal-weight-unit-selector',
+                  ),
+                  selectedUnit: _selectedWeightUnit,
+                  unitOptions: const ['kg', 'lb', 'g'],
+                  onUnitSelected: (unit) {
+                    setState(() {
+                      _selectedWeightUnit = unit;
+                    });
+                  },
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
-                AppInputField(
+                MeasurementInputField(
                   label: 'Altura',
                   hint: 'Digite sua altura',
                   controller: _heightController,
+                  unitSelectorKey: const ValueKey(
+                    'personal-height-unit-selector',
+                  ),
+                  selectedUnit: _selectedHeightUnit,
+                  unitOptions: const ['cm', 'm', 'ft', 'in'],
+                  onUnitSelected: (unit) {
+                    setState(() {
+                      _selectedHeightUnit = unit;
+                    });
+                  },
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -260,44 +205,17 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                 const SizedBox(height: AppSpacing.xxl),
                 OnboardingInputField(
                   label: 'Sexo',
-                  child: KeyedSubtree(
-                    key: _sexFieldKey,
-                    child: InkWell(
-                      key: const ValueKey('personal-sex-field'),
-                      onTap: _openSexMenu,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: InputDecorator(
-                        decoration: onboardingInputDecoration(
-                          hint: 'Selecione seu sexo',
-                          suffixIcon: const Icon(
-                            Icons.keyboard_arrow_down,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _selectedSex ?? 'Selecione seu sexo',
-                                style:
-                                    (_selectedSex == null
-                                            ? AppTextStyles.bodyLarge.copyWith(
-                                                color: AppColors.textSecondary,
-                                              )
-                                            : AppTextStyles.bodyLarge.copyWith(
-                                                color: AppColors.textPrimary,
-                                              ))
-                                        .copyWith(
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                maxLines: 1,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.xxl),
-                          ],
-                        ),
-                      ),
-                    ),
+                  child: AppSelectInputField(
+                    fieldKey: const ValueKey('personal-sex-field'),
+                    label: '',
+                    hint: 'Selecione seu sexo',
+                    selectedValue: _selectedSex ?? '',
+                    options: _sexOptions,
+                    onSelected: (value) {
+                      setState(() {
+                        _selectedSex = value;
+                      });
+                    },
                   ),
                 ),
                 const SizedBox(height: AppSpacing.huge + AppSpacing.xxl),
@@ -308,10 +226,36 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                   child: AppButton(
                     label: 'Avançar',
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const ObjectivePage(),
-                        ),
+                      final birthDate = _birthDateController.text;
+                      final weight =
+                          double.tryParse(_weightController.text) ?? 0.0;
+                      final height =
+                          double.tryParse(_heightController.text) ?? 0.0;
+                      final sex = _selectedSex;
+
+                      String? formattedBirthDate;
+                      if (birthDate.isNotEmpty) {
+                        try {
+                          final parts = birthDate.split('/');
+                          if (parts.length == 3) {
+                            formattedBirthDate =
+                                '${parts[2]}-${parts[1]}-${parts[0]}';
+                          }
+                        } catch (_) {}
+                      }
+
+                      final data = <String, dynamic>{
+                        if (formattedBirthDate != null)
+                          'birthDate': formattedBirthDate,
+                        if (weight > 0) 'weight': weight,
+                        if (height > 0) 'height': height,
+                        'weightUnit': _selectedWeightUnit,
+                        'heightUnit': _selectedHeightUnit,
+                        if (sex != null) 'sex': sex,
+                      };
+
+                      context.pushSlidePage(
+                        ObjectivePage(onboardingData: data),
                       );
                     },
                     variant: AppButtonVariant.primary,

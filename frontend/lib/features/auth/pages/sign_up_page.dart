@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/app_page_route.dart';
 
 import '../controllers/auth_controller.dart';
+import '../../home/pages/home_shell_page.dart';
+import '../service/auth_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import 'email_confirmation_page.dart';
 import 'login_page.dart';
@@ -15,6 +18,21 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final AuthController _authController = AuthController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || AuthService.globalToken == null) {
+        return;
+      }
+
+      context.pushAndRemoveUntilSlidePage(
+        const HomeShellPage(),
+        (route) => false,
+      );
+    });
+  }
 
   @override
   void dispose() {
@@ -38,11 +56,9 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     if (created) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => EmailConfirmationPage(
-            email: email,
-          ),
+      context.pushSlidePage(
+        EmailConfirmationPage(
+          email: email,
         ),
       );
     } else if (_authController.error != null) {
@@ -66,7 +82,7 @@ class _SignUpPageState extends State<SignUpPage> {
             children: [
               const SizedBox(height: AppSpacing.xxl),
               Image(
-                image: const AssetImage('assets/images/logo.png'),
+                image: const AssetImage('assets/images/logo.webp'),
                 height: AppSpacing.huge * 4 + AppSpacing.xl,
                 fit: BoxFit.contain,
               ),
@@ -78,9 +94,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     onCreateAccountPressed: _handleCreateAccount,
                     isLoading: _authController.isLoading,
                     onLoginPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const LoginPage()),
-                      );
+                      context.pushSlidePage(const LoginPage());
                     },
                   );
                 },

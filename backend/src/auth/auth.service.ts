@@ -11,6 +11,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendCodeDto } from './dto/resend-code.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { MailService } from '../mail/mail.service';
 import { AuthRepository } from './auth.repository';
 
@@ -159,12 +160,47 @@ export class AuthService {
 
   async getProfile(userId: string) {
     const user = await this.authRepository.findProfileById(userId);
-
     if (!user) {
       throw new UnauthorizedException('Usuário não encontrado');
     }
+    return user;
+  }
 
-    return { user };
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.authRepository.updateProfile(userId, dto);
+    if (!user) {
+      throw new UnauthorizedException('Usuário não encontrado');
+    }
+    
+    // Refresh fallback dev profile data in-memory logic could be done here if needed.
+    return user;
+  }
+
+  async getFallbackProfile() {
+    let devUser = await this.authRepository.findByEmail('dev@jacaloria.com');
+    
+    if (!devUser) {
+      devUser = await this.authRepository.createUser({
+        name: 'Desenvolvedor',
+        email: 'dev@jacaloria.com',
+        passwordHash: 'dummy-hash',
+        verificationCode: '000000',
+        verificationCodeExpiresAt: new Date(),
+      });
+      await this.authRepository.updateVerification(devUser, {
+        emailVerified: true,
+        verificationCode: null,
+        verificationCodeExpiresAt: null,
+      });
+      await this.authRepository.updateProfile(devUser.id, {
+        dailyCalorieGoal: 2000,
+        dailyProteinGoal: 120,
+        dailyCarbsGoal: 200,
+        dailyFatGoal: 60,
+      });
+    }
+
+    return this.authRepository.findProfileById(devUser.id);
   }
 
   private generateToken(user: User): string {

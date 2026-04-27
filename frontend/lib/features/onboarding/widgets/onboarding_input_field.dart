@@ -11,7 +11,7 @@ InputDecoration onboardingInputDecoration({
     hintStyle: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
     isDense: true,
     filled: true,
-    fillColor: AppColors.surface,
+    fillColor: AppColors.surfaceAlt,
     suffixIcon: suffixIcon,
     contentPadding: const EdgeInsets.symmetric(
       horizontal: AppSpacing.lg,
@@ -19,15 +19,15 @@ InputDecoration onboardingInputDecoration({
     ),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      borderSide: const BorderSide(color: AppColors.borderAlt),
+      borderSide: const BorderSide(color: AppColors.inputBorder),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      borderSide: const BorderSide(color: AppColors.borderAlt),
+      borderSide: const BorderSide(color: AppColors.inputBorder),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      borderSide: const BorderSide(color: AppColors.borderAlt),
+      borderSide: const BorderSide(color: AppColors.inputBorder),
     ),
   );
 }
