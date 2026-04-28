@@ -6,26 +6,12 @@ import 'package:http/http.dart' as http;
 
 import '../models/food_analysis_result.dart';
 
+import '../../../core/config/api_config.dart';
+
 class FoodAnalysisService {
   const FoodAnalysisService();
 
-  static const String _configuredBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-  );
-
-  static String get _baseUrl {
-    if (_configuredBaseUrl.isNotEmpty) {
-      return _configuredBaseUrl;
-    }
-
-    if (kIsWeb) {
-      return 'http://localhost:3000/api';
-    }
-
-    return defaultTargetPlatform == TargetPlatform.android
-        ? 'http://127.0.0.1:3000/api'
-        : 'http://localhost:3000/api';
-  }
+  static String get _baseUrl => ApiConfig.baseUrl;
 
   Future<FoodAnalysisResult> analyzeImage({
     required Uint8List imageBytes,

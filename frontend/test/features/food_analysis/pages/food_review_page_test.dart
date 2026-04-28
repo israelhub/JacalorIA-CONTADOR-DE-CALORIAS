@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/food_analysis/models/food_analysis_result.dart';
+import 'package:jacaloria/features/food_analysis/pages/food_meal_details_page.dart';
 import 'package:jacaloria/features/food_analysis/pages/food_review_page.dart';
 import 'package:jacaloria/features/food_analysis/services/food_analysis_service.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
 
 class _FakeFoodAnalysisService extends FoodAnalysisService {
-  const _FakeFoodAnalysisService();
+  _FakeFoodAnalysisService();
+
+  List<FoodAnalysisItem>? lastItems;
 
   @override
   Future<FoodAnalysisResult> recalculate({
     required List<FoodAnalysisItem> items,
   }) async {
+    lastItems = items;
     return FoodAnalysisResult(
       items: items,
       totals: const FoodAnalysisTotals(
@@ -71,7 +75,7 @@ Future<void> _pumpFoodReview(WidgetTester tester) async {
       FoodReviewPage(
         imageBytes: null,
         analysis: _analysisFixture(),
-        analysisService: const _FakeFoodAnalysisService(),
+            analysisService: _FakeFoodAnalysisService(),
       ),
     ),
   );
@@ -100,16 +104,27 @@ void main() {
         findsOneWidget,
       );
       expect(find.byType(AppButton), findsOneWidget);
-      expect(find.byKey(const ValueKey('food-review-ai-title-inline')), findsOneWidget);
-      expect(find.byKey(const ValueKey('food-review-image-container')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('food-review-ai-title-inline')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('food-review-image-container')),
+        findsOneWidget,
+      );
 
       final firstUnitField = find.byKey(
-        const ValueKey('food-review-unit-field-0'),
+        const ValueKey('food-review-quantity-unit-field-0'),
       );
       expect(firstUnitField, findsOneWidget);
       expect(find.text('g'), findsWidgets);
 
-      await tester.enterText(firstUnitField, 'ml');
+      await tester.tap(
+        find.byKey(const ValueKey('food-review-quantity-unit-field-0')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('ml').last);
+      await tester.pumpAndSettle();
       expect(find.text('ml'), findsOneWidget);
     });
 
@@ -129,8 +144,58 @@ void main() {
       expect(find.text('Novo alimento'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('food-review-unit-field-3')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('food-review-quantity-unit-field-3')),
         findsOneWidget,
       );
+    });
+
+    testWidgets('remove item antes de salvar e recalcula com a lista atual', (
+      WidgetTester tester,
+    ) async {
+      final service = _FakeFoodAnalysisService();
+
+      tester.view.physicalSize = const Size(412, 917);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _wrap(
+          FoodReviewPage(
+            imageBytes: null,
+            analysis: _analysisFixture(),
+            analysisService: service,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Confirmar'));
+      await tester.pumpAndSettle();
+
+      expect(service.lastItems, isNotNull);
+      expect(service.lastItems, hasLength(2));
+      expect(find.byType(FoodMealDetailsPage), findsOneWidget);
+    });
+
+    testWidgets('abre detalhes da refeicao ao confirmar sem alteracoes', (
+      WidgetTester tester,
+    ) async {
+      await _pumpFoodReview(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Confirmar'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FoodMealDetailsPage), findsOneWidget);
+      expect(find.text('Detalhes da refeição'), findsOneWidget);
     });
   });
 }
