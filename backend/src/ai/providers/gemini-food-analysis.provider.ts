@@ -98,7 +98,11 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
       throw new BadGatewayException('O provedor de IA retornou uma resposta vazia');
     }
 
-    return this.normalizeAnalysisResponse(JSON.parse(text) as Record<string, unknown>);
+    const normalizedText = this.extractJsonText(text);
+
+    return this.normalizeAnalysisResponse(
+      JSON.parse(normalizedText) as Record<string, unknown>,
+    );
   }
 
   private buildImageAnalysisPrompt(): string {
@@ -168,6 +172,22 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
     }
 
     return '';
+  }
+
+  private extractJsonText(text: string): string {
+    const fencedMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    const fencedText = fencedMatch?.[1]?.trim();
+    if (fencedText) {
+      return fencedText;
+    }
+
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return text.slice(firstBrace, lastBrace + 1).trim();
+    }
+
+    return text;
   }
 
   private normalizeNumber(value: unknown): number {
