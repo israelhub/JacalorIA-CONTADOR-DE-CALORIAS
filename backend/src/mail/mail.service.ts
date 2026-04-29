@@ -52,7 +52,7 @@ export class MailService {
       const transporter = this.getTransporter();
       const logoPath = path.resolve(
         process.cwd(),
-        'assets/logo_horizontal.png',
+        'assets/logo_horizontal.webp',
       );
       const hasLogo = fs.existsSync(logoPath);
       const emailHtml = buildVerificationEmailHtml({
@@ -69,10 +69,10 @@ export class MailService {
         attachments: hasLogo
           ? [
               {
-                filename: 'logo_horizontal.png',
+                filename: 'logo_horizontal.webp',
                 path: logoPath,
                 cid: this.logoCid,
-                contentType: 'image/png',
+                contentType: 'image/webp',
                 contentDisposition: 'inline',
               },
             ]
