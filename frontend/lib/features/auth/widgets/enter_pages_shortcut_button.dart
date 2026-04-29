@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/app_page_route.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../home/pages/home_page.dart';
+import '../../home/pages/home_shell_page.dart';
 import '../../onboarding/pages/activity_level_page.dart';
 import '../../onboarding/pages/objective_page.dart';
 import '../../onboarding/pages/personal_data_page.dart';
@@ -34,7 +35,7 @@ class EnterPagesShortcutButton extends StatelessWidget {
       label: 'Nível de atividade física',
       builder: ActivityLevelPage.new,
     ),
-    _PageShortcut(label: 'Home', builder: HomePage.new),
+    _PageShortcut(label: 'Home', builder: HomeShellPage.new),
   ];
 
   void _openPagesQuickAccess(BuildContext context) {
@@ -87,11 +88,7 @@ class EnterPagesShortcutButton extends StatelessWidget {
                         ),
                         onTap: () {
                           Navigator.of(sheetContext).pop();
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => shortcut.builder(),
-                            ),
-                          );
+                          context.pushSlidePage(shortcut.builder());
                         },
                       );
                     },
