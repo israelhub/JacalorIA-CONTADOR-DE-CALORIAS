@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../service/auth_service.dart';
 
@@ -52,6 +54,13 @@ class AuthController extends ChangeNotifier {
       final result = await _service.signIn(email: email, password: password);
       token = result['token'];
       currentUser = result['user'];
+      AuthService.globalToken = token;
+      AuthService.globalUser = currentUser;
+
+      final prefs = await SharedPreferences.getInstance();
+      if (token != null) await prefs.setString('auth_token', token!);
+      if (currentUser != null) await prefs.setString('auth_user', jsonEncode(currentUser));
+
       return true;
     } catch (e) {
       error = e.toString().replaceFirst('Exception: ', '');
@@ -72,6 +81,13 @@ class AuthController extends ChangeNotifier {
       final result = await _service.verifyEmail(email: email, code: code);
       token = result['token'];
       currentUser = result['user'];
+      AuthService.globalToken = token;
+      AuthService.globalUser = currentUser;
+      
+      final prefs = await SharedPreferences.getInstance();
+      if (token != null) await prefs.setString('auth_token', token!);
+      if (currentUser != null) await prefs.setString('auth_user', jsonEncode(currentUser));
+      
       return true;
     } catch (e) {
       error = e.toString().replaceFirst('Exception: ', '');

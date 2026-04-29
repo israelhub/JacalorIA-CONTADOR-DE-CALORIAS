@@ -9,6 +9,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from './models/user.model';
 import { MailModule } from '../mail/mail.module';
+import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { MailModule } from '../mail/mail.module';
         },
       }),
     }),
-    SequelizeModule.forFeature([User]),
+    SequelizeModule.forFeature([User, UserWeightEntry]),
     MailModule,
   ],
   controllers: [AuthController],

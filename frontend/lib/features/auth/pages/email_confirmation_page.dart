@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/app_page_route.dart';
 import 'package:flutter/services.dart';
 
 import '../controllers/auth_controller.dart';
@@ -143,11 +144,7 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
     }
 
     if (isVerified) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => const WelcomePage(),
-        ),
-      );
+      context.pushSlidePage(const WelcomePage());
       return;
     }
 
@@ -227,9 +224,12 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                               key: ValueKey('email-code-slot-$index'),
                               height: AppSpacing.huge + AppSpacing.sm,
                               decoration: BoxDecoration(
-                                color: AppColors.inputSurface,
+                                color: AppColors.surfaceAlt,
                                 borderRadius: BorderRadius.circular(
                                   AppRadius.sm,
+                                ),
+                                border: Border.all(
+                                  color: AppColors.confirmationCodeBorder,
                                 ),
                               ),
                               child: Center(

@@ -43,6 +43,58 @@ export class User extends Model {
   @Column({ type: DataType.DATE, field: 'verification_code_expires_at' })
   verificationCodeExpiresAt: Date | null;
 
+  @Default(2000)
+  @Column({ type: DataType.DECIMAL, field: 'daily_calorie_goal' })
+  dailyCalorieGoal: number;
+
+  @Default(120)
+  @Column({ type: DataType.DECIMAL, field: 'daily_protein_goal' })
+  dailyProteinGoal: number;
+
+  @Default(200)
+  @Column({ type: DataType.DECIMAL, field: 'daily_carbs_goal' })
+  dailyCarbsGoal: number;
+
+  @Default(60)
+  @Column({ type: DataType.DECIMAL, field: 'daily_fat_goal' })
+  dailyFatGoal: number;
+
+  @AllowNull(true)
+  @Column({ type: DataType.DATEONLY, field: 'birth_date' })
+  birthDate: string | null;
+
+  @AllowNull(true)
+  @Column({ type: DataType.DECIMAL, field: 'weight' })
+  weight: number | null;
+
+  @AllowNull(true)
+  @Column({ type: DataType.DECIMAL, field: 'height' })
+  height: number | null;
+
+  @Default('kg')
+  @Column({ type: DataType.STRING, field: 'weight_unit' })
+  weightUnit: string | null;
+
+  @Default('cm')
+  @Column({ type: DataType.STRING, field: 'height_unit' })
+  heightUnit: string | null;
+
+  @AllowNull(true)
+  @Column({ type: DataType.STRING, field: 'sex' })
+  sex: string | null;
+
+  @AllowNull(true)
+  @Column({ type: DataType.STRING, field: 'objective' })
+  objective: string | null;
+
+  @AllowNull(true)
+  @Column({ type: DataType.STRING, field: 'activity_level' })
+  activityLevel: string | null;
+
+  @AllowNull(true)
+  @Column({ type: DataType.STRING, field: 'avatar_url' })
+  avatarUrl: string | null;
+
   @CreatedAt
   @Column({ field: 'created_at' })
   createdAt: Date;
