@@ -2,6 +2,12 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../auth/models/user.model';
+import { Meal } from '../meals/models/meal.model';
+import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
+import { Mission } from '../missions/models/mission.model';
+import { SocialGroup } from '../social/models/social-group.model';
+import { SocialGroupActivity } from '../social/models/social-group-activity.model';
+import { SocialGroupMember } from '../social/models/social-group-member.model';
 
 @Module({
   imports: [
@@ -43,7 +49,15 @@ import { User } from '../auth/models/user.model';
             : {
                 uri: databaseUrl,
               }),
-          models: [User],
+          models: [
+            User,
+            Meal,
+            UserWeightEntry,
+            Mission,
+            SocialGroup,
+            SocialGroupMember,
+            SocialGroupActivity,
+          ],
           autoLoadModels: true,
           synchronize: !isProd,
           sync: { alter: isDev },
