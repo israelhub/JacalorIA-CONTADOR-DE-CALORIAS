@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/macro_progress_indicator.dart';
 import '../../food_analysis/models/food_meal_record.dart';
+import '../helpers/home_date_helpers.dart';
 import '../helpers/home_greeting_helpers.dart';
 
 class HomeDailyGoalWithMascot extends StatelessWidget {
@@ -53,11 +54,16 @@ class HomeDailyGoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final todayRecords = records.where((record) {
+      final createdAt = record.createdAt;
+      return createdAt != null && isSameHomeDate(createdAt, DateTime.now());
+    }).toList(growable: false);
+
     final totalCalories = readHomeProfileInt(userProfile, const [
       'daily_calorie_goal',
       'dailyCalorieGoal',
     ], fallback: 2000);
-    final consumedCalories = records.fold(0, (sum, r) => sum + r.calories);
+    final consumedCalories = todayRecords.fold(0, (sum, r) => sum + r.calories);
 
     return Container(
       width: double.infinity,
@@ -88,7 +94,7 @@ class HomeDailyGoalCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: _GoalStats(
-                  records: records,
+                  records: todayRecords,
                   consumedCalories: consumedCalories,
                   totalCalories: totalCalories,
                   userProfile: userProfile,
@@ -113,8 +119,6 @@ class _ProgressRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final remainingCalories = totalCalories - consumedCalories;
-
     return SizedBox(
       width: 88,
       height: 88,
@@ -137,7 +141,7 @@ class _ProgressRing extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '$remainingCalories',
+                '$consumedCalories',
                 key: const ValueKey('home-calorie-ring-value'),
                 style: AppTextStyles.statValue.copyWith(
                   color: AppColors.brand900Variant,
