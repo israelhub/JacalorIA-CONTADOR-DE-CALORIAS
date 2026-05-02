@@ -16,6 +16,7 @@ class AppInput extends StatelessWidget {
     this.contentPadding,
     this.isCollapsed = false,
     this.centerContent = false,
+    this.textAlignVertical = TextAlignVertical.center,
   });
 
   final TextEditingController controller;
@@ -28,6 +29,7 @@ class AppInput extends StatelessWidget {
   final EdgeInsetsGeometry? contentPadding;
   final bool isCollapsed;
   final bool centerContent;
+  final TextAlignVertical textAlignVertical;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +38,7 @@ class AppInput extends StatelessWidget {
       onChanged: onChanged,
       keyboardType: keyboardType,
       textAlign: textAlign,
-      textAlignVertical: TextAlignVertical.center,
+      textAlignVertical: textAlignVertical,
       inputFormatters: inputFormatters,
       textCapitalization: textCapitalization,
       style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
