@@ -30,6 +30,17 @@ class _MissionsPageState extends State<MissionsPage> {
     _loadMissions();
   }
 
+  List<MissionItem> _sortedMissions(List<MissionItem> missions) {
+    final sorted = List<MissionItem>.from(missions);
+    sorted.sort((a, b) {
+      if (a.isCompleted == b.isCompleted) {
+        return 0;
+      }
+      return a.isCompleted ? 1 : -1;
+    });
+    return sorted;
+  }
+
   Future<void> _loadMissions() async {
     setState(() {
       _isLoading = true;
@@ -169,7 +180,7 @@ class _MissionsPageState extends State<MissionsPage> {
               subtitle: section.subtitle,
             ),
             const SizedBox(height: AppSpacing.lg),
-            for (final mission in section.missions) ...<Widget>[
+            for (final mission in _sortedMissions(section.missions)) ...<Widget>[
               MissionCard(mission: mission),
               const SizedBox(height: AppSpacing.lg),
             ],
