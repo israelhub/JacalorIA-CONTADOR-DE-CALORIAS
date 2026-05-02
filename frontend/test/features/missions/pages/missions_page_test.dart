@@ -55,6 +55,52 @@ void main() {
     );
   }
 
+  MissionsOverview buildOverviewWithCompleted() {
+    return const MissionsOverview(
+      gold: 10,
+      xp: 25,
+      introTitle: 'Bem-vindo Ã s MissÃµes!',
+      introDescription: 'DescriÃ§Ã£o da introduÃ§Ã£o',
+      sections: [
+        MissionSection(
+          id: MissionType.daily,
+          title: 'MissÃµes diÃ¡rias',
+          subtitle: 'Renovam Ã  meia-noite',
+          missions: [
+            MissionItem(
+              id: '1',
+              key: 'daily_done',
+              type: MissionType.daily,
+              title: 'MissÃ£o concluÃ­da',
+              description: 'ConcluÃ­da',
+              accent: MissionAccent.action,
+              progressCurrent: 1,
+              progressTarget: 1,
+              progressLabel: '1/1',
+              progressPercent: 100,
+              rewardGold: 20,
+              rewardXp: 40,
+            ),
+            MissionItem(
+              id: '2',
+              key: 'daily_pending',
+              type: MissionType.daily,
+              title: 'MissÃ£o pendente',
+              description: 'Pendente',
+              accent: MissionAccent.accent,
+              progressCurrent: 0,
+              progressTarget: 1,
+              progressLabel: '0/1',
+              progressPercent: 0,
+              rewardGold: 10,
+              rewardXp: 15,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   testWidgets('renderiza secoes e cards de missoes', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -86,6 +132,31 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Bem-vindo às Missões!'), findsNothing);
+  });
+
+  testWidgets('ordena missÃµes concluÃ­das para o final e exibe tag', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MissionsPage(
+          service: _FakeMissionsService(buildOverviewWithCompleted()),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final pendingTitle = find.text('MissÃ£o pendente');
+    final completedTitle = find.text('MissÃ£o concluÃ­da');
+
+    expect(pendingTitle, findsOneWidget);
+    expect(completedTitle, findsOneWidget);
+    expect(find.text('Completada'), findsOneWidget);
+    expect(
+      tester.getTopLeft(pendingTitle).dy < tester.getTopLeft(completedTitle).dy,
+      isTrue,
+    );
   });
 
   testWidgets('exibe erro e botao de retry quando request falha', (
