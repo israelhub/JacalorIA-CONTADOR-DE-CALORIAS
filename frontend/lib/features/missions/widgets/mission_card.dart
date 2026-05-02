@@ -10,6 +10,7 @@ class MissionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompleted = mission.isCompleted;
     final accentColor = switch (mission.accent) {
       MissionAccent.action => AppColors.action500,
       MissionAccent.accent => AppColors.accent500,
@@ -35,7 +36,12 @@ class MissionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
+        border: Border.all(
+          color: isCompleted
+              ? AppColors.action500.withValues(alpha: 0.55)
+              : AppColors.performanceCardBorder,
+          width: 2,
+        ),
         boxShadow: AppShadows.performanceCard,
       ),
       child: Row(
@@ -55,11 +61,37 @@ class MissionCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  mission.title,
-                  style: AppTextStyles.missionsCardTitle.copyWith(
-                    color: AppColors.brand900Variant,
-                  ),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        mission.title,
+                        style: AppTextStyles.missionsCardTitle.copyWith(
+                          color: AppColors.brand900Variant,
+                        ),
+                      ),
+                    ),
+                    if (isCompleted)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.missionsXpPill,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          border: Border.all(
+                            color: AppColors.action500.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Text(
+                          'Completada',
+                          style: AppTextStyles.missionsProgress.copyWith(
+                            color: AppColors.action500Shadow,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 2),
                 Text(

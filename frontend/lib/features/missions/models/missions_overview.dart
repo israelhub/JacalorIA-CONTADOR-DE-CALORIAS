@@ -94,6 +94,8 @@ class MissionItem {
   final int rewardGold;
   final int rewardXp;
 
+  bool get isCompleted => progressCurrent >= progressTarget && progressTarget > 0;
+
   factory MissionItem.fromJson(Map<String, dynamic> json) {
     return MissionItem(
       id: json['id'] as String? ?? '',
