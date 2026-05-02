@@ -476,6 +476,7 @@ class _MealHeroImage extends StatelessWidget {
         imageUrl!,
         fit: BoxFit.cover,
         width: double.infinity,
+        errorBuilder: (_, __, ___) => _buildMissingImage(),
       );
     }
 
@@ -487,6 +488,10 @@ class _MealHeroImage extends StatelessWidget {
       );
     }
 
+    return _buildMissingImage();
+  }
+
+  Widget _buildMissingImage() {
     return Container(
       color: AppColors.surfaceAlt,
       width: double.infinity,

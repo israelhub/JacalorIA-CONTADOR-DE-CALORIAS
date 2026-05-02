@@ -188,8 +188,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final avatarBytes = await picked.readAsBytes();
+      final fileName = picked.name.trim().toLowerCase();
+      final dotIndex = fileName.lastIndexOf('.');
+      final extension = dotIndex > -1 ? fileName.substring(dotIndex) : null;
       final uploadedUrl = await SupabaseStorageService.uploadAvatarBytes(
         avatarBytes,
+        extension: extension,
       );
       if (uploadedUrl == null || uploadedUrl.isEmpty) {
         if (mounted) {

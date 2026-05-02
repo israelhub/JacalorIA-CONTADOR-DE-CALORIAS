@@ -119,7 +119,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: const FoodAnalysisPageHeader(title: 'Revisar anÃ¡lise'),
+      appBar: const FoodAnalysisPageHeader(title: 'Revisar análise'),
       body: SafeArea(
         child: Column(
           children: [
@@ -316,7 +316,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
         imageBytes: widget.imageBytes,
         imageUrl: widget.imageUrl,
         imageAsset: widget.imageAsset,
-        appBarTitle: 'Detalhes da refeiÃ§Ã£o',
+        appBarTitle: 'Detalhes da refeição',
         title: 'Carregando calorias...',
         message: 'Estamos salvando e atualizando os dados nutricionais.',
         statusIcon: Icons.local_fire_department,
@@ -357,7 +357,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
       if (mounted) {
         setState(() {
           _isBusy = false;
-          _error = 'NÃ£o foi possÃ­vel carregar os detalhes da refeiÃ§Ã£o.';
+          _error = 'Não foi possível carregar os detalhes da refeição.';
         });
       }
       return;
