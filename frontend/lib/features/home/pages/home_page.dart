@@ -94,7 +94,11 @@ class _HomePageState extends State<HomePage> {
       final meals = results[0] as List<FoodMealRecord>;
       final profile = results[1] as Map<String, dynamic>;
 
-      await _precacheHomeImages(meals, profile);
+      try {
+        await _precacheHomeImages(meals, profile);
+      } catch (_) {
+        // Image precache should never block the home data rendering.
+      }
 
       if (mounted) {
         setState(() {
@@ -157,9 +161,13 @@ class _HomePageState extends State<HomePage> {
       }
     }
 
-    await Future.wait(
-      providers.map((provider) => precacheImage(provider, context)),
-    );
+    for (final provider in providers) {
+      try {
+        await precacheImage(provider, context);
+      } catch (_) {
+        // Ignore isolated image preload failures (common on Flutter Web).
+      }
+    }
   }
 
   @override

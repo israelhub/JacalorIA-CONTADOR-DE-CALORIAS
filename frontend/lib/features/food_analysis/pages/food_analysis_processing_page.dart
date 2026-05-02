@@ -252,7 +252,12 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
 
     final imageUrl = (widget.imageUrl ?? '').trim();
     if (imageUrl.toLowerCase().startsWith('http')) {
-      return Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity);
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        errorBuilder: (_, __, ___) => _buildMissingImage(),
+      );
     }
 
     final imageAsset = (widget.imageAsset ?? '').trim();
@@ -260,6 +265,10 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
       return Image.asset(imageAsset, fit: BoxFit.cover, width: double.infinity);
     }
 
+    return _buildMissingImage();
+  }
+
+  Widget _buildMissingImage() {
     return Container(
       color: AppColors.surfaceAlt,
       width: double.infinity,
