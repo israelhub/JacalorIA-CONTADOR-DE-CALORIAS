@@ -237,21 +237,29 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       return;
     }
 
-    final manualAnalysis = await _pushAnalysisLoadingPage(
+    final aiManualAnalysis = await _pushAnalysisLoadingPage(
       imageBytes: null,
       title: 'Analisando...',
       message: 'A inteligência artificial está analisando sua refeição...',
       operation: () => widget._analysisService.recalculate(items: typedItems),
     );
 
-    if (!mounted || manualAnalysis == null) {
+    if (!mounted || aiManualAnalysis == null) {
       return;
     }
 
-    final canProceed = await _handleAnalysisResult(manualAnalysis);
-    if (!canProceed || !mounted) {
-      return;
-    }
+    final manualAnalysis = _hasIdentifiedFood(aiManualAnalysis)
+        ? aiManualAnalysis
+        : FoodAnalysisResult(
+            items: typedItems,
+            totals: const FoodAnalysisTotals(
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0,
+            ),
+            justification: '',
+          );
 
     final updatedMeal = await _pushReviewPage(
       imageBytes: null,

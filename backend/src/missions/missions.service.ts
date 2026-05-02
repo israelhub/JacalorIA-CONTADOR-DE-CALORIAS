@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 import { User } from '../auth/models/user.model';
-import { Meal } from '../meals/models/meal.model';
+import { Meal, MealStatus } from '../meals/models/meal.model';
 import { Mission, MissionAccent, MissionType } from './models/mission.model';
 
 type DailyTotals = {
@@ -55,6 +55,7 @@ export class MissionsService {
       this.mealModel.findAll({
         where: {
           userId,
+          status: MealStatus.Active,
           createdAt: {
             [Op.gte]: monthStart,
             [Op.lt]: now,
