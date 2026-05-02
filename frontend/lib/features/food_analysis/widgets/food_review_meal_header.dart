@@ -111,6 +111,23 @@ class _FoodReviewMealHeaderState extends State<FoodReviewMealHeader> {
                     widget.imageUrl!,
                     fit: BoxFit.cover,
                     width: double.infinity,
+                    errorBuilder: (_, __, ___) => Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.image_not_supported_outlined,
+                            color: AppColors.textSecondary,
+                            size: 42,
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            'Imagem não cadastrada',
+                            style: AppTextStyles.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
                   )
                 : hasAssetImage
                 ? Image.asset(

@@ -62,7 +62,17 @@ class HomeMealCard extends StatelessWidget {
                 child: imageBytes != null
                     ? Image.memory(imageBytes!, fit: BoxFit.cover)
                     : imageUrl != null
-                    ? Image.network(imageUrl!, fit: BoxFit.cover)
+                    ? Image.network(
+                        imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const ColoredBox(
+                          color: AppColors.homeMetaCardSurface,
+                          child: Icon(
+                            Icons.restaurant_outlined,
+                            color: AppColors.action500,
+                          ),
+                        ),
+                      )
                     : Builder(
                         builder: (context) {
                           final asset = imageAsset;

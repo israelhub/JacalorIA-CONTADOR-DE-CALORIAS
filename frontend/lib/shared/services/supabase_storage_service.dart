@@ -15,7 +15,7 @@ class SupabaseStorageService {
     String? extension,
   }) async {
     try {
-      final ext = extension ?? '.webp';
+      final ext = _normalizeExtension(extension) ?? _inferImageExtension(bytes);
       final fileName = '${DateTime.now().millisecondsSinceEpoch}$ext';
       final uri = Uri.parse(
         '$_supabaseUrl/storage/v1/object/$bucketName/$fileName',
@@ -26,7 +26,7 @@ class SupabaseStorageService {
         headers: {
           'Authorization': 'Bearer $_anonKey',
           'apikey': _anonKey,
-          'Content-Type': 'application/octet-stream',
+          'Content-Type': _contentTypeForExtension(ext),
         },
         body: bytes,
       );
@@ -53,20 +53,92 @@ class SupabaseStorageService {
     return uploadFile(file, 'avatars');
   }
 
-  static Future<String?> uploadAvatarBytes(Uint8List bytes) async {
-    return uploadBytes(bytes, 'avatars', extension: '.webp');
+  static Future<String?> uploadAvatarBytes(
+    Uint8List bytes, {
+    String? extension,
+  }) async {
+    return uploadBytes(bytes, 'avatars', extension: extension);
   }
 
-  static Future<String?> uploadMealPhoto(Uint8List bytes) async {
-    return uploadBytes(bytes, 'meals', extension: '.webp');
+  static Future<String?> uploadMealPhoto(
+    Uint8List bytes, {
+    String? extension,
+  }) async {
+    return uploadBytes(bytes, 'meals', extension: extension);
   }
 
   static String _fileExtension(String path) {
     final dotIndex = path.lastIndexOf('.');
     if (dotIndex == -1 || dotIndex == path.length - 1) {
-      return '.webp';
+      return '.jpg';
     }
 
     return path.substring(dotIndex);
+  }
+
+  static String? _normalizeExtension(String? extension) {
+    if (extension == null) {
+      return null;
+    }
+
+    final trimmed = extension.trim().toLowerCase();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    return trimmed.startsWith('.') ? trimmed : '.$trimmed';
+  }
+
+  static String _inferImageExtension(Uint8List bytes) {
+    if (bytes.length >= 12 &&
+        bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
+      return '.webp';
+    }
+
+    if (bytes.length >= 8 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47) {
+      return '.png';
+    }
+
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xFF &&
+        bytes[1] == 0xD8 &&
+        bytes[2] == 0xFF) {
+      return '.jpg';
+    }
+
+    if (bytes.length >= 6 &&
+        bytes[0] == 0x47 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46) {
+      return '.gif';
+    }
+
+    return '.jpg';
+  }
+
+  static String _contentTypeForExtension(String extension) {
+    switch (extension) {
+      case '.webp':
+        return 'image/webp';
+      case '.png':
+        return 'image/png';
+      case '.gif':
+        return 'image/gif';
+      case '.jpg':
+      case '.jpeg':
+      default:
+        return 'image/jpeg';
+    }
   }
 }
