@@ -1,12 +1,16 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
 import '../../../../shared/helpers/profile_value_helpers.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/macro_progress_indicator.dart';
+import '../../home/services/meal_service.dart';
 import '../helpers/food_review_helpers.dart';
+import '../models/food_analysis_result.dart';
 import '../models/food_meal_record.dart';
+import '../services/food_analysis_service.dart';
+import 'food_review_page.dart';
 import '../widgets/food_analysis_page_header.dart';
 import '../widgets/food_meal_item_row.dart';
 
@@ -15,10 +19,15 @@ class FoodMealDetailsPage extends StatefulWidget {
     super.key,
     required this.record,
     this.userProfile,
-  });
+    MealService mealService = const MealService(),
+    FoodAnalysisService analysisService = const FoodAnalysisService(),
+  }) : _mealService = mealService,
+       _analysisService = analysisService;
 
   final FoodMealRecord record;
   final Map<String, dynamic>? userProfile;
+  final MealService _mealService;
+  final FoodAnalysisService _analysisService;
 
   @override
   State<FoodMealDetailsPage> createState() => _FoodMealDetailsPageState();
@@ -26,6 +35,7 @@ class FoodMealDetailsPage extends StatefulWidget {
 
 class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
   late final List<bool> _sectionVisible;
+  late FoodMealRecord _record;
   bool _started = false;
 
   static const Duration _sectionRevealDuration = Duration(milliseconds: 280);
@@ -33,6 +43,7 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
   @override
   void initState() {
     super.initState();
+    _record = widget.record;
     _sectionVisible = List<bool>.filled(4, false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -57,8 +68,10 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final mealTitle = foodMealTitleFromTimeLabel(widget.record.timeLabel);
-    final consumedCalories = widget.record.calories;
+    final mealTitle = _record.title.trim().isEmpty
+        ? foodMealTitleFromTimeLabel(_record.timeLabel)
+        : _record.title.trim();
+    final consumedCalories = _record.calories;
     final goalProtein = readProfileInt(widget.userProfile, const [
       'daily_protein_goal',
       'dailyProteinGoal',
@@ -74,7 +87,21 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: const FoodAnalysisPageHeader(title: 'Detalhes da refeição'),
+      appBar: FoodAnalysisPageHeader(
+        title: 'Detalhes da refeicao',
+        actions: [
+          IconButton(
+            tooltip: 'Editar refeicao',
+            onPressed: _handleEditMeal,
+            icon: const Icon(Icons.edit_outlined),
+          ),
+          IconButton(
+            tooltip: 'Excluir refeicao',
+            onPressed: _handleDeleteMeal,
+            icon: const Icon(Icons.delete_outline),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -88,9 +115,9 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
               visible: _sectionVisible[0],
               duration: _sectionRevealDuration,
               child: _MealHeroImage(
-                imageBytes: widget.record.imageBytes,
-                imageAsset: widget.record.imageAsset,
-                imageUrl: widget.record.imageUrl,
+                imageBytes: _record.imageBytes,
+                imageAsset: _record.imageAsset,
+                imageUrl: _record.imageUrl,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -110,7 +137,7 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
-                    widget.record.timeLabel,
+                    _record.timeLabel,
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w500,
@@ -157,7 +184,7 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
                         Expanded(
                           child: MacroProgressIndicator(
                             label: 'Carboidratos',
-                            consumed: widget.record.carbs,
+                            consumed: _record.carbs,
                             goal: goalCarbs,
                             color: AppColors.homeMacroCarbs,
                             progressKey: const ValueKey(
@@ -178,8 +205,8 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: MacroProgressIndicator(
-                            label: 'Proteínas',
-                            consumed: widget.record.protein,
+                            label: 'Proteinas',
+                            consumed: _record.protein,
                             goal: goalProtein,
                             color: AppColors.homeMacroProtein,
                             progressKey: const ValueKey(
@@ -201,7 +228,7 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
                         Expanded(
                           child: MacroProgressIndicator(
                             label: 'Gorduras',
-                            consumed: widget.record.fat,
+                            consumed: _record.fat,
                             goal: goalFat,
                             color: AppColors.homeMacroFat,
                             progressKey: const ValueKey(
@@ -251,14 +278,14 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Alimentos presentes na refeição',
+                      'Alimentos presentes na refeicao',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.brand900Variant,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    if (widget.record.items.isEmpty)
+                    if (_record.items.isEmpty)
                       Text(
                         'Nenhum alimento encontrado.',
                         style: AppTextStyles.bodySmall.copyWith(
@@ -269,15 +296,13 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
                       Column(
                         children: [
                           const SizedBox(height: AppSpacing.xs),
-                          ...widget.record.items.asMap().entries.expand((
-                            entry,
-                          ) {
+                          ..._record.items.asMap().entries.expand((entry) {
                             final index = entry.key;
                             final item = entry.value;
 
                             return <Widget>[
                               FoodMealItemRow(item: item),
-                              if (index != widget.record.items.length - 1)
+                              if (index != _record.items.length - 1)
                                 const Divider(
                                   color: AppColors.divider,
                                   height: AppSpacing.lg,
@@ -295,6 +320,86 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleEditMeal() async {
+    final mealId = (_record.id ?? '').trim();
+    if (mealId.isEmpty) {
+      return;
+    }
+
+    final analysis = FoodAnalysisResult(
+      items: _record.items,
+      totals: FoodAnalysisTotals(
+        calories: _record.calories.toDouble(),
+        protein: _record.protein.toDouble(),
+        carbs: _record.carbs.toDouble(),
+        fat: _record.fat.toDouble(),
+      ),
+      justification: '',
+    );
+
+    final updatedMeal = await Navigator.of(context).push<FoodMealRecord>(
+      MaterialPageRoute(
+        builder: (_) => FoodReviewPage(
+          imageBytes: _record.imageBytes,
+          imageAsset: _record.imageAsset,
+          imageUrl: _record.imageUrl,
+          analysis: analysis,
+          analysisService: widget._analysisService,
+          existingMealId: mealId,
+          initialMealTitle: _record.title,
+          recordedAt: _record.createdAt,
+          showDetailsAfterSave: false,
+        ),
+      ),
+    );
+
+    if (!mounted || updatedMeal == null) {
+      return;
+    }
+
+    setState(() {
+      _record = updatedMeal;
+    });
+  }
+
+  Future<void> _handleDeleteMeal() async {
+    final mealId = (_record.id ?? '').trim();
+    if (mealId.isEmpty) {
+      return;
+    }
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir refeicao'),
+        content: const Text(
+          'Essa refeicao sera removida da visualizacao, sem apagar o historico.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true || !mounted) {
+      return;
+    }
+
+    await widget._mealService.softDeleteMeal(mealId: mealId);
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pop(_record.copyWith(status: 'deleted'));
   }
 }
 
@@ -374,8 +479,36 @@ class _MealHeroImage extends StatelessWidget {
       );
     }
 
-    final asset =
-        imageAsset ?? 'assets/images/smiling green cartoon crocodile@2x.webp';
-    return Image.asset(asset, fit: BoxFit.cover, width: double.infinity);
+    if (imageAsset != null && imageAsset!.isNotEmpty) {
+      return Image.asset(
+        imageAsset!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+      );
+    }
+
+    return Container(
+      color: AppColors.surfaceAlt,
+      width: double.infinity,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.image_not_supported_outlined,
+            color: AppColors.textSecondary,
+            size: 42,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Imagem não cadastrada',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

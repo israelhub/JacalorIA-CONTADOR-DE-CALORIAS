@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_input.dart';
 
-const double foodReviewControlHeight = 48;
+const double foodReviewControlHeight = 44;
 
 class FoodReviewItemRow extends StatelessWidget {
   const FoodReviewItemRow({
@@ -33,9 +33,12 @@ class FoodReviewItemRow extends StatelessWidget {
               key: ValueKey('food-review-name-field-$index'),
               controller: nameController,
               onChanged: (_) => onChanged(),
-              centerContent: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
+              textAlignVertical: TextAlignVertical.top,
+              contentPadding: const EdgeInsets.only(
+                left: AppSpacing.sm,
+                right: AppSpacing.sm,
+                top: 6,
+                bottom: 10,
               ),
             ),
           ),
@@ -47,9 +50,12 @@ class FoodReviewItemRow extends StatelessWidget {
               controller: measurementController,
               onChanged: (_) => onChanged(),
               textAlign: TextAlign.center,
-              centerContent: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
+              textAlignVertical: TextAlignVertical.top,
+              contentPadding: const EdgeInsets.only(
+                left: AppSpacing.sm,
+                right: AppSpacing.sm,
+                top: 6,
+                bottom: 10,
               ),
             ),
           ),

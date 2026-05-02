@@ -11,6 +11,8 @@ class FoodAnalysisProcessingPage extends StatefulWidget {
   const FoodAnalysisProcessingPage({
     super.key,
     required this.imageBytes,
+    this.imageUrl,
+    this.imageAsset,
     required this.title,
     required this.message,
     required this.operation,
@@ -20,6 +22,8 @@ class FoodAnalysisProcessingPage extends StatefulWidget {
   });
 
   final Uint8List? imageBytes;
+  final String? imageUrl;
+  final String? imageAsset;
   final String title;
   final String message;
   final Future<FoodAnalysisResult> Function() operation;
@@ -85,6 +89,11 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
 
   @override
   Widget build(BuildContext context) {
+    final hasPreviewImage =
+        (widget.imageBytes != null && widget.imageBytes!.isNotEmpty) ||
+        (widget.imageUrl ?? '').trim().toLowerCase().startsWith('http') ||
+        (widget.imageAsset ?? '').trim().startsWith('assets/');
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: FoodAnalysisPageHeader(title: widget.appBarTitle),
@@ -114,26 +123,27 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
                             aspectRatio: 0.88,
                             child: _buildPreviewImage(),
                           ),
-                          Positioned.fill(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    AppColors.brand900Variant.withValues(
-                                      alpha: 0.28,
-                                    ),
-                                    AppColors.brand900Variant.withValues(
-                                      alpha: 0.08,
-                                    ),
-                                    Colors.transparent,
-                                  ],
+                          if (hasPreviewImage)
+                            Positioned.fill(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      AppColors.brand900Variant.withValues(
+                                        alpha: 0.28,
+                                      ),
+                                      AppColors.brand900Variant.withValues(
+                                        alpha: 0.08,
+                                      ),
+                                      Colors.transparent,
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          if (widget.showScanner)
+                          if (widget.showScanner && hasPreviewImage)
                             Positioned.fill(
                               child: AnimatedBuilder(
                                 animation: _scannerController,
@@ -168,38 +178,39 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
                                 },
                               ),
                             ),
-                          Positioned.fill(
-                            child: Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(
-                                      AppSpacing.md,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surface.withValues(
-                                        alpha: 0.9,
+                          if (hasPreviewImage)
+                            Positioned.fill(
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(
+                                        AppSpacing.md,
                                       ),
-                                      shape: BoxShape.circle,
-                                      boxShadow: AppShadows.sm,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface.withValues(
+                                          alpha: 0.9,
+                                        ),
+                                        shape: BoxShape.circle,
+                                        boxShadow: AppShadows.sm,
+                                      ),
+                                      child: Icon(
+                                        widget.statusIcon,
+                                        color: AppColors.action500,
+                                        size: 32,
+                                      ),
                                     ),
-                                    child: Icon(
-                                      widget.statusIcon,
-                                      color: AppColors.action500,
-                                      size: 32,
+                                    const SizedBox(height: AppSpacing.md),
+                                    Text(
+                                      widget.title,
+                                      style: AppTextStyles.homeSectionTitle
+                                          .copyWith(color: AppColors.surface),
                                     ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  Text(
-                                    widget.title,
-                                    style: AppTextStyles.homeSectionTitle
-                                        .copyWith(color: AppColors.surface),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -239,10 +250,38 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
       return Image.memory(bytes, fit: BoxFit.cover, width: double.infinity);
     }
 
-    return Image.asset(
-      'assets/images/smiling green cartoon crocodile@2x.webp',
-      fit: BoxFit.cover,
+    final imageUrl = (widget.imageUrl ?? '').trim();
+    if (imageUrl.toLowerCase().startsWith('http')) {
+      return Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity);
+    }
+
+    final imageAsset = (widget.imageAsset ?? '').trim();
+    if (imageAsset.startsWith('assets/')) {
+      return Image.asset(imageAsset, fit: BoxFit.cover, width: double.infinity);
+    }
+
+    return Container(
+      color: AppColors.surfaceAlt,
       width: double.infinity,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.image_not_supported_outlined,
+            color: AppColors.textSecondary,
+            size: 42,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Imagem não cadastrada',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

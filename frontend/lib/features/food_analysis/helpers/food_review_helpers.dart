@@ -25,6 +25,63 @@ String foodMealTitleForHour(int hour) {
   return 'Jantar';
 }
 
+String suggestMealTitle({
+  required DateTime recordedAt,
+  required List<String> foodNames,
+}) {
+  final baseTitle = foodMealTitleForHour(recordedAt.hour);
+  final normalized = foodNames
+      .map((name) => name.trim().toLowerCase())
+      .where((name) => name.isNotEmpty)
+      .toList(growable: false);
+
+  final lunchKeywords = <String>[
+    'arroz',
+    'feij',
+    'salada',
+    'carne',
+    'frango',
+    'peixe',
+    'farofa',
+    'vinagrete',
+    'macarr',
+  ];
+
+  final breakfastKeywords = <String>[
+    'pão',
+    'pao',
+    'ovo',
+    'café',
+    'cafe',
+    'leite',
+    'banana',
+    'tapioca',
+    'iogurte',
+    'queijo',
+  ];
+
+  final hasLunchProfile = normalized.any(
+    (name) => lunchKeywords.any(name.contains),
+  );
+  final hasBreakfastProfile = normalized.any(
+    (name) => breakfastKeywords.any(name.contains),
+  );
+
+  if (hasLunchProfile && recordedAt.hour < 16) {
+    return 'Almoço';
+  }
+
+  if (hasBreakfastProfile && recordedAt.hour < 11) {
+    return 'Café da manhã';
+  }
+
+  if (hasLunchProfile && baseTitle == 'Café da manhã') {
+    return 'Almoço';
+  }
+
+  return baseTitle;
+}
+
 class FoodMeasurementValue {
   const FoodMeasurementValue(this.grams, this.unit);
 

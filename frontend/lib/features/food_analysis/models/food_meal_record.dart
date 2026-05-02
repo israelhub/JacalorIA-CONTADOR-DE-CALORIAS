@@ -1,10 +1,11 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 
 import '../helpers/food_review_helpers.dart';
 import 'food_analysis_result.dart';
 
 class FoodMealRecord {
   const FoodMealRecord({
+    this.id,
     required this.imageBytes,
     required this.imageAsset,
     this.imageUrl,
@@ -18,13 +19,16 @@ class FoodMealRecord {
     required this.carbs,
     required this.fat,
     required this.items,
+    this.status = 'active',
   });
 
   factory FoodMealRecord.fromAnalysis({
+    String? id,
     Uint8List? imageBytes,
     String? imageUrl,
     required FoodAnalysisResult analysis,
     required DateTime recordedAt,
+    String? titleOverride,
   }) {
     final foodNames = analysis.items
         .map((item) => item.name)
@@ -36,12 +40,17 @@ class FoodMealRecord {
         ? 'Refeição analisada pela IA'
         : foodNames.join(', ');
 
+    final resolvedTitle = (titleOverride ?? '').trim();
+
     return FoodMealRecord(
+      id: id,
       imageBytes: imageBytes,
       imageAsset: null,
       imageUrl: imageUrl,
       createdAt: recordedAt,
-      title: foodNames.isEmpty ? 'Refeição analisada' : foodNames.first,
+      title: resolvedTitle.isNotEmpty
+          ? resolvedTitle
+          : (foodNames.isEmpty ? 'Refeição analisada' : foodNames.first),
       description: description,
       kcalLabel: '${analysis.totals.calories.round()} kcal',
       timeLabel: formatFoodReviewTime(recordedAt),
@@ -50,6 +59,7 @@ class FoodMealRecord {
       carbs: analysis.totals.carbs.round(),
       fat: analysis.totals.fat.round(),
       items: analysis.items.toList(growable: false),
+      status: 'active',
     );
   }
 
@@ -64,25 +74,25 @@ class FoodMealRecord {
         .toList(growable: false);
 
     return FoodMealRecord(
+      id: json['id'] as String?,
       imageBytes: null,
-      imageAsset: isNetwork
-          ? null
-          : (imageUrl ??
-                'assets/images/smiling green cartoon crocodile@2x.webp'),
+      imageAsset: isNetwork ? null : _asAssetPath(imageUrl),
       imageUrl: isNetwork ? imageUrl : null,
       createdAt: _parseDateTime(json['createdAt'] ?? json['created_at']),
       title: json['title'] as String? ?? 'Refeição',
       description: json['description'] as String? ?? '',
-      kcalLabel: '${(json['calories'] as num?)?.round() ?? 0} kcal',
+      kcalLabel: '${_asRoundedInt(json['calories'])} kcal',
       timeLabel: json['timeLabel'] as String? ?? '12:00',
-      calories: (json['calories'] as num?)?.round() ?? 0,
-      protein: (json['protein'] as num?)?.round() ?? 0,
-      carbs: (json['carbs'] as num?)?.round() ?? 0,
-      fat: (json['fat'] as num?)?.round() ?? 0,
+      calories: _asRoundedInt(json['calories']),
+      protein: _asRoundedInt(json['protein']),
+      carbs: _asRoundedInt(json['carbs']),
+      fat: _asRoundedInt(json['fat']),
       items: items,
+      status: (json['status'] as String? ?? 'active').trim().toLowerCase(),
     );
   }
 
+  final String? id;
   final Uint8List? imageBytes;
   final String? imageAsset;
   final String? imageUrl;
@@ -96,6 +106,67 @@ class FoodMealRecord {
   final int carbs;
   final int fat;
   final List<FoodAnalysisItem> items;
+  final String status;
+
+  FoodMealRecord copyWith({
+    String? id,
+    Uint8List? imageBytes,
+    String? imageAsset,
+    String? imageUrl,
+    DateTime? createdAt,
+    String? title,
+    String? description,
+    String? kcalLabel,
+    String? timeLabel,
+    int? calories,
+    int? protein,
+    int? carbs,
+    int? fat,
+    List<FoodAnalysisItem>? items,
+    String? status,
+  }) {
+    return FoodMealRecord(
+      id: id ?? this.id,
+      imageBytes: imageBytes ?? this.imageBytes,
+      imageAsset: imageAsset ?? this.imageAsset,
+      imageUrl: imageUrl ?? this.imageUrl,
+      createdAt: createdAt ?? this.createdAt,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      kcalLabel: kcalLabel ?? this.kcalLabel,
+      timeLabel: timeLabel ?? this.timeLabel,
+      calories: calories ?? this.calories,
+      protein: protein ?? this.protein,
+      carbs: carbs ?? this.carbs,
+      fat: fat ?? this.fat,
+      items: items ?? this.items,
+      status: status ?? this.status,
+    );
+  }
+}
+
+int _asRoundedInt(Object? value) {
+  if (value is num) {
+    return value.round();
+  }
+
+  if (value is String) {
+    final parsed = num.tryParse(value.replaceAll(',', '.'));
+    if (parsed != null) {
+      return parsed.round();
+    }
+  }
+
+  return 0;
+}
+
+String? _asAssetPath(String? value) {
+  final raw = (value ?? '').trim();
+  if (raw.startsWith('assets/')) {
+    return raw;
+  }
+
+  return null;
 }
 
 DateTime? _parseDateTime(Object? value) {
