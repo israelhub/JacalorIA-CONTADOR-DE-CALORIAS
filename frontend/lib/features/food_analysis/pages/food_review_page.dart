@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -22,13 +22,25 @@ class FoodReviewPage extends StatefulWidget {
   const FoodReviewPage({
     super.key,
     required this.imageBytes,
+    this.imageAsset,
+    this.imageUrl,
     required this.analysis,
     required this.analysisService,
+    this.existingMealId,
+    this.initialMealTitle,
+    this.recordedAt,
+    this.showDetailsAfterSave = true,
   });
 
   final Uint8List? imageBytes;
+  final String? imageAsset;
+  final String? imageUrl;
   final FoodAnalysisResult analysis;
   final FoodAnalysisService analysisService;
+  final String? existingMealId;
+  final String? initialMealTitle;
+  final DateTime? recordedAt;
+  final bool showDetailsAfterSave;
 
   @override
   State<FoodReviewPage> createState() => _FoodReviewPageState();
@@ -39,7 +51,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   late final List<_ReviewItemEntry> _items;
   late FoodAnalysisResult _analysis;
   late String _confirmedSignature;
-  late final String _mealTitle;
+  late final TextEditingController _mealTitleController;
   late final DateTime _recordedAt;
   late final String _previewTime;
   final _mealService = const MealService();
@@ -78,9 +90,17 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
     super.initState();
     _analysis = widget.analysis;
     _confirmedSignature = widget.analysis.itemsSignature();
-    _mealTitle = foodReviewMealTitleFromNow();
-    _recordedAt = DateTime.now();
+    _recordedAt = widget.recordedAt ?? DateTime.now();
     _previewTime = formatFoodReviewTime(_recordedAt);
+    final initialMealTitle = widget.initialMealTitle?.trim() ?? '';
+    _mealTitleController = TextEditingController(
+      text: initialMealTitle.isNotEmpty
+          ? initialMealTitle
+          : suggestMealTitle(
+              recordedAt: _recordedAt,
+              foodNames: widget.analysis.items.map((item) => item.name).toList(),
+            ),
+    );
     _itemsListKey = GlobalKey<AnimatedListState>();
     _items = widget.analysis.items.map(_createEntry).toList(growable: true);
   }
@@ -90,6 +110,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
     for (final item in _items) {
       item.dispose();
     }
+    _mealTitleController.dispose();
 
     super.dispose();
   }
@@ -98,7 +119,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: const FoodAnalysisPageHeader(title: 'Revisar análise'),
+      appBar: const FoodAnalysisPageHeader(title: 'Revisar anÃ¡lise'),
       body: SafeArea(
         child: Column(
           children: [
@@ -113,8 +134,17 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
                 children: [
                   FoodReviewMealHeader(
                     imageBytes: widget.imageBytes,
-                    title: _mealTitle,
+                    imageAsset: widget.imageAsset,
+                    imageUrl: widget.imageUrl,
+                    titleController: _mealTitleController,
                     timeLabel: _previewTime,
+                    onTitleChanged: (_) {
+                      if (_error != null) {
+                        setState(() {
+                          _error = null;
+                        });
+                      }
+                    },
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   const Divider(
@@ -187,6 +217,8 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   }
 
   Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+
     setState(() {
       _isBusy = true;
       _error = null;
@@ -276,10 +308,15 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
     final currentItems = _currentItems;
     final shouldReanalyze = _hasChanges;
 
+    final mealTitle = _mealTitleController.text.trim();
+    FoodMealRecord? persistedMealRecord;
+
     final savedAnalysis = await context.pushSlidePage<FoodAnalysisResult>(
       FoodAnalysisProcessingPage(
         imageBytes: widget.imageBytes,
-        appBarTitle: 'Detalhes da refeição',
+        imageUrl: widget.imageUrl,
+        imageAsset: widget.imageAsset,
+        appBarTitle: 'Detalhes da refeiÃ§Ã£o',
         title: 'Carregando calorias...',
         message: 'Estamos salvando e atualizando os dados nutricionais.',
         statusIcon: Icons.local_fire_department,
@@ -290,15 +327,26 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
               : _analysis;
 
           final mealRecordToSave = FoodMealRecord.fromAnalysis(
+            id: widget.existingMealId,
             imageBytes: widget.imageBytes,
+            imageUrl: widget.imageUrl,
             analysis: analysisToSave,
             recordedAt: _recordedAt,
+            titleOverride: mealTitle,
           );
 
-          await _mealService.saveMeal(
-            record: mealRecordToSave,
-            analysis: analysisToSave,
-          );
+          if ((widget.existingMealId ?? '').trim().isNotEmpty) {
+            persistedMealRecord = await _mealService.updateMeal(
+              mealId: widget.existingMealId!.trim(),
+              record: mealRecordToSave,
+              analysis: analysisToSave,
+            );
+          } else {
+            persistedMealRecord = await _mealService.saveMeal(
+              record: mealRecordToSave,
+              analysis: analysisToSave,
+            );
+          }
 
           return analysisToSave;
         },
@@ -309,7 +357,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
       if (mounted) {
         setState(() {
           _isBusy = false;
-          _error = 'Não foi possível carregar os detalhes da refeição.';
+          _error = 'NÃ£o foi possÃ­vel carregar os detalhes da refeiÃ§Ã£o.';
         });
       }
       return;
@@ -325,11 +373,22 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
       _isBusy = false;
     });
 
-    final mealRecord = FoodMealRecord.fromAnalysis(
-      imageBytes: widget.imageBytes,
+    final fallbackMealRecord = FoodMealRecord.fromAnalysis(
+      id: widget.existingMealId,
+            imageBytes: widget.imageBytes,
+            imageUrl: widget.imageUrl,
       analysis: savedAnalysis,
       recordedAt: _recordedAt,
+      titleOverride: mealTitle,
     );
+    final mealRecord = persistedMealRecord ?? fallbackMealRecord;
+
+    if (!widget.showDetailsAfterSave) {
+      if (mounted) {
+        Navigator.of(context).pop(mealRecord);
+      }
+      return;
+    }
 
     final confirmedMeal = await context.pushSlidePage<FoodMealRecord>(
       FoodMealDetailsPage(record: mealRecord),
@@ -387,3 +446,4 @@ class _AnimatedFoodReviewRow extends StatelessWidget {
     );
   }
 }
+

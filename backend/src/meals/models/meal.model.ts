@@ -13,6 +13,11 @@ import {
 } from 'sequelize-typescript';
 import { User } from '../../auth/models/user.model';
 
+export enum MealStatus {
+  Active = 'active',
+  Deleted = 'deleted',
+}
+
 @Table({ tableName: 'meals', underscored: true })
 export class Meal extends Model {
   @PrimaryKey
@@ -63,6 +68,11 @@ export class Meal extends Model {
   @AllowNull(true)
   @Column({ type: DataType.JSONB, field: 'analysis_items' })
   analysisItems: any;
+
+  @AllowNull(false)
+  @Default(MealStatus.Active)
+  @Column(DataType.STRING)
+  status: MealStatus;
 
   @CreatedAt
   @Column({ field: 'created_at' })

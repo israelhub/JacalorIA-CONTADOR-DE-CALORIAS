@@ -226,15 +226,41 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    final recordDate = normalizeHomeDate(record.createdAt ?? DateTime.now());
+    final recordId = (record.id ?? '').trim();
+
     setState(() {
+      _selectedDate = recordDate;
+
+      if (recordId.isNotEmpty) {
+        _records.removeWhere((item) => (item.id ?? '').trim() == recordId);
+      }
+
       _records.insert(0, record);
     });
+
+    widget.onSelectedDateChanged?.call(recordDate);
   }
 
   Future<void> _openMealDetails(FoodMealRecord record) async {
-    await context.pushSlidePage(
+    final updatedRecord = await context.pushSlidePage<FoodMealRecord>(
       FoodMealDetailsPage(record: record, userProfile: _userProfile),
     );
+
+    if (!mounted || updatedRecord == null) {
+      return;
+    }
+
+    final updatedId = (updatedRecord.id ?? '').trim();
+
+    setState(() {
+      if (updatedId.isNotEmpty) {
+        _records.removeWhere((item) => (item.id ?? '').trim() == updatedId);
+      }
+      if (updatedRecord.status != 'deleted') {
+        _records.insert(0, updatedRecord);
+      }
+    });
   }
 }
 
