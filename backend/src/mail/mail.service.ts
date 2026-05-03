@@ -58,6 +58,10 @@ export class MailService {
       const emailHtml = buildVerificationEmailHtml({
         code,
         logoCid: this.logoCid,
+        title: 'Codigo de redefinicao de senha - Jacaloria',
+        heading: 'Ola! Seu codigo de redefinicao de senha e:',
+        instruction:
+          'Digite o codigo no aplicativo para confirmar a troca de senha.',
       });
 
       await transporter.sendMail({
@@ -65,6 +69,57 @@ export class MailService {
         to: email,
         subject: 'Código de verificação - Jacaloria',
         text: `Seu código de verificação é: ${code}`,
+        html: emailHtml,
+        attachments: hasLogo
+          ? [
+              {
+                filename: 'logo_horizontal.webp',
+                path: logoPath,
+                cid: this.logoCid,
+                contentType: 'image/webp',
+                contentDisposition: 'inline',
+              },
+            ]
+          : undefined,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Falha ao enviar email para ${email}: ${(error as Error).message}`,
+      );
+      return false;
+    }
+  }
+
+  async sendPasswordResetCode(email: string, code: string): Promise<boolean> {
+    if (!this.isMailEnabled()) {
+      this.logger.warn('MAIL_ENABLED=false. Email nÃ£o enviado.');
+      return false;
+    }
+
+    const from = this.configService.get<string>('MAIL_FROM');
+    if (!from) {
+      this.logger.error('MAIL_FROM nÃ£o configurado.');
+      return false;
+    }
+
+    try {
+      const transporter = this.getTransporter();
+      const logoPath = path.resolve(
+        process.cwd(),
+        'assets/logo_horizontal.webp',
+      );
+      const hasLogo = fs.existsSync(logoPath);
+      const emailHtml = buildVerificationEmailHtml({
+        code,
+        logoCid: this.logoCid,
+      });
+
+      await transporter.sendMail({
+        from,
+        to: email,
+        subject: 'Codigo de redefinicao de senha - Jacaloria',
+        text: `Seu codigo de redefinicao de senha e: ${code}`,
         html: emailHtml,
         attachments: hasLogo
           ? [

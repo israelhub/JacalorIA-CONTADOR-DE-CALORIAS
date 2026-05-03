@@ -7,14 +7,12 @@ import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
 import 'package:jacaloria/shared/widgets/app_input.dart';
 import '../../home/pages/home_shell_page.dart';
+import '../../onboarding/pages/welcome_page.dart';
+import 'forgot_password_page.dart';
 import 'sign_up_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({
-    super.key,
-    this.authController,
-    this.initialErrorMessage,
-  });
+  const LoginPage({super.key, this.authController, this.initialErrorMessage});
 
   final AuthController? authController;
   final String? initialErrorMessage;
@@ -63,7 +61,22 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    context.pushAndRemoveUntilSlidePage(const HomeShellPage(), (route) => false);
+    final nextPage = _authController.shouldCompleteOnboarding
+        ? const WelcomePage()
+        : const HomeShellPage();
+    context.pushAndRemoveUntilSlidePage(nextPage, (route) => false);
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    await _authController.signInWithGoogle();
+    if (!mounted || _authController.token == null) {
+      return;
+    }
+
+    context.pushAndRemoveUntilSlidePage(
+      const HomeShellPage(),
+      (route) => false,
+    );
   }
 
   @override
@@ -102,13 +115,44 @@ class _LoginPageState extends State<LoginPage> {
                       obscureText: true,
                       onChanged: (_) => _authController.clearError(),
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _authController.isLoading
+                            ? null
+                            : () {
+                                context.pushSlidePage(
+                                  ForgotPasswordPage(
+                                    initialEmail: _emailController.text.trim(),
+                                  ),
+                                );
+                              },
+                        style: TextButton.styleFrom(
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xs,
+                            vertical: AppSpacing.xs,
+                          ),
+                        ),
+                        child: Text(
+                          'Esqueci minha senha',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.action500,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xxxl),
                     SizedBox(
                       height: AppSpacing.huge + AppSpacing.xs,
                       child: AppButton(
                         label: 'Entrar',
-                        onPressed:
-                            _authController.isLoading ? null : _handleLogin,
+                        onPressed: _authController.isLoading
+                            ? null
+                            : _handleLogin,
                         variant: AppButtonVariant.primary,
                       ),
                     ),
@@ -157,7 +201,9 @@ class _LoginPageState extends State<LoginPage> {
                       height: AppSpacing.huge + AppSpacing.xs,
                       child: AppButton(
                         label: 'Continuar com Google',
-                        onPressed: () {},
+                        onPressed: _authController.isLoading
+                            ? null
+                            : _handleGoogleLogin,
                         variant: AppButtonVariant.google,
                       ),
                     ),

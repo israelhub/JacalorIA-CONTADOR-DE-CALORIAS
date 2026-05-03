@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../shared/widgets/app_page_route.dart';
 
 import 'package:jacaloria/features/home/pages/home_shell_page.dart';
@@ -27,6 +28,8 @@ class ActivityLevelPage extends StatefulWidget {
 }
 
 class _ActivityLevelPageState extends State<ActivityLevelPage> {
+  static const _newAccountFirstHomeAccessKeyPrefix =
+      'new_account_first_home_access_';
   ActivityLevelType _selectedActivityLevel = ActivityLevelType.sedentary;
   bool _isLoading = false;
   late final AuthService _authService;
@@ -72,8 +75,8 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
       data['dailyCarbsGoal'] = goals.dailyCarbsGoal;
       data['dailyFatGoal'] = goals.dailyFatGoal;
 
-      // Update backend
       await _authService.updateProfile(data);
+      await _markFirstHomeAccessForCurrentUser();
 
       if (mounted) {
         context.pushAndRemoveUntilSlidePage(
@@ -91,6 +94,22 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
         ).showSnackBar(SnackBar(content: Text('Erro ao salvar dados: $e')));
       }
     }
+  }
+
+  Future<void> _markFirstHomeAccessForCurrentUser() async {
+    final user = AuthService.globalUser;
+    if (user == null) {
+      return;
+    }
+
+    final rawUserId = user['id'] ?? user['email'] ?? user['name'] ?? '';
+    final userId = rawUserId.toString().trim();
+    if (userId.isEmpty) {
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('$_newAccountFirstHomeAccessKeyPrefix$userId', true);
   }
 
   @override
