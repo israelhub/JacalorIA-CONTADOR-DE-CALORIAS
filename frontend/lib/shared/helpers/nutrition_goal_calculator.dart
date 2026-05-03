@@ -1,4 +1,4 @@
-class NutritionGoalInput {
+﻿class NutritionGoalInput {
   const NutritionGoalInput({
     required this.weight,
     required this.height,
@@ -43,9 +43,17 @@ NutritionGoalResult calculateNutritionGoals(NutritionGoalInput input) {
   final heightCm = _toCentimeters(input.height, input.heightUnit);
 
   final age = input.age.clamp(0, 150).toInt();
+  final objective = _normalizeObjective(input.objective);
+  final bmi = _calculateBmi(weightKg, heightCm);
+  final metabolicWeightKg = _resolveMetabolicWeightKg(
+    weightKg,
+    heightCm,
+    objective,
+  );
+
   final baseMetabolism = input.sex == 'Feminino'
-      ? (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161
-      : (10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5;
+      ? (10 * metabolicWeightKg) + (6.25 * heightCm) - (5 * age) - 161
+      : (10 * metabolicWeightKg) + (6.25 * heightCm) - (5 * age) + 5;
 
   final activityMultiplier = switch (input.activityLevel) {
     'lightly' => 1.375,
@@ -55,27 +63,29 @@ NutritionGoalResult calculateNutritionGoals(NutritionGoalInput input) {
     _ => 1.2,
   };
 
-  var tdee = baseMetabolism * activityMultiplier;
-  if (input.objective == 'loseWeight') {
-    tdee -= 500;
-  } else if (input.objective == 'gainMass') {
-    tdee += 500;
-  }
+  final tdee = baseMetabolism * activityMultiplier;
+  final adjustedCalories = _applyObjectiveAdjustment(
+    tdee,
+    objective,
+    bmi,
+    input.activityLevel,
+  );
+  final minimumCalories = _resolveCalorieFloor(input.sex);
+  final dailyCalorieGoal = adjustedCalories.round().clamp(minimumCalories, 9999);
 
-  final dailyCalorieGoal = tdee.round();
-  final dailyProteinGoal = (weightKg * 2).round();
-  final dailyFatGoal = (weightKg * 1).round();
-  final remainingCalories =
-      dailyCalorieGoal - (dailyProteinGoal * 4) - (dailyFatGoal * 9);
-  final dailyCarbsGoal = (remainingCalories / 4).round().clamp(0, 9999);
+  final macros = _resolveMacroGoals(
+    dailyCalorieGoal,
+    objective,
+    metabolicWeightKg,
+  );
 
   return NutritionGoalResult(
-    effectiveWeightKg: weightKg,
+    effectiveWeightKg: metabolicWeightKg,
     effectiveHeightCm: heightCm,
     dailyCalorieGoal: dailyCalorieGoal,
-    dailyProteinGoal: dailyProteinGoal,
-    dailyCarbsGoal: dailyCarbsGoal,
-    dailyFatGoal: dailyFatGoal,
+    dailyProteinGoal: macros.protein,
+    dailyCarbsGoal: macros.carbs,
+    dailyFatGoal: macros.fat,
   );
 }
 
@@ -146,4 +156,204 @@ double _toCentimeters(double value, String unit) {
     'in' => value * 2.54,
     _ => value,
   };
+}
+
+double _calculateBmi(double weightKg, double heightCm) {
+  final heightM = heightCm / 100;
+  if (heightM <= 0) {
+    return 0;
+  }
+
+  return weightKg / (heightM * heightM);
+}
+
+String _normalizeObjective(String objective) {
+  return switch (objective) {
+    'loseWeight' => 'loseWeight',
+    'gainMass' => 'gainMass',
+    _ => 'maintainWeight',
+  };
+}
+
+double _applyObjectiveAdjustment(
+  double tdee,
+  String objective,
+  double bmi,
+  String activityLevel,
+) {
+  if (objective == 'loseWeight') {
+    final deficit = _resolveLossDeficitPercent(bmi, activityLevel);
+    return tdee * (1 - deficit);
+  }
+
+  if (objective == 'gainMass') {
+    final surplus = _resolveGainSurplusPercent(bmi, activityLevel);
+    return tdee * (1 + surplus);
+  }
+
+  return tdee;
+}
+
+double _resolveLossDeficitPercent(double bmi, String activityLevel) {
+  var percent = 0.2;
+
+  if (bmi >= 40) {
+    percent = 0.3;
+  } else if (bmi >= 35) {
+    percent = 0.27;
+  } else if (bmi >= 30) {
+    percent = 0.25;
+  } else if (bmi >= 27) {
+    percent = 0.22;
+  } else {
+    percent = 0.18;
+  }
+
+  if (activityLevel == 'very' || activityLevel == 'extreme') {
+    percent -= 0.02;
+  }
+
+  return percent.clamp(0.15, 0.3);
+}
+
+double _resolveGainSurplusPercent(double bmi, String activityLevel) {
+  var percent = 0.1;
+
+  if (bmi < 18.5) {
+    percent = 0.2;
+  } else if (bmi < 22) {
+    percent = 0.15;
+  } else if (bmi < 25) {
+    percent = 0.12;
+  }
+
+  if (activityLevel == 'very' || activityLevel == 'extreme') {
+    percent += 0.02;
+  }
+
+  return percent.clamp(0.08, 0.22);
+}
+
+int _resolveCalorieFloor(String sex) {
+  return switch (sex.trim().toLowerCase()) {
+    'feminino' => 1200,
+    'masculino' => 1500,
+    _ => 1350,
+  };
+}
+
+double _resolveMetabolicWeightKg(
+  double weightKg,
+  double heightCm,
+  String objective,
+) {
+  if (objective != 'loseWeight') {
+    return weightKg;
+  }
+
+  final heightM = heightCm / 100;
+  if (heightM <= 0) {
+    return weightKg;
+  }
+
+  final bmi = weightKg / (heightM * heightM);
+  if (bmi < 30) {
+    return weightKg;
+  }
+
+  final idealWeightKg = 24.9 * (heightM * heightM);
+  final adjustedWeightKg = idealWeightKg + ((weightKg - idealWeightKg) * 0.25);
+  if (adjustedWeightKg < idealWeightKg) {
+    return idealWeightKg;
+  }
+  if (adjustedWeightKg > weightKg) {
+    return weightKg;
+  }
+
+  return adjustedWeightKg;
+}
+
+_MacroGoals _resolveMacroGoals(
+  int dailyCalories,
+  String objective,
+  double metabolicWeightKg,
+) {
+  final minProtein = (metabolicWeightKg * _resolveProteinPerKg(objective)).round();
+  final minFat = (metabolicWeightKg * _resolveFatPerKg(objective)).round();
+
+  final distribution = _resolveMacroDistribution(objective);
+  var protein = ((dailyCalories * distribution.protein) / 4).round();
+  var fat = ((dailyCalories * distribution.fat) / 9).round();
+
+  protein = protein < minProtein ? minProtein : protein;
+  fat = fat < minFat ? minFat : fat;
+
+  var carbs = ((dailyCalories - (protein * 4) - (fat * 9)) / 4)
+      .round()
+      .clamp(0, 9999);
+
+  final minCarbs =
+      (metabolicWeightKg * _resolveCarbsPerKgFloor(objective)).round();
+  if (carbs < minCarbs) {
+    carbs = minCarbs;
+  }
+
+  final totalCalories = (protein * 4) + (fat * 9) + (carbs * 4);
+  if (totalCalories > dailyCalories) {
+    final overflow = totalCalories - dailyCalories;
+    final fatReduction = ((overflow / 9).ceil()).clamp(0, fat - minFat);
+    fat -= fatReduction;
+  }
+
+  final baseCalories = (protein * 4) + (fat * 9);
+  carbs = ((dailyCalories - baseCalories) / 4).round().clamp(0, 9999);
+
+  return _MacroGoals(protein: protein, fat: fat, carbs: carbs);
+}
+
+double _resolveProteinPerKg(String objective) {
+  return switch (objective) {
+    'loseWeight' => 2.2,
+    'gainMass' => 1.8,
+    _ => 1.6,
+  };
+}
+
+double _resolveFatPerKg(String objective) {
+  return objective == 'loseWeight' ? 0.7 : 0.8;
+}
+
+double _resolveCarbsPerKgFloor(String objective) {
+  return switch (objective) {
+    'loseWeight' => 1.5,
+    'gainMass' => 2.5,
+    _ => 2.0,
+  };
+}
+
+_MacroDistribution _resolveMacroDistribution(String objective) {
+  return switch (objective) {
+    'loseWeight' => const _MacroDistribution(protein: 0.35, fat: 0.30),
+    'gainMass' => const _MacroDistribution(protein: 0.25, fat: 0.25),
+    _ => const _MacroDistribution(protein: 0.25, fat: 0.30),
+  };
+}
+
+class _MacroDistribution {
+  const _MacroDistribution({required this.protein, required this.fat});
+
+  final double protein;
+  final double fat;
+}
+
+class _MacroGoals {
+  const _MacroGoals({
+    required this.protein,
+    required this.fat,
+    required this.carbs,
+  });
+
+  final int protein;
+  final int fat;
+  final int carbs;
 }

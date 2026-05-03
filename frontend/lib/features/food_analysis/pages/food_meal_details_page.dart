@@ -1,4 +1,4 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -373,18 +373,43 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Excluir refeicao'),
-        content: const Text(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          side: const BorderSide(
+            color: AppColors.foodReviewFieldBorder,
+            width: 2,
+          ),
+        ),
+        title: Text(
+          'Excluir refeicao',
+          style: AppTextStyles.homeSectionTitle.copyWith(
+            color: AppColors.brand900Variant,
+          ),
+        ),
+        content: Text(
           'Essa refeicao sera removida da visualizacao, sem apagar o historico.',
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.brand900),
+            child: Text(
+              'Cancelar',
+              style: AppTextStyles.label.copyWith(color: AppColors.brand900),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Excluir'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.textError),
+            child: Text(
+              'Excluir',
+              style: AppTextStyles.label.copyWith(color: AppColors.textError),
+            ),
           ),
         ],
       ),
