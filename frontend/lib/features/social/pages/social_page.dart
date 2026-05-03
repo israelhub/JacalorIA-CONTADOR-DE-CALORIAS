@@ -126,9 +126,9 @@ class _SocialPageState extends State<SocialPage> {
           const SizedBox(height: AppSpacing.lg),
           if (_showIntro) ...[
             AppGuideCard(
-              title: 'Treine com seus amigos',
+              title: 'Conte calorias com seus amigos',
               description:
-                  'Crie grupos, convide amigos e veja quem mantém o melhor desempenho.',
+                  'Crie grupos, convide amigos e veja quem mantém a meta calórica diária.',
               icon: Icons.emoji_events_rounded,
               onClose: () {
                 setState(() {

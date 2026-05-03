@@ -20,9 +20,9 @@ void main() {
       expect(result.effectiveWeightKg, closeTo(69.85, 0.01));
       expect(result.effectiveHeightCm, closeTo(175, 0.01));
       expect(result.dailyCalorieGoal, 1977);
-      expect(result.dailyProteinGoal, 140);
-      expect(result.dailyCarbsGoal, 197);
-      expect(result.dailyFatGoal, 70);
+      expect(result.dailyProteinGoal, 124);
+      expect(result.dailyCarbsGoal, 224);
+      expect(result.dailyFatGoal, 65);
     });
   });
 

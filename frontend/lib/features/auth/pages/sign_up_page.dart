@@ -3,6 +3,7 @@ import '../../../shared/widgets/app_page_route.dart';
 
 import '../controllers/auth_controller.dart';
 import '../../home/pages/home_shell_page.dart';
+import '../../onboarding/pages/welcome_page.dart';
 import '../service/auth_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import 'email_confirmation_page.dart';
@@ -56,11 +57,7 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     if (created) {
-      context.pushSlidePage(
-        EmailConfirmationPage(
-          email: email,
-        ),
-      );
+      context.pushSlidePage(EmailConfirmationPage(email: email));
     } else if (_authController.error != null) {
       ScaffoldMessenger.of(
         context,
@@ -68,6 +65,28 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     return created;
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    await _authController.signInWithGoogle();
+    if (!mounted) {
+      return;
+    }
+
+    if (_authController.token == null) {
+      final errorMessage =
+          _authController.error ??
+          'Nao foi possivel entrar com Google. Tente novamente.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      return;
+    }
+
+    final nextPage = _authController.shouldCompleteOnboarding
+        ? const WelcomePage()
+        : const HomeShellPage();
+    context.pushAndRemoveUntilSlidePage(nextPage, (route) => false);
   }
 
   @override
@@ -92,6 +111,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 builder: (context, _) {
                   return SignUpForm(
                     onCreateAccountPressed: _handleCreateAccount,
+                    onContinueWithGooglePressed: _handleGoogleSignIn,
                     isLoading: _authController.isLoading,
                     onLoginPressed: () {
                       context.pushSlidePage(const LoginPage());
