@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,6 +10,14 @@ import '../../../core/config/api_config.dart';
 
 class AuthService {
   static String get _baseUrl => ApiConfig.baseUrl;
+  static const String _googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue: '',
+  );
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: const ['email', 'openid'],
+    clientId: kIsWeb ? _googleWebClientId : null,
+  );
 
   static Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
@@ -20,10 +30,63 @@ class AuthService {
     }
   }
 
-  Future<void> signInWithGoogle() async {
-    throw UnimplementedError(
-      'signInWithGoogle ainda não implementado',
-    );
+  Future<Map<String, dynamic>> signInWithGoogle() async {
+    try {
+      if (kIsWeb && _googleWebClientId.isEmpty) {
+        throw Exception(
+          'GOOGLE_WEB_CLIENT_ID nao configurado. Rode com --dart-define=GOOGLE_WEB_CLIENT_ID=<seu_client_id_web>',
+        );
+      }
+
+      final silentAccount = await _googleSignIn.signInSilently();
+      final account = silentAccount ?? await _googleSignIn.signIn();
+      if (account == null) {
+        throw Exception('Login com Google cancelado.');
+      }
+
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+      final accessToken = auth.accessToken;
+      if ((idToken == null || idToken.isEmpty) &&
+          (accessToken == null || accessToken.isEmpty)) {
+        throw Exception('Nao foi possivel obter credenciais do Google.');
+      }
+
+      final uri = Uri.parse('$_baseUrl/auth/google');
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              if (idToken != null && idToken.isNotEmpty) 'idToken': idToken,
+              if (accessToken != null && accessToken.isNotEmpty)
+                'accessToken': accessToken,
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => throw TimeoutException('Timeout no login Google'),
+          );
+
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      if (kDebugMode) {
+        debugPrint(
+          '[GoogleSignIn] /auth/google status=${response.statusCode} body=$body',
+        );
+      }
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return body;
+      } else {
+        throw Exception(
+          _friendlyGoogleSignInMessage(
+            _extractMessage(body, 'Falha no login com Google'),
+          ),
+        );
+      }
+    } catch (e) {
+      throw Exception(_friendlyGoogleSignInMessage(e.toString()));
+    }
   }
 
   Future<Map<String, dynamic>> createAccount({
@@ -77,7 +140,7 @@ class AuthService {
     if (response.statusCode == 201) {
       return body;
     } else {
-      throw Exception(_extractMessage(body, 'Credenciais inválidas'));
+      throw Exception(_extractMessage(body, 'Credenciais invalidas'));
     }
   }
 
@@ -102,7 +165,7 @@ class AuthService {
     if (response.statusCode == 201) {
       return body;
     } else {
-      throw Exception(_extractMessage(body, 'Código inválido'));
+      throw Exception(_extractMessage(body, 'Codigo invalido'));
     }
   }
 
@@ -116,7 +179,7 @@ class AuthService {
         )
         .timeout(
           const Duration(seconds: 12),
-          onTimeout: () => throw TimeoutException('Timeout ao reenviar código'),
+          onTimeout: () => throw TimeoutException('Timeout ao reenviar codigo'),
         );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -124,7 +187,84 @@ class AuthService {
     if (response.statusCode == 201) {
       return body;
     } else {
-      throw Exception(_extractMessage(body, 'Erro ao reenviar código'));
+      throw Exception(_extractMessage(body, 'Erro ao reenviar codigo'));
+    }
+  }
+
+  Future<Map<String, dynamic>> forgotPassword({required String email}) async {
+    final uri = Uri.parse('$_baseUrl/auth/password/forgot');
+    final response = await http
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email}),
+        )
+        .timeout(
+          const Duration(seconds: 12),
+          onTimeout: () => throw TimeoutException('Timeout ao solicitar reset'),
+        );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return body;
+    } else {
+      throw Exception(_extractMessage(body, 'Erro ao solicitar reset'));
+    }
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/auth/password/reset');
+    final response = await http
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email,
+            'code': code,
+            'newPassword': newPassword,
+          }),
+        )
+        .timeout(
+          const Duration(seconds: 12),
+          onTimeout: () => throw TimeoutException('Timeout ao redefinir senha'),
+        );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return body;
+    } else {
+      throw Exception(_extractMessage(body, 'Erro ao redefinir senha'));
+    }
+  }
+
+  Future<Map<String, dynamic>> validateResetCode({
+    required String email,
+    required String code,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/auth/password/validate-code');
+    final response = await http
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email, 'code': code}),
+        )
+        .timeout(
+          const Duration(seconds: 12),
+          onTimeout: () => throw TimeoutException('Timeout ao validar codigo'),
+        );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return body;
+    } else {
+      throw Exception(_extractMessage(body, 'Codigo invalido ou expirado'));
     }
   }
 
@@ -142,6 +282,49 @@ class AuthService {
     return fallback;
   }
 
+  String _friendlyGoogleSignInMessage(String raw) {
+    final message = raw.replaceFirst('Exception: ', '').trim();
+    final lower = message.toLowerCase();
+
+    if (lower.contains('people api has not been used') ||
+        lower.contains('service_disabled') ||
+        lower.contains('permission_denied') ||
+        lower.contains('people.googleapis.com')) {
+      return 'Login Google bloqueado na configuracao do projeto. Ative a People API no Google Cloud e tente novamente.';
+    }
+
+    if (lower.contains('google_web_client_id nao configurado')) {
+      return 'Login Google indisponivel no momento. Contate o suporte.';
+    }
+
+    if (lower.contains('cancelado')) {
+      return 'Login com Google cancelado.';
+    }
+
+    if (lower.contains('timeout')) {
+      return 'Conexao com Google indisponivel. Verifique sua internet e tente novamente.';
+    }
+
+    if (lower.contains('access token google invalido')) {
+      return 'Token Google expirado ou invalido. Tente entrar novamente.';
+    }
+
+    if (lower.contains('access token google ausente')) {
+      return 'Nao foi possivel obter token do Google. Tente novamente.';
+    }
+
+    if (lower.contains('conta google sem email valido') ||
+        lower.contains('email do google nao verificado')) {
+      return 'Sua conta Google precisa ter email valido e verificado.';
+    }
+
+    if (message.isNotEmpty) {
+      return message;
+    }
+
+    return 'Nao foi possivel entrar com Google. Tente novamente.';
+  }
+
   Map<String, String> _getHeaders() {
     final token = _requireToken();
 
@@ -154,7 +337,7 @@ class AuthService {
   String _requireToken() {
     final token = globalToken;
     if (token == null || token.isEmpty) {
-      throw Exception('Sessão inválida. Faça login novamente.');
+      throw Exception('Sessao invalida. Faca login novamente.');
     }
 
     return token;
@@ -177,7 +360,7 @@ class AuthService {
     if (response.statusCode == 200) {
       return body.containsKey('id') ? body : (body['user'] ?? body);
     } else if (response.statusCode == 401 || response.statusCode == 403) {
-      throw Exception('Sessão inválida. Faça login novamente.');
+      throw Exception('Sessao invalida. Faca login novamente.');
     } else {
       throw Exception(_extractMessage(body, 'Erro ao buscar perfil'));
     }
@@ -188,18 +371,15 @@ class AuthService {
     final headers = _getHeaders();
 
     final response = await http
-        .patch(
-          uri,
-          headers: headers,
-          body: jsonEncode(data),
-        )
+        .patch(uri, headers: headers, body: jsonEncode(data))
         .timeout(
           const Duration(seconds: 12),
-          onTimeout: () => throw TimeoutException('Timeout ao atualizar perfil'),
+          onTimeout: () =>
+              throw TimeoutException('Timeout ao atualizar perfil'),
         );
 
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw Exception('Sessão inválida. Faça login novamente.');
+      throw Exception('Sessao invalida. Faca login novamente.');
     }
 
     if (response.statusCode != 200) {

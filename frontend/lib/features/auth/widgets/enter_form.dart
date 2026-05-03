@@ -6,10 +6,12 @@ import '../../../shared/widgets/or_divider.dart';
 class EnterForm extends StatelessWidget {
   const EnterForm({
     super.key,
+    this.onContinueWithGooglePressed,
     this.onCreateAccountPressed,
     this.onLoginPressed,
   });
 
+  final VoidCallback? onContinueWithGooglePressed;
   final VoidCallback? onCreateAccountPressed;
   final VoidCallback? onLoginPressed;
 
@@ -21,7 +23,7 @@ class EnterForm extends StatelessWidget {
         AppButton(
           variant: AppButtonVariant.google,
           label: 'Continuar com Google',
-          onPressed: () {},
+          onPressed: onContinueWithGooglePressed ?? () {},
         ),
         const SizedBox(height: 16),
         const OrDivider(),
