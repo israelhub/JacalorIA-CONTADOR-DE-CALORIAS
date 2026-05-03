@@ -1,19 +1,30 @@
-type VerificationEmailTemplateParams = {
+﻿type VerificationEmailTemplateParams = {
   code: string;
   logoCid: string;
+  title?: string;
+  heading?: string;
+  instruction?: string;
 };
 
 export function buildVerificationEmailHtml({
   code,
   logoCid,
+  title,
+  heading,
+  instruction,
 }: VerificationEmailTemplateParams): string {
+  const resolvedTitle = title ?? 'Codigo de verificacao - Jacaloria';
+  const resolvedHeading = heading ?? 'Ola! Seu codigo de verificacao e:';
+  const resolvedInstruction =
+    instruction ?? 'Digite o codigo no aplicativo para confirmar seu e-mail.';
+
   return `
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Código de verificação - Jacaloria</title>
+    <title>${resolvedTitle}</title>
   </head>
   <body style="margin: 0; padding: 0; background-color: #e7e7e7;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #e7e7e7;">
@@ -27,7 +38,7 @@ export function buildVerificationEmailHtml({
             </tr>
             <tr>
               <td style="padding: 55px 47px 0 47px; font-size: 36px; line-height: 44px; font-weight: 700; color: #000000;">
-                Olá! Seu código de verificação é:
+                ${resolvedHeading}
               </td>
             </tr>
             <tr>
@@ -37,12 +48,12 @@ export function buildVerificationEmailHtml({
             </tr>
             <tr>
               <td style="padding: 55px 47px 0 47px; width: 407px; max-width: 407px; font-size: 22px; line-height: 1.35; font-weight: 600; color: #193629;">
-                Digite-o código no aplicativo para confirmar seu e-mail.
+                ${resolvedInstruction}
               </td>
             </tr>
             <tr>
               <td style="padding: 55px 47px 89px 47px; width: 439px; max-width: 439px; font-size: 20px; line-height: 1.2; font-weight: 400; color: #4d6559;">
-                Este é um email enviado automaticamente e não recebemos respostas.
+                Este e um email enviado automaticamente e nao recebemos respostas.
               </td>
             </tr>
           </table>

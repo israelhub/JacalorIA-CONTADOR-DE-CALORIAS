@@ -126,7 +126,8 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
     return KeyEventResult.handled;
   }
 
-  String get _verificationCode => _controllers.map((controller) => controller.text).join();
+  String get _verificationCode =>
+      _controllers.map((controller) => controller.text).join();
 
   Future<void> _handleConfirm() async {
     final code = _verificationCode;
@@ -169,7 +170,9 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -205,6 +208,19 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                     ),
                     child: Text(
                       'Enviamos um código para ${widget.email}.',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xxl,
+                    ),
+                    child: Text(
+                      'Verifique o seu spam.',
                       textAlign: TextAlign.center,
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.textMuted,

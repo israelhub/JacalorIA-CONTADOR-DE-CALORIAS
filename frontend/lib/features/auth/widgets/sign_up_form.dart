@@ -10,6 +10,7 @@ class SignUpForm extends StatefulWidget {
   const SignUpForm({
     super.key,
     this.onCreateAccountPressed,
+    this.onContinueWithGooglePressed,
     this.onLoginPressed,
     this.isLoading = false,
   });
@@ -18,7 +19,9 @@ class SignUpForm extends StatefulWidget {
     required String name,
     required String email,
     required String password,
-  })? onCreateAccountPressed;
+  })?
+  onCreateAccountPressed;
+  final VoidCallback? onContinueWithGooglePressed;
   final VoidCallback? onLoginPressed;
   final bool isLoading;
 
@@ -94,7 +97,7 @@ class _SignUpFormState extends State<SignUpForm> {
             enabled: !widget.isLoading,
             validator: (value) {
               if (!AuthHelpers.isValidPassword((value ?? '').trim())) {
-                return 'A senha deve ter ao menos 6 dígitos';
+                return 'A senha deve ter ao menos 8 caracteres e 1 numero';
               }
               return null;
             },
@@ -127,7 +130,9 @@ class _SignUpFormState extends State<SignUpForm> {
           const SizedBox(height: AppSpacing.lg),
           AppButton(
             label: 'Continuar com Google',
-            onPressed: () {},
+            onPressed: widget.isLoading
+                ? null
+                : widget.onContinueWithGooglePressed,
             variant: AppButtonVariant.google,
           ),
           const SizedBox(height: AppSpacing.lg),
