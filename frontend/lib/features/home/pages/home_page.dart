@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../shared/widgets/app_page_route.dart';
 
 import '../../food_analysis/models/food_meal_record.dart';
@@ -23,14 +24,19 @@ class HomePage extends StatefulWidget {
     AuthService? authService,
     this.initialSelectedDate,
     this.onSelectedDateChanged,
-  })
-    : _mealService = mealService ?? const MealService(),
-      _authService = authService ?? AuthService();
+  }) : _mealService = mealService ?? const MealService(),
+       _authService = authService ?? AuthService();
 
   static const _mealAsset =
       'assets/images/smiling green cartoon crocodile@2x.webp';
+  static const _mascotIdleVideoAsset = 'assets/videos/jaca_video_padrao.webm';
+  static const _mascotSadVideoAsset = 'assets/videos/jaca_triste.webm';
+  static const _mascotScaredVideoAsset = 'assets/videos/jaca_assustado.webm';
+  static const _mascotCelebrationVideoAsset = 'assets/videos/jaca_feliz.webm';
   static const _mealCardHeight =
       AppSpacing.huge + AppSpacing.xxxl + AppSpacing.md - 1;
+  static const _newAccountFirstHomeAccessKeyPrefix =
+      'new_account_first_home_access_';
 
   final MealService _mealService;
   final AuthService _authService;
@@ -45,6 +51,8 @@ class _HomePageState extends State<HomePage> {
   final List<FoodMealRecord> _records = <FoodMealRecord>[];
   Map<String, dynamic>? _userProfile;
   bool _isLoading = true;
+  bool _playMascotCelebration = false;
+  bool _isFirstHomeAccess = false;
   late DateTime _selectedDate;
 
   @override
@@ -93,18 +101,20 @@ class _HomePageState extends State<HomePage> {
       ]);
       final meals = results[0] as List<FoodMealRecord>;
       final profile = results[1] as Map<String, dynamic>;
+      final isFirstHomeAccess = await _consumeNewAccountFirstHomeAccess(
+        profile,
+      );
 
       try {
         await _precacheHomeImages(meals, profile);
-      } catch (_) {
-        // Image precache should never block the home data rendering.
-      }
+      } catch (_) {}
 
       if (mounted) {
         setState(() {
           _records.clear();
           _records.addAll(meals);
           _userProfile = profile.isNotEmpty ? profile : null;
+          _isFirstHomeAccess = isFirstHomeAccess;
           _isLoading = false;
         });
       }
@@ -164,10 +174,84 @@ class _HomePageState extends State<HomePage> {
     for (final provider in providers) {
       try {
         await precacheImage(provider, context);
-      } catch (_) {
-        // Ignore isolated image preload failures (common on Flutter Web).
-      }
+      } catch (_) {}
     }
+  }
+
+  Future<bool> _consumeNewAccountFirstHomeAccess(
+    Map<String, dynamic> profile,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawUserId =
+        profile['id'] ?? profile['email'] ?? profile['name'] ?? 'unknown-user';
+    final userId = rawUserId.toString().trim();
+    final storageKey = '${HomePage._newAccountFirstHomeAccessKeyPrefix}$userId';
+    final isNewAccountFirstAccess = prefs.getBool(storageKey) ?? false;
+
+    if (isNewAccountFirstAccess) {
+      await prefs.remove(storageKey);
+    }
+
+    return isNewAccountFirstAccess;
+  }
+
+  String _resolveIdleMascotAsset() {
+    final today = DateTime.now();
+    final todayRecords = _records
+        .where((record) {
+          final createdAt = record.createdAt;
+          return createdAt != null && isSameHomeDate(createdAt, today);
+        })
+        .toList(growable: false);
+
+    final hasNoMealsToday = todayRecords.isEmpty;
+    if (hasNoMealsToday && !_isFirstHomeAccess) {
+      return HomePage._mascotSadVideoAsset;
+    }
+
+    final goalCalories = readHomeProfileInt(_userProfile, const [
+      'daily_calorie_goal',
+      'dailyCalorieGoal',
+    ], fallback: 2000);
+    final consumedCalories = todayRecords.fold<int>(
+      0,
+      (sum, record) => sum + record.calories,
+    );
+
+    if (consumedCalories > goalCalories) {
+      return HomePage._mascotScaredVideoAsset;
+    }
+
+    return HomePage._mascotIdleVideoAsset;
+  }
+
+  bool _isCalorieGoalExceededForDate({
+    required DateTime date,
+    FoodMealRecord? extraRecord,
+  }) {
+    final normalizedDate = normalizeHomeDate(date);
+    final dailyRecords = _records
+        .where((record) {
+          final createdAt = record.createdAt;
+          return createdAt != null && isSameHomeDate(createdAt, normalizedDate);
+        })
+        .toList(growable: false);
+
+    var consumedCalories = dailyRecords.fold<int>(
+      0,
+      (sum, record) => sum + record.calories,
+    );
+
+    if (extraRecord != null) {
+      consumedCalories += extraRecord.calories;
+    }
+
+    final goalCalories = readHomeProfileInt(_userProfile, const [
+      'daily_calorie_goal',
+      'dailyCalorieGoal',
+    ], fallback: 2000);
+
+    return consumedCalories > goalCalories;
   }
 
   @override
@@ -184,7 +268,21 @@ class _HomePageState extends State<HomePage> {
       onMealTap: _openMealDetails,
       selectedDate: _selectedDate,
       onSelectedDateTap: _pickSelectedDate,
+      playMascotCelebration: _playMascotCelebration,
+      idleMascotVideoAsset: _resolveIdleMascotAsset(),
+      mascotCelebrationVideoAsset: HomePage._mascotCelebrationVideoAsset,
+      onMascotCelebrationCompleted: _handleMascotCelebrationCompleted,
     );
+  }
+
+  void _handleMascotCelebrationCompleted() {
+    if (!_playMascotCelebration || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _playMascotCelebration = false;
+    });
   }
 
   Future<void> _pickSelectedDate() async {
@@ -193,6 +291,51 @@ class _HomePageState extends State<HomePage> {
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        final baseTheme = Theme.of(context);
+        final colorScheme = baseTheme.colorScheme.copyWith(
+          primary: AppColors.action500,
+          onPrimary: AppColors.surface,
+          secondary: AppColors.action500,
+          onSecondary: AppColors.surface,
+          surface: AppColors.surface,
+          onSurface: AppColors.brand900Variant,
+        );
+
+        return Theme(
+          data: baseTheme.copyWith(
+            colorScheme: colorScheme,
+            datePickerTheme: baseTheme.datePickerTheme.copyWith(
+              backgroundColor: AppColors.surface,
+              headerBackgroundColor: AppColors.surface,
+              headerForegroundColor: AppColors.brand900Variant,
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.black;
+                }
+                return AppColors.brand900Variant;
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return AppColors.action500;
+                }
+                return Colors.transparent;
+              }),
+              todayForegroundColor: const WidgetStatePropertyAll(
+                AppColors.action500,
+              ),
+              todayBorder: const BorderSide(color: AppColors.action500),
+              cancelButtonStyle: TextButton.styleFrom(
+                foregroundColor: AppColors.action500,
+              ),
+              confirmButtonStyle: TextButton.styleFrom(
+                foregroundColor: AppColors.action500,
+              ),
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
 
     if (pickedDate == null) {
@@ -236,9 +379,14 @@ class _HomePageState extends State<HomePage> {
 
     final recordDate = normalizeHomeDate(record.createdAt ?? DateTime.now());
     final recordId = (record.id ?? '').trim();
+    final shouldPlayCelebration = !_isCalorieGoalExceededForDate(
+      date: recordDate,
+      extraRecord: record,
+    );
 
     setState(() {
       _selectedDate = recordDate;
+      _playMascotCelebration = shouldPlayCelebration;
 
       if (recordId.isNotEmpty) {
         _records.removeWhere((item) => (item.id ?? '').trim() == recordId);
@@ -391,6 +539,10 @@ class _HomeBody extends StatelessWidget {
     required this.onMealTap,
     required this.selectedDate,
     required this.onSelectedDateTap,
+    required this.playMascotCelebration,
+    required this.idleMascotVideoAsset,
+    required this.mascotCelebrationVideoAsset,
+    required this.onMascotCelebrationCompleted,
     this.userProfile,
     this.onAvatarTap,
   });
@@ -400,6 +552,10 @@ class _HomeBody extends StatelessWidget {
   final Future<void> Function(FoodMealRecord record) onMealTap;
   final DateTime selectedDate;
   final VoidCallback onSelectedDateTap;
+  final bool playMascotCelebration;
+  final String idleMascotVideoAsset;
+  final String mascotCelebrationVideoAsset;
+  final VoidCallback onMascotCelebrationCompleted;
   final Map<String, dynamic>? userProfile;
   final VoidCallback? onAvatarTap;
 
@@ -416,13 +572,14 @@ class _HomeBody extends StatelessWidget {
                 child: Column(
                   children: [
                     const SizedBox(height: AppSpacing.xxl),
-                    _Header(
-                      userProfile: userProfile,
-                      onAvatarTap: onAvatarTap,
-                    ),
+                    _Header(userProfile: userProfile, onAvatarTap: onAvatarTap),
                     const SizedBox(height: AppSpacing.xxxl),
                     HomeDailyGoalWithMascot(
                       mascotAsset: HomePage._mealAsset,
+                      idleMascotVideoAsset: idleMascotVideoAsset,
+                      mascotVideoAsset: mascotCelebrationVideoAsset,
+                      playMascotVideo: playMascotCelebration,
+                      onMascotVideoCompleted: onMascotCelebrationCompleted,
                       records: records,
                       userProfile: userProfile,
                     ),
@@ -447,26 +604,26 @@ class _HomeBody extends StatelessWidget {
                         .asMap()
                         .entries
                         .expand((entry) {
-                      final index = entry.key;
-                      final record = entry.value;
+                          final index = entry.key;
+                          final record = entry.value;
 
-                      return <Widget>[
-                        HomeMealCard(
-                          cardKey: ValueKey('home-meal-card-$index'),
-                          title: record.title,
-                          description: record.description,
-                          kcal: record.kcalLabel,
-                          time: record.timeLabel,
-                          imageAsset: record.imageAsset,
-                          imageBytes: record.imageBytes,
-                          imageUrl: record.imageUrl,
-                          height: HomePage._mealCardHeight,
-                          onTap: () => onMealTap(record),
-                        ),
-                        if (index != records.length - 1)
-                          const SizedBox(height: AppSpacing.lg),
-                      ];
-                    }),
+                          return <Widget>[
+                            HomeMealCard(
+                              cardKey: ValueKey('home-meal-card-$index'),
+                              title: record.title,
+                              description: record.description,
+                              kcal: record.kcalLabel,
+                              time: record.timeLabel,
+                              imageAsset: record.imageAsset,
+                              imageBytes: record.imageBytes,
+                              imageUrl: record.imageUrl,
+                              height: HomePage._mealCardHeight,
+                              onTap: () => onMealTap(record),
+                            ),
+                            if (index != records.length - 1)
+                              const SizedBox(height: AppSpacing.lg),
+                          ];
+                        }),
                     const SizedBox(height: AppSpacing.xxxl),
                   ],
                 ),
@@ -582,7 +739,7 @@ class _MealsHeader extends StatelessWidget {
                 decoration: TextDecoration.underline,
                 decorationColor: AppColors.textSecondary,
               ),
-          ),
+            ),
           ),
         ),
       ],
@@ -602,9 +759,7 @@ class _AddMealAction extends StatelessWidget {
       onTap: onTap,
       height: HomePage._mealCardHeight,
       borderRadius: AppRadius.lg - AppSpacing.xs,
-      labelStyle: AppTextStyles.homeAction.copyWith(
-        color: AppColors.action500,
-      ),
+      labelStyle: AppTextStyles.homeAction.copyWith(color: AppColors.action500),
       leading: Container(
         width: AppSpacing.xxl + AppSpacing.xs,
         height: AppSpacing.xxl + AppSpacing.xs,
@@ -615,9 +770,7 @@ class _AddMealAction extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           '+',
-          style: AppTextStyles.buttonMedium.copyWith(
-            color: AppColors.surface,
-          ),
+          style: AppTextStyles.buttonMedium.copyWith(color: AppColors.surface),
         ),
       ),
     );
