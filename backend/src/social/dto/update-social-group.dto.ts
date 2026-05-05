@@ -1,4 +1,4 @@
-import { IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class UpdateSocialGroupDto {
   @IsOptional()
@@ -13,7 +13,7 @@ export class UpdateSocialGroupDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['offensive', 'daily_goal', 'calories', 'xp'])
+  @IsIn(['offensive', 'daily_goal', 'xp', 'group_streak'])
   competitionType?: string;
 
   @IsOptional()
@@ -23,6 +23,10 @@ export class UpdateSocialGroupDto {
 
   @IsOptional()
   @IsInt()
-  @Min(1)
+  @Min(0)
   durationDays?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
 }
