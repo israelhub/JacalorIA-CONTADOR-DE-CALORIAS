@@ -176,8 +176,8 @@ export class PerformanceService {
         weightLostKg,
       },
       highlight: {
-        title: 'Destaque do mês',
-        description: `Você bateu sua meta em ${metGoalDays} dias e manteve uma média de ${avgDailyCalories} kcal por dia. Continue assim: você está no caminho certo para seu objetivo!`,
+        title: 'Distribuição entre macronutrientes',
+        description: '',
         macroProgress: [
           {
             key: 'carbs',

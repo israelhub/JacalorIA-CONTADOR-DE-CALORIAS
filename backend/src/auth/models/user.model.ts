@@ -95,6 +95,18 @@ export class User extends Model {
   @Column({ type: DataType.STRING, field: 'avatar_url' })
   avatarUrl: string | null;
 
+  @Default(false)
+  @Column({ type: DataType.BOOLEAN, field: 'hide_missions_guide_me' })
+  hideMissionsGuideMe: boolean;
+
+  @Default(false)
+  @Column({ type: DataType.BOOLEAN, field: 'hide_social_guide_me' })
+  hideSocialGuideMe: boolean;
+
+  @AllowNull(true)
+  @Column({ type: DataType.BOOLEAN, field: 'hide_guide_me' })
+  hideGuideMe: boolean | null;
+
   @CreatedAt
   @Column({ field: 'created_at' })
   createdAt: Date;
