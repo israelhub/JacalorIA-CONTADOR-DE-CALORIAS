@@ -84,3 +84,8 @@ app.*.map.json
 node_modules/
 dist/
 *.js.map
+.tools/ngrok/ngrok.exe
+scripts/flutter_mobile_with_ngrok.ps1
+.gitignore
+scripts/generate_mascot_mobile_webp.ps1
+scripts/flutter_web_with_google.ps1
