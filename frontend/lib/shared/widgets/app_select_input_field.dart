@@ -12,6 +12,7 @@ class AppSelectInputField extends StatefulWidget {
     this.hint,
     this.fieldKey,
     this.compact = false,
+    this.labelStyle,
   });
 
   final String selectedValue;
@@ -21,6 +22,7 @@ class AppSelectInputField extends StatefulWidget {
   final String? hint;
   final Key? fieldKey;
   final bool compact;
+  final TextStyle? labelStyle;
 
   @override
   State<AppSelectInputField> createState() => _AppSelectInputFieldState();
@@ -83,7 +85,7 @@ class _AppSelectInputFieldState extends State<AppSelectInputField> {
                       style: AppTextStyles.bodyLarge.copyWith(
                         color: AppColors.textPrimary,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -140,7 +142,7 @@ class _AppSelectInputFieldState extends State<AppSelectInputField> {
                 child: Text(
                   value,
                   style: AppTextStyles.bodyLarge.copyWith(color: valueColor),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ) else ...[
@@ -183,10 +185,12 @@ class _AppSelectInputFieldState extends State<AppSelectInputField> {
         if (hasLabel) ...[
           Text(
             label,
-            style: AppTextStyles.bodyLarge.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
+            style:
+                widget.labelStyle ??
+                AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
           const SizedBox(height: AppSpacing.sm),
         ],
