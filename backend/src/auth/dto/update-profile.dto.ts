@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber, IsDateString, Min } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsDateString, Min, IsBoolean } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -58,4 +58,12 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   avatarUrl?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  hideMissionsGuideMe?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hideSocialGuideMe?: boolean;
 }

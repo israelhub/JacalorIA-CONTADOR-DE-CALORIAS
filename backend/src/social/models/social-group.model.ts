@@ -55,6 +55,11 @@ export class SocialGroup extends Model {
   durationDays: number;
 
   @AllowNull(false)
+  @Default(false)
+  @Column({ type: DataType.BOOLEAN, field: 'is_public' })
+  isPublic: boolean;
+
+  @AllowNull(false)
   @Column({ type: DataType.STRING, field: 'invite_code' })
   inviteCode: string;
 
