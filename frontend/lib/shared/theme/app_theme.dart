@@ -62,6 +62,17 @@ class AppColors {
   static const Color missionsRewardGold = Color(0xFFB8902A);
   static const Color missionsRewardXp = Color(0xFF5FA036);
 
+  static const Color socialMetricStreak = Color(0xFFF08A24);
+  static const Color socialMetricFavoriteDish = Color(0xFF9EA7B3);
+  static const Color socialMetricPreferredPeriod = Color(0xFF4D8BD6);
+  static const Color socialMetricXp = Color(0xFF6F52C8);
+
+  static const Color socialInfoBirthDateCandle = Color(0xFFFF5A5F);
+  static const Color socialInfoBirthDateFilling = Color(0xFF32C7B0);
+  static const Color socialInfoBirthDateBase = Color(0xFFF4B740);
+  static const Color socialInfoSex = Color(0xFF3B82F6);
+  static const Color socialInfoObjective = Color(0xFF14B8A6);
+
   static const Color shadowButton = Color(0xFFC0C0C0);
   static const Color shadowButtonAlt = Color(0xFFDFDFDF);
 
