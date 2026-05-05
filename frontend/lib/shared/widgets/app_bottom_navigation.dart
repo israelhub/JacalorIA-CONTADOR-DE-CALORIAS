@@ -13,8 +13,8 @@ class AppBottomNavigation extends StatelessWidget {
     this.centerActionKey = const ValueKey('app-bottom-nav-center-action'),
     this.surfaceHeight = 56,
     this.cameraButtonSize = AppSpacing.huge + AppSpacing.xl,
-    this.cameraOverlap = AppSpacing.lg,
-    this.contentHorizontalPadding = AppSpacing.sm,
+    this.cameraOverlap = AppSpacing.xs,
+    this.contentHorizontalPadding = 0,
   }) : assert(items.length == 4);
 
   final List<Widget> items;
@@ -30,6 +30,7 @@ class AppBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
+    final centerSlotWidth = cameraButtonSize;
 
     return SizedBox(
       height: surfaceHeight + cameraOverlap + bottomPadding,
@@ -45,50 +46,87 @@ class AppBottomNavigation extends StatelessWidget {
               key: surfaceKey,
               height: surfaceHeight + bottomPadding,
               padding: EdgeInsets.only(bottom: bottomPadding),
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
-                border: Border(top: BorderSide(color: AppColors.borderBrandAlt)),
-              ),
-              child: Padding(
-                key: contentKey,
-                padding: EdgeInsets.symmetric(
-                  horizontal: contentHorizontalPadding,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(child: Center(child: items[0])),
-                    Expanded(child: Center(child: items[1])),
-                    const Expanded(child: SizedBox()),
-                    Expanded(child: Center(child: items[2])),
-                    Expanded(child: Center(child: items[3])),
-                  ],
-                ),
+              decoration: const BoxDecoration(color: Colors.transparent),
+              child: Stack(
+                children: [
+                  // Linha superior dividida para "abraçar" o botão central.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              top: BorderSide(
+                                color: AppColors.borderBrandAlt,
+                                width: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: centerSlotWidth),
+                      Expanded(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              top: BorderSide(
+                                color: AppColors.borderBrandAlt,
+                                width: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    key: contentKey,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: contentHorizontalPadding,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Expanded(child: Center(child: items[0])),
+                              Expanded(child: Center(child: items[1])),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: centerSlotWidth),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Expanded(child: Center(child: items[2])),
+                              Expanded(child: Center(child: items[3])),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
           Positioned(
-            top: 0,
-            child: Material(
-              color: AppColors.action500,
-              shape: const CircleBorder(),
-              elevation: 0,
-              child: InkWell(
-                key: centerActionKey,
-                onTap: onCenterActionTap,
-                customBorder: const CircleBorder(),
-                child: Container(
-                  width: cameraButtonSize,
-                  height: cameraButtonSize,
-                  decoration: BoxDecoration(
-                    color: AppColors.action500,
-                    shape: BoxShape.circle,
-                    boxShadow: AppShadows.homeActionCircle,
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt_outlined,
-                    color: AppColors.surface,
-                    size: AppSpacing.xxxl,
-                  ),
+            top: -8,
+            child: GestureDetector(
+              key: centerActionKey,
+              onTap: onCenterActionTap,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                width: cameraButtonSize,
+                height: cameraButtonSize,
+                decoration: const BoxDecoration(
+                  color: AppColors.action500,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: AppColors.surface,
+                  size: AppSpacing.xxxl,
                 ),
               ),
             ),

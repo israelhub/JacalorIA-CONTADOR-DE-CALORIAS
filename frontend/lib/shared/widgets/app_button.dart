@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme/app_theme.dart';
 
-enum AppButtonVariant { primary, outline, google, danger }
+enum AppButtonVariant { primary, outline, google, danger, link }
 
 class AppButton extends StatelessWidget {
   const AppButton({
@@ -13,6 +13,7 @@ class AppButton extends StatelessWidget {
     this.variant = AppButtonVariant.primary,
     this.trailingIcon,
     this.leadingIcon,
+    this.textStyle,
   });
 
   final String label;
@@ -20,6 +21,7 @@ class AppButton extends StatelessWidget {
   final AppButtonVariant variant;
   final IconData? trailingIcon;
   final IconData? leadingIcon;
+  final TextStyle? textStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -29,12 +31,14 @@ class AppButton extends StatelessWidget {
         onPressed: onPressed,
         trailingIcon: trailingIcon,
         leadingIcon: leadingIcon,
+        textStyle: textStyle,
       ),
       AppButtonVariant.outline => _OutlineButton(
         label: label,
         onPressed: onPressed,
         trailingIcon: trailingIcon,
         leadingIcon: leadingIcon,
+        textStyle: textStyle,
       ),
       AppButtonVariant.google => _GoogleButton(
         label: label,
@@ -45,6 +49,14 @@ class AppButton extends StatelessWidget {
         onPressed: onPressed,
         leadingIcon: leadingIcon,
         trailingIcon: trailingIcon,
+        textStyle: textStyle,
+      ),
+      AppButtonVariant.link => _LinkButton(
+        label: label,
+        onPressed: onPressed,
+        leadingIcon: leadingIcon,
+        trailingIcon: trailingIcon,
+        textStyle: textStyle,
       ),
     };
   }
@@ -56,12 +68,14 @@ class _PrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.trailingIcon,
     this.leadingIcon,
+    this.textStyle,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? trailingIcon;
   final IconData? leadingIcon;
+  final TextStyle? textStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +99,7 @@ class _PrimaryButton extends StatelessWidget {
         child: (leadingIcon == null && trailingIcon == null)
             ? Text(
                 label,
-                style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
+                style: (textStyle ?? AppTextStyles.buttonLarge).copyWith(color: Colors.white),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -96,7 +110,7 @@ class _PrimaryButton extends StatelessWidget {
                   ],
                   Text(
                     label,
-                    style: AppTextStyles.buttonLarge.copyWith(
+                    style: (textStyle ?? AppTextStyles.buttonLarge).copyWith(
                       color: Colors.white,
                     ),
                   ),
@@ -117,12 +131,14 @@ class _OutlineButton extends StatelessWidget {
     required this.onPressed,
     this.trailingIcon,
     this.leadingIcon,
+    this.textStyle,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? trailingIcon;
   final IconData? leadingIcon;
+  final TextStyle? textStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -144,24 +160,30 @@ class _OutlineButton extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 17),
         alignment: Alignment.center,
-        child: trailingIcon == null
+        child: (leadingIcon == null && trailingIcon == null)
             ? Text(
                 label,
-                style: AppTextStyles.buttonMedium.copyWith(
+                style: (textStyle ?? AppTextStyles.buttonMedium).copyWith(
                   color: AppColors.action500,
                 ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  if (leadingIcon != null) ...[
+                    Icon(leadingIcon, color: AppColors.action500, size: 18),
+                    const SizedBox(width: AppSpacing.xs),
+                  ],
                   Text(
                     label,
-                    style: AppTextStyles.buttonMedium.copyWith(
+                    style: (textStyle ?? AppTextStyles.buttonMedium).copyWith(
                       color: AppColors.action500,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Icon(trailingIcon, color: AppColors.action500, size: 18),
+                  if (trailingIcon != null) ...[
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(trailingIcon, color: AppColors.action500, size: 18),
+                  ],
                 ],
               ),
       ),
@@ -222,12 +244,14 @@ class _DangerButton extends StatelessWidget {
     required this.onPressed,
     this.leadingIcon,
     this.trailingIcon,
+    this.textStyle,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? leadingIcon;
   final IconData? trailingIcon;
+  final TextStyle? textStyle;
 
   static const Color _dangerColor = Color(0xFFD32F2F);
   static const Color _dangerShadow = Color(0xFFB71C1C);
@@ -256,7 +280,7 @@ class _DangerButton extends StatelessWidget {
           children: [
             Text(
               label,
-              style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
+              style: (textStyle ?? AppTextStyles.buttonLarge).copyWith(color: Colors.white),
             ),
             if (leadingIcon != null) ...[
               const SizedBox(width: AppSpacing.xs),
@@ -265,6 +289,53 @@ class _DangerButton extends StatelessWidget {
             if (trailingIcon != null) ...[
               const SizedBox(width: AppSpacing.xs),
               Icon(trailingIcon, color: Colors.white, size: 20),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LinkButton extends StatelessWidget {
+  const _LinkButton({
+    required this.label,
+    required this.onPressed,
+    this.leadingIcon,
+    this.trailingIcon,
+    this.textStyle,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? leadingIcon;
+  final IconData? trailingIcon;
+  final TextStyle? textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return _PressableButtonSurface(
+      onTap: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (leadingIcon != null) ...[
+              Icon(leadingIcon, color: AppColors.action500, size: 18),
+              const SizedBox(width: AppSpacing.xs),
+            ],
+            Text(
+              label,
+              style: (textStyle ?? AppTextStyles.bodyMedium).copyWith(
+                color: AppColors.action500,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (trailingIcon != null) ...[
+              const SizedBox(width: AppSpacing.xs),
+              Icon(trailingIcon, color: AppColors.action500, size: 18),
             ],
           ],
         ),
