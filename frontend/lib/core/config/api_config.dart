@@ -4,6 +4,10 @@ class ApiConfig {
   static const String _configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
   );
+  static const String _configuredShareBaseUrl = String.fromEnvironment(
+    'SHARE_BASE_URL',
+    defaultValue: 'https://jacaloria.app',
+  );
 
   static String get baseUrl {
     if (_configuredBaseUrl.isNotEmpty) {
@@ -23,5 +27,9 @@ class ApiConfig {
     }
 
     return 'http://localhost:3000/api';
+  }
+
+  static String get shareBaseUrl {
+    return _configuredShareBaseUrl.trim().replaceAll(RegExp(r'\/+$'), '');
   }
 }
