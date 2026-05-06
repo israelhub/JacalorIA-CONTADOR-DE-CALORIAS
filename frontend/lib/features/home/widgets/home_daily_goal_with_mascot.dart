@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:video_player/video_player.dart';
+import 'dart:async';
 
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/macro_progress_indicator.dart';
@@ -37,186 +37,54 @@ class HomeDailyGoalWithMascot extends StatefulWidget {
 }
 
 class _HomeDailyGoalWithMascotState extends State<HomeDailyGoalWithMascot> {
-  VideoPlayerController? _idleVideoController;
-  bool _isIdleVideoReady = false;
-  VideoPlayerController? _videoController;
-  bool _isVideoReady = false;
-  bool _isPlayingSequence = false;
-  bool _pendingCelebrationPlayback = false;
+  Timer? _celebrationTimer;
 
   @override
   void initState() {
     super.initState();
-    _initializeIdleVideoController();
-    _initializeVideoController();
+    _syncCelebrationTimer();
   }
 
   @override
   void didUpdateWidget(covariant HomeDailyGoalWithMascot oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    if (oldWidget.idleMascotVideoAsset != widget.idleMascotVideoAsset) {
-      _disposeIdleVideoController();
-      _initializeIdleVideoController();
-    }
-
-    if (oldWidget.mascotVideoAsset != widget.mascotVideoAsset) {
-      _disposeVideoController();
-      _initializeVideoController();
-      return;
-    }
-
-    if (widget.playMascotVideo && !oldWidget.playMascotVideo) {
-      _playMascotVideoOnce();
-    }
+    _syncCelebrationTimer();
   }
 
   @override
   void dispose() {
-    _disposeIdleVideoController();
-    _disposeVideoController();
+    _celebrationTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> _initializeIdleVideoController() async {
-    final videoAsset = widget.idleMascotVideoAsset;
-    if (videoAsset == null || videoAsset.isEmpty) {
+  void _syncCelebrationTimer() {
+    _celebrationTimer?.cancel();
+    _celebrationTimer = null;
+    if (!widget.playMascotVideo) {
       return;
     }
 
-    final controller = VideoPlayerController.asset(videoAsset);
-    _idleVideoController = controller;
-
-    try {
-      await controller.initialize();
-      if (!mounted || _idleVideoController != controller) {
+    _celebrationTimer = Timer(const Duration(seconds: 8), () {
+      if (!mounted) {
         return;
       }
-
-      await controller.setLooping(true);
-      await controller.play();
-
-      if (mounted) {
-        setState(() {
-          _isIdleVideoReady = true;
-        });
-      }
-    } catch (_) {
-      if (mounted && _idleVideoController == controller) {
-        setState(() {
-          _isIdleVideoReady = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _initializeVideoController() async {
-    final videoAsset = widget.mascotVideoAsset;
-    if (videoAsset == null || videoAsset.isEmpty) {
-      return;
-    }
-
-    final controller = VideoPlayerController.asset(videoAsset);
-    _videoController = controller;
-    controller.addListener(_onVideoTick);
-
-    try {
-      await controller.initialize();
-      if (!mounted || _videoController != controller) {
-        return;
-      }
-
-      setState(() {
-        _isVideoReady = true;
-      });
-
-      if (widget.playMascotVideo || _pendingCelebrationPlayback) {
-        await _playMascotVideoOnce();
-      }
-    } catch (_) {
-      if (mounted && _videoController == controller) {
-        setState(() {
-          _isVideoReady = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _playMascotVideoOnce() async {
-    final controller = _videoController;
-    if (controller == null || !_isVideoReady) {
-      _pendingCelebrationPlayback = true;
-      return;
-    }
-
-    _pendingCelebrationPlayback = false;
-    _isPlayingSequence = true;
-    await controller.seekTo(Duration.zero);
-    await controller.play();
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void _onVideoTick() {
-    final controller = _videoController;
-    if (controller == null ||
-        !_isPlayingSequence ||
-        !controller.value.isInitialized) {
-      return;
-    }
-
-    final position = controller.value.position;
-    final duration = controller.value.duration;
-    if (duration == Duration.zero) {
-      return;
-    }
-
-    if (position >= duration) {
-      _isPlayingSequence = false;
-      controller.pause();
       widget.onMascotVideoCompleted?.call();
-      if (mounted) {
-        setState(() {});
-      }
-    }
+    });
   }
 
-  void _disposeVideoController() {
-    final controller = _videoController;
-    if (controller == null) {
-      return;
+  String? _resolveAnimationAsset(String? assetPath) {
+    if (assetPath == null || assetPath.isEmpty) {
+      return null;
     }
-
-    controller.removeListener(_onVideoTick);
-    controller.dispose();
-    _videoController = null;
-    _isVideoReady = false;
-    _isPlayingSequence = false;
-  }
-
-  void _disposeIdleVideoController() {
-    final controller = _idleVideoController;
-    if (controller == null) {
-      return;
-    }
-
-    controller.dispose();
-    _idleVideoController = null;
-    _isIdleVideoReady = false;
+    return assetPath;
   }
 
   @override
   Widget build(BuildContext context) {
-    final showCelebrationVideo =
-        widget.playMascotVideo && _isVideoReady && _videoController != null;
-    final showIdleVideo =
-        !showCelebrationVideo &&
-        _isIdleVideoReady &&
-        _idleVideoController != null;
-    final hasIdleVideoConfigured =
-        widget.idleMascotVideoAsset != null &&
-        widget.idleMascotVideoAsset!.isNotEmpty;
+    final celebrationAsset = widget.playMascotVideo
+        ? _resolveAnimationAsset(widget.mascotVideoAsset)
+        : null;
+    final idleAsset = _resolveAnimationAsset(widget.idleMascotVideoAsset);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -233,27 +101,21 @@ class _HomeDailyGoalWithMascotState extends State<HomeDailyGoalWithMascot> {
             key: const ValueKey('home-mascot-overlay'),
             width: HomeDailyGoalWithMascot._mascotSize,
             height: HomeDailyGoalWithMascot._mascotSize,
-            child: showCelebrationVideo
-                ? FittedBox(
-                    fit: BoxFit.contain,
-                    child: SizedBox(
-                      width: _videoController!.value.size.width,
-                      height: _videoController!.value.size.height,
-                      child: VideoPlayer(_videoController!),
-                    ),
-                  )
-                : showIdleVideo
-                ? FittedBox(
-                    fit: BoxFit.contain,
-                    child: SizedBox(
-                      width: _idleVideoController!.value.size.width,
-                      height: _idleVideoController!.value.size.height,
-                      child: VideoPlayer(_idleVideoController!),
-                    ),
-                  )
-                : hasIdleVideoConfigured
-                ? const SizedBox.shrink()
-                : Image.asset(widget.mascotAsset, fit: BoxFit.contain),
+            child:
+                (celebrationAsset != null
+                    ? Image.asset(
+                        celebrationAsset,
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                      )
+                    : idleAsset != null
+                    ? Image.asset(
+                        idleAsset,
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                      )
+                    : null) ??
+                Image.asset(widget.mascotAsset, fit: BoxFit.contain),
           ),
         ),
       ],

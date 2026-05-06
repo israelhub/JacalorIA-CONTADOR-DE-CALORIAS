@@ -29,10 +29,14 @@ class HomePage extends StatefulWidget {
 
   static const _mealAsset =
       'assets/images/smiling green cartoon crocodile@2x.webp';
-  static const _mascotIdleVideoAsset = 'assets/videos/jaca_video_padrao.webm';
-  static const _mascotSadVideoAsset = 'assets/videos/jaca_triste.webm';
-  static const _mascotScaredVideoAsset = 'assets/videos/jaca_assustado.webm';
-  static const _mascotCelebrationVideoAsset = 'assets/videos/jaca_feliz.webm';
+  static const _mascotIdleVideoAsset =
+      'assets/videos/jaca_video_padrao_mobile_fast.webp';
+  static const _mascotSadVideoAsset =
+      'assets/videos/jaca_triste_mobile_fast.webp';
+  static const _mascotScaredVideoAsset =
+      'assets/videos/jaca_assustado_mobile_fast.webp';
+  static const _mascotCelebrationVideoAsset =
+      'assets/videos/jaca_feliz_mobile_fast.webp';
   static const _mealCardHeight =
       AppSpacing.huge + AppSpacing.xxxl + AppSpacing.md - 1;
   static const _newAccountFirstHomeAccessKeyPrefix =
@@ -50,7 +54,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final List<FoodMealRecord> _records = <FoodMealRecord>[];
   Map<String, dynamic>? _userProfile;
-  bool _isLoading = true;
+  bool _isDataLoading = true;
   bool _playMascotCelebration = false;
   bool _isFirstHomeAccess = false;
   late DateTime _selectedDate;
@@ -115,7 +119,7 @@ class _HomePageState extends State<HomePage> {
           _records.addAll(meals);
           _userProfile = profile.isNotEmpty ? profile : null;
           _isFirstHomeAccess = isFirstHomeAccess;
-          _isLoading = false;
+          _isDataLoading = false;
         });
       }
     } catch (e) {
@@ -256,7 +260,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_isDataLoading) {
       return const _HomeBodySkeleton();
     }
 
@@ -430,7 +434,7 @@ class _HomeBodySkeleton extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Column(
               children: [
                 const SizedBox(height: AppSpacing.xxl),
@@ -568,7 +572,7 @@ class _HomeBody extends StatelessWidget {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Column(
                   children: [
                     const SizedBox(height: AppSpacing.xxl),
