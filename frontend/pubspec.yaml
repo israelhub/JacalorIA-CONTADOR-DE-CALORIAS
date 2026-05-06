@@ -38,8 +38,10 @@ dependencies:
   http: ^1.2.2
   image_picker: ^1.1.2
   shared_preferences: ^2.5.5
-  video_player: ^2.9.2
   google_sign_in: ^6.2.1
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^5.2.3
+  share_plus: ^10.0.2
 
 dev_dependencies:
   flutter_test:
@@ -66,7 +68,10 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-    - assets/videos/
+    - assets/videos/jaca_video_padrao_mobile_fast.webp
+    - assets/videos/jaca_triste_mobile_fast.webp
+    - assets/videos/jaca_assustado_mobile_fast.webp
+    - assets/videos/jaca_feliz_mobile_fast.webp
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

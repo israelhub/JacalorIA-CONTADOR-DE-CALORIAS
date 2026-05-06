@@ -135,7 +135,8 @@ class MonthlyPerformance {
       consistencyPercent: _asInt(report['consistencyPercent']),
       avgDailyCalories: _asInt(report['avgDailyCalories']),
       weightLostKg: _asDouble(report['weightLostKg']),
-      highlightTitle: highlight['title'] as String? ?? 'Destaque do mês',
+      highlightTitle:
+          highlight['title'] as String? ?? 'Distribuição entre macronutrientes',
       highlightDescription: highlight['description'] as String? ?? '',
       macroProgress: macro,
     );

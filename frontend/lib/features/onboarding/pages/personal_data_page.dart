@@ -130,7 +130,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
         child: Theme(
           data: pageTheme,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
