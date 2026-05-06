@@ -107,7 +107,7 @@ class EnterPagesShortcutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: TextButton.icon(
         key: const ValueKey('enter-pages-shortcut-button'),
         onPressed: () => _openPagesQuickAccess(context),
