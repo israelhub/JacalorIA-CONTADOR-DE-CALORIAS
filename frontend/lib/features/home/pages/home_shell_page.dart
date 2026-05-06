@@ -91,7 +91,7 @@ class _HomeShellPageState extends State<HomeShellPage> {
 
     await _pageController.animateToPage(
       nextIndex,
-      duration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 320),
       curve: Curves.easeOutCubic,
     );
   }
