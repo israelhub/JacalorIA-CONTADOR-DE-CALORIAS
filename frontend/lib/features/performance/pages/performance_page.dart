@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_page_header.dart';
+import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_section_header.dart';
 import '../helpers/performance_month_helpers.dart';
 import '../models/monthly_performance.dart';
@@ -147,44 +149,29 @@ class _PerformancePageState extends State<PerformancePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Text(
-                'Desempenho',
-                style: AppTextStyles.performanceTitle.copyWith(
-                  color: AppColors.brand900Variant,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              const Icon(
-                Icons.calendar_today_outlined,
-                size: AppSpacing.xl + AppSpacing.xs,
-                color: AppColors.brand900Variant,
-              ),
-            ],
+          AppPageHeader(
+            title: 'Desempenho',
+            icon: Icons.calendar_today_outlined,
+            titleStyle: AppTextStyles.performanceTitle.copyWith(
+              color: AppColors.brand900Variant,
+            ),
+            iconSize: AppSpacing.xl + AppSpacing.xs,
           ),
           const SizedBox(height: AppSpacing.lg),
           _StreakCard(
             streakDays: performance.streakDays,
             message: performance.streakMessage,
           ),
-          if (_isMonthLoading) ...<Widget>[
-            const SizedBox(height: AppSpacing.md),
-            const LinearProgressIndicator(
-              minHeight: 2,
-              color: AppColors.action500,
-              backgroundColor: AppColors.borderAlt,
-            ),
-          ],
           const SizedBox(height: AppSpacing.lg),
-          PerformanceCalendar(
-            month: monthDate,
-            days: performance.calendarDays,
-            onPreviousMonth: _goToPreviousMonth,
-            onNextMonth: _goToNextMonth,
-            onDayTap: widget.onDateSelected,
-            isLoading: _isMonthLoading,
-          ),
+          _isMonthLoading
+              ? const _PerformanceCalendarSkeleton()
+              : PerformanceCalendar(
+                  month: monthDate,
+                  days: performance.calendarDays,
+                  onPreviousMonth: _goToPreviousMonth,
+                  onNextMonth: _goToNextMonth,
+                  onDayTap: widget.onDateSelected,
+                ),
           const SizedBox(height: AppSpacing.lg),
           AppSectionHeader(
             title: 'Relatório do mês',
@@ -254,6 +241,74 @@ class _PerformancePageState extends State<PerformancePage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PerformanceCalendarSkeleton extends StatelessWidget {
+  const _PerformanceCalendarSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
+        boxShadow: AppShadows.performanceCard,
+      ),
+      child: Column(
+        children: const <Widget>[
+          Row(
+            children: <Widget>[
+              AppSkeletonBox(
+                width: AppSpacing.xxl + AppSpacing.sm,
+                height: AppSpacing.xxl + AppSpacing.sm,
+                borderRadius: AppRadius.pill,
+              ),
+              SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: AppSkeletonBox(height: AppSpacing.lg, borderRadius: 10),
+              ),
+              SizedBox(width: AppSpacing.md),
+              AppSkeletonBox(
+                width: AppSpacing.xxl + AppSpacing.sm,
+                height: AppSpacing.xxl + AppSpacing.sm,
+                borderRadius: AppRadius.pill,
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.md),
+          AppSkeletonBox(height: 16, borderRadius: 10),
+          SizedBox(height: AppSpacing.md),
+          _PerformanceCalendarGridSkeleton(),
+          SizedBox(height: AppSpacing.lg),
+          Divider(color: AppColors.borderAlt, height: 1),
+          SizedBox(height: AppSpacing.lg),
+          AppSkeletonBox(height: 14, width: 260, borderRadius: 10),
+        ],
+      ),
+    );
+  }
+}
+
+class _PerformanceCalendarGridSkeleton extends StatelessWidget {
+  const _PerformanceCalendarGridSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AppSpacing.xs,
+      runSpacing: AppSpacing.xs,
+      children: List<Widget>.generate(
+        35,
+        (_) => const SizedBox(
+          width: 40,
+          height: 40,
+          child: AppSkeletonBox(height: 40, borderRadius: 10),
+        ),
       ),
     );
   }
@@ -352,7 +407,7 @@ class _HighlightCard extends StatelessWidget {
           Row(
             children: <Widget>[
               const Icon(
-                Icons.emoji_events_outlined,
+                Icons.pie_chart_outline,
                 color: AppColors.accent500,
                 size: AppSpacing.xl,
               ),
@@ -365,14 +420,17 @@ class _HighlightCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            description,
-            style: AppTextStyles.performanceBody.copyWith(
-              color: AppColors.textMuted,
+          if (description.trim().isNotEmpty) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              description,
+              style: AppTextStyles.performanceBody.copyWith(
+                color: AppColors.textMuted,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.md),
+          ] else
+            const SizedBox(height: AppSpacing.md),
           ...macroProgress.map((PerformanceMacroProgress item) {
             final color = switch (item.key) {
               'protein' => AppColors.performanceLegendMeal,

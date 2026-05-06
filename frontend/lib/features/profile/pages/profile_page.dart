@@ -135,7 +135,7 @@ class _ProfilePageState extends State<ProfilePage> {
         : 'cm';
 
     _selectedSex = profile['sex'] as String?;
-    _selectedObjective = profile['objective'] as String?;
+    _selectedObjective = _normalizeObjective(profile['objective'] as String?);
     _selectedActivityLevel =
         (profile['activityLevel'] as String?) ??
         (profile['activity_level'] as String?);
@@ -151,6 +151,28 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return value.toStringAsFixed(1);
+  }
+
+  String? _normalizeObjective(String? value) {
+    final raw = value?.trim();
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+
+    const map = <String, String>{
+      'loseweight': 'loseWeight',
+      'lose_weight': 'loseWeight',
+      'gainmass': 'gainMass',
+      'gain_mass': 'gainMass',
+      'gainmuscle': 'gainMass',
+      'gain_muscle': 'gainMass',
+      'maintainweight': 'maintainWeight',
+      'maintain_weight': 'maintainWeight',
+      'maintenance': 'maintainWeight',
+    };
+
+    final normalizedKey = raw.toLowerCase().replaceAll(RegExp(r'[^a-z_]'), '');
+    return map[normalizedKey] ?? raw;
   }
 
   Future<void> _pickBirthDate() async {
@@ -367,7 +389,7 @@ class _ProfilePageState extends State<ProfilePage> {
             duration: const Duration(milliseconds: 280),
             curve: Curves.easeOut,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
