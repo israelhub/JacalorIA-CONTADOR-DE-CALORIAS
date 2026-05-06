@@ -35,8 +35,8 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
   static const _competitionTypes = <_CompetitionTypeOption>[
     _CompetitionTypeOption('offensive', 'Ofensiva'),
     _CompetitionTypeOption('daily_goal', 'Meta diária'),
-    _CompetitionTypeOption('calories', 'Calorias'),
     _CompetitionTypeOption('xp', 'XP'),
+    _CompetitionTypeOption('group_streak', 'Sequência dos amigos'),
   ];
 
   final TextEditingController _nameController = TextEditingController();
@@ -44,11 +44,30 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
   String _selectedIconKey = 'salad';
   String _selectedCompetitionType = 'offensive';
   int _selectedDurationDays = 7;
+  bool _isPublicGroup = false;
   bool _isSaving = false;
 
   bool get _isEditing => widget.existingGroup != null;
 
-  static const List<int> _durationOptions = <int>[7, 14, 21, 30];
+  static const List<int> _durationOptions = <int>[7, 14, 21, 30, 0];
+  static const double _sectionGap = AppSpacing.lg;
+
+  List<int> get _visibleDurationOptions {
+    if (_selectedCompetitionType == 'group_streak') {
+      return const <int>[0];
+    }
+    return _durationOptions.where((value) => value > 0).toList(growable: false);
+  }
+
+  String get _competitionDescription {
+    return switch (_selectedCompetitionType) {
+      'offensive' => 'Vence quem mantiver a maior sequência ativa no desafio.',
+      'daily_goal' => 'Ganha quem bater mais vezes a própria meta diária.',
+      'xp' => 'Pontua as ações saudáveis para ranquear evolução no grupo.',
+      'group_streak' => 'A sequência só cresce quando todos do grupo permanecem ativos.',
+      _ => 'Vence quem mantiver a maior sequência ativa no desafio.',
+    };
+  }
 
   @override
   void initState() {
@@ -61,6 +80,7 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
       _selectedIconKey = group.iconKey;
       _selectedCompetitionType = group.competitionType;
       _selectedDurationDays = group.durationDays;
+      _isPublicGroup = group.isPublic;
     }
   }
 
@@ -94,6 +114,7 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
               competitionType: _selectedCompetitionType,
               iconKey: _selectedIconKey,
               durationDays: _selectedDurationDays,
+              isPublic: _isPublicGroup,
             )
           : await widget._service.createGroup(
               name: _nameController.text.trim(),
@@ -101,6 +122,7 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
               competitionType: _selectedCompetitionType,
               iconKey: _selectedIconKey,
               durationDays: _selectedDurationDays,
+              isPublic: _isPublicGroup,
             );
 
       if (!mounted) {
@@ -218,15 +240,15 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      for (var index = 0; index < _durationOptions.length; index++) ...[
+                      for (var index = 0; index < _visibleDurationOptions.length; index++) ...[
                         if (index > 0) const SizedBox(width: AppSpacing.sm),
                         _DurationChip(
-                          value: _durationOptions[index],
-                          label: socialDurationLabel(_durationOptions[index]),
-                          selected: _durationOptions[index] == _selectedDurationDays,
+                          value: _visibleDurationOptions[index],
+                          label: socialDurationLabel(_visibleDurationOptions[index]),
+                          selected: _visibleDurationOptions[index] == _selectedDurationDays,
                           onTap: () {
                             setState(() {
-                              _selectedDurationDays = _durationOptions[index];
+                              _selectedDurationDays = _visibleDurationOptions[index];
                             });
                           },
                         ),
@@ -234,7 +256,7 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: _sectionGap),
                 Text(
                   'Tipo de competição',
                   style: AppTextStyles.caption.copyWith(
@@ -255,12 +277,64 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
                           onTap: () {
                             setState(() {
                               _selectedCompetitionType = _competitionTypes[index].key;
+                              if (_selectedCompetitionType == 'group_streak') {
+                                _selectedDurationDays = 0;
+                              } else if (_selectedDurationDays == 0) {
+                                _selectedDurationDays = 7;
+                              }
                             });
                           },
                         ),
                       ],
                     ],
                   ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  _competitionDescription,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: _sectionGap),
+                Text(
+                  'Grupo público',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.brand900Variant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Transform.scale(
+                      scale: 0.86,
+                      child: Switch(
+                        value: _isPublicGroup,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        activeColor: AppColors.surface,
+                        activeTrackColor: AppColors.action500,
+                        inactiveThumbColor: AppColors.textMuted,
+                        inactiveTrackColor: AppColors.surfaceAlt,
+                        onChanged: (value) {
+                          setState(() {
+                            _isPublicGroup = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        _isPublicGroup
+                            ? 'Visível na lista pública para qualquer usuário entrar.'
+                            : 'Somente por convite/código.',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 SizedBox(
@@ -319,7 +393,7 @@ class _IconPickerOption extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: selected ? AppColors.missionsXpPill : AppColors.surfaceAlt,
+          color: selected ? AppColors.action500 : AppColors.surfaceAlt,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected ? AppColors.action500 : Colors.transparent,
@@ -329,7 +403,7 @@ class _IconPickerOption extends StatelessWidget {
         child: Icon(
           icon,
           size: 22,
-          color: selected ? AppColors.action500 : AppColors.textMuted,
+          color: selected ? AppColors.surface : AppColors.textMuted,
         ),
       ),
     );
