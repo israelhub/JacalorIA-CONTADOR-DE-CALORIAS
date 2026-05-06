@@ -88,7 +88,7 @@ class _LoginPageState extends State<LoginPage> {
           animation: _authController,
           builder: (context, _) {
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
