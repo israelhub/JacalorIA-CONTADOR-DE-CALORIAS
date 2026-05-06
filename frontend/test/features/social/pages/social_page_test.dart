@@ -14,13 +14,8 @@ class _FakeSocialService extends SocialService {
   Future<List<SocialGroupSummary>> fetchGroups() async => groups;
 
   @override
-  Future<SocialGroupDetail> fetchGroup(String groupId) async {
-    final group = groups.firstWhere((group) => group.id == groupId);
-    return SocialGroupDetail(
-      group: group,
-      ranking: const [],
-      recentActivities: const [],
-    );
+  Future<SocialFriendsData> fetchFriends() async {
+    return const SocialFriendsData(friends: [], inviteCode: 'ABC123');
   }
 }
 
@@ -54,8 +49,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Social'), findsOneWidget);
-    expect(find.text('Treine com seus amigos'), findsOneWidget);
-    expect(find.text('Criar novo grupo'), findsWidgets);
+    expect(find.text('Conte calorias com seus amigos'), findsOneWidget);
+    expect(find.text('Criar novo'), findsWidgets);
     expect(find.text('Família Saudável'), findsOneWidget);
     expect(find.text('Mariana lidera'), findsOneWidget);
   });
@@ -69,7 +64,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Criar novo grupo'), findsOneWidget);
-    expect(find.text('Nenhum grupo por aqui ainda.'), findsOneWidget);
+    expect(find.text('Criar novo'), findsOneWidget);
+    expect(find.text('Nenhum grupo por aqui ainda'), findsOneWidget);
   });
 }
