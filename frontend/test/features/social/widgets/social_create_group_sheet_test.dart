@@ -14,7 +14,7 @@ class _FakeSocialService extends SocialService {
   int? durationDays;
 
   @override
-  Future<SocialGroupDetail> createGroup({
+  Future<SocialGroupSummary> createGroup({
     required String name,
     required String description,
     required String competitionType,
@@ -27,29 +27,25 @@ class _FakeSocialService extends SocialService {
     this.iconKey = iconKey;
     this.durationDays = durationDays;
 
-    return SocialGroupDetail(
-      group: SocialGroupSummary(
-        id: 'group-1',
-        name: name,
-        description: description,
-        iconKey: iconKey,
-        competitionType: competitionType,
-        competitionLabel: 'Ofensiva',
-        durationDays: durationDays,
-        durationDaysLabel: '$durationDays dias',
-        memberCount: 1,
-        rankPosition: 1,
-        points: 0,
-        streakDays: 0,
-        leaderName: 'Você',
-        leaderLabel: 'Você lidera',
-        remainingDays: durationDays,
-        remainingDaysLabel: '$durationDays dias restantes',
-        inviteCode: 'ABC123',
-        activities: const [],
-      ),
-      ranking: const [],
-      recentActivities: const [],
+    return SocialGroupSummary(
+      id: 'group-1',
+      name: name,
+      description: description,
+      iconKey: iconKey,
+      competitionType: competitionType,
+      competitionLabel: 'Ofensiva',
+      durationDays: durationDays,
+      durationDaysLabel: '$durationDays dias',
+      memberCount: 1,
+      rankPosition: 1,
+      points: 0,
+      streakDays: 0,
+      leaderName: 'Você',
+      leaderLabel: 'Você lidera',
+      remainingDays: durationDays,
+      remainingDaysLabel: '$durationDays dias restantes',
+      inviteCode: 'ABC123',
+      activities: const [],
     );
   }
 }
