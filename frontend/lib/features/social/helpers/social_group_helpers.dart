@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 
 String socialDurationLabel(int durationDays) {
+  if (durationDays <= 0) return 'Infinito';
   return '$durationDays dias';
 }
 
@@ -14,8 +15,8 @@ String socialCompetitionLabel(String competitionType) {
   return switch (competitionType) {
     'offensive' => 'Ofensiva',
     'daily_goal' => 'Meta diária',
-    'calories' => 'Calorias',
     'xp' => 'XP',
+    'group_streak' => 'Sequência dos amigos',
     _ => 'Ofensiva',
   };
 }
