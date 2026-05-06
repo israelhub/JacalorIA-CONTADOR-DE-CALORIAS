@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../auth/service/auth_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_guide_card.dart';
+import '../../../shared/widgets/app_page_header.dart';
 import '../../../shared/widgets/app_section_header.dart';
 import '../models/missions_overview.dart';
 import '../services/missions_service.dart';
@@ -19,6 +21,7 @@ class MissionsPage extends StatefulWidget {
 }
 
 class _MissionsPageState extends State<MissionsPage> {
+  final AuthService _authService = AuthService();
   MissionsOverview? _overview;
   bool _isLoading = true;
   bool _showIntro = true;
@@ -48,13 +51,22 @@ class _MissionsPageState extends State<MissionsPage> {
     });
 
     try {
-      final result = await widget._service.fetchMissions();
+      final results = await Future.wait<dynamic>([
+        widget._service.fetchMissions(),
+        _authService.fetchProfile(),
+      ]);
       if (!mounted) {
         return;
       }
 
+      final result = results[0] as MissionsOverview;
+      final profile = results[1] as Map<String, dynamic>;
+      final hideGuideMe =
+          profile['hideMissionsGuideMe'] == true || profile['hideGuideMe'] == true;
+
       setState(() {
         _overview = result;
+        _showIntro = !hideGuideMe;
         _isLoading = false;
       });
     } catch (error) {
@@ -118,38 +130,26 @@ class _MissionsPageState extends State<MissionsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Row(
-                  children: <Widget>[
-                    Text(
-                      'Missões',
-                      style: AppTextStyles.missionsTitle.copyWith(
-                        color: AppColors.brand900Variant,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    const Icon(
-                      Icons.local_fire_department_rounded,
-                      size: 26,
-                      color: AppColors.brand900Variant,
-                    ),
-                  ],
+          AppPageHeader(
+            title: 'Missões',
+            icon: Icons.local_fire_department_rounded,
+            iconSize: 26,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                _CounterPill(
+                  value: overview.gold.toString(),
+                  icon: Icons.monetization_on_rounded,
+                  background: AppColors.missionsGoldPill,
                 ),
-              ),
-              _CounterPill(
-                value: overview.gold.toString(),
-                icon: Icons.monetization_on_rounded,
-                background: AppColors.missionsGoldPill,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              _CounterPill(
-                value: overview.xp.toString(),
-                icon: Icons.bolt_rounded,
-                background: AppColors.missionsXpPill,
-              ),
-            ],
+                const SizedBox(width: AppSpacing.sm),
+                _CounterPill(
+                  value: overview.xp.toString(),
+                  icon: Icons.bolt_rounded,
+                  background: AppColors.missionsXpPill,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
           if (_showIntro) ...<Widget>[
@@ -170,6 +170,7 @@ class _MissionsPageState extends State<MissionsPage> {
                 setState(() {
                   _showIntro = false;
                 });
+                _persistGuidePreference();
               },
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -188,6 +189,14 @@ class _MissionsPageState extends State<MissionsPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _persistGuidePreference() async {
+    try {
+      await _authService.updateProfile(<String, dynamic>{
+        'hideMissionsGuideMe': true,
+      });
+    } catch (_) {}
   }
 }
 
