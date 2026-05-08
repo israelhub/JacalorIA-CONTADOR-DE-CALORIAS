@@ -1,4 +1,4 @@
-package com.example.jacaloria
+package com.jacaloria.app
 
 import io.flutter.embedding.android.FlutterActivity
 
