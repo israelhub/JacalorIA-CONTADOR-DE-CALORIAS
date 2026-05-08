@@ -5,13 +5,17 @@ import { randomBytes } from 'crypto';
 import { User } from '../auth/models/user.model';
 import { Meal, MealStatus } from '../meals/models/meal.model';
 import { AddFriendByEmailDto } from './dto/add-friend-by-email.dto';
+import { AddGroupMembersDto } from './dto/add-group-members.dto';
 import { CreateSocialGroupDto } from './dto/create-social-group.dto';
 import { UpdateSocialGroupDto } from './dto/update-social-group.dto';
 import { SocialFriendLink } from './models/social-friend-link.model';
+import { SocialFriendRequest } from './models/social-friend-request.model';
 import { SocialFriendship } from './models/social-friendship.model';
 import { SocialGroupActivity } from './models/social-group-activity.model';
 import { SocialGroupMember } from './models/social-group-member.model';
 import { SocialGroup } from './models/social-group.model';
+import { StreakService } from '../streak/streak.service';
+import { parseNumber } from '../shared/utils/number-parser.util';
 
 @Injectable()
 export class SocialService {
@@ -26,24 +30,39 @@ export class SocialService {
     private readonly socialFriendshipModel: typeof SocialFriendship,
     @InjectModel(SocialFriendLink)
     private readonly socialFriendLinkModel: typeof SocialFriendLink,
+    @InjectModel(SocialFriendRequest)
+    private readonly socialFriendRequestModel: typeof SocialFriendRequest,
     @InjectModel(User)
     private readonly userModel: typeof User,
     @InjectModel(Meal)
     private readonly mealModel: typeof Meal,
+    private readonly streakService: StreakService,
   ) {}
 
   async listGroups(userId: string) {
     const groups = await this.socialGroupModel.findAll({
       include: [
-        { model: SocialGroupMember, as: 'members', include: [{ model: User, as: 'user', attributes: ['id', 'name', 'avatarUrl'] }] },
-        { model: SocialGroupActivity, as: 'activities', separate: true, limit: 3, order: [['createdAt', 'DESC']] },
-        { model: User, as: 'owner', attributes: ['id', 'name', 'avatarUrl'] },
+        { model: SocialGroupMember, as: 'members', include: [{ model: User, as: 'user', attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'] }] },
+        {
+          model: SocialGroupActivity,
+          as: 'activities',
+          separate: true,
+          limit: 3,
+          order: [['createdAt', 'DESC']],
+          include: [{ model: User, as: 'user', attributes: ['id', 'name'] }],
+        },
+        { model: User, as: 'owner', attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'] },
       ],
       order: [['createdAt', 'DESC']],
     });
 
+    const memberGroups = groups.filter((group) => this.isCurrentUserMember(group.members, userId));
+    const streakByUserId = await this.streakService.buildStreakByUserIds(
+      memberGroups.flatMap((group) => (group.members ?? []).map((member) => member.userId)),
+    );
+
     return {
-      groups: groups.filter((group) => this.isCurrentUserMember(group.members, userId)).map((group) => this.toGroupSummary(group, userId)),
+      groups: memberGroups.map((group) => this.toGroupSummary(group, userId, streakByUserId)),
     };
   }
 
@@ -55,24 +74,14 @@ export class SocialService {
 
     const friendIds = friendships.map((item) => (item.userLowId === userId ? item.userHighId : item.userLowId));
     const users = friendIds.length
-      ? await this.userModel.findAll({ where: { id: { [Op.in]: friendIds } }, attributes: ['id', 'name', 'avatarUrl'] })
+      ? await this.userModel.findAll({ where: { id: { [Op.in]: friendIds } }, attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'] })
       : [];
 
-    const streakRows = friendIds.length
-      ? await this.socialGroupMemberModel.findAll({ where: { userId: { [Op.in]: friendIds } }, attributes: ['userId', 'streakDays'] })
-      : [];
-
-    const streakByUserId = new Map<string, number>();
-    for (const row of streakRows) {
-      const current = streakByUserId.get(row.userId) ?? 0;
-      const value = this.toNumber(row.streakDays);
-      if (value > current) {
-        streakByUserId.set(row.userId, value);
-      }
-    }
+    const streakByUserId = await this.streakService.buildStreakByUserIds(friendIds);
 
     const userById = new Map(users.map((user) => [user.id, user]));
     const links = await this.ensureFriendLink(userId);
+    const pendingRequests = await this.listPendingRequests(userId);
 
     return {
       friends: friendIds
@@ -82,9 +91,17 @@ export class SocialService {
           id: user.id,
           name: user.name ?? 'Sem nome',
           avatarUrl: user.avatarUrl ?? null,
+          avatarFrameId: user.equippedAvatarFrameId ?? null,
           streakDays: streakByUserId.get(user.id) ?? 0,
         })),
       inviteCode: links.inviteCode,
+      pendingRequests,
+    };
+  }
+
+  async listPendingFriendRequests(userId: string) {
+    return {
+      requests: await this.listPendingRequests(userId),
     };
   }
 
@@ -94,8 +111,11 @@ export class SocialService {
     if (!friend) {
       throw new NotFoundException('Nenhum usuário encontrado com esse e-mail');
     }
-    await this.createFriendship(userId, friend.id);
-    return this.listFriends(userId);
+    await this.createFriendRequest(userId, friend.id);
+    return {
+      ...(await this.listFriends(userId)),
+      message: 'Solicitação de amizade enviada.',
+    };
   }
 
   async addFriendByLink(userId: string, inviteCode: string) {
@@ -103,12 +123,64 @@ export class SocialService {
     if (!link) {
       throw new NotFoundException('Link de amizade inválido');
     }
-    await this.createFriendship(userId, link.userId);
-    return this.listFriends(userId);
+    await this.createFriendRequest(userId, link.userId);
+    return {
+      ...(await this.listFriends(userId)),
+      message: 'Solicitação de amizade enviada.',
+    };
   }
 
   async addFriendById(userId: string, friendUserId: string) {
-    await this.createFriendship(userId, friendUserId.trim());
+    await this.createFriendRequest(userId, friendUserId.trim());
+    return {
+      ...(await this.listFriends(userId)),
+      message: 'Solicitação de amizade enviada.',
+    };
+  }
+
+  async acceptFriendRequest(userId: string, requestId: string) {
+    const request = await this.socialFriendRequestModel.findOne({
+      where: {
+        id: requestId.trim(),
+        recipientId: userId,
+        status: 'pending',
+      },
+      attributes: ['id', 'requesterId', 'recipientId'],
+    });
+    if (!request) {
+      throw new NotFoundException('Solicitação de amizade não encontrada');
+    }
+
+    await this.createFriendship(userId, request.requesterId);
+    await request.update({ status: 'accepted', respondedAt: new Date() } as never);
+    await this.socialFriendRequestModel.update(
+      { status: 'accepted', respondedAt: new Date() } as never,
+      {
+        where: {
+          requesterId: userId,
+          recipientId: request.requesterId,
+          status: 'pending',
+        },
+      },
+    );
+
+    return this.listFriends(userId);
+  }
+
+  async rejectFriendRequest(userId: string, requestId: string) {
+    const request = await this.socialFriendRequestModel.findOne({
+      where: {
+        id: requestId.trim(),
+        recipientId: userId,
+        status: 'pending',
+      },
+      attributes: ['id'],
+    });
+    if (!request) {
+      throw new NotFoundException('Solicitação de amizade não encontrada');
+    }
+
+    await request.update({ status: 'rejected', respondedAt: new Date() } as never);
     return this.listFriends(userId);
   }
 
@@ -139,6 +211,24 @@ export class SocialService {
       friendIds.add(friendship.userLowId === userId ? friendship.userHighId : friendship.userLowId);
     }
 
+    const requests = await this.socialFriendRequestModel.findAll({
+      where: {
+        status: 'pending',
+        [Op.or]: [{ requesterId: userId }, { recipientId: userId }],
+      },
+      attributes: ['requesterId', 'recipientId'],
+    });
+    const outgoingRequestIds = new Set<string>();
+    const incomingRequestIds = new Set<string>();
+    for (const request of requests) {
+      if (request.requesterId === userId) {
+        outgoingRequestIds.add(request.recipientId);
+      }
+      if (request.recipientId === userId) {
+        incomingRequestIds.add(request.requesterId);
+      }
+    }
+
     const isUuid =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
         normalizedQuery,
@@ -164,7 +254,7 @@ export class SocialService {
       where: {
         [Op.and]: [{ id: { [Op.ne]: userId } }, queryClause],
       },
-      attributes: ['id', 'name', 'email', 'avatarUrl'],
+      attributes: ['id', 'name', 'email', 'avatarUrl', 'equippedAvatarFrameId'],
       limit: 20,
       order: [['name', 'ASC']],
     });
@@ -175,7 +265,15 @@ export class SocialService {
         name: user.name ?? 'Sem nome',
         email: user.email,
         avatarUrl: user.avatarUrl ?? null,
+        avatarFrameId: user.equippedAvatarFrameId ?? null,
         isFriend: friendIds.has(user.id),
+        friendRequestStatus: friendIds.has(user.id)
+          ? 'none'
+          : outgoingRequestIds.has(user.id)
+          ? 'outgoing'
+          : incomingRequestIds.has(user.id)
+          ? 'incoming'
+          : 'none',
       })),
     };
   }
@@ -187,24 +285,26 @@ export class SocialService {
     }
 
     const friend = await this.userModel.findByPk(friendId, {
-      attributes: ['id', 'name', 'avatarUrl', 'birthDate', 'objective', 'sex'],
+      attributes: [
+        'id',
+        'name',
+        'avatarUrl',
+        'equippedAvatarFrameId',
+        'equippedAvatarBackgroundId',
+        'birthDate',
+        'objective',
+        'sex',
+      ],
     });
     if (!friend) {
       throw new NotFoundException('Amigo não encontrado');
     }
 
-    const streakRows = await this.socialGroupMemberModel.findAll({
-      where: { userId: friendId },
-      attributes: ['streakDays'],
-    });
-    let streakDays = 0;
-    for (const row of streakRows) {
-      streakDays = Math.max(streakDays, this.toNumber(row.streakDays));
-    }
+    const streakDays = await this.streakService.getUserStreak(friendId);
 
     const meals = await this.mealModel.findAll({
       where: { userId: friendId, status: MealStatus.Active },
-      attributes: ['title', 'createdAt'],
+      attributes: ['title', 'description', 'createdAt'],
       order: [['createdAt', 'DESC']],
     });
 
@@ -216,6 +316,8 @@ export class SocialService {
       id: friend.id,
       name: friend.name ?? 'Sem nome',
       avatarUrl: friend.avatarUrl ?? null,
+      avatarFrameId: friend.equippedAvatarFrameId ?? null,
+      avatarBackgroundId: friend.equippedAvatarBackgroundId ?? null,
       streakDays,
       friendCount: await this.countFriends(friend.id),
       totalXp,
@@ -247,7 +349,7 @@ export class SocialService {
       inviteCode,
     } as never);
 
-    await this.socialGroupMemberModel.create({ groupId: group.id, userId, isLeader: true, points: 0, streakDays: 0 });
+    await this.socialGroupMemberModel.create({ groupId: group.id, userId, isLeader: true, points: 0 });
 
     const invitedIds = [...new Set((dto.memberUserIds ?? []).filter((id) => id !== userId))];
     for (const friendId of invitedIds) {
@@ -258,7 +360,7 @@ export class SocialService {
 
       const exists = await this.socialGroupMemberModel.findOne({ where: { groupId: group.id, userId: friendId } });
       if (!exists) {
-        await this.socialGroupMemberModel.create({ groupId: group.id, userId: friendId, isLeader: false, points: 0, streakDays: 0 });
+        await this.socialGroupMemberModel.create({ groupId: group.id, userId: friendId, isLeader: false, points: 0 });
       }
     }
 
@@ -280,13 +382,14 @@ export class SocialService {
 
     const exists = await this.socialGroupMemberModel.findOne({ where: { groupId: group.id, userId } });
     if (!exists) {
-      await this.socialGroupMemberModel.create({ groupId: group.id, userId, isLeader: false, points: 0, streakDays: 0 });
+      await this.socialGroupMemberModel.create({ groupId: group.id, userId, isLeader: false, points: 0 });
+      const actor = await this.userModel.findByPk(userId, { attributes: ['name'] });
       await this.socialGroupActivityModel.create({
         groupId: group.id,
         userId,
         activityType: 'joined',
-        message: 'Entrou no grupo por link',
-        metadata: { inviteCode: code },
+        message: `${actor?.name ?? 'Usuário'} entrou no grupo por link`,
+        metadata: { inviteCode: code, actorName: actor?.name ?? 'Usuário' },
       });
     }
 
@@ -311,18 +414,28 @@ export class SocialService {
     const groups = await this.socialGroupModel.findAll({
       where,
       include: [
-        { model: SocialGroupMember, as: 'members', include: [{ model: User, as: 'user', attributes: ['id', 'name', 'avatarUrl'] }] },
-        { model: SocialGroupActivity, as: 'activities', separate: true, limit: 3, order: [['createdAt', 'DESC']] },
-        { model: User, as: 'owner', attributes: ['id', 'name', 'avatarUrl'] },
+        { model: SocialGroupMember, as: 'members', include: [{ model: User, as: 'user', attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'] }] },
+        {
+          model: SocialGroupActivity,
+          as: 'activities',
+          separate: true,
+          limit: 3,
+          order: [['createdAt', 'DESC']],
+          include: [{ model: User, as: 'user', attributes: ['id', 'name'] }],
+        },
+        { model: User, as: 'owner', attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'] },
       ],
       order: [['createdAt', 'DESC']],
       limit: 100,
     });
 
+    const publicGroups = groups.filter((group) => !this.isCurrentUserMember(group.members, userId));
+    const streakByUserId = await this.streakService.buildStreakByUserIds(
+      publicGroups.flatMap((group) => (group.members ?? []).map((member) => member.userId)),
+    );
+
     return {
-      groups: groups
-        .filter((group) => !this.isCurrentUserMember(group.members, userId))
-        .map((group) => this.toGroupSummary(group, userId)),
+      groups: publicGroups.map((group) => this.toGroupSummary(group, userId, streakByUserId)),
     };
   }
 
@@ -332,13 +445,14 @@ export class SocialService {
 
     const exists = await this.socialGroupMemberModel.findOne({ where: { groupId: group.id, userId } });
     if (!exists) {
-      await this.socialGroupMemberModel.create({ groupId: group.id, userId, isLeader: false, points: 0, streakDays: 0 });
+      await this.socialGroupMemberModel.create({ groupId: group.id, userId, isLeader: false, points: 0 });
+      const actor = await this.userModel.findByPk(userId, { attributes: ['name'] });
       await this.socialGroupActivityModel.create({
         groupId: group.id,
         userId,
         activityType: 'joined_public',
-        message: 'Entrou no grupo público',
-        metadata: { groupId: group.id },
+        message: `${actor?.name ?? 'Usuário'} entrou no grupo público`,
+        metadata: { groupId: group.id, actorName: actor?.name ?? 'Usuário' },
       });
     }
 
@@ -363,29 +477,137 @@ export class SocialService {
     } as never);
 
     if (dto.durationDays != null || dto.competitionType || dto.iconKey) {
+      const actor = await this.userModel.findByPk(userId, { attributes: ['name'] });
       await this.socialGroupActivityModel.create({
         groupId: group.id,
         userId,
         activityType: 'updated',
-        message: 'Você atualizou as informações do grupo',
-        metadata: { durationDays, competitionType: nextCompetitionType, iconKey: dto.iconKey ?? group.iconKey },
+        message: `${actor?.name ?? 'Usuário'} atualizou as informações do grupo`,
+        metadata: { durationDays, competitionType: nextCompetitionType, iconKey: dto.iconKey ?? group.iconKey, actorName: actor?.name ?? 'Usuário' },
       });
     }
 
     return this.getGroupDetail(group.id, userId);
   }
 
+  async addGroupMembers(groupId: string, userId: string, dto: AddGroupMembersDto) {
+    const group = await this.findGroupForMember(groupId, userId);
+    const currentUser = this.findCurrentUserMember(group.members, userId);
+    if (!currentUser?.isLeader && group.ownerId !== userId) {
+      throw new BadRequestException('Apenas o líder pode convidar amigos para o grupo');
+    }
+
+    const invitedIds = [...new Set((dto.memberUserIds ?? []).map((id) => id.trim()).filter(Boolean))];
+    if (!invitedIds.length) {
+      throw new BadRequestException('Selecione ao menos um amigo para convidar');
+    }
+
+    for (const friendId of invitedIds) {
+      if (friendId === userId) {
+        continue;
+      }
+
+      const isFriend = await this.areFriends(userId, friendId);
+      if (!isFriend) {
+        throw new BadRequestException('Só é possível adicionar amigos ao grupo');
+      }
+
+      const exists = await this.socialGroupMemberModel.findOne({
+        where: { groupId: group.id, userId: friendId },
+      });
+      if (!exists) {
+        await this.socialGroupMemberModel.create({
+          groupId: group.id,
+          userId: friendId,
+          isLeader: false,
+          points: 0,
+        });
+      }
+    }
+
+    const actor = await this.userModel.findByPk(userId, { attributes: ['name'] });
+    await this.socialGroupActivityModel.create({
+      groupId: group.id,
+      userId,
+      activityType: 'updated',
+      message: `${actor?.name ?? 'Usuário'} convidou amigos para o grupo`,
+      metadata: { invitedCount: invitedIds.length, actorName: actor?.name ?? 'Usuário' },
+    });
+
+    return this.getGroupDetail(group.id, userId);
+  }
+
+  async leaveGroup(groupId: string, userId: string) {
+    const group = await this.findGroupForMember(groupId, userId);
+    const currentUser = this.findCurrentUserMember(group.members ?? [], userId);
+    if (!currentUser) {
+      throw new NotFoundException('Você não faz parte deste grupo');
+    }
+
+    if (currentUser.isLeader || group.ownerId === userId) {
+      const nextLeader = [...(group.members ?? [])]
+        .filter((member) => member.userId !== userId)
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+
+      if (!nextLeader) {
+        throw new BadRequestException('Sem outro membro para assumir liderança. Exclua o grupo nas configurações.');
+      }
+
+      await this.socialGroupMemberModel.update(
+        { isLeader: true },
+        { where: { id: nextLeader.id } },
+      );
+
+      await group.update({ ownerId: nextLeader.userId } as never);
+    }
+
+    await this.socialGroupMemberModel.destroy({
+      where: { groupId: group.id, userId },
+    });
+
+    const actor = await this.userModel.findByPk(userId, { attributes: ['name'] });
+    await this.socialGroupActivityModel.create({
+      groupId: group.id,
+      userId,
+      activityType: 'left',
+      message: `${actor?.name ?? 'Usuário'} saiu do grupo`,
+      metadata: { actorName: actor?.name ?? 'Usuário' },
+    });
+
+    return { success: true };
+  }
+
+  async deleteGroup(groupId: string, userId: string) {
+    const group = await this.findGroupForMember(groupId, userId);
+    const currentUser = this.findCurrentUserMember(group.members ?? [], userId);
+    if (!currentUser?.isLeader && group.ownerId !== userId) {
+      throw new BadRequestException('Apenas o líder pode excluir o grupo');
+    }
+
+    await this.socialGroupActivityModel.destroy({ where: { groupId: group.id } });
+    await this.socialGroupMemberModel.destroy({ where: { groupId: group.id } });
+    await this.socialGroupModel.destroy({ where: { id: group.id } });
+    return { success: true };
+  }
+
   async getGroupDetail(groupId: string, userId: string) {
     const group = await this.findGroupForMember(groupId, userId);
-    return this.toGroupDetail(group, userId);
+    const streakByUserId = await this.streakService.buildStreakByUserIds((group.members ?? []).map((member) => member.userId));
+    return this.toGroupDetail(group, userId, streakByUserId);
   }
 
   private async findGroupForMember(groupId: string, userId: string) {
     const group = await this.socialGroupModel.findByPk(groupId, {
       include: [
-        { model: SocialGroupMember, as: 'members', include: [{ model: User, as: 'user', attributes: ['id', 'name', 'avatarUrl'] }] },
-        { model: SocialGroupActivity, as: 'activities', separate: true, order: [['createdAt', 'DESC']] },
-        { model: User, as: 'owner', attributes: ['id', 'name', 'avatarUrl'] },
+        { model: SocialGroupMember, as: 'members', include: [{ model: User, as: 'user', attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'] }] },
+        {
+          model: SocialGroupActivity,
+          as: 'activities',
+          separate: true,
+          order: [['createdAt', 'DESC']],
+          include: [{ model: User, as: 'user', attributes: ['id', 'name'] }],
+        },
+        { model: User, as: 'owner', attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'] },
       ],
     });
 
@@ -398,6 +620,78 @@ export class SocialService {
     if (existing) return existing;
 
     return this.socialFriendLinkModel.create({ userId, inviteCode: this.generateInviteCode() } as never);
+  }
+
+  private async listPendingRequests(userId: string) {
+    const requests = await this.socialFriendRequestModel.findAll({
+      where: { recipientId: userId, status: 'pending' },
+      include: [
+        {
+          model: User,
+          as: 'requester',
+          attributes: ['id', 'name', 'email', 'avatarUrl', 'equippedAvatarFrameId'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    return requests.map((request) => ({
+      id: request.id,
+      requesterId: request.requesterId,
+      requesterName: request.requester?.name ?? 'Sem nome',
+      requesterEmail: request.requester?.email ?? '',
+      requesterAvatarUrl: request.requester?.avatarUrl ?? null,
+      requesterAvatarFrameId: request.requester?.equippedAvatarFrameId ?? null,
+      createdAt: request.createdAt,
+    }));
+  }
+
+  private async createFriendRequest(currentUserId: string, friendUserId: string) {
+    const normalizedFriendId = friendUserId.trim();
+    if (currentUserId === normalizedFriendId) {
+      throw new BadRequestException('Não é possível adicionar você mesmo');
+    }
+
+    const friend = await this.userModel.findByPk(normalizedFriendId, { attributes: ['id'] });
+    if (!friend) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    if (await this.areFriends(currentUserId, normalizedFriendId)) {
+      throw new BadRequestException('Vocês já são amigos');
+    }
+
+    const incomingPending = await this.socialFriendRequestModel.findOne({
+      where: {
+        requesterId: normalizedFriendId,
+        recipientId: currentUserId,
+        status: 'pending',
+      },
+      attributes: ['id'],
+    });
+    if (incomingPending) {
+      throw new BadRequestException('Esse usuário já enviou uma solicitação para você. Aceite na lista de solicitações.');
+    }
+
+    const existing = await this.socialFriendRequestModel.findOne({
+      where: {
+        requesterId: currentUserId,
+        recipientId: normalizedFriendId,
+      },
+    });
+    if (existing) {
+      if (existing.status === 'pending') {
+        return existing;
+      }
+      return existing.update({ status: 'pending', respondedAt: null } as never);
+    }
+
+    return this.socialFriendRequestModel.create({
+      requesterId: currentUserId,
+      recipientId: normalizedFriendId,
+      status: 'pending',
+      respondedAt: null,
+    } as never);
   }
 
   private async createFriendship(currentUserId: string, friendUserId: string) {
@@ -431,15 +725,15 @@ export class SocialService {
       attributes: ['points'],
     });
 
-    return rows.reduce((sum, row) => sum + this.toNumber(row.points), 0);
+    return rows.reduce((sum, row) => sum + parseNumber(row.points), 0);
   }
 
-  private toGroupSummary(group: SocialGroup, userId: string) {
-    const members = this.sortMembers(group.members ?? []);
+  private toGroupSummary(group: SocialGroup, userId: string, streakByUserId?: Map<string, number>) {
+    const members = this.sortMembers(this.withComputedStreaks(group.members ?? [], streakByUserId), group.competitionType);
     const currentUser = this.findCurrentUserMember(members, userId);
     const topMember = members[0];
     const remainingDays = this.getRemainingDays(group.endsAt, group.competitionType);
-    const groupStreakDefeated = group.competitionType === 'group_streak' && members.some((member) => this.toNumber(member.streakDays) <= 0);
+    const groupStreakDefeated = group.competitionType === 'group_streak' && members.some((member) => parseNumber(member.streakDays) <= 0);
 
     return {
       id: group.id,
@@ -447,19 +741,13 @@ export class SocialService {
       description: group.description,
       iconKey: group.iconKey,
       competitionType: group.competitionType,
-      competitionLabel: this.competitionLabel(group.competitionType),
       durationDays: group.durationDays,
-      durationDaysLabel: group.competitionType === 'group_streak' ? 'Infinito' : `${group.durationDays} dias`,
       memberCount: members.length,
       rankPosition: currentUser ? members.indexOf(currentUser) + 1 : members.length,
       points: currentUser?.points ?? 0,
       streakDays: currentUser?.streakDays ?? 0,
       leaderName: topMember?.user?.name ?? group.owner?.name ?? 'Líder do grupo',
-      leaderLabel: currentUser?.isLeader || topMember?.userId === userId ? 'Você lidera' : `${topMember?.user?.name ?? 'Líder'} lidera`,
       remainingDays,
-      remainingDaysLabel: group.competitionType === 'group_streak'
-        ? (groupStreakDefeated ? 'Sequência quebrada' : 'Infinito')
-        : `${remainingDays} dias restantes`,
       isDefeated: groupStreakDefeated,
       isPublic: group.isPublic,
       inviteCode: (group as SocialGroup & { inviteCode?: string }).inviteCode ?? null,
@@ -467,11 +755,11 @@ export class SocialService {
     };
   }
 
-  private toGroupDetail(group: SocialGroup, userId: string) {
-    const members = this.sortMembers(group.members ?? []);
+  private toGroupDetail(group: SocialGroup, userId: string, streakByUserId?: Map<string, number>) {
+    const members = this.sortMembers(this.withComputedStreaks(group.members ?? [], streakByUserId), group.competitionType);
     const topMember = members[0];
     const remainingDays = this.getRemainingDays(group.endsAt, group.competitionType);
-    const groupStreakDefeated = group.competitionType === 'group_streak' && members.some((member) => this.toNumber(member.streakDays) <= 0);
+    const groupStreakDefeated = group.competitionType === 'group_streak' && members.some((member) => parseNumber(member.streakDays) <= 0);
 
     return {
       group: {
@@ -480,16 +768,11 @@ export class SocialService {
         description: group.description,
         iconKey: group.iconKey,
         competitionType: group.competitionType,
-        competitionLabel: this.competitionLabel(group.competitionType),
         durationDays: group.durationDays,
-        durationDaysLabel: group.competitionType === 'group_streak' ? 'Infinito' : `${group.durationDays} dias`,
         isPublic: group.isPublic,
         inviteCode: (group as SocialGroup & { inviteCode?: string }).inviteCode ?? null,
         memberCount: members.length,
         remainingDays,
-        remainingDaysLabel: group.competitionType === 'group_streak'
-          ? (groupStreakDefeated ? 'Sequência quebrada' : 'Infinito')
-          : `${remainingDays} dias restantes`,
         isDefeated: groupStreakDefeated,
         rule: group.competitionType === 'group_streak'
           ? 'A sequência do grupo só aumenta se todos os membros estiverem ativos.'
@@ -501,33 +784,87 @@ export class SocialService {
         userId: member.userId,
         name: member.user?.name ?? 'Sem nome',
         avatarUrl: member.user?.avatarUrl ?? null,
+        avatarFrameId: member.user?.equippedAvatarFrameId ?? null,
         points: member.points,
         streakDays: member.streakDays,
         isCurrentUser: member.userId === userId,
         isLeader: member.isLeader,
         position: index + 1,
-        subtitle: member.isLeader ? 'Líder do grupo' : member.streakDays > 0 ? `${member.streakDays} dias de sequência` : 'Sequência',
+        subtitle: member.isLeader ? 'Líder do grupo' : '',
       })),
       recentActivities: this.mapActivities(group.activities ?? []),
     };
   }
 
   private mapActivities(activities: SocialGroupActivity[]) {
+    const asObject = (metadata: unknown): Record<string, unknown> =>
+      metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>) : {};
+
     return activities.map((activity) => ({
       id: activity.id,
-      message: activity.message,
+      message: this.buildActivityMessage(activity),
       activityType: activity.activityType,
       createdAt: activity.createdAt,
-      metadata: activity.metadata ?? null,
+      metadata: { ...asObject(activity.metadata), actorName: activity.user?.name ?? asObject(activity.metadata).actorName ?? null },
     }));
   }
 
-  private sortMembers(members: SocialGroupMember[]) {
+  private buildActivityMessage(activity: SocialGroupActivity) {
+    const metadata = activity.metadata && typeof activity.metadata === 'object'
+      ? (activity.metadata as Record<string, unknown>)
+      : {};
+    const actorName = activity.user?.name ?? (typeof metadata.actorName === 'string' ? metadata.actorName : null) ?? 'Usuário';
+
+    if (activity.activityType === 'created') {
+      return `${actorName} criou o grupo`;
+    }
+    if (activity.activityType === 'joined') {
+      return `${actorName} entrou no grupo por link`;
+    }
+    if (activity.activityType === 'joined_public') {
+      return `${actorName} entrou no grupo público`;
+    }
+    if (activity.activityType === 'updated') {
+      return `${actorName} atualizou as informações do grupo`;
+    }
+    if (activity.activityType === 'left') {
+      return `${actorName} saiu do grupo`;
+    }
+
+    const legacyMessage = activity.message?.trim() ?? '';
+    if (!legacyMessage) {
+      return `${actorName} realizou uma ação no grupo`;
+    }
+    return legacyMessage.replace(/^Você\b/i, actorName);
+  }
+
+  private withComputedStreaks(members: SocialGroupMember[], streakByUserId?: Map<string, number>) {
+    if (!streakByUserId || streakByUserId.size === 0) {
+      return members;
+    }
+
+    return members.map((member) => ({
+      ...(member.toJSON() as Record<string, unknown>),
+      streakDays: streakByUserId.get(member.userId) ?? 0,
+    })) as SocialGroupMember[];
+  }
+
+  private sortMembers(members: SocialGroupMember[], competitionType: string) {
     return [...members].sort((left, right) => {
-      const pointsDelta = this.toNumber(right.points) - this.toNumber(left.points);
+      if (competitionType === 'offensive' || competitionType === 'group_streak') {
+        const streakDelta = parseNumber(right.streakDays) - parseNumber(left.streakDays);
+        if (streakDelta !== 0) return streakDelta;
+
+        const pointsDelta = parseNumber(right.points) - parseNumber(left.points);
+        if (pointsDelta !== 0) return pointsDelta;
+
+        return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
+      }
+
+      const pointsDelta = parseNumber(right.points) - parseNumber(left.points);
       if (pointsDelta !== 0) return pointsDelta;
 
-      const streakDelta = this.toNumber(right.streakDays) - this.toNumber(left.streakDays);
+      const streakDelta = parseNumber(right.streakDays) - parseNumber(left.streakDays);
       if (streakDelta !== 0) return streakDelta;
 
       return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
@@ -540,10 +877,6 @@ export class SocialService {
 
   private isCurrentUserMember(members: SocialGroupMember[] | undefined, userId: string) {
     return Boolean(members?.some((member) => member.userId === userId));
-  }
-
-  private competitionLabel(competitionType: string) {
-    return ({ offensive: 'Ofensiva', daily_goal: 'Meta diária', xp: 'XP', group_streak: 'Sequência dos amigos' }[competitionType] ?? 'Ofensiva');
   }
 
   private getRemainingDays(endsAt: Date, competitionType: string) {
@@ -561,24 +894,22 @@ export class SocialService {
   }
 
   private generateInviteCode() {
-    return randomBytes(4).toString('hex').toUpperCase();
-  }
-
-  private toNumber(value: unknown) {
-    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-    if (typeof value === 'string') {
-      const parsed = Number(value.replace(',', '.'));
-      return Number.isFinite(parsed) ? parsed : 0;
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const bytes = randomBytes(6);
+    let code = '';
+    for (let index = 0; index < 6; index += 1) {
+      code += alphabet[bytes[index] % alphabet.length];
     }
-    return 0;
+    return code;
   }
 
-  private getFavoriteDish(meals: Array<Pick<Meal, 'title'>>) {
+  private getFavoriteDish(meals: Array<Pick<Meal, 'title' | 'description'>>) {
     if (!meals.length) return null;
 
     const titleCounts = new Map<string, number>();
     for (const meal of meals) {
-      const normalized = meal.title.trim().toLowerCase();
+      const rawLabel = (meal.description ?? meal.title ?? '').trim();
+      const normalized = rawLabel.toLowerCase();
       if (!normalized) continue;
       titleCounts.set(normalized, (titleCounts.get(normalized) ?? 0) + 1);
     }
