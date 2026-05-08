@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 
 import 'features/auth/pages/enter_page.dart';
@@ -25,6 +26,7 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static const _appLocale = Locale('pt', 'BR');
   static const _systemUiOverlayStyle = SystemUiOverlayStyle(
     systemNavigationBarColor: AppColors.surface,
     systemNavigationBarDividerColor: AppColors.surface,
@@ -38,6 +40,13 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'JacalorIA',
         debugShowCheckedModeBanner: false,
+        locale: _appLocale,
+        localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const <Locale>[_appLocale],
         home: AuthService.globalToken != null
             ? const HomeShellPage()
             : const EnterPage(),

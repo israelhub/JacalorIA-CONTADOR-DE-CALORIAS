@@ -4,6 +4,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/framed_avatar.dart';
 import '../../profile/helpers/profile_date_helpers.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
@@ -23,7 +24,8 @@ class SocialFriendProfilePage extends StatefulWidget {
   final SocialService service;
 
   @override
-  State<SocialFriendProfilePage> createState() => _SocialFriendProfilePageState();
+  State<SocialFriendProfilePage> createState() =>
+      _SocialFriendProfilePageState();
 }
 
 class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
@@ -79,7 +81,9 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.action500))
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.action500),
+              )
             : _error != null
             ? Center(
                 child: Padding(
@@ -99,10 +103,10 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
   }
 
   Widget _buildProfile() {
+    const summaryValueMaxChars = 14;
     final profile = _profile;
     if (profile == null) return const SizedBox.shrink();
 
-    final avatar = profile.avatarUrl?.trim();
     final birthDate = profile.birthDate == null || profile.birthDate!.isEmpty
         ? 'Não informado'
         : formatProfileDisplayDate(profile.birthDate!);
@@ -118,102 +122,158 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
     final sex = _normalizeLabel(profile.sex);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 56,
-            backgroundColor: AppColors.surfaceAlt,
-            backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage(avatar) : null,
-            child: avatar == null || avatar.isEmpty
-                ? Text(
-                    profile.name.isNotEmpty ? profile.name[0].toUpperCase() : '?',
-                    style: AppTextStyles.missionsTitle.copyWith(
-                      color: AppColors.brand900Variant,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            profile.name,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.missionsTitle.copyWith(
-              color: AppColors.brand900Variant,
+          _FriendProfilePreview(
+            avatarUrl: profile.avatarUrl,
+            frameId: profile.avatarFrameId,
+            backgroundAssetPath: _backgroundAssetFromId(
+              profile.avatarBackgroundId,
             ),
+            name: profile.name,
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            '${profile.friendCount} amigos',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          AppButton(
-            label: 'Amigos',
-            variant: AppButtonVariant.outline,
-            leadingIcon: Icons.people_alt_rounded,
-            onPressed: _isRemovingFriend ? null : _onRemoveFriendPressed,
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          _sectionTitle('Resumo'),
-          const SizedBox(height: AppSpacing.sm),
-          GridView.count(
-            crossAxisCount: 2,
-            crossAxisSpacing: AppSpacing.md,
-            mainAxisSpacing: AppSpacing.md,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.8,
-            children: [
-              _metricCard(
-                icon: Icons.local_fire_department_rounded,
-                iconColor: AppColors.socialMetricStreak,
-                label: 'Sequência',
-                value: '${profile.streakDays} dias',
-              ),
-              _metricCard(
-                icon: Icons.restaurant_menu_rounded,
-                iconColor: AppColors.socialMetricFavoriteDish,
-                label: 'Prato favorito',
-                value: profile.favoriteDish?.trim().isNotEmpty == true ? profile.favoriteDish! : 'Sem registros',
-              ),
-              _metricCard(
-                icon: Icons.schedule_rounded,
-                iconColor: AppColors.socialMetricPreferredPeriod,
-                label: 'Come mais de',
-                value: preferredPeriod,
-              ),
-              _metricCard(
-                icon: Icons.auto_awesome_rounded,
-                iconColor: AppColors.socialMetricXp,
-                label: 'Total de XP',
-                value: '${profile.totalXp}',
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          _sectionTitle('Informações'),
-          const SizedBox(height: AppSpacing.sm),
-          _infoCard(
-            icon: Icons.cake_rounded,
-            iconColor: AppColors.socialInfoBirthDateBase,
-            label: 'Data de nascimento',
-            value: birthDate,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _infoCard(
-            icon: Icons.person_rounded,
-            iconColor: AppColors.socialInfoSex,
-            label: 'Sexo',
-            value: sex,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _infoCard(
-            icon: Icons.flag_rounded,
-            iconColor: AppColors.socialInfoObjective,
-            label: 'Objetivo',
-            value: objective,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.lg,
+              AppSpacing.xl,
+              AppSpacing.xl,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        profile.name,
+                        textAlign: TextAlign.left,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.missionsTitle.copyWith(
+                          color: AppColors.brand900Variant,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        '${profile.friendCount} amigos',
+                        textAlign: TextAlign.right,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                AppButton(
+                  label: 'Amigos',
+                  variant: AppButtonVariant.outline,
+                  leadingIcon: Icons.people_alt_rounded,
+                  onPressed: _isRemovingFriend ? null : _onRemoveFriendPressed,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                _sectionTitle('Resumo'),
+                const SizedBox(height: AppSpacing.sm),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final maxWidth = constraints.maxWidth;
+                    final spacing = AppSpacing.md;
+                    final columns = maxWidth >= 720 ? 3 : 2;
+                    final availableWidth = maxWidth - (spacing * (columns - 1));
+                    final cardWidth = availableWidth > 0
+                        ? availableWidth / columns
+                        : maxWidth;
+
+                    return Wrap(
+                      spacing: spacing,
+                      runSpacing: AppSpacing.md,
+                      children: [
+                        SizedBox(
+                          width: cardWidth,
+                          child: _metricCard(
+                            icon: Icons.local_fire_department_rounded,
+                            iconColor: AppColors.socialMetricStreak,
+                            label: 'Sequência',
+                            value: _truncateWithEllipsis(
+                              '${profile.streakDays} dias',
+                              summaryValueMaxChars,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: cardWidth,
+                          child: _metricCard(
+                            icon: Icons.restaurant_menu_rounded,
+                            iconColor: AppColors.socialMetricFavoriteDish,
+                            label: 'Prato favorito',
+                            value: _truncateWithEllipsis(
+                              profile.favoriteDish?.trim().isNotEmpty == true
+                                  ? profile.favoriteDish!
+                                  : 'Sem registros',
+                              summaryValueMaxChars,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: cardWidth,
+                          child: _metricCard(
+                            icon: Icons.schedule_rounded,
+                            iconColor: AppColors.socialMetricPreferredPeriod,
+                            label: 'Come mais de',
+                            value: _truncateWithEllipsis(
+                              preferredPeriod,
+                              summaryValueMaxChars,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: cardWidth,
+                          child: _metricCard(
+                            icon: Icons.auto_awesome_rounded,
+                            iconColor: AppColors.socialMetricXp,
+                            label: 'Total de XP',
+                            value: _truncateWithEllipsis(
+                              '${profile.totalXp}',
+                              summaryValueMaxChars,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                _sectionTitle('Informações'),
+                const SizedBox(height: AppSpacing.sm),
+                _infoCard(
+                  icon: Icons.cake_rounded,
+                  iconColor: AppColors.socialInfoBirthDateBase,
+                  label: 'Data de nascimento',
+                  value: birthDate,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _infoCard(
+                  icon: Icons.person_rounded,
+                  iconColor: AppColors.socialInfoSex,
+                  label: 'Sexo',
+                  value: sex,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _infoCard(
+                  icon: Icons.flag_rounded,
+                  iconColor: AppColors.socialInfoObjective,
+                  label: 'Objetivo',
+                  value: objective,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -293,7 +353,8 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
   String _normalizeLabel(String? value) {
     final raw = value?.trim() ?? '';
     if (raw.isEmpty) return 'Não informado';
-    return raw[0].toUpperCase() + raw.substring(1).toLowerCase().replaceAll('_', ' ');
+    return raw[0].toUpperCase() +
+        raw.substring(1).toLowerCase().replaceAll('_', ' ');
   }
 
   String _formatObjective(String? value) {
@@ -320,5 +381,73 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
     };
 
     return labels[raw] ?? _normalizeLabel(value);
+  }
+
+  String _truncateWithEllipsis(String value, int maxChars) {
+    if (value.length <= maxChars) {
+      return value;
+    }
+    return '${value.substring(0, maxChars)}...';
+  }
+
+  String? _backgroundAssetFromId(String? id) {
+    switch (id?.trim()) {
+      case 'sunset_orbit':
+        return 'assets/images/avatar_backgrounds/sunset_orbit.png';
+      case 'jungle_neon':
+        return 'assets/images/avatar_backgrounds/jungle_neon.png';
+      case 'aurora_grid':
+        return 'assets/images/avatar_backgrounds/aurora_grid.png';
+      case 'mango_sky':
+        return 'assets/images/avatar_backgrounds/mango_sky.png';
+      case 'mint_cloud':
+        return 'assets/images/avatar_backgrounds/mint_cloud.png';
+      case 'sky':
+        return 'assets/images/avatar_backgrounds/sky.png';
+      case 'pantano':
+        return 'assets/images/avatar_backgrounds/pantano.png';
+      default:
+        return null;
+    }
+  }
+}
+
+class _FriendProfilePreview extends StatelessWidget {
+  const _FriendProfilePreview({
+    required this.avatarUrl,
+    required this.frameId,
+    required this.backgroundAssetPath,
+    required this.name,
+  });
+
+  final String? avatarUrl;
+  final String? frameId;
+  final String? backgroundAssetPath;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 173,
+      decoration: BoxDecoration(
+        color: AppColors.homeProgressTrack,
+        image: backgroundAssetPath == null
+            ? null
+            : DecorationImage(
+                image: AssetImage(backgroundAssetPath!),
+                fit: BoxFit.cover,
+              ),
+      ),
+      child: Center(
+        child: FramedAvatar(
+          size: AppSpacing.huge * 3.4,
+          avatarUrl: avatarUrl,
+          frameId: frameId,
+          fallbackText: name,
+          backgroundColor: AppColors.surface,
+        ),
+      ),
+    );
   }
 }

@@ -5,9 +5,15 @@ import '../helpers/social_group_helpers.dart';
 import '../models/social_group_models.dart';
 
 class SocialGroupCard extends StatelessWidget {
-  const SocialGroupCard({super.key, required this.group, this.onTap});
+  const SocialGroupCard({
+    super.key,
+    required this.group,
+    this.isFinished = false,
+    this.onTap,
+  });
 
   final SocialGroupSummary group;
+  final bool isFinished;
   final VoidCallback? onTap;
 
   @override
@@ -119,30 +125,19 @@ class SocialGroupCard extends StatelessWidget {
                     color: AppColors.accent500,
                   ),
                   const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      group.leaderLabel,
-                      style: AppTextStyles.captionStrong.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
                   Text(
-                    '#${group.rankPosition}',
+                    'Posição ${group.rankPosition}º',
                     style: AppTextStyles.captionStrong.copyWith(
-                      color: AppColors.action500,
-                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
+                  const Spacer(),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
-                    group.remainingDaysLabel,
+                    isFinished ? 'Grupo finalizado' : group.remainingDaysLabel,
                     style: AppTextStyles.captionStrong.copyWith(
-                      color: AppColors.missionsRewardGold,
+                      color: isFinished ? AppColors.textError : AppColors.missionsRewardGold,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

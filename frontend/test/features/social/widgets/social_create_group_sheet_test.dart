@@ -12,40 +12,50 @@ class _FakeSocialService extends SocialService {
   String? competitionType;
   String? iconKey;
   int? durationDays;
+  bool? isPublic;
+  List<String>? memberUserIds;
 
   @override
-  Future<SocialGroupSummary> createGroup({
+  Future<SocialGroupDetail> createGroup({
     required String name,
     required String description,
     required String competitionType,
     required String iconKey,
     int durationDays = 7,
+    List<String> memberUserIds = const [],
+    bool isPublic = false,
   }) async {
     this.name = name;
     this.description = description;
     this.competitionType = competitionType;
     this.iconKey = iconKey;
     this.durationDays = durationDays;
+    this.isPublic = isPublic;
+    this.memberUserIds = memberUserIds;
 
-    return SocialGroupSummary(
-      id: 'group-1',
-      name: name,
-      description: description,
-      iconKey: iconKey,
-      competitionType: competitionType,
-      competitionLabel: 'Ofensiva',
-      durationDays: durationDays,
-      durationDaysLabel: '$durationDays dias',
-      memberCount: 1,
-      rankPosition: 1,
-      points: 0,
-      streakDays: 0,
-      leaderName: 'Você',
-      leaderLabel: 'Você lidera',
-      remainingDays: durationDays,
-      remainingDaysLabel: '$durationDays dias restantes',
-      inviteCode: 'ABC123',
-      activities: const [],
+    return SocialGroupDetail(
+      group: SocialGroupSummary(
+        id: 'group-1',
+        name: name,
+        description: description,
+        iconKey: iconKey,
+        competitionType: competitionType,
+        competitionLabel: 'Sequência',
+        durationDays: durationDays,
+        durationDaysLabel: '$durationDays dias',
+        memberCount: 1,
+        rankPosition: 1,
+        points: 0,
+        streakDays: 0,
+        leaderName: 'Você',
+        leaderLabel: 'Você lidera',
+        remainingDays: durationDays,
+        remainingDaysLabel: '$durationDays dias restantes',
+        inviteCode: 'ABC123',
+        activities: const [],
+      ),
+      ranking: const [],
+      recentActivities: const [],
     );
   }
 }

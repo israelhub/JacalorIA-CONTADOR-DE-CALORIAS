@@ -12,10 +12,12 @@ class SocialCreateGroupSheet extends StatefulWidget {
     super.key,
     SocialService? service,
     this.existingGroup,
+    this.onDeleteRequested,
   }) : _service = service ?? const SocialService();
 
   final SocialService _service;
   final SocialGroupSummary? existingGroup;
+  final Future<void> Function()? onDeleteRequested;
 
   @override
   State<SocialCreateGroupSheet> createState() => _SocialCreateGroupSheetState();
@@ -33,7 +35,7 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
   ];
 
   static const _competitionTypes = <_CompetitionTypeOption>[
-    _CompetitionTypeOption('offensive', 'Ofensiva'),
+    _CompetitionTypeOption('offensive', 'Sequência'),
     _CompetitionTypeOption('daily_goal', 'Meta diária'),
     _CompetitionTypeOption('xp', 'XP'),
     _CompetitionTypeOption('group_streak', 'Sequência dos amigos'),
@@ -179,13 +181,15 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
                         ),
                       ),
                     ),
-                    GestureDetector(
+                    _PressableScale(
                       onTap: () => Navigator.of(context).pop(),
-                      behavior: HitTestBehavior.opaque,
-                      child: const Icon(
-                        Icons.close_rounded,
-                        size: 22,
-                        color: AppColors.textSecondary,
+                      child: const Padding(
+                        padding: EdgeInsets.all(2),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 22,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ],
@@ -312,7 +316,7 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
                       child: Switch(
                         value: _isPublicGroup,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        activeColor: AppColors.surface,
+                        activeThumbColor: AppColors.surface,
                         activeTrackColor: AppColors.action500,
                         inactiveThumbColor: AppColors.textMuted,
                         inactiveTrackColor: AppColors.surfaceAlt,
@@ -338,7 +342,7 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 SizedBox(
-                  height: 56,
+                  height: 48,
                   child: Opacity(
                     opacity: _canSubmit ? 1 : 0.5,
                     child: AppButton(
@@ -350,6 +354,24 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
                     ),
                   ),
                 ),
+                if (_isEditing && widget.onDeleteRequested != null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(
+                    height: 48,
+                    width: double.infinity,
+                    child: AppButton(
+                      label: 'Excluir grupo',
+                      variant: AppButtonVariant.danger,
+                      trailingIcon: Icons.delete_outline_rounded,
+                      onPressed: _isSaving
+                          ? null
+                          : () async {
+                              Navigator.of(context).pop();
+                              await widget.onDeleteRequested!.call();
+                            },
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -386,10 +408,11 @@ class _IconPickerOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return _PressableScale(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
         width: 40,
         height: 40,
         decoration: BoxDecoration(
@@ -423,10 +446,11 @@ class _CompetitionTypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return _PressableScale(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
         height: 30,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
@@ -461,10 +485,11 @@ class _DurationChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return _PressableScale(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
         key: ValueKey('social-duration-$value'),
         height: 30,
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -478,6 +503,75 @@ class _DurationChip extends StatelessWidget {
           style: AppTextStyles.captionStrong.copyWith(
             color: selected ? AppColors.surface : AppColors.textMuted,
             fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PressableScale extends StatefulWidget {
+  const _PressableScale({required this.onTap, required this.child});
+
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  State<_PressableScale> createState() => _PressableScaleState();
+}
+
+class _PressableScaleState extends State<_PressableScale> {
+  bool _isPressed = false;
+  bool _isHovered = false;
+
+  void _setPressed(bool value) {
+    if (_isPressed == value) {
+      return;
+    }
+    setState(() {
+      _isPressed = value;
+    });
+  }
+
+  void _setHovered(bool value) {
+    if (_isHovered == value) {
+      return;
+    }
+    setState(() {
+      _isHovered = value;
+    });
+  }
+
+  Future<void> _handleTap() async {
+    _setPressed(true);
+    widget.onTap();
+    await Future<void>.delayed(const Duration(milliseconds: 90));
+    if (!mounted) {
+      return;
+    }
+    _setPressed(false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => _setHovered(true),
+      onExit: (_) => _setHovered(false),
+      child: GestureDetector(
+        onTapDown: (_) => _setPressed(true),
+        onTapCancel: () => _setPressed(false),
+        onTapUp: (_) {},
+        onTap: _handleTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.96 : (_isHovered ? 1.02 : 1),
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOut,
+          child: AnimatedOpacity(
+            opacity: _isHovered ? 0.92 : 1,
+            duration: const Duration(milliseconds: 120),
+            child: widget.child,
           ),
         ),
       ),

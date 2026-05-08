@@ -27,13 +27,7 @@ class SocialService {
     final response = await http.get(Uri.parse('$_baseUrl/social/friends'), headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
-      return SocialFriendsData(
-        friends: (body['friends'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(SocialFriend.fromJson)
-            .toList(growable: false),
-        inviteCode: body['inviteCode']?.toString() ?? '',
-      );
+      return _parseFriendsData(body);
     }
     throw Exception(_extractMessage(body, 'Erro ao carregar amigos.'));
   }
@@ -46,30 +40,18 @@ class SocialService {
     );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return SocialFriendsData(
-        friends: (body['friends'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(SocialFriend.fromJson)
-            .toList(growable: false),
-        inviteCode: body['inviteCode']?.toString() ?? '',
-      );
+      return _parseFriendsData(body);
     }
-    throw Exception(_extractMessage(body, 'Erro ao adicionar amigo.'));
+    throw Exception(_extractMessage(body, 'Erro ao enviar solicitação de amizade.'));
   }
 
   Future<SocialFriendsData> addFriendByLinkCode(String inviteCode) async {
     final response = await http.post(Uri.parse('$_baseUrl/social/friends/by-link/${inviteCode.trim()}'), headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return SocialFriendsData(
-        friends: (body['friends'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(SocialFriend.fromJson)
-            .toList(growable: false),
-        inviteCode: body['inviteCode']?.toString() ?? '',
-      );
+      return _parseFriendsData(body);
     }
-    throw Exception(_extractMessage(body, 'Erro ao adicionar amigo por link.'));
+    throw Exception(_extractMessage(body, 'Erro ao enviar solicitação por link.'));
   }
 
   Future<SocialFriendsData> addFriendById(String friendUserId) async {
@@ -79,15 +61,33 @@ class SocialService {
     );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return SocialFriendsData(
-        friends: (body['friends'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(SocialFriend.fromJson)
-            .toList(growable: false),
-        inviteCode: body['inviteCode']?.toString() ?? '',
-      );
+      return _parseFriendsData(body);
     }
-    throw Exception(_extractMessage(body, 'Erro ao adicionar amigo por ID.'));
+    throw Exception(_extractMessage(body, 'Erro ao enviar solicitação por ID.'));
+  }
+
+  Future<SocialFriendsData> acceptFriendRequest(String requestId) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/social/friends/requests/${requestId.trim()}/accept'),
+      headers: _headers(),
+    );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return _parseFriendsData(body);
+    }
+    throw Exception(_extractMessage(body, 'Erro ao aceitar solicitação.'));
+  }
+
+  Future<SocialFriendsData> rejectFriendRequest(String requestId) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/social/friends/requests/${requestId.trim()}/reject'),
+      headers: _headers(),
+    );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return _parseFriendsData(body);
+    }
+    throw Exception(_extractMessage(body, 'Erro ao recusar solicitação.'));
   }
 
   Future<SocialFriendProfile> fetchFriendProfile(String friendUserId) async {
@@ -109,13 +109,7 @@ class SocialService {
     );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return SocialFriendsData(
-        friends: (body['friends'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(SocialFriend.fromJson)
-            .toList(growable: false),
-        inviteCode: body['inviteCode']?.toString() ?? '',
-      );
+      return _parseFriendsData(body);
     }
     throw Exception(_extractMessage(body, 'Erro ao desfazer amizade.'));
   }
@@ -183,6 +177,40 @@ class SocialService {
       return SocialGroupDetail.fromJson(body);
     }
     throw Exception(_extractMessage(body, 'Erro ao carregar o grupo.'));
+  }
+
+  Future<void> leaveGroup(String groupId) async {
+    final response = await http.post(Uri.parse('$_baseUrl/social/groups/${groupId.trim()}/leave'), headers: _headers());
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return;
+    }
+    throw Exception(_extractMessage(body, 'Erro ao sair do grupo.'));
+  }
+
+  Future<void> deleteGroup(String groupId) async {
+    final response = await http.delete(Uri.parse('$_baseUrl/social/groups/${groupId.trim()}'), headers: _headers());
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return;
+    }
+    throw Exception(_extractMessage(body, 'Erro ao excluir o grupo.'));
+  }
+
+  Future<SocialGroupDetail> addGroupMembers({
+    required String groupId,
+    required List<String> memberUserIds,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/social/groups/${groupId.trim()}/members'),
+      headers: _headers(withJsonContentType: true),
+      body: jsonEncode({'memberUserIds': memberUserIds}),
+    );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return SocialGroupDetail.fromJson(body);
+    }
+    throw Exception(_extractMessage(body, 'Erro ao convidar amigos para o grupo.'));
   }
 
   Future<SocialGroupDetail> createGroup({
@@ -258,5 +286,19 @@ class SocialService {
     if (message is String && message.isNotEmpty) return message;
     if (message is List && message.isNotEmpty) return message.first.toString();
     return fallback;
+  }
+
+  SocialFriendsData _parseFriendsData(Map<String, dynamic> body) {
+    return SocialFriendsData(
+      friends: (body['friends'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(SocialFriend.fromJson)
+          .toList(growable: false),
+      inviteCode: body['inviteCode']?.toString() ?? '',
+      pendingRequests: (body['pendingRequests'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(SocialFriendRequest.fromJson)
+          .toList(growable: false),
+    );
   }
 }
