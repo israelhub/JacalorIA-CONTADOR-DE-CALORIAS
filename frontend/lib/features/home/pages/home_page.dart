@@ -7,12 +7,15 @@ import '../../food_analysis/pages/food_capture_page.dart';
 import '../../food_analysis/pages/food_meal_details_page.dart';
 import '../../auth/pages/login_page.dart';
 import '../helpers/home_date_helpers.dart';
+import '../helpers/home_goal_helpers.dart';
 import '../helpers/home_greeting_helpers.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_dashed_action_button.dart';
 import '../services/meal_service.dart';
 import '../widgets/home_daily_goal_with_mascot.dart';
+import '../../../shared/widgets/app_date_picker.dart';
 import '../../../shared/widgets/app_skeleton.dart';
+import '../../../shared/widgets/framed_avatar.dart';
 import '../widgets/home_meal_card.dart';
 import '../../auth/service/auth_service.dart';
 import '../../profile/pages/profile_page.dart';
@@ -53,6 +56,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final List<FoodMealRecord> _records = <FoodMealRecord>[];
+  final Set<String> _loadedDateKeys = <String>{};
   Map<String, dynamic>? _userProfile;
   bool _isDataLoading = true;
   bool _playMascotCelebration = false;
@@ -65,7 +69,7 @@ class _HomePageState extends State<HomePage> {
     _selectedDate = normalizeHomeDate(
       widget.initialSelectedDate ?? DateTime.now(),
     );
-    _loadData();
+    _loadInitialData();
   }
 
   @override
@@ -90,7 +94,20 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _loadData() async {
+  String _dateKey(DateTime date) {
+    final normalized = normalizeHomeDate(date);
+    final year = normalized.year.toString().padLeft(4, '0');
+    final month = normalized.month.toString().padLeft(2, '0');
+    final day = normalized.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  DateTime _startOfNextDay(DateTime date) {
+    final normalized = normalizeHomeDate(date);
+    return DateTime(normalized.year, normalized.month, normalized.day + 1);
+  }
+
+  Future<void> _loadInitialData() async {
     if (AuthService.globalToken == null || AuthService.globalToken!.isEmpty) {
       await _redirectToLoginPage(
         errorMessage: 'Sessão inválida. Faça login novamente.',
@@ -100,26 +117,35 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final results = await Future.wait([
-        widget._mealService.fetchMeals(),
+        widget._mealService.fetchMeals(
+          startDate: _selectedDate,
+          endDate: _startOfNextDay(_selectedDate),
+        ),
         widget._authService.fetchProfile(),
       ]);
       final meals = results[0] as List<FoodMealRecord>;
       final profile = results[1] as Map<String, dynamic>;
-      final isFirstHomeAccess = await _consumeNewAccountFirstHomeAccess(
-        profile,
-      );
-
+      var isFirstHomeAccess = false;
       try {
-        await _precacheHomeImages(meals, profile);
-      } catch (_) {}
+        isFirstHomeAccess = await _consumeNewAccountFirstHomeAccess(profile);
+      } catch (_) {
+        isFirstHomeAccess = false;
+      }
 
       if (mounted) {
         setState(() {
           _records.clear();
           _records.addAll(meals);
+          _loadedDateKeys.add(_dateKey(_selectedDate));
           _userProfile = profile.isNotEmpty ? profile : null;
           _isFirstHomeAccess = isFirstHomeAccess;
           _isDataLoading = false;
+        });
+
+        Future<void>(() async {
+          try {
+            await _precacheHomeImages(meals, profile);
+          } catch (_) {}
         });
       }
     } catch (e) {
@@ -133,6 +159,54 @@ class _HomePageState extends State<HomePage> {
       await _redirectToLoginPage(errorMessage: e.toString());
       return;
     }
+  }
+
+  Future<void> _loadMealsForDate(DateTime date) async {
+    final normalizedDate = normalizeHomeDate(date);
+    final dateKey = _dateKey(normalizedDate);
+    if (_loadedDateKeys.contains(dateKey)) {
+      return;
+    }
+
+    try {
+      final meals = await widget._mealService.fetchMeals(
+        startDate: normalizedDate,
+        endDate: _startOfNextDay(normalizedDate),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _records.removeWhere((record) {
+          final createdAt = record.createdAt;
+          return createdAt != null && isSameHomeDate(createdAt, normalizedDate);
+        });
+        _records.addAll(meals);
+        _records.sort((a, b) {
+          final aCreated = a.createdAt;
+          final bCreated = b.createdAt;
+          if (aCreated == null && bCreated == null) {
+            return 0;
+          }
+          if (aCreated == null) {
+            return 1;
+          }
+          if (bCreated == null) {
+            return -1;
+          }
+          return bCreated.compareTo(aCreated);
+        });
+        _loadedDateKeys.add(dateKey);
+      });
+
+      Future<void>(() async {
+        try {
+          await _precacheHomeImages(meals, _userProfile);
+        } catch (_) {}
+      });
+    } catch (_) {}
   }
 
   Future<void> _precacheHomeImages(
@@ -199,17 +273,17 @@ class _HomePageState extends State<HomePage> {
     return isNewAccountFirstAccess;
   }
 
-  String _resolveIdleMascotAsset() {
-    final today = DateTime.now();
-    final todayRecords = _records
+  String _resolveIdleMascotAsset({required DateTime date}) {
+    final normalizedDate = normalizeHomeDate(date);
+    final selectedDateRecords = _records
         .where((record) {
           final createdAt = record.createdAt;
-          return createdAt != null && isSameHomeDate(createdAt, today);
+          return createdAt != null && isSameHomeDate(createdAt, normalizedDate);
         })
         .toList(growable: false);
 
-    final hasNoMealsToday = todayRecords.isEmpty;
-    if (hasNoMealsToday && !_isFirstHomeAccess) {
+    final hasNoMealsForSelectedDate = selectedDateRecords.isEmpty;
+    if (hasNoMealsForSelectedDate && !_isFirstHomeAccess) {
       return HomePage._mascotSadVideoAsset;
     }
 
@@ -217,19 +291,33 @@ class _HomePageState extends State<HomePage> {
       'daily_calorie_goal',
       'dailyCalorieGoal',
     ], fallback: 2000);
-    final consumedCalories = todayRecords.fold<int>(
+    final consumedCalories = selectedDateRecords.fold<int>(
       0,
       (sum, record) => sum + record.calories,
     );
 
-    if (consumedCalories > goalCalories) {
+    if (_isCalorieGoalExceededForObjective(
+      consumedCalories: consumedCalories,
+      goalCalories: goalCalories,
+    )) {
       return HomePage._mascotScaredVideoAsset;
     }
 
     return HomePage._mascotIdleVideoAsset;
   }
 
-  bool _isCalorieGoalExceededForDate({
+  bool _isCalorieGoalExceededForObjective({
+    required int consumedCalories,
+    required int goalCalories,
+  }) {
+    return isCalorieGoalExceededForProfile(
+      consumedCalories: consumedCalories,
+      goalCalories: goalCalories,
+      userProfile: _userProfile,
+    );
+  }
+
+  bool _hasCalorieGoalReachedForDate({
     required DateTime date,
     FoodMealRecord? extraRecord,
   }) {
@@ -255,7 +343,11 @@ class _HomePageState extends State<HomePage> {
       'dailyCalorieGoal',
     ], fallback: 2000);
 
-    return consumedCalories > goalCalories;
+    return hasReachedCalorieGoalForProfile(
+      consumedCalories: consumedCalories,
+      goalCalories: goalCalories,
+      userProfile: _userProfile,
+    );
   }
 
   @override
@@ -273,7 +365,7 @@ class _HomePageState extends State<HomePage> {
       selectedDate: _selectedDate,
       onSelectedDateTap: _pickSelectedDate,
       playMascotCelebration: _playMascotCelebration,
-      idleMascotVideoAsset: _resolveIdleMascotAsset(),
+      idleMascotVideoAsset: _resolveIdleMascotAsset(date: _selectedDate),
       mascotCelebrationVideoAsset: HomePage._mascotCelebrationVideoAsset,
       onMascotCelebrationCompleted: _handleMascotCelebrationCompleted,
     );
@@ -290,56 +382,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _pickSelectedDate() async {
-    final pickedDate = await showDatePicker(
+    final pickedDate = await showAppDatePicker(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      builder: (context, child) {
-        final baseTheme = Theme.of(context);
-        final colorScheme = baseTheme.colorScheme.copyWith(
-          primary: AppColors.action500,
-          onPrimary: AppColors.surface,
-          secondary: AppColors.action500,
-          onSecondary: AppColors.surface,
-          surface: AppColors.surface,
-          onSurface: AppColors.brand900Variant,
-        );
-
-        return Theme(
-          data: baseTheme.copyWith(
-            colorScheme: colorScheme,
-            datePickerTheme: baseTheme.datePickerTheme.copyWith(
-              backgroundColor: AppColors.surface,
-              headerBackgroundColor: AppColors.surface,
-              headerForegroundColor: AppColors.brand900Variant,
-              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return Colors.black;
-                }
-                return AppColors.brand900Variant;
-              }),
-              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return AppColors.action500;
-                }
-                return Colors.transparent;
-              }),
-              todayForegroundColor: const WidgetStatePropertyAll(
-                AppColors.action500,
-              ),
-              todayBorder: const BorderSide(color: AppColors.action500),
-              cancelButtonStyle: TextButton.styleFrom(
-                foregroundColor: AppColors.action500,
-              ),
-              confirmButtonStyle: TextButton.styleFrom(
-                foregroundColor: AppColors.action500,
-              ),
-            ),
-          ),
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
     );
 
     if (pickedDate == null) {
@@ -359,6 +406,7 @@ class _HomePageState extends State<HomePage> {
       _selectedDate = normalized;
     });
 
+    await _loadMealsForDate(normalized);
     widget.onSelectedDateChanged?.call(normalized);
   }
 
@@ -368,7 +416,7 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (hasUpdatedProfile == true && mounted) {
-      await _loadData();
+      await _loadInitialData();
     }
   }
 
@@ -383,7 +431,7 @@ class _HomePageState extends State<HomePage> {
 
     final recordDate = normalizeHomeDate(record.createdAt ?? DateTime.now());
     final recordId = (record.id ?? '').trim();
-    final shouldPlayCelebration = !_isCalorieGoalExceededForDate(
+    final shouldPlayCelebration = _hasCalorieGoalReachedForDate(
       date: recordDate,
       extraRecord: record,
     );
@@ -585,6 +633,7 @@ class _HomeBody extends StatelessWidget {
                       playMascotVideo: playMascotCelebration,
                       onMascotVideoCompleted: onMascotCelebrationCompleted,
                       records: records,
+                      selectedDate: selectedDate,
                       userProfile: userProfile,
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -655,6 +704,9 @@ class _Header extends StatelessWidget {
     final avatarUrl =
         userProfile?['avatarUrl'] as String? ??
         userProfile?['avatar_url'] as String?;
+    final avatarFrameId =
+        userProfile?['equippedAvatarFrameId'] as String? ??
+        userProfile?['equipped_avatar_frame_id'] as String?;
     final greeting = homeGreetingFor(DateTime.now());
 
     return Row(
@@ -681,27 +733,11 @@ class _Header extends StatelessWidget {
         ),
         GestureDetector(
           onTap: onAvatarTap,
-          child: ClipOval(
-            child: SizedBox(
-              width: AppSpacing.huge + AppSpacing.xs,
-              height: AppSpacing.huge + AppSpacing.xs,
-              child: avatarUrl != null && avatarUrl.isNotEmpty
-                  ? Image.network(
-                      avatarUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const ColoredBox(
-                        color: AppColors.surfaceAlt,
-                        child: Icon(
-                          Icons.person,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    )
-                  : const ColoredBox(
-                      color: AppColors.surfaceAlt,
-                      child: Icon(Icons.person, color: AppColors.textSecondary),
-                    ),
-            ),
+          child: FramedAvatar(
+            size: AppSpacing.huge + AppSpacing.md,
+            avatarUrl: avatarUrl,
+            frameId: avatarFrameId,
+            fallbackText: trimmedName,
           ),
         ),
       ],

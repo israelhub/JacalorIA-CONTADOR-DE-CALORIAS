@@ -4,7 +4,9 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_button.dart';
 import '../models/food_analysis_result.dart';
+import '../services/food_analysis_service.dart';
 import '../widgets/food_analysis_page_header.dart';
 
 class FoodAnalysisProcessingPage extends StatefulWidget {
@@ -41,6 +43,7 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
   late final AnimationController _scannerController;
   bool _didResolve = false;
   String? _errorMessage;
+  bool _isHighDemandError = false;
   bool _started = false;
 
   @override
@@ -81,8 +84,16 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
         return;
       }
 
+      final message = error.toString().replaceFirst('Exception: ', '');
+      final isHighDemandError =
+          error is FoodAnalysisHighDemandException ||
+          _looksLikeHighDemandError(message);
+
       setState(() {
-        _errorMessage = error.toString().replaceFirst('Exception: ', '');
+        _errorMessage = isHighDemandError
+            ? FoodAnalysisService.highDemandMessage
+            : message;
+        _isHighDemandError = isHighDemandError;
       });
     }
   }
@@ -231,6 +242,11 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
               const SizedBox(height: AppSpacing.md),
               if (_errorMessage == null)
                 const CircularProgressIndicator(color: AppColors.action500)
+              else if (_isHighDemandError)
+                _HighDemandActions(
+                  onRetry: _retry,
+                  onGoHome: _goHome,
+                )
               else
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(null),
@@ -291,6 +307,51 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
           ),
         ],
       ),
+    );
+  }
+
+  bool _looksLikeHighDemandError(String message) {
+    final normalizedMessage = message.toLowerCase();
+    return normalizedMessage.contains('high demand') ||
+        normalizedMessage.contains('alta demanda') ||
+        normalizedMessage.contains('too many requests') ||
+        normalizedMessage.contains('rate limit');
+  }
+
+  void _retry() {
+    setState(() {
+      _errorMessage = null;
+      _isHighDemandError = false;
+    });
+    unawaited(_runOperation());
+  }
+
+  void _goHome() {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+}
+
+class _HighDemandActions extends StatelessWidget {
+  const _HighDemandActions({required this.onRetry, required this.onGoHome});
+
+  final VoidCallback onRetry;
+  final VoidCallback onGoHome;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        AppButton(
+          label: 'Tentar novamente',
+          onPressed: onRetry,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppButton(
+          label: 'Voltar para home',
+          variant: AppButtonVariant.outline,
+          onPressed: onGoHome,
+        ),
+      ],
     );
   }
 }

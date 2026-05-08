@@ -1,5 +1,6 @@
 import 'social_activity_item.dart';
 import '../helpers/social_model_parsers.dart';
+import '../helpers/social_group_helpers.dart';
 
 class SocialGroupSummary {
   const SocialGroupSummary({
@@ -19,6 +20,7 @@ class SocialGroupSummary {
     required this.leaderLabel,
     required this.remainingDays,
     required this.remainingDaysLabel,
+    this.isDefeated = false,
     this.isPublic = false,
     required this.inviteCode,
     required this.activities,
@@ -40,6 +42,7 @@ class SocialGroupSummary {
   final String leaderLabel;
   final int remainingDays;
   final String remainingDaysLabel;
+  final bool isDefeated;
   final bool isPublic;
   final String? inviteCode;
   final List<SocialActivityItem> activities;
@@ -47,16 +50,18 @@ class SocialGroupSummary {
   factory SocialGroupSummary.fromJson(Map<String, dynamic> json) {
     final durationDays = socialToInt(json['durationDays']) > 0 ? socialToInt(json['durationDays']) : 7;
     final remainingDays = socialToInt(json['remainingDays']);
+    final competitionType = json['competitionType']?.toString() ?? 'offensive';
+    final isDefeated = json['isDefeated'] == true;
 
     return SocialGroupSummary(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
       iconKey: json['iconKey']?.toString() ?? 'salad',
-      competitionType: json['competitionType']?.toString() ?? 'offensive',
-      competitionLabel: json['competitionLabel']?.toString() ?? 'Ofensiva',
+      competitionType: competitionType,
+      competitionLabel: socialCompetitionLabel(competitionType),
       durationDays: durationDays,
-      durationDaysLabel: json['durationDaysLabel']?.toString() ?? '$durationDays dias',
+      durationDaysLabel: socialDurationLabel(durationDays),
       memberCount: socialToInt(json['memberCount']),
       rankPosition: socialToInt(json['rankPosition']),
       points: socialToInt(json['points']),
@@ -64,7 +69,12 @@ class SocialGroupSummary {
       leaderName: json['leaderName']?.toString() ?? 'Líder do grupo',
       leaderLabel: json['leaderLabel']?.toString() ?? 'Líder do grupo',
       remainingDays: remainingDays,
-      remainingDaysLabel: json['remainingDaysLabel']?.toString() ?? '$remainingDays dias restantes',
+      remainingDaysLabel: socialRemainingDaysLabelByGroup(
+        remainingDays: remainingDays,
+        competitionType: competitionType,
+        isDefeated: isDefeated,
+      ),
+      isDefeated: isDefeated,
       isPublic: json['isPublic'] == true,
       inviteCode: json['inviteCode']?.toString(),
       activities: (json['activities'] as List<dynamic>? ?? const [])

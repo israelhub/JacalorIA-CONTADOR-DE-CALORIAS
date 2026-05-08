@@ -1,11 +1,18 @@
 import '../helpers/social_model_parsers.dart';
 
 class SocialFriend {
-  const SocialFriend({required this.id, required this.name, required this.avatarUrl, required this.streakDays});
+  const SocialFriend({
+    required this.id,
+    required this.name,
+    required this.avatarUrl,
+    required this.avatarFrameId,
+    required this.streakDays,
+  });
 
   final String id;
   final String name;
   final String? avatarUrl;
+  final String? avatarFrameId;
   final int streakDays;
 
   factory SocialFriend.fromJson(Map<String, dynamic> json) {
@@ -13,6 +20,7 @@ class SocialFriend {
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? 'Sem nome',
       avatarUrl: json['avatarUrl']?.toString(),
+      avatarFrameId: json['avatarFrameId']?.toString(),
       streakDays: socialToInt(json['streakDays']),
     );
   }

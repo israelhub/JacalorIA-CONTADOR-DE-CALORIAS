@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../auth/service/auth_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_guide_card.dart';
@@ -16,6 +17,7 @@ import 'social_groups_tab_page.dart';
 import '../services/social_service.dart';
 import '../widgets/social_create_group_sheet.dart';
 import '../widgets/social_add_friend_dialog.dart';
+import '../widgets/social_friend_requests_dialog.dart';
 import '../widgets/social_join_group_dialog.dart';
 import '../widgets/social_public_groups_dialog.dart';
 import '../widgets/social_qr_scan_sheet.dart';
@@ -23,10 +25,17 @@ import '../widgets/social_search_user_dialog.dart';
 import '../widgets/social_segmented_control.dart';
 
 class SocialPage extends StatefulWidget {
-  const SocialPage({super.key, SocialService? service})
+  const SocialPage({
+    super.key,
+    SocialService? service,
+    this.authService,
+    this.refreshVersion = 0,
+  })
     : service = service ?? const SocialService();
 
   final SocialService service;
+  final AuthService? authService;
+  final int refreshVersion;
 
   @override
   State<SocialPage> createState() => _SocialPageState();
@@ -39,8 +48,19 @@ class _SocialPageState extends State<SocialPage> {
   @override
   void initState() {
     super.initState();
-    _controller = SocialPageController(service: widget.service);
+    _controller = SocialPageController(
+      service: widget.service,
+      authService: widget.authService ?? AuthService(),
+    );
     _controller.loadAll();
+  }
+
+  @override
+  void didUpdateWidget(covariant SocialPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.refreshVersion != oldWidget.refreshVersion) {
+      _controller.loadAll(silent: true);
+    }
   }
 
   @override
@@ -90,6 +110,9 @@ class _SocialPageState extends State<SocialPage> {
         ),
       );
     }
+
+    final activeGroups = _controller.groups.where((group) => !_isGroupFinished(group)).toList(growable: false);
+    final historyGroups = _controller.groups.where(_isGroupFinished).toList(growable: false);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -145,10 +168,14 @@ class _SocialPageState extends State<SocialPage> {
                   ? SocialFriendsTabPage(
                       friends: _controller.friends,
                       onAddFriend: _openAddFriendModal,
+                      pendingRequestCount: _controller.pendingFriendRequestCount,
+                      onOpenRequests: _openFriendRequestsModal,
                       onOpenFriendProfile: _openFriendProfile,
                     )
                   : SocialGroupsTabPage(
-                      groups: _controller.groups,
+                      activeGroups: activeGroups,
+                      historyGroups: historyGroups,
+                      isGroupFinished: _isGroupFinished,
                       onCreateGroup: _openCreateGroupSheet,
                       onJoinGroup: _openJoinGroupDialog,
                       onOpenGroup: _openGroupDetail,
@@ -162,22 +189,26 @@ class _SocialPageState extends State<SocialPage> {
 
   Future<void> _openAddFriendModal() async {
     final qrPayload = _controller.friendLinkValue();
+    final rootNavigator = Navigator.of(context);
     await showDialog<void>(
       context: context,
-      builder: (context) => SocialAddFriendDialog(
+      builder: (_) => SocialAddFriendDialog(
         userName: _controller.currentUserName,
         userAvatarUrl: _controller.currentUserAvatarUrl,
+        userAvatarFrameId: _controller.currentUserAvatarFrameId,
         qrPayload: qrPayload,
         onCopyId: _copyCurrentUserId,
         onSearchUser: () async {
-          Navigator.of(context).pop();
+          rootNavigator.pop();
+          if (!mounted) return;
           await _openSearchUserModal();
         },
         onScanQr: () async {
           final value = await _scanQrCode();
           if (value == null || value.trim().isEmpty) return;
           if (!mounted) return;
-          Navigator.of(context).pop();
+          rootNavigator.pop();
+          if (!mounted) return;
           await _submitFriendLookup(value);
         },
         onShareLink: _shareFriendInviteLink,
@@ -217,6 +248,7 @@ class _SocialPageState extends State<SocialPage> {
     if (result == null) return;
 
     if (result.openPublicGroups) {
+      if (!mounted) return;
       final selectedGroupId = await showDialog<String>(
         context: context,
         builder: (context) => SocialPublicGroupsDialog(
@@ -277,6 +309,8 @@ class _SocialPageState extends State<SocialPage> {
     if (mounted) await _controller.loadAll();
   }
 
+  bool _isGroupFinished(SocialGroupSummary group) => group.remainingDays <= 0;
+
   Future<void> _openFriendProfile(SocialFriend friend) async {
     final removed = await context.pushSlidePage<bool>(
       SocialFriendProfilePage(
@@ -300,10 +334,34 @@ class _SocialPageState extends State<SocialPage> {
       builder: (context) => SocialSearchUserDialog(
         searchUsers: _controller.searchUsers,
         onAddUser: (user) async {
-          await _guardedAction(() => _controller.addFriendById(user.id));
+          await _runFriendRequestAction(() => _controller.addFriendById(user.id));
         },
       ),
     );
+  }
+
+  Future<void> _openFriendRequestsModal() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => SocialFriendRequestsDialog(
+        requests: _controller.pendingFriendRequests,
+        onAccept: (request) => _runFriendRequestAction(
+          () => _controller.acceptFriendRequest(request.id),
+        ),
+        onReject: (request) => _runFriendRequestAction(
+          () => _controller.rejectFriendRequest(request.id),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _runFriendRequestAction(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (error) {
+      _showError(error);
+      rethrow;
+    }
   }
 
   Future<void> _copyCurrentUserId() async {

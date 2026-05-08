@@ -43,8 +43,21 @@ class MealService {
     return 0;
   }
 
-  Future<List<FoodMealRecord>> fetchMeals() async {
-    final uri = Uri.parse('$_baseUrl/meals');
+  Future<List<FoodMealRecord>> fetchMeals({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final queryParams = <String, String>{};
+    if (startDate != null) {
+      queryParams['startDate'] = startDate.toUtc().toIso8601String();
+    }
+    if (endDate != null) {
+      queryParams['endDate'] = endDate.toUtc().toIso8601String();
+    }
+
+    final uri = Uri.parse('$_baseUrl/meals').replace(
+      queryParameters: queryParams.isEmpty ? null : queryParams,
+    );
     final response = await http.get(uri, headers: _buildHeaders());
 
     if (response.statusCode == 200) {

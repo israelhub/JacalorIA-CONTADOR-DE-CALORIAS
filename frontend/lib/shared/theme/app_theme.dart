@@ -66,6 +66,8 @@ class AppColors {
   static const Color socialMetricFavoriteDish = Color(0xFF9EA7B3);
   static const Color socialMetricPreferredPeriod = Color(0xFF4D8BD6);
   static const Color socialMetricXp = Color(0xFF6F52C8);
+  static const Color socialRankingSilver = Color(0xFF9EA7B3);
+  static const Color socialRankingBronze = Color(0xFFB8793F);
 
   static const Color socialInfoBirthDateCandle = Color(0xFFFF5A5F);
   static const Color socialInfoBirthDateFilling = Color(0xFF32C7B0);
@@ -372,6 +374,12 @@ class AppTextStyles {
     height: 21 / 14,
   );
 
+  static TextStyle get socialResultAction => GoogleFonts.baloo2(
+    fontSize: 11,
+    fontWeight: FontWeight.w700,
+    height: 14 / 11,
+  );
+
   static TextStyle get missionsIntroTitle => GoogleFonts.baloo2(
     fontSize: 20,
     fontWeight: FontWeight.w600,
@@ -483,4 +491,41 @@ class AppShadows {
       blurRadius: 0,
     ),
   ];
+}
+
+class AppTheme {
+  AppTheme._();
+
+  static ThemeData get theme {
+    final base = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
+        primary: AppColors.primary,
+        surface: AppColors.surface,
+      ),
+      scaffoldBackgroundColor: AppColors.background,
+      textTheme: TextTheme(
+        displayLarge: AppTextStyles.displayLarge,
+        headlineLarge: AppTextStyles.headingLarge,
+        headlineMedium: AppTextStyles.headingMedium,
+        headlineSmall: AppTextStyles.headingSmall,
+        titleLarge: AppTextStyles.subtitleLarge,
+        bodyLarge: AppTextStyles.bodyLarge,
+        bodyMedium: AppTextStyles.bodyMedium,
+        bodySmall: AppTextStyles.bodySmall,
+        labelLarge: AppTextStyles.label,
+        labelMedium: AppTextStyles.caption,
+        labelSmall: AppTextStyles.micro,
+      ),
+    );
+
+    return base.copyWith(
+      appBarTheme: const AppBarTheme(
+        elevation: 0,
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+      ),
+    );
+  }
 }

@@ -112,23 +112,10 @@ class AppBottomNavigation extends StatelessWidget {
           ),
           Positioned(
             top: -8,
-            child: GestureDetector(
+            child: _PressableCenterActionButton(
               key: centerActionKey,
               onTap: onCenterActionTap,
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                width: cameraButtonSize,
-                height: cameraButtonSize,
-                decoration: const BoxDecoration(
-                  color: AppColors.action500,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.camera_alt_outlined,
-                  color: AppColors.surface,
-                  size: AppSpacing.xxxl,
-                ),
-              ),
+              size: cameraButtonSize,
             ),
           ),
         ],
@@ -175,6 +162,90 @@ class AppBottomNavigationItem extends StatelessWidget {
           style: AppTextStyles.homeBottomNav.copyWith(color: color, height: 1),
         ),
       ],
+    );
+  }
+}
+
+class _PressableCenterActionButton extends StatefulWidget {
+  const _PressableCenterActionButton({
+    super.key,
+    required this.onTap,
+    required this.size,
+  });
+
+  final VoidCallback onTap;
+  final double size;
+
+  @override
+  State<_PressableCenterActionButton> createState() =>
+      _PressableCenterActionButtonState();
+}
+
+class _PressableCenterActionButtonState
+    extends State<_PressableCenterActionButton> {
+  bool _isPressed = false;
+  bool _isHovered = false;
+
+  void _setPressed(bool value) {
+    if (_isPressed == value) {
+      return;
+    }
+    setState(() {
+      _isPressed = value;
+    });
+  }
+
+  void _setHovered(bool value) {
+    if (_isHovered == value) {
+      return;
+    }
+    setState(() {
+      _isHovered = value;
+    });
+  }
+
+  Future<void> _handleTap() async {
+    _setPressed(true);
+    widget.onTap();
+    await Future<void>.delayed(const Duration(milliseconds: 90));
+    if (!mounted) {
+      return;
+    }
+    _setPressed(false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => _setHovered(true),
+      onExit: (_) => _setHovered(false),
+      child: GestureDetector(
+        onTapDown: (_) => _setPressed(true),
+        onTapCancel: () => _setPressed(false),
+        onTapUp: (_) {},
+        onTap: _handleTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.94 : (_isHovered ? 1.05 : 1),
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              color: _isHovered ? AppColors.brand900 : AppColors.action500,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.camera_alt_outlined,
+              color: AppColors.surface,
+              size: AppSpacing.xxxl,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

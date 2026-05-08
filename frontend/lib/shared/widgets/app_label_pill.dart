@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 
 class AppLabelPill extends StatelessWidget {
   const AppLabelPill({
+    super.key,
     required this.label,
     required this.foreground,
     required this.background,

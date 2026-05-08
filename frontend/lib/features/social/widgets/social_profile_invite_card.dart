@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/framed_avatar.dart';
 
 class SocialProfileInviteCard extends StatelessWidget {
   const SocialProfileInviteCard({
     super.key,
     required this.name,
     required this.avatarUrl,
+    required this.avatarFrameId,
     required this.onCopyId,
   });
 
   final String name;
   final String? avatarUrl;
+  final String? avatarFrameId;
   final VoidCallback onCopyId;
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = _resolveAvatarUrl(avatarUrl);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -27,18 +29,12 @@ class SocialProfileInviteCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 22,
+          FramedAvatar(
+            size: 48,
+            avatarUrl: avatarUrl,
+            frameId: avatarFrameId,
+            fallbackText: name,
             backgroundColor: AppColors.surface,
-            backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
-            child: imageUrl == null
-                ? Text(
-                    name.isNotEmpty ? name[0].toUpperCase() : '?',
-                    style: AppTextStyles.homeMealTitle.copyWith(
-                      color: AppColors.brand900Variant,
-                    ),
-                  )
-                : null,
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
@@ -69,11 +65,4 @@ class SocialProfileInviteCard extends StatelessWidget {
     );
   }
 
-  String? _resolveAvatarUrl(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return null;
-    final value = raw.trim();
-    final uri = Uri.tryParse(value);
-    if (uri != null && uri.hasScheme) return value;
-    return null;
-  }
 }

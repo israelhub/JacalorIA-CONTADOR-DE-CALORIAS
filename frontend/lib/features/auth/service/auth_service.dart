@@ -12,11 +12,15 @@ class AuthService {
   static String get _baseUrl => ApiConfig.baseUrl;
   static const String _googleWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
-    defaultValue: '',
+    defaultValue:
+        '618330390967-emagf9ea3j4l5kaeroi2s1bs527ugc0i.apps.googleusercontent.com',
   );
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: const ['email', 'openid'],
-    clientId: kIsWeb ? _googleWebClientId : null,
+    // Sem google-services.json, Android deve usar o Web Client ID como serverClientId.
+    clientId: (kIsWeb || defaultTargetPlatform == TargetPlatform.android)
+        ? _googleWebClientId
+        : null,
   );
 
   static Future<void> initialize() async {
@@ -311,6 +315,12 @@ class AuthService {
 
     if (lower.contains('access token google ausente')) {
       return 'Nao foi possivel obter token do Google. Tente novamente.';
+    }
+
+    if (lower.contains('apiexception: 10') ||
+        lower.contains('api10') ||
+        lower.contains('sign_in_failed')) {
+      return 'Falha na configuracao do Google Login no Android (ApiException 10). Verifique package name, SHA-1/SHA-256 e OAuth Client ID.';
     }
 
     if (lower.contains('conta google sem email valido') ||

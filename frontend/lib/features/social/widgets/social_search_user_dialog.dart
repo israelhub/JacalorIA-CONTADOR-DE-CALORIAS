@@ -117,7 +117,7 @@ class _SocialSearchUserDialogState extends State<SocialSearchUserDialog> {
                             for (final user in _results) ...[
                               SocialSearchResultItem(
                                 user: user,
-                                onAdd: user.isFriend
+                                onAdd: !user.canSendRequest
                                     ? null
                                     : () async {
                                         await widget.onAddUser(user);
@@ -130,7 +130,9 @@ class _SocialSearchUserDialogState extends State<SocialSearchUserDialog> {
                                               name: user.name,
                                               email: user.email,
                                               avatarUrl: user.avatarUrl,
-                                              isFriend: true,
+                                              avatarFrameId: user.avatarFrameId,
+                                              isFriend: false,
+                                              friendRequestStatus: 'outgoing',
                                             );
                                           }
                                         });
