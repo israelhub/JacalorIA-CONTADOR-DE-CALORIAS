@@ -24,7 +24,10 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
       throw new InternalServerErrorException('API_KEY não configurada');
     }
 
-    const model = this.configService.get<string>('GEMINI_MODEL', 'gemini-2.5-flash');
+    const model = this.configService.get<string>(
+      'GEMINI_MODEL',
+      'gemini-2.5-flash-lite',
+    );
     const payload = analyzeFoodDto.items?.length
       ? this.buildReanalysisPrompt(analyzeFoodDto.items)
       : this.buildImageAnalysisPrompt();

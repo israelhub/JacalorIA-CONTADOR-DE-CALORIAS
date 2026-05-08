@@ -10,6 +10,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from './models/user.model';
 import { MailModule } from '../mail/mail.module';
 import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
+import { SocialFriendship } from '../social/models/social-friendship.model';
+import { UserCurrencyTransaction } from '../missions/models/user-currency-transaction.model';
+import { Meal } from '../meals/models/meal.model';
+import { StreakModule } from '../streak/streak.module';
 
 @Module({
   imports: [
@@ -23,7 +27,14 @@ import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
         },
       }),
     }),
-    SequelizeModule.forFeature([User, UserWeightEntry]),
+    SequelizeModule.forFeature([
+      User,
+      UserWeightEntry,
+      SocialFriendship,
+      UserCurrencyTransaction,
+      Meal,
+    ]),
+    StreakModule,
     MailModule,
   ],
   controllers: [AuthController],

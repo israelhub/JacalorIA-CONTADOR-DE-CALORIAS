@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { Meal } from './models/meal.model';
 import { CreateMealDto } from './dto/create-meal.dto';
 import { UpdateMealDto } from './dto/update-meal.dto';
@@ -20,9 +21,42 @@ export class MealsService {
     });
   }
 
-  async findAll(userId: string): Promise<Meal[]> {
+  async findAll(
+    userId: string,
+    filters?: {
+      startDate?: string;
+      endDate?: string;
+    },
+  ): Promise<Meal[]> {
+    const where: Record<string, unknown> = {
+      userId,
+      status: MealStatus.Active,
+    };
+
+    if (filters?.startDate || filters?.endDate) {
+      const createdAtFilter: Record<symbol, Date> = {};
+
+      if (filters.startDate) {
+        const startDate = new Date(filters.startDate);
+        if (!Number.isNaN(startDate.getTime())) {
+          createdAtFilter[Op.gte] = startDate;
+        }
+      }
+
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate);
+        if (!Number.isNaN(endDate.getTime())) {
+          createdAtFilter[Op.lt] = endDate;
+        }
+      }
+
+      if (Object.getOwnPropertySymbols(createdAtFilter).length > 0) {
+        where.createdAt = createdAtFilter;
+      }
+    }
+
     return this.mealModel.findAll({
-      where: { userId, status: MealStatus.Active },
+      where,
       order: [['createdAt', 'DESC']],
     });
   }

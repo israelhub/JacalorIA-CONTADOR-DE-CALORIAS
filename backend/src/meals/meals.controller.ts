@@ -6,6 +6,7 @@ import {
   Body,
   Req,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   UnauthorizedException,
@@ -32,13 +33,20 @@ export class MealsController {
   }
 
   @Get()
-  async findAll(@Req() req: any) {
+  async findAll(
+    @Req() req: any,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
     const userId = req.user?.sub;
     if (!userId) {
       throw new UnauthorizedException('Usuário não autenticado');
     }
 
-    return this.mealsService.findAll(userId);
+    return this.mealsService.findAll(userId, {
+      startDate,
+      endDate,
+    });
   }
 
   @Patch(':id')

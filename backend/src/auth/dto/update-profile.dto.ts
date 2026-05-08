@@ -1,4 +1,11 @@
-import { IsOptional, IsString, IsNumber, IsDateString, Min, IsBoolean } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -60,10 +67,41 @@ export class UpdateProfileDto {
   avatarUrl?: string;
 
   @IsOptional()
+  @IsString()
+  equippedAvatarFrameId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  purchasedAvatarFrameIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  equippedAvatarBackgroundId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  purchasedAvatarBackgroundIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  equippedOffensiveBlockerId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  offensiveBlockerInventoryCount?: number;
+
+  @IsOptional()
   @IsBoolean()
   hideMissionsGuideMe?: boolean;
 
   @IsOptional()
   @IsBoolean()
   hideSocialGuideMe?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hideGuideMe?: boolean;
 }
