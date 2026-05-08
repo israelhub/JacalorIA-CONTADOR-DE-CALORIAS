@@ -6,8 +6,8 @@
   "scripts": {
     "build": "nest build",
     "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
+    "start:dev": "pwsh -ExecutionPolicy Bypass -File ../scripts/start_backend_clean.ps1",
+    "start:debug": "pwsh -ExecutionPolicy Bypass -File ../scripts/start_backend_clean.ps1 -DebugMode",
     "prestart:prod": "npm run build",
     "start:prod": "node dist/main.js"
   },

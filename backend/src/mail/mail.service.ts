@@ -58,10 +58,9 @@ export class MailService {
       const emailHtml = buildVerificationEmailHtml({
         code,
         logoCid: this.logoCid,
-        title: 'Codigo de redefinicao de senha - Jacaloria',
-        heading: 'Ola! Seu codigo de redefinicao de senha e:',
-        instruction:
-          'Digite o codigo no aplicativo para confirmar a troca de senha.',
+        title: 'Codigo de verificacao - Jacaloria',
+        heading: 'Ola! Seu codigo de verificacao e:',
+        instruction: 'Digite o codigo no aplicativo para confirmar seu e-mail.',
       });
 
       await transporter.sendMail({
@@ -113,6 +112,10 @@ export class MailService {
       const emailHtml = buildVerificationEmailHtml({
         code,
         logoCid: this.logoCid,
+        title: 'Codigo de redefinicao de senha - Jacaloria',
+        heading: 'Ola! Seu codigo de redefinicao de senha e:',
+        instruction:
+          'Digite o codigo no aplicativo para confirmar a troca de senha.',
       });
 
       await transporter.sendMail({
