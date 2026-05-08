@@ -8,9 +8,10 @@ void main() {
   testWidgets('combina card de meta e mascote', (tester) async {
     await tester.pumpWidget(
       _wrap(
-        const HomeDailyGoalWithMascot(
+        HomeDailyGoalWithMascot(
           mascotAsset: 'assets/images/smiling green cartoon crocodile@2x.webp',
           records: [],
+          selectedDate: DateTime(2026, 4, 2),
           userProfile: {'dailyCalorieGoal': 2689},
         ),
       ),

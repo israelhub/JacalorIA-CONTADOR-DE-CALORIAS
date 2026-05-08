@@ -201,12 +201,12 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.fromLTRB(
           AppSpacing.lg,
           0,
           AppSpacing.lg,
-          AppSpacing.lg,
+          AppSpacing.lg + MediaQuery.of(context).viewPadding.bottom,
         ),
         child: FoodReviewConfirmButton(
           isBusy: _isBusy,

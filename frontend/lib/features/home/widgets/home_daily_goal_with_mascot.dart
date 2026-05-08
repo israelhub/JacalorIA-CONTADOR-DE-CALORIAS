@@ -6,6 +6,7 @@ import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/macro_progress_indicator.dart';
 import '../../food_analysis/models/food_meal_record.dart';
 import '../helpers/home_date_helpers.dart';
+import '../helpers/home_goal_helpers.dart';
 import '../helpers/home_greeting_helpers.dart';
 
 class HomeDailyGoalWithMascot extends StatefulWidget {
@@ -13,6 +14,7 @@ class HomeDailyGoalWithMascot extends StatefulWidget {
     super.key,
     required this.mascotAsset,
     required this.records,
+    required this.selectedDate,
     this.idleMascotVideoAsset,
     this.mascotVideoAsset,
     this.playMascotVideo = false,
@@ -22,6 +24,7 @@ class HomeDailyGoalWithMascot extends StatefulWidget {
 
   final String mascotAsset;
   final List<FoodMealRecord> records;
+  final DateTime selectedDate;
   final String? idleMascotVideoAsset;
   final String? mascotVideoAsset;
   final bool playMascotVideo;
@@ -93,6 +96,7 @@ class _HomeDailyGoalWithMascotState extends State<HomeDailyGoalWithMascot> {
         HomeDailyGoalCard(
           key: const ValueKey('home-daily-goal-card'),
           records: widget.records,
+          selectedDate: widget.selectedDate,
           userProfile: widget.userProfile,
         ),
         Positioned(
@@ -124,17 +128,25 @@ class _HomeDailyGoalWithMascotState extends State<HomeDailyGoalWithMascot> {
 }
 
 class HomeDailyGoalCard extends StatelessWidget {
-  const HomeDailyGoalCard({super.key, required this.records, this.userProfile});
+  const HomeDailyGoalCard({
+    super.key,
+    required this.records,
+    required this.selectedDate,
+    this.userProfile,
+  });
 
   final List<FoodMealRecord> records;
+  final DateTime selectedDate;
   final Map<String, dynamic>? userProfile;
 
   @override
   Widget build(BuildContext context) {
+    final normalizedSelectedDate = normalizeHomeDate(selectedDate);
     final todayRecords = records
         .where((record) {
           final createdAt = record.createdAt;
-          return createdAt != null && isSameHomeDate(createdAt, DateTime.now());
+          return createdAt != null &&
+              isSameHomeDate(createdAt, normalizedSelectedDate);
         })
         .toList(growable: false);
 
@@ -143,6 +155,7 @@ class HomeDailyGoalCard extends StatelessWidget {
       'dailyCalorieGoal',
     ], fallback: 2000);
     final consumedCalories = todayRecords.fold(0, (sum, r) => sum + r.calories);
+    final objective = readHomeObjective(userProfile);
 
     return Container(
       width: double.infinity,
@@ -169,6 +182,7 @@ class HomeDailyGoalCard extends StatelessWidget {
               _ProgressRing(
                 consumedCalories: consumedCalories,
                 totalCalories: totalCalories,
+                objective: objective,
               ),
               const SizedBox(width: AppSpacing.lg),
               Expanded(
@@ -176,6 +190,7 @@ class HomeDailyGoalCard extends StatelessWidget {
                   records: todayRecords,
                   consumedCalories: consumedCalories,
                   totalCalories: totalCalories,
+                  objective: objective,
                   userProfile: userProfile,
                 ),
               ),
@@ -191,15 +206,21 @@ class _ProgressRing extends StatelessWidget {
   const _ProgressRing({
     required this.consumedCalories,
     required this.totalCalories,
+    required this.objective,
   });
 
   final int consumedCalories;
   final int totalCalories;
+  final HomeObjective objective;
 
   @override
   Widget build(BuildContext context) {
     final exceededCalories = consumedCalories - totalCalories;
-    final isExceeded = exceededCalories > 0;
+    final isExceeded = isCalorieGoalExceededForObjective(
+      consumedCalories: consumedCalories,
+      goalCalories: totalCalories,
+      objective: objective,
+    );
     final progressToGoal = totalCalories <= 0
         ? 0.0
         : (consumedCalories / totalCalories).clamp(0.0, 1.0);
@@ -313,18 +334,24 @@ class _GoalStats extends StatelessWidget {
     required this.records,
     required this.consumedCalories,
     required this.totalCalories,
+    required this.objective,
     this.userProfile,
   });
 
   final List<FoodMealRecord> records;
   final int consumedCalories;
   final int totalCalories;
+  final HomeObjective objective;
   final Map<String, dynamic>? userProfile;
 
   @override
   Widget build(BuildContext context) {
     final remainingCalories = totalCalories - consumedCalories;
-    final isExceeded = remainingCalories < 0;
+    final isExceeded = isCalorieGoalExceededForObjective(
+      consumedCalories: consumedCalories,
+      goalCalories: totalCalories,
+      objective: objective,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

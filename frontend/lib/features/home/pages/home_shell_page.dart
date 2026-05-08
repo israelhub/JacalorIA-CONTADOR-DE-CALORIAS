@@ -39,6 +39,9 @@ class _HomeShellPageState extends State<HomeShellPage> {
   late int _currentIndex;
   late DateTime _selectedHomeDate;
   late final PageController _pageController;
+  int _performanceRefreshVersion = 0;
+  int _missionsRefreshVersion = 0;
+  int _socialRefreshVersion = 0;
 
   @override
   void initState() {
@@ -79,6 +82,22 @@ class _HomeShellPageState extends State<HomeShellPage> {
     };
   }
 
+  void _bumpRefreshForIndex(int index) {
+    switch (index) {
+      case _performanceIndex:
+        _performanceRefreshVersion++;
+        break;
+      case _homeIndex:
+        break;
+      case _missionsIndex:
+        _missionsRefreshVersion++;
+        break;
+      case _socialIndex:
+        _socialRefreshVersion++;
+        break;
+    }
+  }
+
   Future<void> _goToTab(AppMainBottomTab tab) async {
     final nextIndex = _tabToIndex(tab);
     if (nextIndex == _currentIndex) {
@@ -87,6 +106,7 @@ class _HomeShellPageState extends State<HomeShellPage> {
 
     setState(() {
       _currentIndex = nextIndex;
+      _bumpRefreshForIndex(nextIndex);
     });
 
     await _pageController.animateToPage(
@@ -122,11 +142,15 @@ class _HomeShellPageState extends State<HomeShellPage> {
 
           setState(() {
             _currentIndex = index;
+            _bumpRefreshForIndex(index);
           });
         },
         children: [
           widget.performancePage ??
-              PerformancePage(onDateSelected: _goToHomeDate),
+              PerformancePage(
+                onDateSelected: _goToHomeDate,
+                refreshVersion: _performanceRefreshVersion,
+              ),
           widget.homePage ??
               HomePage(
                 initialSelectedDate: _selectedHomeDate,
@@ -136,8 +160,9 @@ class _HomeShellPageState extends State<HomeShellPage> {
                   });
                 },
               ),
-          widget.missionsPage ?? const MissionsPage(),
-          widget.socialPage ?? const SocialPage(),
+          widget.missionsPage ??
+              MissionsPage(refreshVersion: _missionsRefreshVersion),
+          widget.socialPage ?? SocialPage(refreshVersion: _socialRefreshVersion),
         ],
       ),
       bottomNavigationBar: AppMainBottomNavigation(
