@@ -65,13 +65,19 @@ class AppGuideCard extends StatelessWidget {
                             ),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: onClose,
-                      behavior: HitTestBehavior.opaque,
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 24,
-                        color: iconColor,
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: onClose,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 24,
+                            color: iconColor,
+                          ),
+                        ),
                       ),
                     ),
                   ],
