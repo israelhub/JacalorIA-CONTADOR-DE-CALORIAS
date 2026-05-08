@@ -95,6 +95,34 @@ export class User extends Model {
   @Column({ type: DataType.STRING, field: 'avatar_url' })
   avatarUrl: string | null;
 
+  @AllowNull(true)
+  @Column({ type: DataType.STRING, field: 'equipped_avatar_frame_id' })
+  equippedAvatarFrameId: string | null;
+
+  @Default([])
+  @Column({ type: DataType.JSONB, field: 'purchased_avatar_frame_ids' })
+  purchasedAvatarFrameIds: string[];
+
+  @AllowNull(true)
+  @Column({ type: DataType.STRING, field: 'equipped_avatar_background_id' })
+  equippedAvatarBackgroundId: string | null;
+
+  @Default([])
+  @Column({ type: DataType.JSONB, field: 'purchased_avatar_background_ids' })
+  purchasedAvatarBackgroundIds: string[];
+
+  @AllowNull(true)
+  @Column({ type: DataType.STRING, field: 'equipped_offensive_blocker_id' })
+  equippedOffensiveBlockerId: string | null;
+
+  @Default(0)
+  @Column({ type: DataType.INTEGER, field: 'offensive_blocker_inventory_count' })
+  offensiveBlockerInventoryCount: number;
+
+  @Default([])
+  @Column({ type: DataType.JSONB, field: 'streak_blocker_applied_day_keys' })
+  streakBlockerAppliedDayKeys: string[];
+
   @Default(false)
   @Column({ type: DataType.BOOLEAN, field: 'hide_missions_guide_me' })
   hideMissionsGuideMe: boolean;

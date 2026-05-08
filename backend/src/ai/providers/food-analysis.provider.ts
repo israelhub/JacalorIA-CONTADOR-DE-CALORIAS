@@ -7,6 +7,8 @@ export type FoodAnalysisItem = {
   protein: number;
   carbs: number;
   fat: number;
+  source?: 'taco_db' | 'recipe_decomposition' | 'ai_estimate';
+  matchedFood?: string;
 };
 
 export type FoodAnalysisTotals = {

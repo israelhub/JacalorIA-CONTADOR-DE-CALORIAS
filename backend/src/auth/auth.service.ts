@@ -4,7 +4,9 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { UniqueConstraintError } from 'sequelize';
+import { Op } from 'sequelize';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
@@ -21,6 +23,16 @@ import { ValidateResetCodeDto } from './dto/validate-reset-code.dto';
 import { MailService } from '../mail/mail.service';
 import { AuthRepository } from './auth.repository';
 import { calculateNutritionGoalsFromProfile } from './utils/nutrition-goal-calculator';
+import { SocialFriendship } from '../social/models/social-friendship.model';
+import { UserCurrencyTransaction } from '../missions/models/user-currency-transaction.model';
+import {
+  AVATAR_BACKGROUND_NONE_ID,
+  AVATAR_FRAME_NONE_ID,
+  OFFENSIVE_BLOCKER_DEFAULT_ID,
+} from '../missions/constants/avatar-frame-store';
+import { parseNumber } from '../shared/utils/number-parser.util';
+import { Meal, MealStatus } from '../meals/models/meal.model';
+import { StreakService } from '../streak/streak.service';
 
 @Injectable()
 export class AuthService {
@@ -31,6 +43,13 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
+    @InjectModel(SocialFriendship)
+    private readonly socialFriendshipModel: typeof SocialFriendship,
+    @InjectModel(UserCurrencyTransaction)
+    private readonly userCurrencyTransactionModel: typeof UserCurrencyTransaction,
+    @InjectModel(Meal)
+    private readonly mealModel: typeof Meal,
+    private readonly streakService: StreakService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -111,9 +130,35 @@ export class AuthService {
       `[AUTH][GOOGLE] start hasIdToken=${hasIdToken} hasAccessToken=${hasAccessToken}`,
     );
 
-    const googleUser = dto.idToken
-      ? await this.validateGoogleIdToken(dto.idToken)
-      : await this.validateGoogleAccessToken(dto.accessToken ?? '');
+    const idToken = dto.idToken?.trim() ?? '';
+    const accessToken = dto.accessToken?.trim() ?? '';
+
+    let googleUser: {
+      email?: string;
+      name?: string;
+      email_verified?: string | boolean;
+      aud?: string;
+    };
+
+    if (idToken) {
+      try {
+        googleUser = await this.validateGoogleIdToken(idToken);
+      } catch (error) {
+        // Fallback para accessToken quando o idToken existir, mas falhar por
+        // incompatibilidade de audience/clientId entre plataformas.
+        if (accessToken) {
+          console.warn(
+            '[AUTH][GOOGLE] idToken validation failed, trying accessToken fallback',
+            error,
+          );
+          googleUser = await this.validateGoogleAccessToken(accessToken);
+        } else {
+          throw error;
+        }
+      }
+    } else {
+      googleUser = await this.validateGoogleAccessToken(accessToken);
+    }
     console.log(
       `[AUTH][GOOGLE] token validated email=${googleUser.email ?? 'null'} name=${googleUser.name ?? 'null'}`,
     );
@@ -326,7 +371,26 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Usuário não encontrado');
     }
-    return user;
+
+    const totalXp = await this.getTotalXp(userId);
+    const streakDays = await this.streakService.getUserStreak(userId);
+    const meals = await this.mealModel.findAll({
+      where: { userId, status: MealStatus.Active },
+      attributes: ['title', 'description', 'createdAt'],
+      order: [['createdAt', 'DESC']],
+    });
+    const favoriteDish = this.getFavoriteDish(meals);
+    const preferredPeriod = this.getPreferredPeriod(meals);
+
+    return {
+      ...user.toJSON(),
+      streakDays,
+      friendCount: await this.countFriends(userId),
+      totalXp,
+      xp: totalXp,
+      favoriteDish,
+      preferredPeriod,
+    };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
@@ -347,10 +411,89 @@ export class AuthService {
     };
 
     const calculatedGoals = calculateNutritionGoalsFromProfile(mergedProfileInput);
+    const hideAnyGuide =
+      dto.hideGuideMe === true ||
+      dto.hideSocialGuideMe === true ||
+      dto.hideMissionsGuideMe === true;
+
     const payload: UpdateProfileDto = {
       ...dto,
       ...(calculatedGoals ?? {}),
+      ...(hideAnyGuide
+        ? {
+            hideGuideMe: true,
+            hideSocialGuideMe: true,
+            hideMissionsGuideMe: true,
+          }
+        : {}),
     };
+
+    // Compras passam pelo fluxo transacional da loja.
+    // Ignoramos alterações diretas de inventário vindas do patch de perfil.
+    if (payload.purchasedAvatarFrameIds != null) {
+      delete payload.purchasedAvatarFrameIds;
+    }
+    if (payload.purchasedAvatarBackgroundIds != null) {
+      delete payload.purchasedAvatarBackgroundIds;
+    }
+    if (payload.offensiveBlockerInventoryCount != null) {
+      delete payload.offensiveBlockerInventoryCount;
+    }
+    if (payload.equippedOffensiveBlockerId != null) {
+      const normalizedBlockerId = payload.equippedOffensiveBlockerId.trim();
+      if (normalizedBlockerId.length === 0) {
+        payload.equippedOffensiveBlockerId = OFFENSIVE_BLOCKER_DEFAULT_ID;
+      } else if (normalizedBlockerId !== OFFENSIVE_BLOCKER_DEFAULT_ID) {
+        throw new BadRequestException('Bloqueador de ofensiva inválido.');
+      } else {
+        payload.equippedOffensiveBlockerId = normalizedBlockerId;
+      }
+    }
+
+    if (payload.equippedAvatarFrameId != null) {
+      const equippedId = payload.equippedAvatarFrameId.trim();
+      const normalizedEquippedId = equippedId.length > 0 ? equippedId : AVATAR_FRAME_NONE_ID;
+      const purchasedIds = new Set(
+        (Array.isArray(currentProfile.purchasedAvatarFrameIds)
+          ? currentProfile.purchasedAvatarFrameIds
+          : []
+        )
+          .map((value) => value.toString().trim())
+          .filter((value) => value.length > 0),
+      );
+
+      if (
+        normalizedEquippedId != AVATAR_FRAME_NONE_ID &&
+        !purchasedIds.has(normalizedEquippedId)
+      ) {
+        throw new BadRequestException('A moldura escolhida ainda não foi comprada.');
+      }
+
+      payload.equippedAvatarFrameId = normalizedEquippedId;
+    }
+
+    if (payload.equippedAvatarBackgroundId != null) {
+      const equippedId = payload.equippedAvatarBackgroundId.trim();
+      const normalizedEquippedId =
+        equippedId.length > 0 ? equippedId : AVATAR_BACKGROUND_NONE_ID;
+      const purchasedIds = new Set(
+        (Array.isArray(currentProfile.purchasedAvatarBackgroundIds)
+          ? currentProfile.purchasedAvatarBackgroundIds
+          : []
+        )
+          .map((value) => value.toString().trim())
+          .filter((value) => value.length > 0),
+      );
+
+      if (
+        normalizedEquippedId != AVATAR_BACKGROUND_NONE_ID &&
+        !purchasedIds.has(normalizedEquippedId)
+      ) {
+        throw new BadRequestException('O fundo escolhido ainda não foi comprado.');
+      }
+
+      payload.equippedAvatarBackgroundId = normalizedEquippedId;
+    }
 
     const user = await this.authRepository.updateProfile(userId, payload);
     if (!user) {
@@ -384,7 +527,15 @@ export class AuthService {
       });
     }
 
-    return this.authRepository.findProfileById(devUser.id);
+    const profile = await this.authRepository.findProfileById(devUser.id);
+    if (!profile) {
+      throw new UnauthorizedException('Usuário de desenvolvimento não encontrado');
+    }
+
+    return {
+      ...profile.toJSON(),
+      friendCount: await this.countFriends(devUser.id),
+    };
   }
 
   private generateToken(user: User): string {
@@ -404,6 +555,78 @@ export class AuthService {
       nextCode = this.generateCode();
     }
     return nextCode;
+  }
+
+  private async countFriends(userId: string) {
+    return this.socialFriendshipModel.count({
+      where: { [Op.or]: [{ userLowId: userId }, { userHighId: userId }] },
+    });
+  }
+
+  private async getTotalXp(userId: string) {
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where: { userId, currency: 'xp' },
+      attributes: ['amountSigned'],
+    });
+
+    return rows.reduce((sum, row) => sum + parseNumber(row.amountSigned), 0);
+  }
+
+  private getFavoriteDish(meals: Array<Pick<Meal, 'title' | 'description'>>) {
+    if (!meals.length) return null;
+
+    const titleCounts = new Map<string, number>();
+    for (const meal of meals) {
+      const rawLabel = (meal.description ?? meal.title ?? '').trim();
+      const normalized = rawLabel.toLowerCase();
+      if (!normalized) continue;
+      titleCounts.set(normalized, (titleCounts.get(normalized) ?? 0) + 1);
+    }
+
+    if (!titleCounts.size) return null;
+
+    let bestTitle = '';
+    let bestCount = 0;
+    for (const [title, count] of titleCounts.entries()) {
+      if (count > bestCount) {
+        bestTitle = title;
+        bestCount = count;
+      }
+    }
+
+    return bestTitle
+      .split(' ')
+      .filter((part) => part.length > 0)
+      .map((part) => part[0].toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  private getPreferredPeriod(meals: Array<Pick<Meal, 'createdAt'>>) {
+    if (!meals.length) return null;
+
+    const periodCounts = { morning: 0, afternoon: 0, night: 0 };
+
+    for (const meal of meals) {
+      const hour = new Date(meal.createdAt).getHours();
+      if (hour < 12) {
+        periodCounts.morning += 1;
+      } else if (hour < 18) {
+        periodCounts.afternoon += 1;
+      } else {
+        periodCounts.night += 1;
+      }
+    }
+
+    if (
+      periodCounts.morning >= periodCounts.afternoon &&
+      periodCounts.morning >= periodCounts.night
+    ) {
+      return 'morning';
+    }
+    if (periodCounts.afternoon >= periodCounts.night) {
+      return 'afternoon';
+    }
+    return 'night';
   }
 
   private async validateGoogleIdToken(idToken: string): Promise<{

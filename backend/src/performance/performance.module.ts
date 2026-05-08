@@ -5,9 +5,10 @@ import { Meal } from '../meals/models/meal.model';
 import { UserWeightEntry } from './models/user-weight-entry.model';
 import { PerformanceController } from './performance.controller';
 import { PerformanceService } from './performance.service';
+import { StreakModule } from '../streak/streak.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Meal, User, UserWeightEntry])],
+  imports: [StreakModule, SequelizeModule.forFeature([Meal, User, UserWeightEntry])],
   controllers: [PerformanceController],
   providers: [PerformanceService],
 })
