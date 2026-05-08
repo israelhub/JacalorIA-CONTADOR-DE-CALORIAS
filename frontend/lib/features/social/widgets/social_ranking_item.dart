@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/framed_avatar.dart';
 import '../models/social_group_models.dart';
 
 class SocialRankingItem extends StatelessWidget {
@@ -10,15 +11,10 @@ class SocialRankingItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final subtitle = entry.isLeader ? 'Líder do grupo' : entry.subtitle.trim();
     final rowColor = entry.isCurrentUser
       ? AppColors.missionsXpPill.withValues(alpha: 0.75)
         : AppColors.surface;
-
-    final topAccent = entry.position == 1
-        ? AppColors.accent500
-        : entry.position == 2
-        ? AppColors.missionsRewardGold
-        : AppColors.textMuted;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -34,24 +30,23 @@ class SocialRankingItem extends StatelessWidget {
         children: [
           SizedBox(
             width: 28,
-            child: Icon(Icons.emoji_events_rounded, size: 20, color: topAccent),
+            child: Center(
+              child: Text(
+                '${entry.position}',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.homeMealKcal.copyWith(
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: AppSpacing.xs),
-          CircleAvatar(
-            radius: 20,
+          FramedAvatar(
+            size: 44,
+            avatarUrl: entry.avatarUrl,
+            frameId: entry.avatarFrameId,
+            fallbackText: entry.name,
             backgroundColor: AppColors.homeProgressTrack,
-            backgroundImage:
-                entry.avatarUrl != null && entry.avatarUrl!.isNotEmpty
-                ? NetworkImage(entry.avatarUrl!)
-                : null,
-            child: entry.avatarUrl == null || entry.avatarUrl!.isEmpty
-                ? Text(
-                    entry.name.isNotEmpty ? entry.name[0].toUpperCase() : '?',
-                    style: AppTextStyles.captionStrong.copyWith(
-                      color: AppColors.brand900Variant,
-                    ),
-                  )
-                : null,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -70,43 +65,17 @@ class SocialRankingItem extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (entry.isCurrentUser) ...[
-                      const SizedBox(width: AppSpacing.xs),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.action500,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                        ),
-                        child: Text(
-                          'VOCÊ',
-                          style: AppTextStyles.captionStrong.copyWith(
-                            color: AppColors.surface,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ] else if (entry.isLeader) ...[
-                      const SizedBox(width: AppSpacing.xs),
-                      Icon(
-                        Icons.workspace_premium_rounded,
-                        size: 12,
-                        color: AppColors.accent500,
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  entry.subtitle,
-                  style: AppTextStyles.captionStrong.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w400,
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.captionStrong.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -117,7 +86,7 @@ class SocialRankingItem extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '${entry.points}',
+                    '${entry.streakDays}',
                     style: AppTextStyles.homeMealKcal.copyWith(
                       color: AppColors.brand900Variant,
                     ),

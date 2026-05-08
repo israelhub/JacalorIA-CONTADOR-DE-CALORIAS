@@ -10,6 +10,7 @@ class SocialAddFriendDialog extends StatelessWidget {
     super.key,
     required this.userName,
     required this.userAvatarUrl,
+    required this.userAvatarFrameId,
     required this.qrPayload,
     required this.onCopyId,
     required this.onSearchUser,
@@ -19,6 +20,7 @@ class SocialAddFriendDialog extends StatelessWidget {
 
   final String userName;
   final String? userAvatarUrl;
+  final String? userAvatarFrameId;
   final String qrPayload;
   final VoidCallback onCopyId;
   final VoidCallback onSearchUser;
@@ -62,6 +64,7 @@ class SocialAddFriendDialog extends StatelessWidget {
             SocialProfileInviteCard(
               name: userName,
               avatarUrl: userAvatarUrl,
+              avatarFrameId: userAvatarFrameId,
               onCopyId: onCopyId,
             ),
             const SizedBox(height: AppSpacing.md),

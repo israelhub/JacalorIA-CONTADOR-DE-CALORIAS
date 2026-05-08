@@ -1,11 +1,22 @@
 import '../helpers/social_model_parsers.dart';
 
+bool _toBool(dynamic value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == 'true' || normalized == '1';
+  }
+  return false;
+}
+
 class SocialRankingEntry {
   const SocialRankingEntry({
     required this.id,
     required this.userId,
     required this.name,
     required this.avatarUrl,
+    required this.avatarFrameId,
     required this.points,
     required this.streakDays,
     required this.isCurrentUser,
@@ -18,6 +29,7 @@ class SocialRankingEntry {
   final String userId;
   final String name;
   final String? avatarUrl;
+  final String? avatarFrameId;
   final int points;
   final int streakDays;
   final bool isCurrentUser;
@@ -31,12 +43,13 @@ class SocialRankingEntry {
       userId: json['userId']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       avatarUrl: json['avatarUrl']?.toString(),
+      avatarFrameId: json['avatarFrameId']?.toString(),
       points: socialToInt(json['points']),
       streakDays: socialToInt(json['streakDays']),
-      isCurrentUser: json['isCurrentUser'] == true,
-      isLeader: json['isLeader'] == true,
+      isCurrentUser: _toBool(json['isCurrentUser']),
+      isLeader: _toBool(json['isLeader']),
       position: socialToInt(json['position']),
-      subtitle: json['subtitle']?.toString() ?? 'Sequência',
+      subtitle: json['subtitle']?.toString() ?? '',
     );
   }
 }

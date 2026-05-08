@@ -28,7 +28,7 @@ class _SocialJoinGroupDialogState extends State<SocialJoinGroupDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Entrar em grupo',
+            'Entrar',
             style: AppTextStyles.missionsSectionTitle.copyWith(
               color: AppColors.brand900Variant,
             ),

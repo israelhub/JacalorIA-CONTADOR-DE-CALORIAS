@@ -10,13 +10,17 @@ import '../widgets/social_group_card.dart';
 class SocialGroupsTabPage extends StatelessWidget {
   const SocialGroupsTabPage({
     super.key,
-    required this.groups,
+    required this.activeGroups,
+    required this.historyGroups,
+    required this.isGroupFinished,
     required this.onCreateGroup,
     required this.onJoinGroup,
     required this.onOpenGroup,
   });
 
-  final List<SocialGroupSummary> groups;
+  final List<SocialGroupSummary> activeGroups;
+  final List<SocialGroupSummary> historyGroups;
+  final bool Function(SocialGroupSummary group) isGroupFinished;
   final VoidCallback onCreateGroup;
   final VoidCallback onJoinGroup;
   final ValueChanged<String> onOpenGroup;
@@ -26,27 +30,35 @@ class SocialGroupsTabPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppButton(
-          label: 'Criar novo',
-          leadingIcon: Icons.add_rounded,
-          onPressed: onCreateGroup,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        AppButton(
-          label: 'Entrar em grupo',
-          variant: AppButtonVariant.outline,
-          leadingIcon: Icons.login_rounded,
-          onPressed: onJoinGroup,
+        Row(
+          children: [
+            Expanded(
+              child: AppButton(
+                label: 'Criar novo',
+                leadingIcon: Icons.add_rounded,
+                onPressed: onCreateGroup,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: AppButton(
+                label: 'Entrar',
+                variant: AppButtonVariant.outline,
+                leadingIcon: Icons.login_rounded,
+                onPressed: onJoinGroup,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: AppSpacing.lg),
         AppSectionHeader(
-          title: 'Seus grupos',
+          title: 'Seus grupos ativos',
           titleStyle: AppTextStyles.missionsSectionTitle.copyWith(
             color: AppColors.brand900Variant,
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        if (groups.isEmpty)
+        if (activeGroups.isEmpty)
           const SocialEmptyState(
             icon: Icons.groups_2_rounded,
             title: 'Nenhum grupo por aqui ainda',
@@ -55,12 +67,38 @@ class SocialGroupsTabPage extends StatelessWidget {
         else
           Column(
             children: [
-              for (final group in groups) ...[
-                SocialGroupCard(group: group, onTap: () => onOpenGroup(group.id)),
+              for (final group in activeGroups) ...[
+                SocialGroupCard(
+                  group: group,
+                  isFinished: isGroupFinished(group),
+                  onTap: () => onOpenGroup(group.id),
+                ),
                 const SizedBox(height: AppSpacing.md),
               ],
             ],
           ),
+        if (historyGroups.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.lg),
+          AppSectionHeader(
+            title: 'Histórico de grupos',
+            titleStyle: AppTextStyles.missionsSectionTitle.copyWith(
+              color: AppColors.brand900Variant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Column(
+            children: [
+              for (final group in historyGroups) ...[
+                SocialGroupCard(
+                  group: group,
+                  isFinished: true,
+                  onTap: () => onOpenGroup(group.id),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+            ],
+          ),
+        ],
       ],
     );
   }

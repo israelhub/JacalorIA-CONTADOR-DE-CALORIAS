@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/framed_avatar.dart';
 import '../models/social_group_models.dart';
 
 class SocialFriendListItem extends StatelessWidget {
@@ -11,7 +12,6 @@ class SocialFriendListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = _resolveAvatarUrl(friend.avatarUrl);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -28,18 +28,11 @@ class SocialFriendListItem extends StatelessWidget {
           ),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.surfaceAlt,
-                backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
-                child: imageUrl == null
-                    ? Text(
-                        friend.name.isNotEmpty ? friend.name[0].toUpperCase() : '?',
-                        style: AppTextStyles.homeMealTitle.copyWith(
-                          color: AppColors.brand900Variant,
-                        ),
-                      )
-                    : null,
+              FramedAvatar(
+                size: 52,
+                avatarUrl: friend.avatarUrl,
+                frameId: friend.avatarFrameId,
+                fallbackText: friend.name,
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -77,17 +70,4 @@ class SocialFriendListItem extends StatelessWidget {
     );
   }
 
-  String? _resolveAvatarUrl(String? raw) {
-    if (raw == null || raw.trim().isEmpty) {
-      return null;
-    }
-
-    final value = raw.trim();
-    final uri = Uri.tryParse(value);
-    if (uri != null && uri.hasScheme) {
-      return value;
-    }
-
-    return null;
-  }
 }
