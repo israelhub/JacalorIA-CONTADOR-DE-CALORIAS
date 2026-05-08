@@ -6,6 +6,10 @@ class MissionsOverview {
   const MissionsOverview({
     required this.gold,
     required this.xp,
+    this.goldLifetimeEarned = 0,
+    this.goldLifetimeSpent = 0,
+    this.xpLifetimeEarned = 0,
+    this.xpLifetimeSpent = 0,
     required this.introTitle,
     required this.introDescription,
     required this.sections,
@@ -13,6 +17,10 @@ class MissionsOverview {
 
   final int gold;
   final int xp;
+  final int goldLifetimeEarned;
+  final int goldLifetimeSpent;
+  final int xpLifetimeEarned;
+  final int xpLifetimeSpent;
   final String introTitle;
   final String introDescription;
   final List<MissionSection> sections;
@@ -30,6 +38,10 @@ class MissionsOverview {
     return MissionsOverview(
       gold: _asInt(summary['gold']),
       xp: _asInt(summary['xp']),
+      goldLifetimeEarned: _asInt(summary['goldLifetimeEarned']),
+      goldLifetimeSpent: _asInt(summary['goldLifetimeSpent']),
+      xpLifetimeEarned: _asInt(summary['xpLifetimeEarned']),
+      xpLifetimeSpent: _asInt(summary['xpLifetimeSpent']),
       introTitle: intro['title'] as String? ?? 'Bem-vindo às Missões!',
       introDescription: intro['description'] as String? ?? '',
       sections: sections,

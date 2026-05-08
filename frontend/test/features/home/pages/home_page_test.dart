@@ -6,6 +6,7 @@ import 'package:jacaloria/features/food_analysis/models/food_analysis_result.dar
 import 'package:jacaloria/features/home/pages/home_page.dart';
 import 'package:jacaloria/features/home/services/meal_service.dart';
 import 'package:jacaloria/shared/widgets/app_main_bottom_navigation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeMealService extends MealService {
   _FakeMealService(this.meals);
@@ -13,7 +14,10 @@ class _FakeMealService extends MealService {
   final List<FoodMealRecord> meals;
 
   @override
-  Future<List<FoodMealRecord>> fetchMeals() async => meals;
+  Future<List<FoodMealRecord>> fetchMeals({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async => meals;
 }
 
 class _FakeAuthService extends AuthService {
@@ -64,8 +68,9 @@ FoodMealRecord _meal(String title, DateTime createdAt) {
 
 void main() {
   group('HomePage', () {
-    setUp(() {
+    setUp(() async {
       AuthService.globalToken = 'test-token';
+      SharedPreferences.setMockInitialValues(<String, Object>{});
     });
 
     tearDown(() {
@@ -99,12 +104,19 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      final firstMealCard = find.byKey(const ValueKey('home-meal-card-0'));
+      for (var i = 0; i < 120 && firstMealCard.evaluate().isEmpty; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
-      expect(find.byKey(const ValueKey('home-meal-card-0')), findsOneWidget);
+      expect(firstMealCard, findsOneWidget);
       expect(find.byKey(const ValueKey('home-meal-card-1')), findsNothing);
       expect(find.text('Jantar do dia 3'), findsNothing);
       expect(find.text('02 abr'), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('home-calorie-ring-value'))).data,
+        '100',
+      );
     });
   });
 }

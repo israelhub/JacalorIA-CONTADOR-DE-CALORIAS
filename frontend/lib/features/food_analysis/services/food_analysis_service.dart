@@ -8,10 +8,22 @@ import '../models/food_analysis_result.dart';
 
 import '../../../core/config/api_config.dart';
 
+class FoodAnalysisHighDemandException implements Exception {
+  const FoodAnalysisHighDemandException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'Exception: $message';
+}
+
 class FoodAnalysisService {
   const FoodAnalysisService();
 
   static String get _baseUrl => ApiConfig.baseUrl;
+  static const String highDemandMessage =
+      'Pedimos desculpas, nossa IA está enfrentando um período de alta '
+      'demanda no momento. Tente novamente em alguns instantes.';
 
   Future<FoodAnalysisResult> analyzeImage({
     required Uint8List imageBytes,
@@ -51,7 +63,12 @@ class FoodAnalysisService {
       return FoodAnalysisResult.fromJson(decoded);
     }
 
-    throw Exception(_extractMessage(decoded, 'Falha ao analisar alimento'));
+    final message = _extractMessage(decoded, 'Falha ao analisar alimento');
+    if (_isHighDemandError(statusCode: response.statusCode, message: message)) {
+      throw const FoodAnalysisHighDemandException(highDemandMessage);
+    }
+
+    throw Exception(message);
   }
 
   String _extractMessage(Map<String, dynamic> body, String fallback) {
@@ -65,5 +82,17 @@ class FoodAnalysisService {
     }
 
     return fallback;
+  }
+
+  bool _isHighDemandError({required int statusCode, required String message}) {
+    if (statusCode == 429) {
+      return true;
+    }
+
+    final normalizedMessage = message.toLowerCase();
+    return normalizedMessage.contains('high demand') ||
+        normalizedMessage.contains('alta demanda') ||
+        normalizedMessage.contains('too many requests') ||
+        normalizedMessage.contains('rate limit');
   }
 }
