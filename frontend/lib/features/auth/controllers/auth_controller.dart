@@ -13,12 +13,14 @@ class AuthController extends ChangeNotifier {
   String? error;
   String? token;
   bool shouldCompleteOnboarding = false;
+  bool isGoogleSignInCancelled = false;
   Map<String, dynamic>? currentUser;
 
   Future<void> signInWithGoogle() async {
     _setLoading(true);
     error = null;
     shouldCompleteOnboarding = false;
+    isGoogleSignInCancelled = false;
     try {
       final result = await _service.signInWithGoogle();
       final rawToken = result['token'] ?? (result['data']?['token']);
@@ -50,11 +52,26 @@ class AuthController extends ChangeNotifier {
         await prefs.setString('auth_user', jsonEncode(currentUser));
       }
     } catch (e) {
-      error = e.toString().replaceFirst('Exception: ', '');
+      final message = e.toString().replaceFirst('Exception: ', '').trim();
+      if (_isGoogleSignInCancellation(message)) {
+        isGoogleSignInCancelled = true;
+        error = null;
+      } else {
+        error = message;
+      }
       notifyListeners();
     } finally {
       _setLoading(false);
     }
+  }
+
+  bool _isGoogleSignInCancellation(String message) {
+    final lower = message.toLowerCase();
+    return lower.contains('login com google cancelado') ||
+        lower.contains('popup_closed') ||
+        lower.contains('popup closed') ||
+        lower.contains('cancelled') ||
+        lower.contains('canceled');
   }
 
   Future<bool> createAccount({

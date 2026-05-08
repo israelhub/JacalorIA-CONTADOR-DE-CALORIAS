@@ -10,7 +10,6 @@ import 'sign_up_page.dart';
 import '../widgets/enter_form.dart';
 import '../widgets/enter_header.dart';
 import '../widgets/enter_mascot.dart';
-import '../widgets/enter_pages_shortcut_button.dart';
 
 class EnterPage extends StatefulWidget {
   const EnterPage({super.key});
@@ -35,6 +34,10 @@ class _EnterPageState extends State<EnterPage> {
     }
 
     if (_authController.token == null) {
+      if (_authController.isGoogleSignInCancelled) {
+        return;
+      }
+
       final errorMessage =
           _authController.error ??
           'Nao foi possivel entrar com Google. Tente novamente.';
@@ -61,10 +64,10 @@ class _EnterPageState extends State<EnterPage> {
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [const EnterHeader(), const EnterPagesShortcutButton()],
+              children: [const EnterHeader()],
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 26.5),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: AnimatedBuilder(
                 animation: _authController,
                 builder: (context, _) => EnterForm(
