@@ -1,10 +1,12 @@
-enum PerformanceDayStatus { goalAchieved, mealRegistered, noRecord }
+enum PerformanceDayStatus {
+  goalAchieved,
+  mealRegistered,
+  blockerProtected,
+  noRecord,
+}
 
 class PerformanceCalendarDay {
-  const PerformanceCalendarDay({
-    required this.day,
-    required this.status,
-  });
+  const PerformanceCalendarDay({required this.day, required this.status});
 
   final int day;
   final PerformanceDayStatus status;
@@ -38,6 +40,12 @@ class PerformanceCalendarDay {
         return PerformanceDayStatus.goalAchieved;
       case 'meal_registered':
         return PerformanceDayStatus.mealRegistered;
+      case 'blocked_by_blocker':
+      case 'protected_by_blocker':
+      case 'blocker_protected':
+      case 'blocker_used':
+      case 'streak_blocker_applied':
+        return PerformanceDayStatus.blockerProtected;
       default:
         return PerformanceDayStatus.noRecord;
     }
@@ -78,7 +86,9 @@ class MonthlyPerformance {
     required this.registeredDays,
     required this.consistencyPercent,
     required this.avgDailyCalories,
-    required this.weightLostKg,
+    required this.weightDeltaKg,
+    required this.weightDifferenceKg,
+    required this.weightDirection,
     required this.highlightTitle,
     required this.highlightDescription,
     required this.macroProgress,
@@ -98,32 +108,38 @@ class MonthlyPerformance {
   final int registeredDays;
   final int consistencyPercent;
   final int avgDailyCalories;
-  final double weightLostKg;
+  final double weightDeltaKg;
+  final double weightDifferenceKg;
+  final String weightDirection;
 
   final String highlightTitle;
   final String highlightDescription;
   final List<PerformanceMacroProgress> macroProgress;
 
   factory MonthlyPerformance.fromJson(Map<String, dynamic> json) {
-    final calendar = (json['calendar'] as Map<String, dynamic>? ??
+    final calendar =
+        (json['calendar'] as Map<String, dynamic>? ??
         const <String, dynamic>{});
-    final report = (json['report'] as Map<String, dynamic>? ??
-        const <String, dynamic>{});
-    final highlight = (json['highlight'] as Map<String, dynamic>? ??
+    final report =
+        (json['report'] as Map<String, dynamic>? ?? const <String, dynamic>{});
+    final highlight =
+        (json['highlight'] as Map<String, dynamic>? ??
         const <String, dynamic>{});
     final days = (calendar['days'] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>()
         .map(PerformanceCalendarDay.fromJson)
         .toList(growable: false);
-    final macro = (highlight['macroProgress'] as List<dynamic>? ?? const <dynamic>[])
-        .whereType<Map<String, dynamic>>()
-        .map(PerformanceMacroProgress.fromJson)
-        .toList(growable: false);
+    final macro =
+        (highlight['macroProgress'] as List<dynamic>? ?? const <dynamic>[])
+            .whereType<Map<String, dynamic>>()
+            .map(PerformanceMacroProgress.fromJson)
+            .toList(growable: false);
 
     return MonthlyPerformance(
       month: json['month'] as String? ?? '',
       streakDays: _asInt(json['streakDays']),
-      streakMessage: json['streakMessage'] as String? ??
+      streakMessage:
+          json['streakMessage'] as String? ??
           'Continue registrando para não perder!',
       calendarYear: _asInt(calendar['year']),
       calendarMonth: _asInt(calendar['month']),
@@ -134,7 +150,9 @@ class MonthlyPerformance {
       registeredDays: _asInt(report['registeredDays']),
       consistencyPercent: _asInt(report['consistencyPercent']),
       avgDailyCalories: _asInt(report['avgDailyCalories']),
-      weightLostKg: _asDouble(report['weightLostKg']),
+      weightDeltaKg: _asDouble(report['weightDeltaKg']),
+      weightDifferenceKg: _asDouble(report['weightDifferenceKg']),
+      weightDirection: report['weightDirection'] as String? ?? 'stable',
       highlightTitle:
           highlight['title'] as String? ?? 'Distribuição entre macronutrientes',
       highlightDescription: highlight['description'] as String? ?? '',

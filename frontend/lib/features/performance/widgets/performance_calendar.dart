@@ -169,11 +169,7 @@ class _WeekDaysHeader extends StatelessWidget {
 }
 
 class _CalendarDayCell extends StatelessWidget {
-  const _CalendarDayCell({
-    required this.date,
-    required this.day,
-    this.onTap,
-  });
+  const _CalendarDayCell({required this.date, required this.day, this.onTap});
 
   final DateTime date;
   final PerformanceCalendarDay day;
@@ -181,15 +177,23 @@ class _CalendarDayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final dayDate = DateTime(date.year, date.month, date.day);
+    final isFutureDay = dayDate.isAfter(todayDate);
+
     final backgroundColor = switch (day.status) {
       PerformanceDayStatus.goalAchieved => AppColors.action500,
       PerformanceDayStatus.mealRegistered => AppColors.accent500,
+      PerformanceDayStatus.blockerProtected =>
+        AppColors.socialMetricPreferredPeriod,
       PerformanceDayStatus.noRecord => null,
     };
 
     final textColor = switch (day.status) {
       PerformanceDayStatus.goalAchieved => AppColors.surface,
       PerformanceDayStatus.mealRegistered => AppColors.brand900Variant,
+      PerformanceDayStatus.blockerProtected => AppColors.surface,
       PerformanceDayStatus.noRecord => AppColors.textTertiary,
     };
 
@@ -205,7 +209,7 @@ class _CalendarDayCell extends StatelessWidget {
       ),
     );
 
-    if (onTap == null) {
+    if (onTap == null || isFutureDay) {
       return content;
     }
 
@@ -222,16 +226,21 @@ class _CalendarLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      runAlignment: WrapAlignment.center,
+      spacing: AppSpacing.md,
+      runSpacing: AppSpacing.xs,
       children: const <Widget>[
         _LegendItem(label: 'Meta atingida', color: AppColors.action500),
-        SizedBox(width: AppSpacing.md),
         _LegendItem(
           label: 'Refeição registrada',
           color: AppColors.performanceLegendMeal,
         ),
-        SizedBox(width: AppSpacing.md),
+        _LegendItem(
+          label: 'Bloqueador usado',
+          color: AppColors.socialMetricPreferredPeriod,
+        ),
         _LegendItem(
           label: 'Sem registro',
           color: null,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/performance/models/monthly_performance.dart';
+import 'package:jacaloria/features/performance/models/weight_history.dart';
 import 'package:jacaloria/features/performance/pages/performance_page.dart';
 import 'package:jacaloria/features/performance/services/performance_service.dart';
 import 'package:jacaloria/features/performance/widgets/performance_calendar.dart';
@@ -24,11 +25,32 @@ class _FakePerformanceService extends PerformanceService {
       registeredDays: 1,
       consistencyPercent: 100,
       avgDailyCalories: 1800,
-      weightLostKg: 0.0,
+      weightDeltaKg: -0.2,
+      weightDifferenceKg: 0.2,
+      weightDirection: 'lost',
       highlightTitle: 'Destaque',
       highlightDescription: 'Descricao',
       macroProgress: const [
         PerformanceMacroProgress(key: 'carbs', label: 'Carbo', percent: 50),
+      ],
+    );
+  }
+
+  @override
+  Future<WeightHistory> fetchWeightHistory({
+    String period = '30',
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    return WeightHistory(
+      range: WeightHistoryRange(
+        startDate: DateTime(2026, 4, 1),
+        endDate: DateTime(2026, 4, 30),
+        selectedPeriod: period,
+      ),
+      points: <WeightHistoryPoint>[
+        WeightHistoryPoint(date: DateTime(2026, 4, 1), weight: 80),
+        WeightHistoryPoint(date: DateTime(2026, 4, 30), weight: 79.8),
       ],
     );
   }
@@ -71,6 +93,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(selectedDate, DateTime(2026, 4, 1));
+    final now = DateTime.now();
+    expect(selectedDate, DateTime(now.year, now.month, 1));
   });
 }
