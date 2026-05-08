@@ -55,7 +55,7 @@ class _ResetPasswordNewPasswordPageState
     final confirmPassword = _confirmPasswordController.text;
 
     if (!AuthHelpers.isValidPassword(newPassword)) {
-      _showMessage('A senha deve ter ao menos 8 caracteres e 1 numero.');
+      _showMessage(AuthHelpers.passwordRequirementsMessage);
       return;
     }
     if (newPassword != confirmPassword) {

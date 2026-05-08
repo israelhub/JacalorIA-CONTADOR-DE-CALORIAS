@@ -74,6 +74,10 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     if (_authController.token == null) {
+      if (_authController.isGoogleSignInCancelled) {
+        return;
+      }
+
       final errorMessage =
           _authController.error ??
           'Nao foi possivel entrar com Google. Tente novamente.';
