@@ -1,9 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Transaction } from 'sequelize';
 import { Op } from 'sequelize';
 import { User } from '../auth/models/user.model';
 import { Meal, MealStatus } from '../meals/models/meal.model';
-import { Mission, MissionAccent, MissionType } from './models/mission.model';
+import { StreakService } from '../streak/streak.service';
+import { parseNumber } from '../shared/utils/number-parser.util';
+import { hasReachedCalorieGoal } from '../shared/utils/calorie-goal.util';
+import {
+  AVATAR_BACKGROUND_NONE_ID,
+  AVATAR_BACKGROUND_PRICES_GOLD,
+  AVATAR_FRAME_PRICES_GOLD,
+  OFFENSIVE_BLOCKER_DEFAULT_ID,
+  OFFENSIVE_BLOCKER_PRICE_GOLD,
+  avatarBackgroundPriceGold,
+  avatarFramePriceGold,
+} from './constants/avatar-frame-store';
+import { Mission, MissionType } from './models/mission.model';
+import {
+  CurrencyCode,
+  UserCurrencyTransaction,
+} from './models/user-currency-transaction.model';
 
 type DailyTotals = {
   calories: number;
@@ -18,6 +35,49 @@ type MissionProgress = {
   progressCurrent: number;
 };
 
+type MissionItemPayload = {
+  id: string;
+  key: string;
+  type: MissionType;
+  title: string;
+  description: string;
+  accent: string;
+  progressCurrent: number;
+  progressTarget: number;
+  progressLabel: string;
+  progressPercent: number;
+  rewardGold: number;
+  rewardXp: number;
+};
+
+type WalletSnapshot = {
+  gold: number;
+  xp: number;
+  goldLifetimeEarned: number;
+  goldLifetimeSpent: number;
+  xpLifetimeEarned: number;
+  xpLifetimeSpent: number;
+};
+
+type StoreItem = {
+  id: string;
+  name: string;
+  priceGold: number;
+  owned: boolean;
+  equipped: boolean;
+  quantityOwned?: number;
+  quantityPerPurchase?: number;
+};
+
+type BlockerRecoverySummary = {
+  missingDaysUntilToday: number;
+  requiredBlockersTotal: number;
+  inventoryAvailable: number;
+  requiredPurchaseQuantity: number;
+  requiredPurchaseCostGold: number;
+  canAffordRecoveryPurchase: boolean;
+};
+
 @Injectable()
 export class MissionsService {
   constructor(
@@ -27,13 +87,17 @@ export class MissionsService {
     private readonly mealModel: typeof Meal,
     @InjectModel(User)
     private readonly userModel: typeof User,
+    @InjectModel(UserCurrencyTransaction)
+    private readonly userCurrencyTransactionModel: typeof UserCurrencyTransaction,
+    private readonly streakService: StreakService,
   ) {}
 
   async getMissions(userId: string) {
     const now = new Date();
-    const todayStart = this.getUtcDayStart(now);
-    const weekStart = this.getUtcWeekStart(now);
-    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const todayStart = this.streakService.getDayStartInAppTimeZone(now);
+    const weekStart = this.streakService.getWeekStartInAppTimeZone(now);
+    const nowParts = this.streakService.getDatePartsInAppTimeZone(now);
+    const monthStart = new Date(Date.UTC(nowParts.year, nowParts.month - 1, 1));
 
     const [user, missions, meals] = await Promise.all([
       this.userModel.findByPk(userId, {
@@ -42,6 +106,7 @@ export class MissionsService {
           'dailyProteinGoal',
           'dailyCarbsGoal',
           'dailyFatGoal',
+          'objective',
         ],
       }),
       this.missionModel.findAll({
@@ -65,16 +130,16 @@ export class MissionsService {
       }),
     ]);
 
-    const dailyCalorieGoal = this.toNumber(user?.dailyCalorieGoal, 2000);
-    const dailyProteinGoal = this.toNumber(user?.dailyProteinGoal, 120);
-    const dailyCarbsGoal = this.toNumber(user?.dailyCarbsGoal, 200);
-    const dailyFatGoal = this.toNumber(user?.dailyFatGoal, 60);
+    const dailyCalorieGoal = parseNumber(user?.dailyCalorieGoal, 2000);
+    const dailyProteinGoal = parseNumber(user?.dailyProteinGoal, 120);
+    const dailyCarbsGoal = parseNumber(user?.dailyCarbsGoal, 200);
+    const dailyFatGoal = parseNumber(user?.dailyFatGoal, 60);
 
     const totalsByDay = new Map<string, DailyTotals>();
 
     for (const meal of meals) {
       const mealDate = new Date(meal.createdAt);
-      const dayKey = this.toDayKey(mealDate);
+      const dayKey = this.streakService.toDayKeyInAppTimeZone(mealDate);
       const dayTotals = totalsByDay.get(dayKey) ?? {
         calories: 0,
         protein: 0,
@@ -84,10 +149,10 @@ export class MissionsService {
         foods: new Set<string>(),
       };
 
-      dayTotals.calories += this.toNumber(meal.calories);
-      dayTotals.protein += this.toNumber(meal.protein);
-      dayTotals.carbs += this.toNumber(meal.carbs);
-      dayTotals.fat += this.toNumber(meal.fat);
+      dayTotals.calories += parseNumber(meal.calories);
+      dayTotals.protein += parseNumber(meal.protein);
+      dayTotals.carbs += parseNumber(meal.carbs);
+      dayTotals.fat += parseNumber(meal.fat);
       dayTotals.meals += 1;
 
       const items = Array.isArray(meal.analysisItems) ? meal.analysisItems : [];
@@ -101,11 +166,17 @@ export class MissionsService {
       totalsByDay.set(dayKey, dayTotals);
     }
 
-    const todayTotals = totalsByDay.get(this.toDayKey(todayStart));
+    const todayTotals = totalsByDay.get(this.streakService.toDayKeyInAppTimeZone(todayStart));
     const weeklyEntries = this.collectDayTotalsInRange(totalsByDay, weekStart, now);
     const monthlyEntries = this.collectDayTotalsInRange(totalsByDay, monthStart, now);
 
-    const metGoalToday = todayTotals ? todayTotals.calories >= dailyCalorieGoal : false;
+    const metGoalToday = todayTotals
+      ? hasReachedCalorieGoal({
+        consumedCalories: todayTotals.calories,
+        dailyCalorieGoal,
+        objective: user?.objective,
+      })
+      : false;
     const metAllMacrosToday = todayTotals
       ? todayTotals.protein >= dailyProteinGoal &&
         todayTotals.carbs >= dailyCarbsGoal &&
@@ -115,9 +186,14 @@ export class MissionsService {
     const consecutiveDaysInWeek = this.calculateConsecutiveDays(
       totalsByDay,
       weekStart,
-      this.getUtcDayStart(now),
+      this.streakService.getDayStartInAppTimeZone(now),
     );
-    const weeklyGoalDays = weeklyEntries.filter((entry) => entry.calories >= dailyCalorieGoal).length;
+    const weeklyGoalDays = weeklyEntries.filter((entry) =>
+      hasReachedCalorieGoal({
+        consumedCalories: entry.calories,
+        dailyCalorieGoal,
+        objective: user?.objective,
+      })).length;
     const weeklyFoods = new Set<string>();
     for (const entry of weeklyEntries) {
       for (const food of entry.foods) {
@@ -125,7 +201,12 @@ export class MissionsService {
       }
     }
 
-    const monthlyGoalDays = monthlyEntries.filter((entry) => entry.calories >= dailyCalorieGoal).length;
+    const monthlyGoalDays = monthlyEntries.filter((entry) =>
+      hasReachedCalorieGoal({
+        consumedCalories: entry.calories,
+        dailyCalorieGoal,
+        objective: user?.objective,
+      })).length;
     const monthlyRegisteredDays = monthlyEntries.length;
     const monthlyMacroDays = monthlyEntries.filter(
       (entry) =>
@@ -185,7 +266,7 @@ export class MissionsService {
       ],
     ]);
 
-    const missionItems = missions.map((mission) => {
+    const missionItems: MissionItemPayload[] = missions.map((mission) => {
       const mapped = missionByKey.get(mission.key) ?? {
         progressCurrent: metGoalToday || metAllMacrosToday ? mission.targetValue : 0,
       };
@@ -220,19 +301,17 @@ export class MissionsService {
       (mission) => mission.progressCurrent >= mission.progressTarget,
     );
 
-    const summaryGold = completedMissions.reduce(
-      (sum, mission) => sum + this.toNumber(mission.rewardGold),
-      0,
-    );
-    const summaryXp = completedMissions.reduce(
-      (sum, mission) => sum + this.toNumber(mission.rewardXp),
-      0,
-    );
+    await this.awardMissionCompletions(userId, completedMissions, now);
+    const wallet = await this.getWalletSnapshot(userId);
 
     return {
       summary: {
-        gold: summaryGold,
-        xp: summaryXp,
+        gold: wallet.gold,
+        xp: wallet.xp,
+        goldLifetimeEarned: wallet.goldLifetimeEarned,
+        goldLifetimeSpent: wallet.goldLifetimeSpent,
+        xpLifetimeEarned: wallet.xpLifetimeEarned,
+        xpLifetimeSpent: wallet.xpLifetimeSpent,
       },
       intro: {
         title: 'Bem-vindo às Missões!',
@@ -240,6 +319,475 @@ export class MissionsService {
           'Complete missões diárias, semanais e desafios mensais para ganhar ouro e XP. Suba de nível e desbloqueie recompensas com o Jaca!',
       },
       sections,
+    };
+  }
+
+  async getStore(userId: string) {
+    const [user, wallet] = await Promise.all([
+      this.userModel.findByPk(userId, {
+        attributes: [
+          'equippedAvatarFrameId',
+          'purchasedAvatarFrameIds',
+          'equippedAvatarBackgroundId',
+          'purchasedAvatarBackgroundIds',
+          'equippedOffensiveBlockerId',
+          'offensiveBlockerInventoryCount',
+        ],
+      }),
+      this.getWalletSnapshot(userId),
+    ]);
+
+    if (!user) {
+      throw new BadRequestException('Usuário não encontrado.');
+    }
+
+    const purchasedFrames = new Set(this.normalizeIdList(user.purchasedAvatarFrameIds));
+    const purchasedBackgrounds = new Set(this.normalizeIdList(user.purchasedAvatarBackgroundIds));
+    const equippedFrameId = this.normalizeOptionalId(user.equippedAvatarFrameId);
+    const equippedBackgroundId = this.normalizeOptionalId(user.equippedAvatarBackgroundId);
+    const equippedBlockerId =
+      this.normalizeOptionalId(user.equippedOffensiveBlockerId) ?? OFFENSIVE_BLOCKER_DEFAULT_ID;
+    const blockerInventoryCount = Math.max(0, parseNumber(user.offensiveBlockerInventoryCount));
+    const currentGold = wallet.gold;
+    const blockerRecovery = await this.buildBlockerRecoverySummary({
+      userId,
+      inventoryCount: blockerInventoryCount,
+      currentGold,
+    });
+
+    const frameItems: StoreItem[] = Object.entries(AVATAR_FRAME_PRICES_GOLD).map(
+      ([id, priceGold]) => ({
+        id,
+        name: this.prettifyStoreLabel(id),
+        priceGold,
+        owned: purchasedFrames.has(id),
+        equipped: equippedFrameId === id,
+      }),
+    );
+
+    const backgroundItems: StoreItem[] = Object.entries(AVATAR_BACKGROUND_PRICES_GOLD).map(
+      ([id, priceGold]) => ({
+        id,
+        name: this.prettifyStoreLabel(id),
+        priceGold,
+        owned: purchasedBackgrounds.has(id),
+        equipped: equippedBackgroundId === id,
+      }),
+    );
+
+    const blockerItems: StoreItem[] = [
+      {
+        id: OFFENSIVE_BLOCKER_DEFAULT_ID,
+        name: 'Bloqueador de ofensiva',
+        priceGold: OFFENSIVE_BLOCKER_PRICE_GOLD,
+        owned: blockerInventoryCount > 0,
+        equipped: equippedBlockerId === OFFENSIVE_BLOCKER_DEFAULT_ID,
+        quantityOwned: blockerInventoryCount,
+        quantityPerPurchase: 1,
+      },
+    ];
+
+    return {
+      summary: {
+        gold: wallet.gold,
+        xp: wallet.xp,
+        goldLifetimeEarned: wallet.goldLifetimeEarned,
+        goldLifetimeSpent: wallet.goldLifetimeSpent,
+        xpLifetimeEarned: wallet.xpLifetimeEarned,
+        xpLifetimeSpent: wallet.xpLifetimeSpent,
+      },
+      categories: [
+        {
+          id: 'avatar_frames',
+          title: 'Molduras',
+          items: frameItems,
+        },
+        {
+          id: 'avatar_backgrounds',
+          title: 'Fundos',
+          items: backgroundItems,
+        },
+        {
+          id: 'offensive_blockers',
+          title: 'Bloqueadores de ofensiva',
+          items: blockerItems,
+        },
+      ],
+      profile: {
+        equippedAvatarFrameId: equippedFrameId,
+        purchasedAvatarFrameIds: Array.from(purchasedFrames).sort(),
+        equippedAvatarBackgroundId: equippedBackgroundId ?? AVATAR_BACKGROUND_NONE_ID,
+        purchasedAvatarBackgroundIds: Array.from(purchasedBackgrounds).sort(),
+        equippedOffensiveBlockerId: equippedBlockerId,
+        offensiveBlockerInventoryCount: blockerInventoryCount,
+      },
+      blockerRecovery,
+    };
+  }
+
+  async purchaseAvatarFrame(userId: string, frameId: string) {
+    const normalizedFrameId = frameId.trim();
+    const priceGold = avatarFramePriceGold(normalizedFrameId);
+    if (priceGold == null) {
+      throw new BadRequestException('Moldura inválida.');
+    }
+
+    const sequelize = this.userModel.sequelize;
+    if (!sequelize) {
+      throw new BadRequestException('Serviço indisponível no momento.');
+    }
+
+    return sequelize.transaction(async (transaction) => {
+      const user = await this.userModel.findByPk(userId, {
+        attributes: ['id', 'equippedAvatarFrameId', 'purchasedAvatarFrameIds'],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (!user) {
+        throw new BadRequestException('Usuário não encontrado.');
+      }
+
+      const purchased = new Set(
+        (Array.isArray(user.purchasedAvatarFrameIds) ? user.purchasedAvatarFrameIds : [])
+          .map((value) => value.trim())
+          .filter((value) => value.length > 0),
+      );
+
+      if (purchased.has(normalizedFrameId)) {
+        if (user.equippedAvatarFrameId !== normalizedFrameId) {
+          await user.update({ equippedAvatarFrameId: normalizedFrameId }, { transaction });
+        }
+
+        const wallet = await this.getWalletSnapshot(userId, transaction);
+        return {
+          message: 'Moldura equipada.',
+          profile: {
+            equippedAvatarFrameId: normalizedFrameId,
+            purchasedAvatarFrameIds: Array.from(purchased).sort(),
+          },
+          summary: {
+            gold: wallet.gold,
+            xp: wallet.xp,
+            goldLifetimeEarned: wallet.goldLifetimeEarned,
+            goldLifetimeSpent: wallet.goldLifetimeSpent,
+            xpLifetimeEarned: wallet.xpLifetimeEarned,
+            xpLifetimeSpent: wallet.xpLifetimeSpent,
+          },
+        };
+      }
+
+      const currentGold = await this.getBalanceByCurrency(userId, 'gold', transaction);
+      if (currentGold < priceGold) {
+        throw new BadRequestException('Ouro insuficiente para comprar essa moldura.');
+      }
+
+      await this.userCurrencyTransactionModel.create(
+        {
+          userId,
+          currency: 'gold',
+          amountSigned: -priceGold,
+          type: 'debit',
+          sourceType: 'avatar_frame_purchase',
+          sourceId: normalizedFrameId,
+          referenceKey: `avatar_frame_purchase:${normalizedFrameId}`,
+          metadata: {
+            frameId: normalizedFrameId,
+            priceGold,
+          },
+        },
+        { transaction },
+      );
+
+      purchased.add(normalizedFrameId);
+      await user.update(
+        {
+          purchasedAvatarFrameIds: Array.from(purchased).sort(),
+          equippedAvatarFrameId: normalizedFrameId,
+        },
+        { transaction },
+      );
+
+      const wallet = await this.getWalletSnapshot(userId, transaction);
+      return {
+        message: 'Moldura comprada e equipada.',
+        profile: {
+          equippedAvatarFrameId: normalizedFrameId,
+          purchasedAvatarFrameIds: Array.from(purchased).sort(),
+        },
+        summary: {
+          gold: wallet.gold,
+          xp: wallet.xp,
+          goldLifetimeEarned: wallet.goldLifetimeEarned,
+          goldLifetimeSpent: wallet.goldLifetimeSpent,
+          xpLifetimeEarned: wallet.xpLifetimeEarned,
+          xpLifetimeSpent: wallet.xpLifetimeSpent,
+        },
+      };
+    });
+  }
+
+  async purchaseAvatarBackground(userId: string, backgroundId: string) {
+    const normalizedBackgroundId = backgroundId.trim();
+    const priceGold = avatarBackgroundPriceGold(normalizedBackgroundId);
+    if (priceGold == null) {
+      throw new BadRequestException('Fundo inválido.');
+    }
+
+    const sequelize = this.userModel.sequelize;
+    if (!sequelize) {
+      throw new BadRequestException('Serviço indisponível no momento.');
+    }
+
+    return sequelize.transaction(async (transaction) => {
+      const user = await this.userModel.findByPk(userId, {
+        attributes: ['id', 'equippedAvatarBackgroundId', 'purchasedAvatarBackgroundIds'],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (!user) {
+        throw new BadRequestException('Usuário não encontrado.');
+      }
+
+      const purchased = new Set(this.normalizeIdList(user.purchasedAvatarBackgroundIds));
+
+      if (purchased.has(normalizedBackgroundId)) {
+        if (user.equippedAvatarBackgroundId !== normalizedBackgroundId) {
+          await user.update({ equippedAvatarBackgroundId: normalizedBackgroundId }, { transaction });
+        }
+
+        const wallet = await this.getWalletSnapshot(userId, transaction);
+        return {
+          message: 'Fundo equipado.',
+          profile: {
+            equippedAvatarBackgroundId: normalizedBackgroundId,
+            purchasedAvatarBackgroundIds: Array.from(purchased).sort(),
+          },
+          summary: {
+            gold: wallet.gold,
+            xp: wallet.xp,
+            goldLifetimeEarned: wallet.goldLifetimeEarned,
+            goldLifetimeSpent: wallet.goldLifetimeSpent,
+            xpLifetimeEarned: wallet.xpLifetimeEarned,
+            xpLifetimeSpent: wallet.xpLifetimeSpent,
+          },
+        };
+      }
+
+      const currentGold = await this.getBalanceByCurrency(userId, 'gold', transaction);
+      if (currentGold < priceGold) {
+        throw new BadRequestException('Ouro insuficiente para comprar esse fundo.');
+      }
+
+      await this.userCurrencyTransactionModel.create(
+        {
+          userId,
+          currency: 'gold',
+          amountSigned: -priceGold,
+          type: 'debit',
+          sourceType: 'avatar_background_purchase',
+          sourceId: normalizedBackgroundId,
+          referenceKey: `avatar_background_purchase:${normalizedBackgroundId}`,
+          metadata: {
+            backgroundId: normalizedBackgroundId,
+            priceGold,
+          },
+        },
+        { transaction },
+      );
+
+      purchased.add(normalizedBackgroundId);
+      await user.update(
+        {
+          purchasedAvatarBackgroundIds: Array.from(purchased).sort(),
+          equippedAvatarBackgroundId: normalizedBackgroundId,
+        },
+        { transaction },
+      );
+
+      const wallet = await this.getWalletSnapshot(userId, transaction);
+      return {
+        message: 'Fundo comprado e equipado.',
+        profile: {
+          equippedAvatarBackgroundId: normalizedBackgroundId,
+          purchasedAvatarBackgroundIds: Array.from(purchased).sort(),
+        },
+        summary: {
+          gold: wallet.gold,
+          xp: wallet.xp,
+          goldLifetimeEarned: wallet.goldLifetimeEarned,
+          goldLifetimeSpent: wallet.goldLifetimeSpent,
+          xpLifetimeEarned: wallet.xpLifetimeEarned,
+          xpLifetimeSpent: wallet.xpLifetimeSpent,
+        },
+      };
+    });
+  }
+
+  async purchaseOffensiveBlocker(userId: string, blockerId: string, quantity = 1) {
+    const normalizedBlockerId = blockerId.trim();
+    if (normalizedBlockerId !== OFFENSIVE_BLOCKER_DEFAULT_ID) {
+      throw new BadRequestException('Bloqueador inválido.');
+    }
+
+    let normalizedQuantity = Number.isFinite(quantity) ? Math.floor(quantity) : 1;
+    if (normalizedQuantity <= 0) {
+      throw new BadRequestException('Quantidade inválida para compra de bloqueador.');
+    }
+    const sequelize = this.userModel.sequelize;
+    if (!sequelize) {
+      throw new BadRequestException('Serviço indisponível no momento.');
+    }
+
+    return sequelize.transaction(async (transaction) => {
+      const user = await this.userModel.findByPk(userId, {
+        attributes: [
+          'id',
+          'equippedOffensiveBlockerId',
+          'offensiveBlockerInventoryCount',
+          'streakBlockerAppliedDayKeys',
+        ],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (!user) {
+        throw new BadRequestException('Usuário não encontrado.');
+      }
+
+      const currentInventory = Math.max(0, parseNumber(user.offensiveBlockerInventoryCount));
+      const currentGold = await this.getBalanceByCurrency(userId, 'gold', transaction);
+      const blockerRecovery = await this.buildBlockerRecoverySummary({
+        userId,
+        inventoryCount: currentInventory,
+        currentGold,
+        transaction,
+      });
+
+      if (blockerRecovery.requiredPurchaseQuantity > 0) {
+        if (!blockerRecovery.canAffordRecoveryPurchase) {
+          throw new BadRequestException(
+            `Você precisa de ${blockerRecovery.requiredPurchaseQuantity} bloqueadores para recuperar sua sequência até hoje (custo: ${blockerRecovery.requiredPurchaseCostGold} ouro).`,
+          );
+        }
+        normalizedQuantity = blockerRecovery.requiredPurchaseQuantity;
+      }
+
+      const totalPriceGold = normalizedQuantity * OFFENSIVE_BLOCKER_PRICE_GOLD;
+
+      if (currentGold < totalPriceGold) {
+        throw new BadRequestException('Ouro insuficiente para comprar bloqueadores.');
+      }
+
+      await this.userCurrencyTransactionModel.create(
+        {
+          userId,
+          currency: 'gold',
+          amountSigned: -totalPriceGold,
+          type: 'debit',
+          sourceType: 'offensive_blocker_purchase',
+          sourceId: normalizedBlockerId,
+          referenceKey: null,
+          metadata: {
+            blockerId: normalizedBlockerId,
+            quantity: normalizedQuantity,
+            priceGoldPerUnit: OFFENSIVE_BLOCKER_PRICE_GOLD,
+            totalPriceGold,
+          },
+        },
+        { transaction },
+      );
+
+      const nextInventoryRaw = currentInventory + normalizedQuantity;
+      const now = new Date();
+      const todayStart = this.streakService.getDayStartInAppTimeZone(now);
+      const appliedKeys = new Set(
+        this.normalizeIdList(user.streakBlockerAppliedDayKeys).filter((key) =>
+          /^\d{4}-\d{2}-\d{2}$/.test(key),
+        ),
+      );
+      const mealDayKeys = await this.getMealDayKeysUntilNow(userId, now, transaction);
+      const missingDayKeys = this.buildTrailingMissingDayKeys(
+        mealDayKeys,
+        appliedKeys,
+        todayStart,
+      );
+
+      let nextInventory = nextInventoryRaw;
+      if (missingDayKeys.length > 0 && nextInventoryRaw >= missingDayKeys.length) {
+        for (const key of missingDayKeys) {
+          appliedKeys.add(key);
+        }
+        nextInventory = nextInventoryRaw - missingDayKeys.length;
+      }
+
+      await user.update(
+        {
+          offensiveBlockerInventoryCount: nextInventory,
+          equippedOffensiveBlockerId:
+            this.normalizeOptionalId(user.equippedOffensiveBlockerId) ??
+            OFFENSIVE_BLOCKER_DEFAULT_ID,
+          streakBlockerAppliedDayKeys: Array.from(appliedKeys).sort(),
+        },
+        { transaction },
+      );
+
+      const wallet = await this.getWalletSnapshot(userId, transaction);
+      return {
+        message: `Bloqueador${normalizedQuantity > 1 ? 'es' : ''} comprado${
+          normalizedQuantity > 1 ? 's' : ''
+        } com sucesso.`,
+        profile: {
+          equippedOffensiveBlockerId:
+            this.normalizeOptionalId(user.equippedOffensiveBlockerId) ??
+            OFFENSIVE_BLOCKER_DEFAULT_ID,
+          offensiveBlockerInventoryCount: nextInventory,
+        },
+        summary: {
+          gold: wallet.gold,
+          xp: wallet.xp,
+          goldLifetimeEarned: wallet.goldLifetimeEarned,
+          goldLifetimeSpent: wallet.goldLifetimeSpent,
+          xpLifetimeEarned: wallet.xpLifetimeEarned,
+          xpLifetimeSpent: wallet.xpLifetimeSpent,
+        },
+      };
+    });
+  }
+
+  async getGoldStatement(userId: string) {
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where: {
+        userId,
+        currency: 'gold',
+      },
+      order: [['createdAt', 'DESC']],
+      limit: 100,
+      attributes: [
+        'id',
+        'amountSigned',
+        'type',
+        'sourceType',
+        'sourceId',
+        'referenceKey',
+        'metadata',
+        'createdAt',
+      ],
+    });
+
+    return {
+      currency: 'gold',
+      transactions: rows.map((row) => ({
+        id: row.id,
+        amountSigned: parseNumber(row.amountSigned),
+        type: row.type,
+        sourceType: row.sourceType,
+        sourceId: row.sourceId,
+        referenceKey: row.referenceKey,
+        metadata: row.metadata ?? null,
+        createdAt: row.createdAt,
+      })),
     };
   }
 
@@ -272,7 +820,7 @@ export class MissionsService {
     const cursor = new Date(start);
 
     while (cursor <= end) {
-      const value = totalsByDay.get(this.toDayKey(cursor));
+      const value = totalsByDay.get(this.streakService.toDayKeyInAppTimeZone(cursor));
       if (value && value.meals > 0) {
         entries.push(value);
       }
@@ -292,7 +840,7 @@ export class MissionsService {
     const cursor = new Date(rangeEnd);
 
     while (cursor >= rangeStart) {
-      const totals = totalsByDay.get(this.toDayKey(cursor));
+      const totals = totalsByDay.get(this.streakService.toDayKeyInAppTimeZone(cursor));
       if (!totals || totals.meals <= 0) {
         break;
       }
@@ -304,36 +852,296 @@ export class MissionsService {
     return streak;
   }
 
-  private getUtcDayStart(date: Date): Date {
-    return new Date(
-      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  private async awardMissionCompletions(
+    userId: string,
+    completedMissions: MissionItemPayload[],
+    referenceDate: Date,
+  ) {
+    if (completedMissions.length === 0) {
+      return;
+    }
+
+    const transactions: Array<{
+      userId: string;
+      currency: CurrencyCode;
+      amountSigned: number;
+      type: 'credit';
+      sourceType: 'mission_reward';
+      sourceId: string;
+      referenceKey: string;
+      metadata: Record<string, unknown>;
+    }> = [];
+
+    for (const mission of completedMissions) {
+      const periodKey = this.buildMissionPeriodKey(mission.type, referenceDate);
+      const referenceKey = `mission_reward:${mission.key}:${periodKey}`;
+      const sourceId = mission.key;
+
+      if (parseNumber(mission.rewardGold) > 0) {
+        transactions.push({
+          userId,
+          currency: 'gold',
+          amountSigned: parseNumber(mission.rewardGold),
+          type: 'credit',
+          sourceType: 'mission_reward',
+          sourceId,
+          referenceKey,
+          metadata: {
+            missionId: mission.id,
+            missionKey: mission.key,
+            missionType: mission.type,
+            periodKey,
+          },
+        });
+      }
+
+      if (parseNumber(mission.rewardXp) > 0) {
+        transactions.push({
+          userId,
+          currency: 'xp',
+          amountSigned: parseNumber(mission.rewardXp),
+          type: 'credit',
+          sourceType: 'mission_reward',
+          sourceId,
+          referenceKey,
+          metadata: {
+            missionId: mission.id,
+            missionKey: mission.key,
+            missionType: mission.type,
+            periodKey,
+          },
+        });
+      }
+    }
+
+    if (transactions.length === 0) {
+      return;
+    }
+
+    await this.userCurrencyTransactionModel.bulkCreate(transactions, {
+      ignoreDuplicates: true,
+    });
+  }
+
+  private buildMissionPeriodKey(missionType: MissionType, referenceDate: Date): string {
+    if (missionType === 'daily') {
+      return this.streakService.toDayKeyInAppTimeZone(referenceDate);
+    }
+
+    if (missionType === 'weekly') {
+      const weekStart = this.streakService.getWeekStartInAppTimeZone(referenceDate);
+      return this.streakService.toDayKeyInAppTimeZone(weekStart);
+    }
+
+    const parts = this.streakService.getDatePartsInAppTimeZone(referenceDate);
+    return `${parts.year}-${String(parts.month).padStart(2, '0')}`;
+  }
+
+  private prettifyStoreLabel(rawId: string): string {
+    return rawId
+      .split('_')
+      .map((piece) => piece.trim())
+      .filter((piece) => piece.length > 0)
+      .map((piece) => `${piece.charAt(0).toUpperCase()}${piece.slice(1)}`)
+      .join(' ');
+  }
+
+  private normalizeIdList(rawList: unknown): string[] {
+    if (!Array.isArray(rawList)) {
+      return [];
+    }
+
+    return rawList
+      .map((value) => value?.toString().trim() ?? '')
+      .filter((value) => value.length > 0);
+  }
+
+  private normalizeOptionalId(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+
+  private async buildBlockerRecoverySummary({
+    userId,
+    inventoryCount,
+    currentGold,
+    transaction,
+  }: {
+    userId: string;
+    inventoryCount: number;
+    currentGold: number;
+    transaction?: Transaction;
+  }): Promise<BlockerRecoverySummary> {
+    const now = new Date();
+    const todayStart = this.streakService.getDayStartInAppTimeZone(now);
+    const user = await this.userModel.findByPk(userId, {
+      attributes: ['streakBlockerAppliedDayKeys'],
+      transaction,
+    });
+    const appliedKeys = new Set(
+      this.normalizeIdList(user?.streakBlockerAppliedDayKeys).filter((key) =>
+        /^\d{4}-\d{2}-\d{2}$/.test(key),
+      ),
     );
+    const mealDayKeys = await this.getMealDayKeysUntilNow(userId, now, transaction);
+    const missingDayKeys = this.buildTrailingMissingDayKeys(
+      mealDayKeys,
+      appliedKeys,
+      todayStart,
+    );
+
+    const missingDays = missingDayKeys.length;
+    const requiredPurchaseQuantity = Math.max(0, missingDays - inventoryCount);
+    const requiredPurchaseCostGold = requiredPurchaseQuantity * OFFENSIVE_BLOCKER_PRICE_GOLD;
+
+    return {
+      missingDaysUntilToday: missingDays,
+      requiredBlockersTotal: missingDays,
+      inventoryAvailable: inventoryCount,
+      requiredPurchaseQuantity,
+      requiredPurchaseCostGold,
+      canAffordRecoveryPurchase: currentGold >= requiredPurchaseCostGold,
+    };
   }
 
-  private getUtcWeekStart(date: Date): Date {
-    const dayStart = this.getUtcDayStart(date);
-    const day = dayStart.getUTCDay();
-    const offset = day === 0 ? 6 : day - 1;
-    dayStart.setUTCDate(dayStart.getUTCDate() - offset);
-    return dayStart;
-  }
+  private async getMealDayKeysUntilNow(
+    userId: string,
+    now: Date,
+    transaction?: Transaction,
+  ): Promise<Set<string>> {
+    const meals = await this.mealModel.findAll({
+      where: {
+        userId,
+        status: MealStatus.Active,
+        createdAt: { [Op.lte]: now },
+      },
+      attributes: ['createdAt'],
+      transaction,
+    });
 
-  private toDayKey(date: Date): string {
-    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(
-      date.getUTCDate(),
-    ).padStart(2, '0')}`;
-  }
-
-  private toNumber(value: unknown, fallback = 0): number {
-    if (typeof value === 'number') {
-      return Number.isFinite(value) ? value : fallback;
+    const mealDayKeys = new Set<string>();
+    for (const meal of meals) {
+      mealDayKeys.add(this.streakService.toDayKeyInAppTimeZone(new Date(meal.createdAt)));
     }
 
-    if (typeof value === 'string') {
-      const parsed = Number(value.replace(',', '.'));
-      return Number.isFinite(parsed) ? parsed : fallback;
+    return mealDayKeys;
+  }
+
+  private buildTrailingMissingDayKeys(
+    mealDayKeys: Set<string>,
+    appliedDayKeys: Set<string>,
+    todayStart: Date,
+  ): string[] {
+    const anchors = new Set<string>(mealDayKeys);
+    for (const key of appliedDayKeys) {
+      anchors.add(key);
     }
 
-    return fallback;
+    if (anchors.size === 0) {
+      return [];
+    }
+
+    let latestAnchorDate: Date | null = null;
+    for (const key of anchors) {
+      const parsed = this.dayKeyToDate(key);
+      if (!parsed || parsed > todayStart) {
+        continue;
+      }
+
+      if (!latestAnchorDate || parsed > latestAnchorDate) {
+        latestAnchorDate = parsed;
+      }
+    }
+
+    if (!latestAnchorDate || latestAnchorDate >= todayStart) {
+      return [];
+    }
+
+    const missing: string[] = [];
+    const cursor = new Date(latestAnchorDate);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    while (cursor <= todayStart) {
+      missing.push(this.streakService.toDayKeyInAppTimeZone(cursor));
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return missing;
+  }
+
+  private dayKeyToDate(dayKey: string): Date | null {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) {
+      return null;
+    }
+
+    const [yearText, monthText, dayText] = dayKey.split('-');
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const day = Number(dayText);
+    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+      return null;
+    }
+
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  private async getWalletSnapshot(userId: string, transaction?: Transaction): Promise<WalletSnapshot> {
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where: { userId },
+      attributes: ['currency', 'amountSigned'],
+      transaction,
+    });
+
+    let gold = 0;
+    let xp = 0;
+    let goldLifetimeEarned = 0;
+    let goldLifetimeSpent = 0;
+    let xpLifetimeEarned = 0;
+    let xpLifetimeSpent = 0;
+
+    for (const row of rows) {
+      const amount = parseNumber(row.amountSigned);
+      if (row.currency === 'gold') {
+        gold += amount;
+        if (amount > 0) {
+          goldLifetimeEarned += amount;
+        } else if (amount < 0) {
+          goldLifetimeSpent += Math.abs(amount);
+        }
+      } else if (row.currency === 'xp') {
+        xp += amount;
+        if (amount > 0) {
+          xpLifetimeEarned += amount;
+        } else if (amount < 0) {
+          xpLifetimeSpent += Math.abs(amount);
+        }
+      }
+    }
+
+    return {
+      gold,
+      xp,
+      goldLifetimeEarned,
+      goldLifetimeSpent,
+      xpLifetimeEarned,
+      xpLifetimeSpent,
+    };
+  }
+
+  private async getBalanceByCurrency(
+    userId: string,
+    currency: CurrencyCode,
+    transaction?: Transaction,
+  ): Promise<number> {
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where: { userId, currency },
+      attributes: ['amountSigned'],
+      transaction,
+    });
+
+    return rows.reduce((sum, row) => sum + parseNumber(row.amountSigned), 0);
   }
 }
