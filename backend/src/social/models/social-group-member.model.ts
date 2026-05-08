@@ -45,9 +45,8 @@ export class SocialGroupMember extends Model {
   @Column(DataType.INTEGER)
   points: number;
 
-  @Default(0)
-  @Column({ type: DataType.INTEGER, field: 'streak_days' })
-  streakDays: number;
+  // Computed at runtime from meals (single source of truth), not persisted.
+  streakDays?: number;
 
   @CreatedAt
   @Column({ field: 'created_at' })

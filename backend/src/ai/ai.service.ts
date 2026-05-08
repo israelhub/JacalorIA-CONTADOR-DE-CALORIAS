@@ -5,15 +5,18 @@ import {
   FoodAnalysisProvider,
   FoodAnalysisResponse,
 } from './providers/food-analysis.provider';
+import { FoodNutritionRagService } from './services/food-nutrition-rag.service';
 
 @Injectable()
 export class AiService {
   constructor(
     @Inject(FOOD_ANALYSIS_PROVIDER)
     private readonly foodAnalysisProvider: FoodAnalysisProvider,
+    private readonly foodNutritionRagService: FoodNutritionRagService,
   ) {}
 
   async analyzeFood(analyzeFoodDto: AnalyzeFoodDto): Promise<FoodAnalysisResponse> {
-    return this.foodAnalysisProvider.analyzeFood(analyzeFoodDto);
+    const providerResponse = await this.foodAnalysisProvider.analyzeFood(analyzeFoodDto);
+    return this.foodNutritionRagService.enrichAnalysis(providerResponse);
   }
 }

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetMonthlyPerformanceDto } from './dto/get-monthly-performance.dto';
+import { GetWeightHistoryDto } from './dto/get-weight-history.dto';
 import { PerformanceService } from './performance.service';
 
 @Controller('performance')
@@ -26,5 +27,15 @@ export class PerformanceController {
     }
 
     return this.performanceService.getMonthlyPerformance(userId, query.month);
+  }
+
+  @Get('weight-history')
+  async getWeightHistory(@Req() req: any, @Query() query: GetWeightHistoryDto) {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+
+    return this.performanceService.getWeightHistory(userId, query);
   }
 }
