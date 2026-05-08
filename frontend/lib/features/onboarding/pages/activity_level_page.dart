@@ -9,7 +9,6 @@ import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
 
 import 'package:jacaloria/features/auth/service/auth_service.dart';
-import 'package:jacaloria/shared/helpers/nutrition_goal_calculator.dart';
 
 enum ActivityLevelType { sedentary, lightly, moderate, very, extreme }
 
@@ -48,32 +47,6 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
     try {
       final data = Map<String, dynamic>.from(widget.onboardingData);
       data['activityLevel'] = _selectedActivityLevel.name;
-
-      final weight = (data['weight'] as num?)?.toDouble() ?? 70.0;
-      final height = (data['height'] as num?)?.toDouble() ?? 170.0;
-      final weightUnit = (data['weightUnit'] as String?) ?? 'kg';
-      final heightUnit = (data['heightUnit'] as String?) ?? 'cm';
-      final sex = data['sex'] as String? ?? 'Masculino';
-      final objective = data['objective'] as String? ?? 'maintainWeight';
-      final birthDateStr = data['birthDate'] as String?;
-      final age = calculateAgeFromBirthDate(birthDateStr);
-      final goals = calculateNutritionGoals(
-        NutritionGoalInput(
-          weight: weight,
-          height: height,
-          age: age,
-          sex: sex,
-          objective: objective,
-          activityLevel: _selectedActivityLevel.name,
-          weightUnit: weightUnit,
-          heightUnit: heightUnit,
-        ),
-      );
-
-      data['dailyCalorieGoal'] = goals.dailyCalorieGoal;
-      data['dailyProteinGoal'] = goals.dailyProteinGoal;
-      data['dailyCarbsGoal'] = goals.dailyCarbsGoal;
-      data['dailyFatGoal'] = goals.dailyFatGoal;
 
       await _authService.updateProfile(data);
       await _markFirstHomeAccessForCurrentUser();

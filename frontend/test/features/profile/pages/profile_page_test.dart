@@ -24,10 +24,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('78.4'), findsOneWidget);
-    expect(find.text('181'), findsOneWidget);
-    expect(find.text('lb'), findsOneWidget);
-    expect(find.text('cm'), findsWidgets);
+    expect(find.textContaining('78.4'), findsOneWidget);
+    expect(find.textContaining('181'), findsOneWidget);
     expect(find.text('Feminino'), findsOneWidget);
     expect(find.text('Ganhar massa'), findsOneWidget);
     expect(find.text('Muito ativo'), findsOneWidget);

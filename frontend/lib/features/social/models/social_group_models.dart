@@ -1,5 +1,6 @@
 export 'social_activity_item.dart';
 export 'social_friend.dart';
+export 'social_friend_request.dart';
 export 'social_friend_profile.dart';
 export 'social_friends_data.dart';
 export 'social_group_detail.dart';

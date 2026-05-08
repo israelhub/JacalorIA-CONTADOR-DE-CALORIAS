@@ -16,7 +16,7 @@ void main() {
       'description': 'Bora se cuidar juntos!',
       'iconKey': 'salad',
       'competitionType': 'offensive',
-      'competitionLabel': 'Ofensiva',
+      'competitionLabel': 'Sequência',
       'memberCount': 4,
       'rankPosition': 2,
       'points': 18,
@@ -32,6 +32,33 @@ void main() {
 
     expect(find.text('14 dias'), findsOneWidget);
     expect(find.text('3 dias restantes'), findsOneWidget);
-    expect(find.text('#2'), findsOneWidget);
+    expect(find.text('Posição 2º'), findsOneWidget);
+  });
+
+  testWidgets('mostra Grupo finalizado e remove Encerrado quando finalizado', (
+    tester,
+  ) async {
+    final group = SocialGroupSummary.fromJson({
+      'id': 'group-2',
+      'name': 'Desafio fechado',
+      'description': 'Finalizado',
+      'iconKey': 'salad',
+      'competitionType': 'offensive',
+      'competitionLabel': 'Sequência',
+      'memberCount': 4,
+      'rankPosition': 1,
+      'points': 20,
+      'streakDays': 4,
+      'leaderName': 'Mariana',
+      'leaderLabel': 'Mariana lidera',
+      'remainingDays': 0,
+      'inviteCode': 'XYZ123',
+      'durationDays': 14,
+    });
+
+    await tester.pumpWidget(_wrap(SocialGroupCard(group: group, isFinished: true)));
+
+    expect(find.text('Grupo finalizado'), findsOneWidget);
+    expect(find.text('Encerrado'), findsNothing);
   });
 }

@@ -88,15 +88,15 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: FoodAnalysisPageHeader(
-        title: 'Detalhes da refeicao',
+        title: 'Detalhes da refeição',
         actions: [
           IconButton(
-            tooltip: 'Editar refeicao',
+            tooltip: 'Editar refeição',
             onPressed: _handleEditMeal,
             icon: const Icon(Icons.edit_outlined),
           ),
           IconButton(
-            tooltip: 'Excluir refeicao',
+            tooltip: 'Excluir refeição',
             onPressed: _handleDeleteMeal,
             icon: const Icon(Icons.delete_outline),
           ),
@@ -383,13 +383,13 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
           ),
         ),
         title: Text(
-          'Excluir refeicao',
+          'Excluir refeição',
           style: AppTextStyles.homeSectionTitle.copyWith(
             color: AppColors.brand900Variant,
           ),
         ),
         content: Text(
-          'Essa refeicao sera removida da visualizacao, sem apagar o historico.',
+          'Essa refeição será excluída e você não poderá vê-la novamente.',
           style: AppTextStyles.bodyLarge.copyWith(
             color: AppColors.textSecondary,
           ),

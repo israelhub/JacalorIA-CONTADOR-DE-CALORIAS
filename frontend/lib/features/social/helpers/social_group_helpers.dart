@@ -11,13 +11,25 @@ String socialRemainingDaysLabel(int remainingDays) {
   return '$remainingDays dias restantes';
 }
 
+String socialRemainingDaysLabelByGroup({
+  required int remainingDays,
+  required String competitionType,
+  required bool isDefeated,
+}) {
+  if (competitionType == 'group_streak') {
+    return isDefeated ? 'Sequência quebrada' : 'Infinito';
+  }
+  if (remainingDays <= 0) return 'Encerrado';
+  return socialRemainingDaysLabel(remainingDays);
+}
+
 String socialCompetitionLabel(String competitionType) {
   return switch (competitionType) {
-    'offensive' => 'Ofensiva',
+    'offensive' => 'Sequência',
     'daily_goal' => 'Meta diária',
     'xp' => 'XP',
     'group_streak' => 'Sequência dos amigos',
-    _ => 'Ofensiva',
+    _ => 'Sequência',
   };
 }
 

@@ -97,7 +97,7 @@ class _SignUpFormState extends State<SignUpForm> {
             enabled: !widget.isLoading,
             validator: (value) {
               if (!AuthHelpers.isValidPassword((value ?? '').trim())) {
-                return 'A senha deve ter ao menos 8 caracteres e 1 numero';
+                return AuthHelpers.passwordRequirementsMessage;
               }
               return null;
             },

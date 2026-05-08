@@ -70,6 +70,10 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handleGoogleLogin() async {
     await _authController.signInWithGoogle();
     if (!mounted || _authController.token == null) {
+      if (_authController.isGoogleSignInCancelled) {
+        return;
+      }
+
       return;
     }
 
@@ -149,7 +153,9 @@ class _LoginPageState extends State<LoginPage> {
                     SizedBox(
                       height: AppSpacing.huge + AppSpacing.xs,
                       child: AppButton(
-                        label: 'Entrar',
+                        label: _authController.isLoading
+                            ? 'Entrando…'
+                            : 'Entrar',
                         onPressed: _authController.isLoading
                             ? null
                             : _handleLogin,

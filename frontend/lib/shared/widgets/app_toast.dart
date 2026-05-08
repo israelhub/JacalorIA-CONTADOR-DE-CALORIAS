@@ -88,10 +88,12 @@ class _ToastOverlayState extends State<_ToastOverlay> with SingleTickerProviderS
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+
     return Positioned(
       left: AppSpacing.lg,
       right: AppSpacing.lg,
-      bottom: AppSpacing.xxl,
+      bottom: bottomInset + AppSpacing.lg,
       child: IgnorePointer(
         child: SlideTransition(
           position: _slide,
@@ -105,7 +107,6 @@ class _ToastOverlayState extends State<_ToastOverlay> with SingleTickerProviderS
               decoration: BoxDecoration(
                 color: AppColors.brand900Variant,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                boxShadow: AppShadows.md,
               ),
               child: Row(
                 children: [
