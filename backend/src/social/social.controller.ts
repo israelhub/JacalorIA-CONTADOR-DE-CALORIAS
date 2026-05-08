@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AddGroupMembersDto } from './dto/add-group-members.dto';
 import { AddFriendByEmailDto } from './dto/add-friend-by-email.dto';
 import { CreateSocialGroupDto } from './dto/create-social-group.dto';
 import { UpdateSocialGroupDto } from './dto/update-social-group.dto';
@@ -28,6 +29,21 @@ export class SocialController {
   @Post('friends/by-id/:friendUserId')
   addFriendById(@Req() req: any, @Param('friendUserId') friendUserId: string) {
     return this.socialService.addFriendById(req.user.sub, friendUserId);
+  }
+
+  @Get('friends/requests')
+  listPendingFriendRequests(@Req() req: any) {
+    return this.socialService.listPendingFriendRequests(req.user.sub);
+  }
+
+  @Post('friends/requests/:requestId/accept')
+  acceptFriendRequest(@Req() req: any, @Param('requestId') requestId: string) {
+    return this.socialService.acceptFriendRequest(req.user.sub, requestId);
+  }
+
+  @Post('friends/requests/:requestId/reject')
+  rejectFriendRequest(@Req() req: any, @Param('requestId') requestId: string) {
+    return this.socialService.rejectFriendRequest(req.user.sub, requestId);
   }
 
   @Post('friends/:friendUserId/remove')
@@ -82,6 +98,21 @@ export class SocialController {
   @Patch('groups/:groupId')
   updateGroup(@Req() req: any, @Param('groupId') groupId: string, @Body() dto: UpdateSocialGroupDto) {
     return this.socialService.updateGroup(groupId, req.user.sub, dto);
+  }
+
+  @Post('groups/:groupId/members')
+  addGroupMembers(@Req() req: any, @Param('groupId') groupId: string, @Body() dto: AddGroupMembersDto) {
+    return this.socialService.addGroupMembers(groupId, req.user.sub, dto);
+  }
+
+  @Post('groups/:groupId/leave')
+  leaveGroup(@Req() req: any, @Param('groupId') groupId: string) {
+    return this.socialService.leaveGroup(groupId, req.user.sub);
+  }
+
+  @Delete('groups/:groupId')
+  deleteGroup(@Req() req: any, @Param('groupId') groupId: string) {
+    return this.socialService.deleteGroup(groupId, req.user.sub);
   }
 
   @Get('groups/:groupId')
