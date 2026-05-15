@@ -41,7 +41,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-/.github/
 
 # Flutter app dentro de /frontend
 /frontend/.dart_tool/
@@ -50,11 +49,9 @@ app.*.map.json
 /frontend/.pub-cache/
 /frontend/build/
 /frontend/coverage/
-/frontend/.github/
 
 # Node backend
 /backend/node_modules/
-/backend/.github/
 
 # Logs temporarios
 /frontend/*.log
