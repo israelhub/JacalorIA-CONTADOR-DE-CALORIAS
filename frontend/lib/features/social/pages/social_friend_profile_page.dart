@@ -4,7 +4,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/framed_avatar.dart';
+import '../../../shared/widgets/avatar_profile_preview.dart';
 import '../../profile/helpers/profile_date_helpers.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
@@ -125,12 +125,10 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _FriendProfilePreview(
+          AvatarProfilePreview(
             avatarUrl: profile.avatarUrl,
             frameId: profile.avatarFrameId,
-            backgroundAssetPath: _backgroundAssetFromId(
-              profile.avatarBackgroundId,
-            ),
+            backgroundId: profile.avatarBackgroundId,
             name: profile.name,
           ),
           Padding(
@@ -388,66 +386,5 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
       return value;
     }
     return '${value.substring(0, maxChars)}...';
-  }
-
-  String? _backgroundAssetFromId(String? id) {
-    switch (id?.trim()) {
-      case 'sunset_orbit':
-        return 'assets/images/avatar_backgrounds/sunset_orbit.png';
-      case 'jungle_neon':
-        return 'assets/images/avatar_backgrounds/jungle_neon.png';
-      case 'aurora_grid':
-        return 'assets/images/avatar_backgrounds/aurora_grid.png';
-      case 'mango_sky':
-        return 'assets/images/avatar_backgrounds/mango_sky.png';
-      case 'mint_cloud':
-        return 'assets/images/avatar_backgrounds/mint_cloud.png';
-      case 'sky':
-        return 'assets/images/avatar_backgrounds/sky.png';
-      case 'pantano':
-        return 'assets/images/avatar_backgrounds/pantano.png';
-      default:
-        return null;
-    }
-  }
-}
-
-class _FriendProfilePreview extends StatelessWidget {
-  const _FriendProfilePreview({
-    required this.avatarUrl,
-    required this.frameId,
-    required this.backgroundAssetPath,
-    required this.name,
-  });
-
-  final String? avatarUrl;
-  final String? frameId;
-  final String? backgroundAssetPath;
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 173,
-      decoration: BoxDecoration(
-        color: AppColors.homeProgressTrack,
-        image: backgroundAssetPath == null
-            ? null
-            : DecorationImage(
-                image: AssetImage(backgroundAssetPath!),
-                fit: BoxFit.cover,
-              ),
-      ),
-      child: Center(
-        child: FramedAvatar(
-          size: AppSpacing.huge * 3.4,
-          avatarUrl: avatarUrl,
-          frameId: frameId,
-          fallbackText: name,
-          backgroundColor: AppColors.surface,
-        ),
-      ),
-    );
   }
 }

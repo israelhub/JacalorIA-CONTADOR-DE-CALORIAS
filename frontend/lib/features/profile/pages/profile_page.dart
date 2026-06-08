@@ -4,6 +4,7 @@ import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/framed_avatar.dart';
 import '../../../../shared/widgets/app_page_route.dart';
+import '../../../../shared/widgets/avatar_profile_preview.dart';
 import '../../avatar_frames/models/avatar_frame_catalog.dart';
 import '../../avatar_frames/pages/avatar_frame_store_page.dart';
 import '../../auth/pages/enter_page.dart';
@@ -125,6 +126,20 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ignore: unused_element
   Future<void> _openPersonalizationSheet() async {
+    StoreCatalogData? storeCatalog;
+    try {
+      final storeBody = await _missionsService.fetchStoreCatalog();
+      storeCatalog = StoreCatalogData.fromJson(storeBody);
+    } catch (_) {}
+
+    final storeFrameById = {
+      for (final item in storeCatalog?.frames ?? const <StoreCatalogItem>[])
+        item.id: item,
+    };
+    final blockerPriceGold = storeCatalog?.blockers.isNotEmpty == true
+        ? storeCatalog!.blockers.first.priceGold
+        : 0;
+
     final result = await showModalBottomSheet<_ProfileCustomizationSelection>(
       context: context,
       isScrollControlled: true,
@@ -141,16 +156,27 @@ class _ProfilePageState extends State<ProfilePage> {
         var showOwnedOnly = false;
         var isBuying = false;
         var frameOptions = AvatarFrameCatalog.items
+            .where(
+              (frame) =>
+                  frame.id == AvatarFrameCatalog.noneId ||
+                  storeFrameById.containsKey(frame.id) ||
+                  _purchasedAvatarFrameIds.contains(frame.id),
+            )
             .map(
-              (frame) => _ProfileCustomizationOption(
-                id: frame.id,
-                name: frame.name,
-                description: frame.description,
-                isOwned:
-                    frame.id == AvatarFrameCatalog.noneId ||
-                    _purchasedAvatarFrameIds.contains(frame.id),
-                priceGold: frame.priceGold,
-              ),
+              (frame) {
+                final storeItem = storeFrameById[frame.id];
+                return _ProfileCustomizationOption(
+                  id: frame.id,
+                  name: storeItem?.name ?? frame.name,
+                  description: storeItem?.description ?? frame.description,
+                  isOwned:
+                      frame.id == AvatarFrameCatalog.noneId ||
+                      _purchasedAvatarFrameIds.contains(frame.id),
+                  priceGold: frame.id == AvatarFrameCatalog.noneId
+                      ? 0
+                      : (storeItem?.priceGold ?? 0),
+                );
+              },
             )
             .toList(growable: false);
 
@@ -191,6 +217,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 categoryBody = _BlockerSelector(
                   blockers: filteredBlockers,
                   selectedBlockerId: selectedBlockerId,
+                  blockerUnitPriceGold: blockerPriceGold,
                   isBusy: isBuying,
                   onSelect: (value) {
                     setModalState(() {
@@ -232,16 +259,30 @@ class _ProfilePageState extends State<ProfilePage> {
                       await _refreshProfileSnapshot();
                       setModalState(() {
                         frameOptions = AvatarFrameCatalog.items
+                            .where(
+                              (frame) =>
+                                  frame.id == AvatarFrameCatalog.noneId ||
+                                  storeFrameById.containsKey(frame.id) ||
+                                  _purchasedAvatarFrameIds.contains(frame.id),
+                            )
                             .map(
-                              (frame) => _ProfileCustomizationOption(
-                                id: frame.id,
-                                name: frame.name,
-                                description: frame.description,
-                                isOwned:
-                                    frame.id == AvatarFrameCatalog.noneId ||
-                                    _purchasedAvatarFrameIds.contains(frame.id),
-                                priceGold: frame.priceGold,
-                              ),
+                              (frame) {
+                                final storeItem = storeFrameById[frame.id];
+                                return _ProfileCustomizationOption(
+                                  id: frame.id,
+                                  name: storeItem?.name ?? frame.name,
+                                  description:
+                                      storeItem?.description ?? frame.description,
+                                  isOwned:
+                                      frame.id == AvatarFrameCatalog.noneId ||
+                                      _purchasedAvatarFrameIds.contains(
+                                        frame.id,
+                                      ),
+                                  priceGold: frame.id == AvatarFrameCatalog.noneId
+                                      ? 0
+                                      : (storeItem?.priceGold ?? 0),
+                                );
+                              },
                             )
                             .toList(growable: false);
                         selectedFrameId = option.id;
@@ -496,27 +537,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  String? _backgroundAssetFromId(String? id) {
-    switch (id?.trim()) {
-      case 'sunset_orbit':
-        return 'assets/images/avatar_backgrounds/sunset_orbit.png';
-      case 'jungle_neon':
-        return 'assets/images/avatar_backgrounds/jungle_neon.png';
-      case 'aurora_grid':
-        return 'assets/images/avatar_backgrounds/aurora_grid.png';
-      case 'mango_sky':
-        return 'assets/images/avatar_backgrounds/mango_sky.png';
-      case 'mint_cloud':
-        return 'assets/images/avatar_backgrounds/mint_cloud.png';
-      case 'sky':
-        return 'assets/images/avatar_backgrounds/sky.png';
-      case 'pantano':
-        return 'assets/images/avatar_backgrounds/pantano.png';
-      default:
-        return null;
-    }
-  }
-
   String _stringFromKeys(List<String> keys, {String fallback = ''}) {
     for (final key in keys) {
       final value = _profileData[key]?.toString().trim();
@@ -729,12 +749,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _UnifiedProfilePreview(
+                    AvatarProfilePreview(
                       avatarUrl: _avatarUrl,
                       frameId: _equippedAvatarFrameId,
-                      backgroundAssetPath: _backgroundAssetFromId(
-                        _equippedBackgroundId,
-                      ),
+                      backgroundId: _equippedBackgroundId,
                       name: _profileName,
                     ),
                     Padding(
@@ -988,46 +1006,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-class _UnifiedProfilePreview extends StatelessWidget {
-  const _UnifiedProfilePreview({
-    required this.avatarUrl,
-    required this.frameId,
-    required this.backgroundAssetPath,
-    required this.name,
-  });
-
-  final String? avatarUrl;
-  final String frameId;
-  final String? backgroundAssetPath;
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 173,
-      decoration: BoxDecoration(
-        color: AppColors.homeProgressTrack,
-        image: backgroundAssetPath == null
-            ? null
-            : DecorationImage(
-                image: AssetImage(backgroundAssetPath!),
-                fit: BoxFit.cover,
-              ),
-      ),
-      child: Center(
-        child: FramedAvatar(
-          size: AppSpacing.huge * 3.4,
-          avatarUrl: avatarUrl,
-          frameId: frameId,
-          fallbackText: name,
-          backgroundColor: AppColors.surface,
-        ),
-      ),
-    );
-  }
-}
-
 class _ProfileCustomizationCategorySwitcher extends StatelessWidget {
   const _ProfileCustomizationCategorySwitcher({
     required this.selected,
@@ -1268,6 +1246,7 @@ class _BlockerSelector extends StatelessWidget {
     required this.selectedBlockerId,
     required this.onSelect,
     required this.onBuy,
+    required this.blockerUnitPriceGold,
     this.isBusy = false,
   });
 
@@ -1275,6 +1254,7 @@ class _BlockerSelector extends StatelessWidget {
   final String? selectedBlockerId;
   final ValueChanged<String?> onSelect;
   final ValueChanged<_ProfileBlockerOption> onBuy;
+  final int blockerUnitPriceGold;
   final bool isBusy;
 
   @override
@@ -1303,7 +1283,7 @@ class _BlockerSelector extends StatelessWidget {
                 onTap: blocker.isOwned
                     ? () => onSelect(isSelected ? null : blocker.id)
                     : null,
-                priceGold: blocker.isOwned ? 0 : 80,
+                priceGold: blocker.isOwned ? 0 : blockerUnitPriceGold,
                 onBuy: blocker.isOwned ? null : () => onBuy(blocker),
                 isBusy: isBusy,
               ),
