@@ -5,6 +5,7 @@ import { User } from '../auth/models/user.model';
 import { Meal } from '../meals/models/meal.model';
 import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
 import { Mission } from '../missions/models/mission.model';
+import { StoreCatalogItem } from '../missions/models/store-catalog-item.model';
 import { UserCurrencyTransaction } from '../missions/models/user-currency-transaction.model';
 import { SocialFriendLink } from '../social/models/social-friend-link.model';
 import { SocialFriendRequest } from '../social/models/social-friend-request.model';
@@ -58,6 +59,7 @@ import { SocialGroupMember } from '../social/models/social-group-member.model';
             Meal,
             UserWeightEntry,
             Mission,
+            StoreCatalogItem,
             UserCurrencyTransaction,
             SocialGroup,
             SocialGroupMember,

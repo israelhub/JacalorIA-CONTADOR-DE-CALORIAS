@@ -9,18 +9,15 @@ import { parseNumber } from '../shared/utils/number-parser.util';
 import { hasReachedCalorieGoal } from '../shared/utils/calorie-goal.util';
 import {
   AVATAR_BACKGROUND_NONE_ID,
-  AVATAR_BACKGROUND_PRICES_GOLD,
-  AVATAR_FRAME_PRICES_GOLD,
+  AVATAR_FRAME_NONE_ID,
   OFFENSIVE_BLOCKER_DEFAULT_ID,
-  OFFENSIVE_BLOCKER_PRICE_GOLD,
-  avatarBackgroundPriceGold,
-  avatarFramePriceGold,
 } from './constants/avatar-frame-store';
 import { Mission, MissionType } from './models/mission.model';
 import {
   CurrencyCode,
   UserCurrencyTransaction,
 } from './models/user-currency-transaction.model';
+import { StoreCatalogService } from './store-catalog.service';
 
 type DailyTotals = {
   calories: number;
@@ -90,6 +87,7 @@ export class MissionsService {
     @InjectModel(UserCurrencyTransaction)
     private readonly userCurrencyTransactionModel: typeof UserCurrencyTransaction,
     private readonly streakService: StreakService,
+    private readonly storeCatalogService: StoreCatalogService,
   ) {}
 
   async getMissions(userId: string) {
@@ -323,6 +321,8 @@ export class MissionsService {
   }
 
   async getStore(userId: string) {
+    await this.ensurePurchasedAvatarBackgroundsSynced(userId);
+
     const [user, wallet] = await Promise.all([
       this.userModel.findByPk(userId, {
         attributes: [
@@ -355,37 +355,45 @@ export class MissionsService {
       currentGold,
     });
 
-    const frameItems: StoreItem[] = Object.entries(AVATAR_FRAME_PRICES_GOLD).map(
-      ([id, priceGold]) => ({
-        id,
-        name: this.prettifyStoreLabel(id),
-        priceGold,
-        owned: purchasedFrames.has(id),
-        equipped: equippedFrameId === id,
-      }),
-    );
+    const [frameCatalog, backgroundCatalog, blockerCatalog] = await Promise.all([
+      this.storeCatalogService.listActiveByCategory('avatar_frame'),
+      this.storeCatalogService.listActiveByCategory('avatar_background'),
+      this.storeCatalogService.listActiveByCategory('offensive_blocker'),
+    ]);
 
-    const backgroundItems: StoreItem[] = Object.entries(AVATAR_BACKGROUND_PRICES_GOLD).map(
-      ([id, priceGold]) => ({
-        id,
-        name: this.prettifyStoreLabel(id),
-        priceGold,
-        owned: purchasedBackgrounds.has(id),
-        equipped: equippedBackgroundId === id,
-      }),
-    );
+    const frameItems: StoreItem[] = frameCatalog.map((entry) => ({
+      id: entry.itemKey,
+      name: entry.name,
+      priceGold: entry.priceGold,
+      owned: purchasedFrames.has(entry.itemKey),
+      equipped: equippedFrameId === entry.itemKey,
+    }));
 
-    const blockerItems: StoreItem[] = [
-      {
-        id: OFFENSIVE_BLOCKER_DEFAULT_ID,
-        name: 'Bloqueador de ofensiva',
-        priceGold: OFFENSIVE_BLOCKER_PRICE_GOLD,
-        owned: blockerInventoryCount > 0,
-        equipped: equippedBlockerId === OFFENSIVE_BLOCKER_DEFAULT_ID,
-        quantityOwned: blockerInventoryCount,
-        quantityPerPurchase: 1,
-      },
-    ];
+    const backgroundItems: StoreItem[] = backgroundCatalog.map((entry) => ({
+      id: entry.itemKey,
+      name: entry.name,
+      priceGold: entry.priceGold,
+      owned: purchasedBackgrounds.has(entry.itemKey),
+      equipped: equippedBackgroundId === entry.itemKey,
+    }));
+
+    const defaultBlocker = blockerCatalog.find(
+      (entry) => entry.itemKey === OFFENSIVE_BLOCKER_DEFAULT_ID,
+    );
+    const blockerPriceGold = defaultBlocker?.priceGold ?? 0;
+    const blockerItems: StoreItem[] = defaultBlocker
+      ? [
+          {
+            id: defaultBlocker.itemKey,
+            name: defaultBlocker.name,
+            priceGold: blockerPriceGold,
+            owned: blockerInventoryCount > 0,
+            equipped: equippedBlockerId === defaultBlocker.itemKey,
+            quantityOwned: blockerInventoryCount,
+            quantityPerPurchase: 1,
+          },
+        ]
+      : [];
 
     return {
       summary: {
@@ -427,10 +435,11 @@ export class MissionsService {
 
   async purchaseAvatarFrame(userId: string, frameId: string) {
     const normalizedFrameId = frameId.trim();
-    const priceGold = avatarFramePriceGold(normalizedFrameId);
-    if (priceGold == null) {
+    const catalogItem = await this.storeCatalogService.findActiveByKey(normalizedFrameId);
+    if (!catalogItem || catalogItem.category !== 'avatar_frame') {
       throw new BadRequestException('Moldura inválida.');
     }
+    const priceGold = catalogItem.priceGold;
 
     const sequelize = this.userModel.sequelize;
     if (!sequelize) {
@@ -529,10 +538,13 @@ export class MissionsService {
 
   async purchaseAvatarBackground(userId: string, backgroundId: string) {
     const normalizedBackgroundId = backgroundId.trim();
-    const priceGold = avatarBackgroundPriceGold(normalizedBackgroundId);
-    if (priceGold == null) {
+    const catalogItem = await this.storeCatalogService.findActiveByKey(
+      normalizedBackgroundId,
+    );
+    if (!catalogItem || catalogItem.category !== 'avatar_background') {
       throw new BadRequestException('Fundo inválido.');
     }
+    const priceGold = catalogItem.priceGold;
 
     const sequelize = this.userModel.sequelize;
     if (!sequelize) {
@@ -550,7 +562,7 @@ export class MissionsService {
         throw new BadRequestException('Usuário não encontrado.');
       }
 
-      const purchased = new Set(this.normalizeIdList(user.purchasedAvatarBackgroundIds));
+      const purchased = await this.syncUserPurchasedAvatarBackgrounds(user, transaction);
 
       if (purchased.has(normalizedBackgroundId)) {
         if (user.equippedAvatarBackgroundId !== normalizedBackgroundId) {
@@ -631,6 +643,14 @@ export class MissionsService {
       throw new BadRequestException('Bloqueador inválido.');
     }
 
+    const blockerCatalogItem = await this.storeCatalogService.findActiveByKey(
+      normalizedBlockerId,
+    );
+    if (!blockerCatalogItem || blockerCatalogItem.category !== 'offensive_blocker') {
+      throw new BadRequestException('Bloqueador inválido.');
+    }
+    const blockerPriceGold = blockerCatalogItem.priceGold;
+
     let normalizedQuantity = Number.isFinite(quantity) ? Math.floor(quantity) : 1;
     if (normalizedQuantity <= 0) {
       throw new BadRequestException('Quantidade inválida para compra de bloqueador.');
@@ -674,7 +694,7 @@ export class MissionsService {
         normalizedQuantity = blockerRecovery.requiredPurchaseQuantity;
       }
 
-      const totalPriceGold = normalizedQuantity * OFFENSIVE_BLOCKER_PRICE_GOLD;
+      const totalPriceGold = normalizedQuantity * blockerPriceGold;
 
       if (currentGold < totalPriceGold) {
         throw new BadRequestException('Ouro insuficiente para comprar bloqueadores.');
@@ -692,7 +712,7 @@ export class MissionsService {
           metadata: {
             blockerId: normalizedBlockerId,
             quantity: normalizedQuantity,
-            priceGoldPerUnit: OFFENSIVE_BLOCKER_PRICE_GOLD,
+            priceGoldPerUnit: blockerPriceGold,
             totalPriceGold,
           },
         },
@@ -937,15 +957,6 @@ export class MissionsService {
     return `${parts.year}-${String(parts.month).padStart(2, '0')}`;
   }
 
-  private prettifyStoreLabel(rawId: string): string {
-    return rawId
-      .split('_')
-      .map((piece) => piece.trim())
-      .filter((piece) => piece.length > 0)
-      .map((piece) => `${piece.charAt(0).toUpperCase()}${piece.slice(1)}`)
-      .join(' ');
-  }
-
   private normalizeIdList(rawList: unknown): string[] {
     if (!Array.isArray(rawList)) {
       return [];
@@ -954,6 +965,98 @@ export class MissionsService {
     return rawList
       .map((value) => value?.toString().trim() ?? '')
       .filter((value) => value.length > 0);
+  }
+
+  private async ensurePurchasedAvatarBackgroundsSynced(userId: string): Promise<void> {
+    const sequelize = this.userModel.sequelize;
+    if (!sequelize) {
+      return;
+    }
+
+    await sequelize.transaction(async (transaction) => {
+      const user = await this.userModel.findByPk(userId, {
+        attributes: ['id', 'equippedAvatarBackgroundId', 'purchasedAvatarBackgroundIds'],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (!user) {
+        return;
+      }
+
+      await this.syncUserPurchasedAvatarBackgrounds(user, transaction);
+    });
+  }
+
+  private async loadPurchasedAvatarBackgroundIdsFromTransactions(
+    userId: string,
+    transaction?: Transaction,
+  ): Promise<string[]> {
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where: {
+        userId,
+        currency: 'gold',
+        sourceType: 'avatar_background_purchase',
+      },
+      attributes: ['sourceId'],
+      transaction,
+    });
+    const activeKeys = new Set(
+      await this.storeCatalogService.listActiveBackgroundKeys(),
+    );
+
+    return rows
+      .map((row) => row.sourceId?.trim() ?? '')
+      .filter((id) => id.length > 0 && activeKeys.has(id));
+  }
+
+  private buildPurchasedAvatarBackgroundSet(
+    storedIds: unknown,
+    transactionOwnedIds: string[],
+  ): Set<string> {
+    const purchased = new Set(this.normalizeIdList(storedIds));
+
+    for (const id of transactionOwnedIds) {
+      purchased.add(id);
+    }
+
+    return purchased;
+  }
+
+  private async syncUserPurchasedAvatarBackgrounds(
+    user: User,
+    transaction?: Transaction,
+  ): Promise<Set<string>> {
+    const transactionOwnedIds = await this.loadPurchasedAvatarBackgroundIdsFromTransactions(
+      user.id,
+      transaction,
+    );
+    const purchased = this.buildPurchasedAvatarBackgroundSet(
+      user.purchasedAvatarBackgroundIds,
+      transactionOwnedIds,
+    );
+    const equippedId = this.normalizeOptionalId(user.equippedAvatarBackgroundId);
+    const sanitizedEquipped =
+      equippedId && purchased.has(equippedId) ? equippedId : null;
+    const sortedPurchased = Array.from(purchased).sort();
+    const storedPurchased = this.normalizeIdList(user.purchasedAvatarBackgroundIds).sort();
+    const needsUpdate =
+      sortedPurchased.join(',') !== storedPurchased.join(',') ||
+      sanitizedEquipped !== equippedId;
+
+    if (needsUpdate) {
+      await user.update(
+        {
+          purchasedAvatarBackgroundIds: sortedPurchased,
+          equippedAvatarBackgroundId: sanitizedEquipped,
+        },
+        { transaction },
+      );
+      user.purchasedAvatarBackgroundIds = sortedPurchased;
+      user.equippedAvatarBackgroundId = sanitizedEquipped;
+    }
+
+    return purchased;
   }
 
   private normalizeOptionalId(value: unknown): string | null {
@@ -996,7 +1099,10 @@ export class MissionsService {
 
     const missingDays = missingDayKeys.length;
     const requiredPurchaseQuantity = Math.max(0, missingDays - inventoryCount);
-    const requiredPurchaseCostGold = requiredPurchaseQuantity * OFFENSIVE_BLOCKER_PRICE_GOLD;
+    const blockerPriceGold =
+      (await this.storeCatalogService.getActivePriceGold(OFFENSIVE_BLOCKER_DEFAULT_ID)) ??
+      0;
+    const requiredPurchaseCostGold = requiredPurchaseQuantity * blockerPriceGold;
 
     return {
       missingDaysUntilToday: missingDays,
