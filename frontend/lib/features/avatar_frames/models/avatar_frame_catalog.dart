@@ -3,17 +3,15 @@ class AvatarFrameItem {
     required this.id,
     required this.name,
     required this.description,
-    required this.priceGold,
     required this.assetPath,
   });
 
   final String id;
   final String name;
   final String description;
-  final int priceGold;
   final String? assetPath;
 
-  bool get isFree => priceGold == 0;
+  bool get isFree => id == AvatarFrameCatalog.noneId;
 }
 
 enum StoreCategory { blockers, frames, backgrounds }
@@ -100,7 +98,7 @@ class StoreCatalogData {
     }
 
     return StoreCatalogData(
-      frames: frames.isEmpty ? _fallbackFrameItems() : frames,
+      frames: frames,
       backgrounds: backgrounds,
       blockers: blockers,
       blockerRecovery: BlockerRecoveryInfo.fromJson(
@@ -163,42 +161,36 @@ class AvatarFrameCatalog {
       id: noneId,
       name: 'Sem moldura',
       description: 'Foto limpa, sem borda equipada.',
-      priceGold: 0,
       assetPath: null,
     ),
     AvatarFrameItem(
       id: 'emerald_guard',
       name: 'Guarda Esmeralda',
       description: 'Folhas de armadura, ouro e cristais verdes.',
-      priceGold: 120,
       assetPath: 'assets/images/avatar_frames/emerald_guard.png',
     ),
     AvatarFrameItem(
       id: 'crystal_champion',
       name: 'Campeao Cristalino',
       description: 'Cristais violetas com laterais douradas.',
-      priceGold: 180,
       assetPath: 'assets/images/avatar_frames/crystal_champion.png',
     ),
     AvatarFrameItem(
       id: 'cosmic_blossom',
       name: 'Floracao Cosmica',
       description: 'Galhos magenta, estrelas e joias lunares.',
-      priceGold: 260,
       assetPath: 'assets/images/avatar_frames/cosmic_blossom.png',
     ),
     AvatarFrameItem(
       id: 'cat_ears_soft',
       name: 'Orelhas de Gato',
       description: 'Moldura suave com orelhinhas felinas.',
-      priceGold: 90,
       assetPath: 'assets/images/avatar_frames/cat_ears.png',
     ),
     AvatarFrameItem(
       id: 'gator_tail_fin',
       name: 'Cauda de Jacare',
       description: 'Moldura suave inspirada no estilo do Jaca.',
-      priceGold: 110,
       assetPath: 'assets/images/avatar_frames/jaca.png',
     ),
   ];
@@ -250,61 +242,6 @@ class AvatarFrameCatalog {
 
   static bool isOwned(String frameId, Set<String> purchasedFrameIds) {
     return frameId == noneId || purchasedFrameIds.contains(frameId);
-  }
-
-  static int spentGold(Set<String> purchasedFrameIds) {
-    return purchasedFrameIds.fold(0, (sum, id) {
-      final item = byId(id);
-      return sum + (item?.priceGold ?? 0);
-    });
-  }
-
-  static int availableGold({
-    required int earnedGold,
-    required Set<String> purchasedFrameIds,
-  }) {
-    return (earnedGold - spentGold(purchasedFrameIds)).clamp(0, earnedGold);
-  }
-
-  static bool canPurchase(
-    AvatarFrameItem item, {
-    required int availableGold,
-    required Set<String> purchasedFrameIds,
-  }) {
-    if (item.isFree || purchasedFrameIds.contains(item.id)) {
-      return false;
-    }
-
-    return availableGold >= item.priceGold;
-  }
-
-  static String equippedBackgroundIdFromProfile(Map<String, dynamic>? profile) {
-    final raw =
-        profile?['equippedAvatarBackgroundId'] ??
-        profile?['equipped_avatar_background_id'];
-    final value = raw?.toString().trim();
-    if (value == null || value.isEmpty) {
-      return '';
-    }
-    return value;
-  }
-
-  static Set<String> purchasedBackgroundIdsFromProfile(
-    Map<String, dynamic>? profile,
-  ) {
-    final raw =
-        profile?['purchasedAvatarBackgroundIds'] ??
-        profile?['purchased_avatar_background_ids'];
-    final values = raw is Iterable
-        ? raw
-        : raw is String
-        ? raw.split(',')
-        : const <Object?>[];
-
-    return values
-        .map((value) => value.toString().trim())
-        .where((id) => id.isNotEmpty)
-        .toSet();
   }
 
   static Map<String, int> blockerInventoryFromProfile(
@@ -415,19 +352,5 @@ List<StoreCatalogItem> _parseStoreItems(
         );
       })
       .where((item) => item.id.isNotEmpty)
-      .toList(growable: false);
-}
-
-List<StoreCatalogItem> _fallbackFrameItems() {
-  return AvatarFrameCatalog.purchasableItems
-      .map(
-        (item) => StoreCatalogItem(
-          id: item.id,
-          type: StoreItemType.frame,
-          name: item.name,
-          description: item.description,
-          priceGold: item.priceGold,
-        ),
-      )
       .toList(growable: false);
 }
