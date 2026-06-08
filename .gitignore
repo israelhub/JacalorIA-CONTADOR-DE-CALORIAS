@@ -88,3 +88,5 @@ scripts/flutter_web_with_google.ps1
 /testes/
 /.tools/
 /scripts/
+.specify
+artifacts
