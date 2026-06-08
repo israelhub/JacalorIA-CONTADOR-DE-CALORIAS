@@ -9,6 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/config/api_config.dart';
 
 class AuthService {
+  static const Duration _apiTimeout = Duration(seconds: 45);
+
   static String get _baseUrl => ApiConfig.baseUrl;
   static const String _googleWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
@@ -68,7 +70,7 @@ class AuthService {
             }),
           )
           .timeout(
-            const Duration(seconds: 15),
+            _apiTimeout,
             onTimeout: () => throw TimeoutException('Timeout no login Google'),
           );
 
@@ -110,7 +112,7 @@ class AuthService {
           }),
         )
         .timeout(
-          const Duration(seconds: 12),
+          _apiTimeout,
           onTimeout: () => throw TimeoutException('Timeout ao criar conta'),
         );
 
@@ -135,7 +137,7 @@ class AuthService {
           body: jsonEncode({'email': email, 'password': password}),
         )
         .timeout(
-          const Duration(seconds: 12),
+          _apiTimeout,
           onTimeout: () => throw TimeoutException('Timeout ao entrar'),
         );
 
@@ -160,7 +162,7 @@ class AuthService {
           body: jsonEncode({'email': email, 'code': code}),
         )
         .timeout(
-          const Duration(seconds: 12),
+          _apiTimeout,
           onTimeout: () => throw TimeoutException('Timeout ao confirmar email'),
         );
 
@@ -182,7 +184,7 @@ class AuthService {
           body: jsonEncode({'email': email}),
         )
         .timeout(
-          const Duration(seconds: 12),
+          _apiTimeout,
           onTimeout: () => throw TimeoutException('Timeout ao reenviar codigo'),
         );
 
@@ -204,7 +206,7 @@ class AuthService {
           body: jsonEncode({'email': email}),
         )
         .timeout(
-          const Duration(seconds: 12),
+          _apiTimeout,
           onTimeout: () => throw TimeoutException('Timeout ao solicitar reset'),
         );
 
@@ -234,7 +236,7 @@ class AuthService {
           }),
         )
         .timeout(
-          const Duration(seconds: 12),
+          _apiTimeout,
           onTimeout: () => throw TimeoutException('Timeout ao redefinir senha'),
         );
 
@@ -259,7 +261,7 @@ class AuthService {
           body: jsonEncode({'email': email, 'code': code}),
         )
         .timeout(
-          const Duration(seconds: 12),
+          _apiTimeout,
           onTimeout: () => throw TimeoutException('Timeout ao validar codigo'),
         );
 
@@ -361,7 +363,7 @@ class AuthService {
     final response = await http
         .get(uri, headers: headers)
         .timeout(
-          const Duration(seconds: 12),
+          _apiTimeout,
           onTimeout: () => throw TimeoutException('Timeout ao buscar perfil'),
         );
 
@@ -383,7 +385,7 @@ class AuthService {
     final response = await http
         .patch(uri, headers: headers, body: jsonEncode(data))
         .timeout(
-          const Duration(seconds: 12),
+          _apiTimeout,
           onTimeout: () =>
               throw TimeoutException('Timeout ao atualizar perfil'),
         );
