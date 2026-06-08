@@ -4,7 +4,7 @@
   "description": "Jacaloria Backend API",
   "main": "dist/main.js",
   "scripts": {
-    "build": "nest build",
+    "build": "node ./node_modules/@nestjs/cli/bin/nest.js build",
     "start": "nest start",
     "start:dev": "pwsh -ExecutionPolicy Bypass -File ../scripts/start_backend_clean.ps1",
     "start:debug": "pwsh -ExecutionPolicy Bypass -File ../scripts/start_backend_clean.ps1 -DebugMode",
