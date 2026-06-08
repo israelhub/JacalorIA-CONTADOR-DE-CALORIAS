@@ -79,6 +79,7 @@ app.*.map.json
 # Node build output
 node_modules/
 dist/
+*.tsbuildinfo
 *.js.map
 .tools/ngrok/ngrok.exe
 scripts/flutter_mobile_with_ngrok.ps1
