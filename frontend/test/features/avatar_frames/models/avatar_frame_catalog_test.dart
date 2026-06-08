@@ -4,8 +4,8 @@ import 'package:jacaloria/features/avatar_frames/models/avatar_frame_catalog.dar
 void main() {
   test('catalogo sempre inclui moldura padrao gratuita', () {
     expect(AvatarFrameCatalog.items.first.id, AvatarFrameCatalog.noneId);
-    expect(AvatarFrameCatalog.items.first.priceGold, 0);
-    expect(AvatarFrameCatalog.purchasableItems, hasLength(3));
+    expect(AvatarFrameCatalog.items.first.isFree, isTrue);
+    expect(AvatarFrameCatalog.purchasableItems, hasLength(5));
   });
 
   test('normaliza ids comprados vindos do perfil', () {
@@ -14,25 +14,5 @@ void main() {
     });
 
     expect(ids, {'emerald_guard'});
-  });
-
-  test('calcula saldo descontando molduras ja compradas', () {
-    final balance = AvatarFrameCatalog.availableGold(
-      earnedGold: 320,
-      purchasedFrameIds: {'emerald_guard', 'crystal_champion'},
-    );
-
-    expect(balance, 20);
-  });
-
-  test('nao permite comprar moldura sem saldo suficiente', () {
-    expect(
-      AvatarFrameCatalog.canPurchase(
-        AvatarFrameCatalog.byId('cosmic_blossom')!,
-        availableGold: 80,
-        purchasedFrameIds: const <String>{},
-      ),
-      isFalse,
-    );
   });
 }

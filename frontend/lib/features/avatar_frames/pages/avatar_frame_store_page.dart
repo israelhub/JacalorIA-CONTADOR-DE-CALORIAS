@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/avatar_profile_preview.dart';
 import '../../../shared/widgets/framed_avatar.dart';
 import '../../auth/service/auth_service.dart';
 import '../../missions/services/missions_service.dart';
+import '../models/avatar_background_catalog.dart';
 import '../models/avatar_frame_catalog.dart';
 
 class AvatarFrameStorePage extends StatefulWidget {
@@ -65,8 +67,8 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
       _profileSnapshot,
     );
     _purchasedBackgroundIds =
-        AvatarFrameCatalog.purchasedBackgroundIdsFromProfile(_profileSnapshot);
-    _equippedBackgroundId = AvatarFrameCatalog.equippedBackgroundIdFromProfile(
+        AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(_profileSnapshot);
+    _equippedBackgroundId = AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
       _profileSnapshot,
     );
     _previewFrameId = _equippedFrameId;
@@ -105,11 +107,11 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
           _profileSnapshot,
         );
         _purchasedBackgroundIds =
-            AvatarFrameCatalog.purchasedBackgroundIdsFromProfile(
+            AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(
               _profileSnapshot,
             );
         _equippedBackgroundId =
-            AvatarFrameCatalog.equippedBackgroundIdFromProfile(
+            AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
               _profileSnapshot,
             );
         _blockerInventory = AvatarFrameCatalog.blockerInventoryFromProfile(
@@ -404,11 +406,11 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         _profileSnapshot,
       );
       _purchasedBackgroundIds =
-          AvatarFrameCatalog.purchasedBackgroundIdsFromProfile(
+          AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(
             _profileSnapshot,
           );
       _equippedBackgroundId =
-          AvatarFrameCatalog.equippedBackgroundIdFromProfile(_profileSnapshot);
+          AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(_profileSnapshot);
       _previewFrameId = _equippedFrameId;
       _previewBackgroundId = _equippedBackgroundId;
       _blockerInventory = AvatarFrameCatalog.blockerInventoryFromProfile(
@@ -476,27 +478,6 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         return;
       case StoreItemType.blocker:
         return;
-    }
-  }
-
-  String? _backgroundAssetFromId(String id) {
-    switch (id) {
-      case 'sunset_orbit':
-        return 'assets/images/avatar_backgrounds/sunset_orbit.png';
-      case 'jungle_neon':
-        return 'assets/images/avatar_backgrounds/jungle_neon.png';
-      case 'aurora_grid':
-        return 'assets/images/avatar_backgrounds/aurora_grid.png';
-      case 'mango_sky':
-        return 'assets/images/avatar_backgrounds/mango_sky.png';
-      case 'mint_cloud':
-        return 'assets/images/avatar_backgrounds/mint_cloud.png';
-      case 'sky':
-        return 'assets/images/avatar_backgrounds/sky.png';
-      case 'pantano':
-        return 'assets/images/avatar_backgrounds/pantano.png';
-      default:
-        return null;
     }
   }
 
@@ -570,13 +551,11 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _StoreProfilePreview(
+                AvatarProfilePreview(
                   avatarUrl: avatarUrl,
                   frameId: _previewFrameId,
-                  backgroundAssetPath: _backgroundAssetFromId(
-                    _previewBackgroundId,
-                  ),
-                  name: name,
+                  backgroundId: _previewBackgroundId,
+                  name: name ?? 'Perfil',
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 _StoreCategorySwitcher(
@@ -904,46 +883,6 @@ class _GoldPill extends StatelessWidget {
   }
 }
 
-class _StoreProfilePreview extends StatelessWidget {
-  const _StoreProfilePreview({
-    required this.avatarUrl,
-    required this.frameId,
-    required this.backgroundAssetPath,
-    required this.name,
-  });
-
-  final String? avatarUrl;
-  final String frameId;
-  final String? backgroundAssetPath;
-  final String? name;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 173,
-      decoration: BoxDecoration(
-        color: AppColors.homeProgressTrack,
-        image: backgroundAssetPath == null
-            ? null
-            : DecorationImage(
-                image: AssetImage(backgroundAssetPath!),
-                fit: BoxFit.cover,
-              ),
-      ),
-      child: Center(
-        child: FramedAvatar(
-          size: AppSpacing.huge * 3.4,
-          avatarUrl: avatarUrl,
-          frameId: frameId,
-          fallbackText: name,
-          backgroundColor: AppColors.surface,
-        ),
-      ),
-    );
-  }
-}
-
 class _StoreTile extends StatelessWidget {
   const _StoreTile({
     required this.item,
@@ -1154,7 +1093,7 @@ class _StoreItemPreview extends StatelessWidget {
           fallbackText: name,
         );
       case StoreItemType.background:
-        final assetPath = _backgroundPreviewAsset(item.id);
+        final assetPath = AvatarBackgroundCatalog.assetPathForId(item.id);
         if (assetPath != null) {
           return ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -1199,27 +1138,6 @@ class _StoreItemPreview extends StatelessWidget {
             color: AppColors.brand900Variant,
           ),
         );
-    }
-  }
-
-  String? _backgroundPreviewAsset(String id) {
-    switch (id) {
-      case 'sunset_orbit':
-        return 'assets/images/avatar_backgrounds/sunset_orbit.png';
-      case 'jungle_neon':
-        return 'assets/images/avatar_backgrounds/jungle_neon.png';
-      case 'aurora_grid':
-        return 'assets/images/avatar_backgrounds/aurora_grid.png';
-      case 'mango_sky':
-        return 'assets/images/avatar_backgrounds/mango_sky.png';
-      case 'mint_cloud':
-        return 'assets/images/avatar_backgrounds/mint_cloud.png';
-      case 'sky':
-        return 'assets/images/avatar_backgrounds/sky.png';
-      case 'pantano':
-        return 'assets/images/avatar_backgrounds/pantano.png';
-      default:
-        return null;
     }
   }
 }
