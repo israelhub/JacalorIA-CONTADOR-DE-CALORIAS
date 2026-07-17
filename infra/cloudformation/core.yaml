@@ -1,0 +1,238 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Jacaloria - infra core: ECR (imagem do backend), Elastic Beanstalk single-instance
+  (API NestJS via Docker) e role OIDC para deploy pelo GitHub Actions.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: jacaloria
+  GitHubOrg:
+    Type: String
+    Default: israelhub
+  GitHubRepo:
+    Type: String
+    Default: JacalorIA-CONTADOR-DE-CALORIAS
+  DeployBranch:
+    Type: String
+    Default: main
+  SolutionStackName:
+    Type: String
+    Description: >
+      Nome da solution stack Docker do Elastic Beanstalk.
+      Obtenha com: aws elasticbeanstalk list-available-solution-stacks
+  InstanceType:
+    Type: String
+    Default: t3.micro
+  CreateOidcProvider:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Criar o OIDC provider do GitHub. Use 'false' se ja existir na conta.
+  ExistingOidcProviderArn:
+    Type: String
+    Default: ''
+    Description: ARN do OIDC provider existente (obrigatorio se CreateOidcProvider=false).
+
+Conditions:
+  ShouldCreateOidc: !Equals [!Ref CreateOidcProvider, 'true']
+
+Resources:
+  # ---------------------------------------------------------------------------
+  # ECR - repositorio da imagem do backend
+  # ---------------------------------------------------------------------------
+  BackendRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub '${ProjectName}-backend'
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Manter apenas as ultimas 10 imagens",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+
+  # ---------------------------------------------------------------------------
+  # IAM do Elastic Beanstalk
+  # ---------------------------------------------------------------------------
+  EbServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-eb-service-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: elasticbeanstalk.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSElasticBeanstalkManagedUpdatesCustomerRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkEnhancedHealth
+
+  EbInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-eb-instance-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+
+  EbInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub '${ProjectName}-eb-instance-profile'
+      Roles:
+        - !Ref EbInstanceRole
+
+  # ---------------------------------------------------------------------------
+  # Elastic Beanstalk - aplicacao + ambiente single-instance (Docker)
+  # ---------------------------------------------------------------------------
+  BackendApplication:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      ApplicationName: !Sub '${ProjectName}-backend'
+
+  BackendEnvironment:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName: !Ref BackendApplication
+      EnvironmentName: !Sub '${ProjectName}-backend-env'
+      SolutionStackName: !Ref SolutionStackName
+      Tier:
+        Name: WebServer
+        Type: Standard
+      OptionSettings:
+        - Namespace: aws:elasticbeanstalk:environment
+          OptionName: EnvironmentType
+          Value: SingleInstance
+        - Namespace: aws:elasticbeanstalk:environment
+          OptionName: ServiceRole
+          Value: !Ref EbServiceRole
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: IamInstanceProfile
+          Value: !Ref EbInstanceProfile
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: InstanceType
+          Value: !Ref InstanceType
+        - Namespace: aws:elasticbeanstalk:healthreporting:system
+          OptionName: SystemType
+          Value: enhanced
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: NODE_ENV
+          Value: production
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: PORT
+          Value: '3000'
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: BODY_LIMIT
+          Value: 10mb
+
+  # ---------------------------------------------------------------------------
+  # OIDC do GitHub Actions + role de deploy (sem chaves de acesso fixas)
+  # ---------------------------------------------------------------------------
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: ShouldCreateOidc
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+
+  GitHubDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-github-deploy'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !If
+                - ShouldCreateOidc
+                - !Ref GitHubOidcProvider
+                - !Ref ExistingOidcProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/${DeployBranch}'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess-AWSElasticBeanstalk
+      Policies:
+        - PolicyName: jacaloria-deploy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: EcrAuth
+                Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: '*'
+              - Sid: EcrPushPull
+                Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:PutImage
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                Resource: !GetAtt BackendRepository.Arn
+              - Sid: FrontendBucket
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::${ProjectName}-web-${AWS::AccountId}'
+                  - !Sub 'arn:aws:s3:::${ProjectName}-web-${AWS::AccountId}/*'
+              - Sid: CloudFront
+                Effect: Allow
+                Action:
+                  - cloudfront:CreateInvalidation
+                  - cloudfront:GetInvalidation
+                  - cloudfront:GetDistribution
+                  - cloudfront:ListDistributions
+                Resource: '*'
+
+Outputs:
+  BackendRepositoryUri:
+    Description: URI do repositorio ECR do backend
+    Value: !GetAtt BackendRepository.RepositoryUri
+  BackendApplicationName:
+    Value: !Ref BackendApplication
+  BackendEnvironmentName:
+    Value: !Ref BackendEnvironment
+  BackendEnvironmentEndpoint:
+    Description: Endpoint interno do ambiente EB
+    Value: !GetAtt BackendEnvironment.EndpointURL
+  GitHubDeployRoleArn:
+    Description: ARN da role assumida pelo GitHub Actions via OIDC
+    Value: !GetAtt GitHubDeployRole.Arn

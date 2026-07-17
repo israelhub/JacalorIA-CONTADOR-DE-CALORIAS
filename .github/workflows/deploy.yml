@@ -1,0 +1,128 @@
+name: Deploy AWS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Necessario para autenticacao OIDC com a AWS (sem chaves fixas)
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Backend NestJS -> imagem Docker no ECR -> Elastic Beanstalk
+  # ---------------------------------------------------------------------------
+  backend:
+    name: Deploy backend (Elastic Beanstalk)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login no Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build e push da imagem
+        id: image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          TAG: ${{ github.sha }}
+        run: |
+          IMAGE="$REGISTRY/$REPOSITORY:$TAG"
+          docker build -t "$IMAGE" -t "$REGISTRY/$REPOSITORY:latest" ./backend
+          docker push "$IMAGE"
+          docker push "$REGISTRY/$REPOSITORY:latest"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Gerar bundle de deploy (Dockerrun.aws.json)
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          cat > Dockerrun.aws.json <<EOF
+          {
+            "AWSEBDockerrunVersion": "1",
+            "Image": { "Name": "$IMAGE", "Update": "true" },
+            "Ports": [ { "ContainerPort": 3000 } ]
+          }
+          EOF
+          zip -r deploy-bundle.zip Dockerrun.aws.json
+
+      - name: Deploy no Elastic Beanstalk
+        env:
+          APP_NAME: ${{ vars.EB_APP_NAME }}
+          ENV_NAME: ${{ vars.EB_ENV_NAME }}
+          VERSION: ${{ github.sha }}
+        run: |
+          EB_BUCKET=$(aws elasticbeanstalk create-storage-location --query S3Bucket --output text)
+          S3_KEY="$APP_NAME/deploy-$VERSION.zip"
+          aws s3 cp deploy-bundle.zip "s3://$EB_BUCKET/$S3_KEY"
+          aws elasticbeanstalk create-application-version \
+            --application-name "$APP_NAME" \
+            --version-label "$VERSION" \
+            --source-bundle "S3Bucket=$EB_BUCKET,S3Key=$S3_KEY" \
+            --auto-create-application >/dev/null
+          aws elasticbeanstalk update-environment \
+            --application-name "$APP_NAME" \
+            --environment-name "$ENV_NAME" \
+            --version-label "$VERSION" >/dev/null
+          echo "Aguardando o ambiente ficar saudavel..."
+          aws elasticbeanstalk wait environment-updated \
+            --application-name "$APP_NAME" \
+            --environment-names "$ENV_NAME"
+
+  # ---------------------------------------------------------------------------
+  # Frontend Flutter Web -> S3 -> invalidacao do CloudFront
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Deploy frontend (S3 + CloudFront)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: flutter pub get
+
+      - name: Build web
+        working-directory: frontend
+        run: |
+          flutter build web --release \
+            --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }} \
+            --dart-define=SHARE_BASE_URL=${{ vars.SHARE_BASE_URL }} \
+            --dart-define=GOOGLE_WEB_CLIENT_ID=${{ vars.GOOGLE_WEB_CLIENT_ID }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Sync para o S3
+        run: aws s3 sync frontend/build/web "s3://${{ vars.S3_BUCKET }}" --delete
+
+      - name: Invalidar cache do CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" >/dev/null
