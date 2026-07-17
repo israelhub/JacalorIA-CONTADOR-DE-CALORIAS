@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../helpers/food_review_helpers.dart';
+import '../helpers/image_optimizer.dart';
 import '../models/food_analysis_result.dart';
 import '../models/food_meal_record.dart';
 import '../services/food_analysis_service.dart';
@@ -26,7 +27,12 @@ class ImagePickerAdapter implements FoodImagePicker {
 
   @override
   Future<XFile?> pickImage(ImageSource source) {
-    return _picker.pickImage(source: source, imageQuality: 85);
+    return _picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    );
   }
 }
 
@@ -285,7 +291,9 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
     try {
       final picture = await _cameraController!.takePicture();
-      final bytes = await picture.readAsBytes();
+      final rawBytes = await picture.readAsBytes();
+      final optimized = await optimizeForAnalysis(rawBytes);
+      final bytes = optimized.bytes;
 
       final analysis = await _pushAnalysisLoadingPage(
         imageBytes: bytes,
@@ -293,7 +301,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
         message: 'A inteligência artificial está analisando sua refeição...',
         operation: () => widget._analysisService.analyzeImage(
           imageBytes: bytes,
-          mimeType: _guessMimeType(picture.name),
+          mimeType: optimized.mimeType,
         ),
       );
 
@@ -356,7 +364,9 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
         return;
       }
 
-      final bytes = await image.readAsBytes();
+      final rawBytes = await image.readAsBytes();
+      final optimized = await optimizeForAnalysis(rawBytes);
+      final bytes = optimized.bytes;
 
       final analysis = await _pushAnalysisLoadingPage(
         imageBytes: bytes,
@@ -364,7 +374,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
         message: 'A inteligência artificial está analisando sua refeição...',
         operation: () => widget._analysisService.analyzeImage(
           imageBytes: bytes,
-          mimeType: _guessMimeType(image.name),
+          mimeType: optimized.mimeType,
         ),
       );
 
@@ -406,19 +416,6 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
         _error = error.toString().replaceFirst('Exception: ', '');
       });
     }
-  }
-
-  String _guessMimeType(String fileName) {
-    final lowerName = fileName.toLowerCase();
-    if (lowerName.endsWith('.png')) {
-      return 'image/png';
-    }
-
-    if (lowerName.endsWith('.webp')) {
-      return 'image/webp';
-    }
-
-    return 'image/jpeg';
   }
 
   Future<FoodAnalysisResult?> _pushAnalysisLoadingPage({
