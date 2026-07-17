@@ -41,7 +41,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-/.github/
+/.github/*
+!/.github/workflows/
+!/.github/workflows/**
 
 # Flutter app dentro de /frontend
 /frontend/.dart_tool/
