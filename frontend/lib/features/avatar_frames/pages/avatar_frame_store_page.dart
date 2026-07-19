@@ -120,7 +120,7 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         _goldBalance = _toInt(summary['gold'], _goldBalance);
         _isLoadingCatalog = false;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) {
         return;
       }
@@ -129,6 +129,10 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         _blockerRecovery = const BlockerRecoveryInfo();
         _isLoadingCatalog = false;
       });
+      _showToast(
+        error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
     }
   }
 

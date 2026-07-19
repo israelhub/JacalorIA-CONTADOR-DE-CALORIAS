@@ -13,9 +13,11 @@ class MissionsService {
   static String get _baseUrl => ApiConfig.baseUrl;
 
   Future<Map<String, dynamic>> fetchStoreCatalog() async {
+    // Real route first: on jacaloria.online, CloudFront can turn unknown /api
+    // 404s into HTML 200 (SPA fallback), which breaks path fallbacks.
     final body = await _getJsonWithFallback(const <String>[
-      '/missions/store/catalog',
       '/missions/store',
+      '/missions/store/catalog',
       '/missions/catalog',
     ], fallbackError: 'Erro ao carregar catálogo da loja.');
     return body;
@@ -87,9 +89,9 @@ class MissionsService {
 
   Future<List<Map<String, dynamic>>> fetchGoldStatement() async {
     final body = await _getJsonWithFallback(const <String>[
+      '/missions/wallet/gold-statement',
       '/missions/gold-statement',
       '/missions/store/gold-statement',
-      '/missions/wallet/gold-statement',
       '/missions/transactions/gold',
     ], fallbackError: 'Erro ao carregar extrato de ouro.');
 
@@ -120,7 +122,12 @@ class MissionsService {
         uri,
         headers: <String, String>{'Authorization': 'Bearer $token'},
       );
-      final body = _decodeBody(response);
+      final body = _tryDecodeJsonObject(response);
+      if (body == null) {
+        // HTML SPA fallback or non-JSON payload — try the next path.
+        lastError = fallbackError;
+        continue;
+      }
       if (response.statusCode == 200) {
         return body;
       }
@@ -155,7 +162,11 @@ class MissionsService {
         body: jsonEncode(body),
       );
 
-      final decoded = _decodeBody(response);
+      final decoded = _tryDecodeJsonObject(response);
+      if (decoded == null) {
+        lastError = fallbackError;
+        continue;
+      }
       if (response.statusCode == 201 || response.statusCode == 200) {
         return decoded;
       }
@@ -179,15 +190,24 @@ class MissionsService {
     return token;
   }
 
-  Map<String, dynamic> _decodeBody(http.Response response) {
-    if (response.body.trim().isEmpty) {
+  Map<String, dynamic>? _tryDecodeJsonObject(http.Response response) {
+    final raw = response.body.trim();
+    if (raw.isEmpty) {
       return <String, dynamic>{};
     }
-    final decoded = jsonDecode(response.body);
-    if (decoded is Map<String, dynamic>) {
-      return decoded;
+    // CloudFront SPA fallback may return index.html with status 200.
+    if (raw.startsWith('<!') || raw.startsWith('<html')) {
+      return null;
     }
-    return <String, dynamic>{};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   String? _extractError(Map<String, dynamic> body) {

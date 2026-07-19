@@ -59,6 +59,7 @@ type WalletSnapshot = {
 type StoreItem = {
   id: string;
   name: string;
+  description?: string;
   priceGold: number;
   owned: boolean;
   equipped: boolean;
@@ -367,6 +368,7 @@ export class MissionsService {
     const frameItems: StoreItem[] = frameCatalog.map((entry) => ({
       id: entry.itemKey,
       name: entry.name,
+      description: entry.description ?? '',
       priceGold: entry.priceGold,
       owned: purchasedFrames.has(entry.itemKey),
       equipped: equippedFrameId === entry.itemKey,
@@ -375,6 +377,7 @@ export class MissionsService {
     const backgroundItems: StoreItem[] = backgroundCatalog.map((entry) => ({
       id: entry.itemKey,
       name: entry.name,
+      description: entry.description ?? '',
       priceGold: entry.priceGold,
       owned: purchasedBackgrounds.has(entry.itemKey),
       equipped: equippedBackgroundId === entry.itemKey,
@@ -389,6 +392,7 @@ export class MissionsService {
           {
             id: defaultBlocker.itemKey,
             name: defaultBlocker.name,
+            description: defaultBlocker.description ?? '',
             priceGold: blockerPriceGold,
             owned: blockerInventoryCount > 0,
             equipped: equippedBlockerId === defaultBlocker.itemKey,

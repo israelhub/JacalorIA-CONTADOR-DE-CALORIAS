@@ -78,7 +78,14 @@ class _HomePageState extends State<HomePage> {
 
     if (widget.initialSelectedDate != oldWidget.initialSelectedDate &&
         widget.initialSelectedDate != null) {
-      _selectedDate = normalizeHomeDate(widget.initialSelectedDate!);
+      final normalized = normalizeHomeDate(widget.initialSelectedDate!);
+      if (isSameHomeDate(_selectedDate, normalized)) {
+        return;
+      }
+
+      _selectedDate = normalized;
+      // Calendário só atualizava a data; sem este fetch a Home ficava vazia.
+      _loadMealsForDate(normalized);
     }
   }
 
