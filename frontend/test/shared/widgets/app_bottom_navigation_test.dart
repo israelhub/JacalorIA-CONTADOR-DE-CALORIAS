@@ -4,7 +4,20 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_bottom_navigation.dart';
 
-Widget _wrap(Widget child) => MaterialApp(home: child);
+Widget _wrap(
+  Widget child, {
+  EdgeInsets viewPadding = EdgeInsets.zero,
+}) {
+  return MaterialApp(
+    home: MediaQuery(
+      data: MediaQueryData(
+        size: const Size(390, 844),
+        viewPadding: viewPadding,
+      ),
+      child: child,
+    ),
+  );
+}
 
 void main() {
   testWidgets('renderiza itens, superficie e botao central', (tester) async {
@@ -67,16 +80,54 @@ void main() {
       find.byKey(const ValueKey('app-bottom-nav-surface')),
     ).decoration as BoxDecoration;
 
-    expect(surfaceDecoration.border, isA<Border>());
-    expect(
-      (surfaceDecoration.border as Border).top.color,
-      AppColors.borderBrandAlt,
-    );
+    expect(surfaceDecoration.color, AppColors.surface);
     expect(
       tester
           .getSize(find.byKey(const ValueKey('app-bottom-nav-surface')))
           .height,
       56,
+    );
+  });
+
+  testWidgets('reserva padding inferior da safe area', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        viewPadding: const EdgeInsets.only(bottom: 34),
+        AppBottomNavigation(
+          items: const [
+            AppBottomNavigationItem(
+              label: 'Calendário',
+              iconAsset: 'assets/icons/calendar.svg',
+              color: AppColors.divider,
+            ),
+            AppBottomNavigationItem(
+              label: 'Início',
+              iconAsset: 'assets/icons/home.svg',
+              color: AppColors.action500,
+            ),
+            AppBottomNavigationItem(
+              label: 'Missões',
+              iconAsset: 'assets/icons/mission.svg',
+              color: AppColors.divider,
+            ),
+            AppBottomNavigationItem(
+              label: 'Social',
+              iconAsset: 'assets/icons/profile.svg',
+              color: AppColors.divider,
+            ),
+          ],
+          onCenterActionTap: () {},
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('app-bottom-nav-surface')))
+          .height,
+      56 + 34,
     );
   });
 }

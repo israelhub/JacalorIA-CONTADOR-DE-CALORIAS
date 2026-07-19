@@ -8,6 +8,7 @@ import '../../../../shared/widgets/app_confirm_modal.dart';
 import '../../../../shared/widgets/app_date_picker.dart';
 import '../../../../shared/widgets/app_input.dart';
 import '../../../../shared/widgets/app_select_input_field.dart';
+import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/measurement_input_field.dart';
 import '../../auth/service/auth_service.dart';
 import '../helpers/profile_date_helpers.dart';
@@ -281,8 +282,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       );
       if (uploadedUrl == null || uploadedUrl.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Falha ao enviar foto de perfil.')),
+          AppToast.error(
+            context,
+            message: 'Falha ao enviar foto de perfil.',
           );
         }
         return;
@@ -336,9 +338,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao salvar perfil: $e')));
+        AppToast.error(context, message: 'Erro ao salvar perfil: $e');
       }
     } finally {
       if (mounted) {

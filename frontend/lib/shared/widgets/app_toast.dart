@@ -7,13 +7,16 @@ import '../theme/app_theme.dart';
 class AppToast {
   AppToast._();
 
+  static const Color _errorBackground = Color(0xFF6B1F1A);
+
   static OverlayEntry? _activeEntry;
 
   static void show(
     BuildContext context, {
     required String message,
     Duration duration = const Duration(milliseconds: 1800),
-    IconData icon = Icons.check_circle_rounded,
+    bool isError = false,
+    IconData? icon,
   }) {
     _activeEntry?.remove();
     _activeEntry = null;
@@ -23,7 +26,12 @@ class AppToast {
     entry = OverlayEntry(
       builder: (_) => _ToastOverlay(
         message: message,
-        icon: icon,
+        icon: icon ??
+            (isError
+                ? Icons.error_outline_rounded
+                : Icons.check_circle_rounded),
+        backgroundColor:
+            isError ? _errorBackground : AppColors.brand900Variant,
         duration: duration,
         onClose: () {
           entry.remove();
@@ -35,18 +43,36 @@ class AppToast {
     _activeEntry = entry;
     overlay.insert(entry);
   }
+
+  static void success(
+    BuildContext context, {
+    required String message,
+    Duration duration = const Duration(milliseconds: 1800),
+  }) {
+    show(context, message: message, duration: duration);
+  }
+
+  static void error(
+    BuildContext context, {
+    required String message,
+    Duration duration = const Duration(milliseconds: 1800),
+  }) {
+    show(context, message: message, duration: duration, isError: true);
+  }
 }
 
 class _ToastOverlay extends StatefulWidget {
   const _ToastOverlay({
     required this.message,
     required this.icon,
+    required this.backgroundColor,
     required this.duration,
     required this.onClose,
   });
 
   final String message;
   final IconData icon;
+  final Color backgroundColor;
   final Duration duration;
   final VoidCallback onClose;
 
@@ -54,7 +80,8 @@ class _ToastOverlay extends StatefulWidget {
   State<_ToastOverlay> createState() => _ToastOverlayState();
 }
 
-class _ToastOverlayState extends State<_ToastOverlay> with SingleTickerProviderStateMixin {
+class _ToastOverlayState extends State<_ToastOverlay>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<Offset> _slide;
   Timer? _timer;
@@ -105,7 +132,7 @@ class _ToastOverlayState extends State<_ToastOverlay> with SingleTickerProviderS
                 vertical: AppSpacing.md,
               ),
               decoration: BoxDecoration(
-                color: AppColors.brand900Variant,
+                color: widget.backgroundColor,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Row(
@@ -115,7 +142,9 @@ class _ToastOverlayState extends State<_ToastOverlay> with SingleTickerProviderS
                   Expanded(
                     child: Text(
                       widget.message,
-                      style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],

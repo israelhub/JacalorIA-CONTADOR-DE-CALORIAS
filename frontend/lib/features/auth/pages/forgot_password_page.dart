@@ -4,6 +4,7 @@ import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../controllers/auth_controller.dart';
 import '../helpers/auth_helpers.dart';
 import 'reset_password_code_page.dart';
@@ -34,16 +35,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     super.dispose();
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showError(String message) {
+    AppToast.error(context, message: message);
   }
 
   Future<void> _handleSendCode() async {
     final email = _emailController.text.trim();
     if (!AuthHelpers.isValidEmail(email)) {
-      _showMessage('Digite um e-mail valido.');
+      _showError('Digite um e-mail valido.');
       return;
     }
 
@@ -57,7 +56,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       return;
     }
 
-    _showMessage(_authController.error ?? 'Nao foi possivel enviar o codigo.');
+    _showError(_authController.error ?? 'Nao foi possivel enviar o codigo.');
   }
 
   @override

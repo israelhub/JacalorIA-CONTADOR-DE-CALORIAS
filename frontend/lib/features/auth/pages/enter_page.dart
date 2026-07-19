@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_page_route.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../home/pages/home_shell_page.dart';
@@ -41,9 +42,7 @@ class _EnterPageState extends State<EnterPage> {
       final errorMessage =
           _authController.error ??
           'Nao foi possivel entrar com Google. Tente novamente.';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      AppToast.error(context, message: errorMessage);
       return;
     }
 
