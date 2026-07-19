@@ -425,15 +425,13 @@ export class PerformanceService {
   }
 
   private resolveAppTimeZone(): string {
-    try {
-      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone?.trim();
-      if (detected) {
-        return detected;
-      }
-    } catch (_) {
-      // Fallback aplicado abaixo quando a detecção falhar.
+    const fromEnv = process.env.APP_TIME_ZONE?.trim();
+    if (fromEnv) {
+      return fromEnv;
     }
 
+    // Não usar o timezone do host (ex.: UTC em cloud) — isso desloca o dia
+    // do calendário em relação ao fuso local do usuário (Brasil).
     return FALLBACK_TIME_ZONE;
   }
 }
