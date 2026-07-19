@@ -4,6 +4,7 @@ import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/framed_avatar.dart';
 import '../../../../shared/widgets/app_page_route.dart';
+import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/avatar_profile_preview.dart';
 import '../../avatar_frames/models/avatar_frame_catalog.dart';
 import '../../avatar_frames/pages/avatar_frame_store_page.dart';
@@ -487,15 +488,14 @@ class _ProfilePageState extends State<ProfilePage> {
       await _refreshProfileSnapshot();
       if (mounted) {
         _hasChanges = true;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Personalização salva com sucesso.')),
+        AppToast.success(
+          context,
+          message: 'Personalização salva com sucesso.',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao salvar personalização: $e')),
-        );
+        AppToast.error(context, message: 'Erro ao salvar personalização: $e');
       }
     } finally {
       if (mounted) {
@@ -524,9 +524,7 @@ class _ProfilePageState extends State<ProfilePage> {
       context.pushAndRemoveUntilSlidePage(const EnterPage(), (route) => false);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao sair: $e')));
+        AppToast.error(context, message: 'Erro ao sair: $e');
       }
     } finally {
       if (mounted) {
@@ -613,7 +611,7 @@ class _ProfilePageState extends State<ProfilePage> {
       case 'night':
         return 'Noite';
       default:
-        return 'Não informado';
+        return 'Sem registros';
     }
   }
 

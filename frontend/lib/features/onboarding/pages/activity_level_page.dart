@@ -7,6 +7,7 @@ import 'package:jacaloria/features/onboarding/widgets/onboarding_select_option_b
 import 'package:jacaloria/features/onboarding/widgets/onboarding_step_header.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
+import 'package:jacaloria/shared/widgets/app_toast.dart';
 
 import 'package:jacaloria/features/auth/service/auth_service.dart';
 
@@ -62,9 +63,7 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao salvar dados: $e')));
+        AppToast.error(context, message: 'Erro ao salvar dados: $e');
       }
     }
   }

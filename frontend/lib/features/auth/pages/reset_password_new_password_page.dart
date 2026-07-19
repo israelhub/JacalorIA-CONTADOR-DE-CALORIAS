@@ -4,6 +4,7 @@ import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../controllers/auth_controller.dart';
 import '../helpers/auth_helpers.dart';
 import 'login_page.dart';
@@ -44,10 +45,8 @@ class _ResetPasswordNewPasswordPageState
     super.dispose();
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, {bool isError = false}) {
+    AppToast.show(context, message: message, isError: isError);
   }
 
   Future<void> _handleResetPassword() async {
@@ -55,11 +54,11 @@ class _ResetPasswordNewPasswordPageState
     final confirmPassword = _confirmPasswordController.text;
 
     if (!AuthHelpers.isValidPassword(newPassword)) {
-      _showMessage(AuthHelpers.passwordRequirementsMessage);
+      _showMessage(AuthHelpers.passwordRequirementsMessage, isError: true);
       return;
     }
     if (newPassword != confirmPassword) {
-      _showMessage('As senhas nao conferem.');
+      _showMessage('As senhas nao conferem.', isError: true);
       return;
     }
 
@@ -81,6 +80,7 @@ class _ResetPasswordNewPasswordPageState
 
     _showMessage(
       _authController.error ?? 'Nao foi possivel redefinir a senha.',
+      isError: true,
     );
   }
 

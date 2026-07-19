@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../controllers/auth_controller.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../onboarding/pages/welcome_page.dart';
 
 class EmailConfirmationPage extends StatefulWidget {
@@ -149,7 +150,10 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
       return;
     }
 
-    _showMessage(_authController.error ?? 'Código inválido ou expirado.');
+    _showMessage(
+      _authController.error ?? 'Código inválido ou expirado.',
+      isError: true,
+    );
   }
 
   Future<void> _handleResendCode() async {
@@ -162,17 +166,20 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
     }
 
     if (isResent) {
-      _showMessage('Código reenviado com sucesso. Verificar na caixa de spam.');
+      _showMessage(
+        'Código reenviado com sucesso. Verificar na caixa de spam.',
+      );
       return;
     }
 
-    _showMessage(_authController.error ?? 'Erro ao reenviar código.');
+    _showMessage(
+      _authController.error ?? 'Erro ao reenviar código.',
+      isError: true,
+    );
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, {bool isError = false}) {
+    AppToast.show(context, message: message, isError: isError);
   }
 
   @override

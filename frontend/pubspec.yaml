@@ -46,6 +46,7 @@ dependencies:
   share_plus: ^10.0.2
   image: ^4.2.0
   path_provider: ^2.1.5
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:

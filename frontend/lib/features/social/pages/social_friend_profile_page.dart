@@ -115,7 +115,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
       'morning' => 'Manhã',
       'afternoon' => 'Tarde',
       'night' => 'Noite',
-      _ => 'Não informado',
+      _ => 'Sem registros',
     };
 
     final objective = _formatObjective(profile.objective);
@@ -342,7 +342,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
       AppToast.show(
         context,
         message: error.toString().replaceFirst('Exception: ', ''),
-        icon: Icons.error_outline_rounded,
+        isError: true,
       );
       setState(() => _isRemovingFriend = false);
     }

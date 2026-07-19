@@ -46,7 +46,7 @@ class AppBottomNavigation extends StatelessWidget {
               key: surfaceKey,
               height: surfaceHeight + bottomPadding,
               padding: EdgeInsets.only(bottom: bottomPadding),
-              decoration: const BoxDecoration(color: Colors.transparent),
+              decoration: const BoxDecoration(color: AppColors.surface),
               child: Stack(
                 children: [
                   // Linha superior dividida para "abraçar" o botão central.

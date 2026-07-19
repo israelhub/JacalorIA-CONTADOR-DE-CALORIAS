@@ -4,6 +4,7 @@ import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../controllers/auth_controller.dart';
 import 'reset_password_new_password_page.dart';
 
@@ -33,16 +34,14 @@ class _ResetPasswordCodePageState extends State<ResetPasswordCodePage> {
     super.dispose();
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, {bool isError = false}) {
+    AppToast.show(context, message: message, isError: isError);
   }
 
   Future<void> _handleContinue() async {
     final code = _codeController.text.trim();
     if (code.length != 6) {
-      _showMessage('Digite o codigo de 6 digitos.');
+      _showMessage('Digite o codigo de 6 digitos.', isError: true);
       return;
     }
 
@@ -55,7 +54,10 @@ class _ResetPasswordCodePageState extends State<ResetPasswordCodePage> {
     }
 
     if (!isValid) {
-      _showMessage(_authController.error ?? 'Codigo invalido ou expirado.');
+      _showMessage(
+        _authController.error ?? 'Codigo invalido ou expirado.',
+        isError: true,
+      );
       return;
     }
 
@@ -77,6 +79,7 @@ class _ResetPasswordCodePageState extends State<ResetPasswordCodePage> {
 
     _showMessage(
       _authController.error ?? 'Nao foi possivel reenviar o codigo.',
+      isError: true,
     );
   }
 

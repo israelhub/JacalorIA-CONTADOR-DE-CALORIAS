@@ -9,6 +9,7 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_guide_card.dart';
 import '../../../shared/widgets/app_page_header.dart';
 import '../../../shared/widgets/app_page_route.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../controllers/social_page_controller.dart';
 import '../models/social_group_models.dart';
 import 'social_friend_profile_page.dart';
@@ -91,9 +92,7 @@ class _SocialPageState extends State<SocialPage> {
         try {
           await _controller.addFriendByLink(invite.code);
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pedido de amizade enviado')),
-          );
+          AppToast.success(context, message: 'Pedido de amizade enviado');
         } catch (error) {
           _showError(error);
         }
@@ -419,9 +418,7 @@ class _SocialPageState extends State<SocialPage> {
 
     await Clipboard.setData(ClipboardData(text: _controller.currentUserId));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('ID do usuário copiado')),
-    );
+    AppToast.success(context, message: 'ID do usuário copiado');
   }
 
   Future<String?> _scanQrCode() {
@@ -443,8 +440,9 @@ class _SocialPageState extends State<SocialPage> {
 
   void _showError(Object error) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+    AppToast.error(
+      context,
+      message: error.toString().replaceFirst('Exception: ', ''),
     );
   }
 }

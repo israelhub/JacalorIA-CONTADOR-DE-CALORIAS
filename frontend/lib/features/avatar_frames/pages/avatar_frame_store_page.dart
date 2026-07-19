@@ -502,7 +502,7 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     AppToast.show(
       context,
       message: message,
-      icon: isError ? Icons.error_outline_rounded : Icons.check_circle_rounded,
+      isError: isError,
     );
   }
 

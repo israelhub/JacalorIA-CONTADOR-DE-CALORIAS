@@ -450,7 +450,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), icon: Icons.error_outline_rounded);
+      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), isError: true);
       setState(() => _isLeavingGroup = false);
     }
   }
@@ -476,7 +476,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), icon: Icons.error_outline_rounded);
+      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), isError: true);
       setState(() => _isDeletingGroup = false);
     }
   }
@@ -518,7 +518,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       AppToast.show(
         context,
         message: error.toString().replaceFirst('Exception: ', ''),
-        icon: Icons.error_outline_rounded,
+        isError: true,
       );
     } finally {
       if (mounted) setState(() => _isInvitingFriends = false);
@@ -538,7 +538,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     final code = _groupInviteCode();
     if (code.isEmpty) {
       if (!mounted) return;
-      AppToast.show(context, message: 'ID do grupo indisponível', icon: Icons.error_outline_rounded);
+      AppToast.show(context, message: 'ID do grupo indisponível', isError: true);
       return;
     }
     await Share.share(_groupInviteLink());
@@ -548,7 +548,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     final code = _groupInviteCode();
     if (code.isEmpty) {
       if (!mounted) return;
-      AppToast.show(context, message: 'ID do grupo indisponível', icon: Icons.error_outline_rounded);
+      AppToast.show(context, message: 'ID do grupo indisponível', isError: true);
       return;
     }
     await Clipboard.setData(ClipboardData(text: code));
@@ -692,7 +692,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       AppToast.show(context, message: 'Imagem salva com sucesso');
     } catch (error) {
       if (!mounted) return;
-      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), icon: Icons.error_outline_rounded);
+      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), isError: true);
     } finally {
       if (mounted) setState(() => _exportingAction = null);
     }
@@ -709,7 +709,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       );
     } catch (error) {
       if (!mounted) return;
-      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), icon: Icons.error_outline_rounded);
+      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), isError: true);
     } finally {
       if (mounted) setState(() => _exportingAction = null);
     }

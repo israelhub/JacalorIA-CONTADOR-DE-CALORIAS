@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../helpers/social_group_helpers.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
@@ -139,10 +140,9 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
         _isSaving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.toString().replaceFirst('Exception: ', '')),
-        ),
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
       );
     }
   }
