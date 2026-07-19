@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../shared/services/supabase_storage_service.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_confirm_modal.dart';
 import '../../../../shared/widgets/app_date_picker.dart';
 import '../../../../shared/widgets/app_input.dart';
 import '../../../../shared/widgets/app_select_input_field.dart';
@@ -36,6 +37,18 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String _selectedWeightUnit = 'kg';
   String _selectedHeightUnit = 'cm';
   bool _isSaving = false;
+  bool _isHandlingExit = false;
+
+  String _initialName = '';
+  String _initialBirthDate = '';
+  String _initialWeight = '';
+  String _initialHeight = '';
+  String? _initialSex;
+  String? _initialObjective;
+  String? _initialActivityLevel;
+  String? _initialAvatarUrl;
+  String _initialWeightUnit = 'kg';
+  String _initialHeightUnit = 'cm';
 
   static const List<String> _sexOptions = [
     'Masculino',
@@ -130,6 +143,69 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
     _objectiveController.text = _objectiveLabels[_selectedObjective] ?? '';
     _activityController.text = _activityLabels[_selectedActivityLevel] ?? '';
+    _captureInitialSnapshot();
+  }
+
+  void _captureInitialSnapshot() {
+    _initialName = _nameController.text;
+    _initialBirthDate = _birthDateController.text;
+    _initialWeight = _weightController.text;
+    _initialHeight = _heightController.text;
+    _initialSex = _selectedSex;
+    _initialObjective = _selectedObjective;
+    _initialActivityLevel = _selectedActivityLevel;
+    _initialAvatarUrl = _avatarUrl;
+    _initialWeightUnit = _selectedWeightUnit;
+    _initialHeightUnit = _selectedHeightUnit;
+  }
+
+  bool get _hasUnsavedChanges {
+    return _nameController.text != _initialName ||
+        _birthDateController.text != _initialBirthDate ||
+        _weightController.text != _initialWeight ||
+        _heightController.text != _initialHeight ||
+        _selectedSex != _initialSex ||
+        _selectedObjective != _initialObjective ||
+        _selectedActivityLevel != _initialActivityLevel ||
+        _avatarUrl != _initialAvatarUrl ||
+        _selectedWeightUnit != _initialWeightUnit ||
+        _selectedHeightUnit != _initialHeightUnit;
+  }
+
+  Future<void> _handleExitAttempt() async {
+    if (_isHandlingExit || _isSaving) {
+      return;
+    }
+
+    if (!_hasUnsavedChanges) {
+      Navigator.of(context).pop(false);
+      return;
+    }
+
+    _isHandlingExit = true;
+    try {
+      final shouldSave = await AppConfirmModal.show(
+        context,
+        title: 'Deseja salvar as alterações?',
+        message:
+            'Você editou dados do perfil. Escolha se deseja salvar antes de sair.',
+        confirmLabel: 'Salvar',
+        cancelLabel: 'Não salvar',
+        barrierDismissible: false,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      if (shouldSave) {
+        await _saveProfile();
+      } else {
+        Navigator.of(context).pop(false);
+      }
+    } finally {
+      _isHandlingExit = false;
+    }
   }
 
   String _formatNumber(num value) {
@@ -280,190 +356,201 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         ? _nameController.text.trim()[0].toUpperCase()
         : 'P';
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          return;
+        }
+        _handleExitAttempt();
+      },
+      child: Scaffold(
         backgroundColor: AppColors.surface,
-        surfaceTintColor: AppColors.surface,
-        title: Text(
-          'Editar dados pessoais',
-          style: AppTextStyles.headingSmall.copyWith(
-            color: AppColors.brand900Variant,
+        appBar: AppBar(
+          backgroundColor: AppColors.surface,
+          surfaceTintColor: AppColors.surface,
+          title: Text(
+            'Editar dados pessoais',
+            style: AppTextStyles.headingSmall.copyWith(
+              color: AppColors.brand900Variant,
+            ),
           ),
         ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.xxxl,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: GestureDetector(
-                  onTap: _isSaving ? null : _pickAvatar,
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 44,
-                        backgroundColor: AppColors.surfaceAlt,
-                        backgroundImage: avatarUrl?.startsWith('http') == true
-                            ? NetworkImage(avatarUrl!)
-                            : null,
-                        child: avatarUrl?.startsWith('http') == true
-                            ? null
-                            : Text(
-                                initial,
-                                style: AppTextStyles.headingSmall.copyWith(
-                                  color: AppColors.brand900Variant,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.xxxl,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: GestureDetector(
+                    onTap: _isSaving ? null : _pickAvatar,
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 44,
+                          backgroundColor: AppColors.surfaceAlt,
+                          backgroundImage: avatarUrl?.startsWith('http') == true
+                              ? NetworkImage(avatarUrl!)
+                              : null,
+                          child: avatarUrl?.startsWith('http') == true
+                              ? null
+                              : Text(
+                                  initial,
+                                  style: AppTextStyles.headingSmall.copyWith(
+                                    color: AppColors.brand900Variant,
+                                  ),
                                 ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.action500,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
                               ),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.action500,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            border: Border.all(
+                              border: Border.all(
+                                color: AppColors.surface,
+                                width: 2,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(AppSpacing.xs),
+                            child: const Icon(
+                              Icons.edit_rounded,
+                              size: 14,
                               color: AppColors.surface,
-                              width: 2,
                             ),
                           ),
-                          padding: const EdgeInsets.all(AppSpacing.xs),
-                          child: const Icon(
-                            Icons.edit_rounded,
-                            size: 14,
-                            color: AppColors.surface,
-                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              AppInputField(
-                label: 'Nome',
-                hint: 'Digite seu nome',
-                controller: _nameController,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppInputField(
-                label: 'Data de nascimento',
-                hint: 'Selecione sua data de nascimento',
-                controller: _birthDateController,
-                readOnly: true,
-                onTap: _pickBirthDate,
-                suffixIcon: IconButton(
-                  onPressed: _pickBirthDate,
-                  color: AppColors.textSecondary,
-                  icon: const Icon(Icons.calendar_today_outlined),
+                const SizedBox(height: AppSpacing.xl),
+                AppInputField(
+                  label: 'Nome',
+                  hint: 'Digite seu nome',
+                  controller: _nameController,
                 ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              MeasurementInputField(
-                label: 'Peso',
-                hint: 'Digite seu peso',
-                controller: _weightController,
-                unitSelectorKey: const ValueKey(
-                  'profile-edit-weight-unit-selector',
+                const SizedBox(height: AppSpacing.lg),
+                AppInputField(
+                  label: 'Data de nascimento',
+                  hint: 'Selecione sua data de nascimento',
+                  controller: _birthDateController,
+                  readOnly: true,
+                  onTap: _pickBirthDate,
+                  suffixIcon: IconButton(
+                    onPressed: _pickBirthDate,
+                    color: AppColors.textSecondary,
+                    icon: const Icon(Icons.calendar_today_outlined),
+                  ),
                 ),
-                selectedUnit: _selectedWeightUnit,
-                unitOptions: const ['kg', 'lb', 'g'],
-                onUnitSelected: (unit) {
-                  setState(() {
-                    _selectedWeightUnit = unit;
-                  });
-                },
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
+                const SizedBox(height: AppSpacing.lg),
+                MeasurementInputField(
+                  label: 'Peso',
+                  hint: 'Digite seu peso',
+                  controller: _weightController,
+                  unitSelectorKey: const ValueKey(
+                    'profile-edit-weight-unit-selector',
+                  ),
+                  selectedUnit: _selectedWeightUnit,
+                  unitOptions: const ['kg', 'lb', 'g'],
+                  onUnitSelected: (unit) {
+                    setState(() {
+                      _selectedWeightUnit = unit;
+                    });
+                  },
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              MeasurementInputField(
-                label: 'Altura',
-                hint: 'Digite sua altura',
-                controller: _heightController,
-                unitSelectorKey: const ValueKey(
-                  'profile-edit-height-unit-selector',
+                const SizedBox(height: AppSpacing.lg),
+                MeasurementInputField(
+                  label: 'Altura',
+                  hint: 'Digite sua altura',
+                  controller: _heightController,
+                  unitSelectorKey: const ValueKey(
+                    'profile-edit-height-unit-selector',
+                  ),
+                  selectedUnit: _selectedHeightUnit,
+                  unitOptions: const ['cm', 'm', 'ft', 'in'],
+                  onUnitSelected: (unit) {
+                    setState(() {
+                      _selectedHeightUnit = unit;
+                    });
+                  },
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                 ),
-                selectedUnit: _selectedHeightUnit,
-                unitOptions: const ['cm', 'm', 'ft', 'in'],
-                onUnitSelected: (unit) {
-                  setState(() {
-                    _selectedHeightUnit = unit;
-                  });
-                },
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
+                const SizedBox(height: AppSpacing.lg),
+                AppSelectInputField(
+                  fieldKey: const ValueKey('profile-edit-activity-field'),
+                  label: 'Nível de atividade',
+                  hint: 'Selecione seu nível de atividade',
+                  selectedValue: _activityController.text,
+                  options: _activityLabels.values.toList(),
+                  onSelected: (value) {
+                    final entry = _activityLabels.entries.firstWhere(
+                      (entry) => entry.value == value,
+                      orElse: () => const MapEntry('sedentary', 'Sedentário'),
+                    );
+                    setState(() {
+                      _selectedActivityLevel = entry.key;
+                      _activityController.text = entry.value;
+                    });
+                  },
                 ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppSelectInputField(
-                fieldKey: const ValueKey('profile-edit-activity-field'),
-                label: 'Nível de atividade',
-                hint: 'Selecione seu nível de atividade',
-                selectedValue: _activityController.text,
-                options: _activityLabels.values.toList(),
-                onSelected: (value) {
-                  final entry = _activityLabels.entries.firstWhere(
-                    (entry) => entry.value == value,
-                    orElse: () => const MapEntry('sedentary', 'Sedentário'),
-                  );
-                  setState(() {
-                    _selectedActivityLevel = entry.key;
-                    _activityController.text = entry.value;
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppSelectInputField(
-                fieldKey: const ValueKey('profile-edit-sex-field'),
-                label: 'Sexo',
-                hint: 'Selecione seu sexo',
-                selectedValue: _selectedSex ?? '',
-                options: _sexOptions,
-                onSelected: (value) {
-                  setState(() {
-                    _selectedSex = value;
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppSelectInputField(
-                fieldKey: const ValueKey('profile-edit-objective-field'),
-                label: 'Objetivo',
-                hint: 'Selecione seu objetivo',
-                selectedValue: _objectiveController.text,
-                options: _objectiveLabels.values.toList(),
-                onSelected: (value) {
-                  final entry = _objectiveLabels.entries.firstWhere(
-                    (entry) => entry.value == value,
-                    orElse: () =>
-                        const MapEntry('maintainWeight', 'Manter peso'),
-                  );
-                  setState(() {
-                    _selectedObjective = entry.key;
-                    _objectiveController.text = entry.value;
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.xxxl),
-              SizedBox(
-                height: AppSpacing.huge + AppSpacing.xs,
-                child: AppButton(
-                  label: _isSaving ? 'Salvando...' : 'Salvar alterações',
-                  onPressed: _isSaving ? null : _saveProfile,
-                  variant: AppButtonVariant.primary,
+                const SizedBox(height: AppSpacing.lg),
+                AppSelectInputField(
+                  fieldKey: const ValueKey('profile-edit-sex-field'),
+                  label: 'Sexo',
+                  hint: 'Selecione seu sexo',
+                  selectedValue: _selectedSex ?? '',
+                  options: _sexOptions,
+                  onSelected: (value) {
+                    setState(() {
+                      _selectedSex = value;
+                    });
+                  },
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.lg),
+                AppSelectInputField(
+                  fieldKey: const ValueKey('profile-edit-objective-field'),
+                  label: 'Objetivo',
+                  hint: 'Selecione seu objetivo',
+                  selectedValue: _objectiveController.text,
+                  options: _objectiveLabels.values.toList(),
+                  onSelected: (value) {
+                    final entry = _objectiveLabels.entries.firstWhere(
+                      (entry) => entry.value == value,
+                      orElse: () =>
+                          const MapEntry('maintainWeight', 'Manter peso'),
+                    );
+                    setState(() {
+                      _selectedObjective = entry.key;
+                      _objectiveController.text = entry.value;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xxxl),
+                SizedBox(
+                  height: AppSpacing.huge + AppSpacing.xs,
+                  child: AppButton(
+                    label: _isSaving ? 'Salvando...' : 'Salvar alterações',
+                    onPressed: _isSaving ? null : _saveProfile,
+                    variant: AppButtonVariant.primary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

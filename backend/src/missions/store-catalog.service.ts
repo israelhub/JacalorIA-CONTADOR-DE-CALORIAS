@@ -72,4 +72,9 @@ export class StoreCatalogService implements OnModuleInit {
     const items = await this.listActiveByCategory('avatar_background');
     return items.map((item) => item.itemKey);
   }
+
+  async listActiveFrameKeys(): Promise<string[]> {
+    const items = await this.listActiveByCategory('avatar_frame');
+    return items.map((item) => item.itemKey);
+  }
 }

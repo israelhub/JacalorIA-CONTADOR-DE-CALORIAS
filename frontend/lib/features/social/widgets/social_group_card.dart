@@ -77,13 +77,15 @@ class SocialGroupCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          group.description,
-                          style: AppTextStyles.homeMealSubtitle.copyWith(
-                            color: AppColors.textSecondary,
+                        if (group.description.trim().isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            group.description,
+                            style: AppTextStyles.homeMealSubtitle.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                        ),
+                        ],
                         const SizedBox(height: AppSpacing.xs),
                         Wrap(
                           spacing: AppSpacing.sm,

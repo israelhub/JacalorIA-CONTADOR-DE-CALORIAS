@@ -94,6 +94,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           color: AppColors.textSecondary,
                         ),
                       ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Verificar na caixa de spam.',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textMuted,
+                        ),
+                      ),
                       const SizedBox(height: AppSpacing.xl),
                       AppInputField(
                         label: 'E-mail',

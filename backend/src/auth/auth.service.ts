@@ -83,7 +83,8 @@ export class AuthService {
     }
 
     return {
-      message: 'Conta criada com sucesso. Verifique seu email.',
+      message:
+        'Conta criada com sucesso. Verifique seu email. Verificar na caixa de spam.',
       user: {
         id: user.id,
         name: user.name,
@@ -269,7 +270,10 @@ export class AuthService {
     const user = await this.authRepository.findByEmail(dto.email);
 
     if (!user) {
-      return { message: 'Se o email existir, um novo código será enviado.' };
+      return {
+        message:
+          'Se o email existir, um novo código será enviado. Verificar na caixa de spam.',
+      };
     }
 
     if (user.emailVerified) {
@@ -296,7 +300,8 @@ export class AuthService {
     }
 
     return {
-      message: 'Se o email existir, um novo código será enviado.',
+      message:
+        'Se o email existir, um novo código será enviado. Verificar na caixa de spam.',
     };
   }
 
@@ -306,7 +311,7 @@ export class AuthService {
     if (!user || !user.emailVerified) {
       return {
         message:
-          'Se o email existir e estiver verificado, um codigo de redefinicao sera enviado.',
+          'Se o email existir e estiver verificado, um codigo de redefinicao sera enviado. Verificar na caixa de spam.',
       };
     }
 
@@ -331,7 +336,7 @@ export class AuthService {
 
     return {
       message:
-        'Se o email existir e estiver verificado, um codigo de redefinicao sera enviado.',
+        'Se o email existir e estiver verificado, um codigo de redefinicao sera enviado. Verificar na caixa de spam.',
     };
   }
 

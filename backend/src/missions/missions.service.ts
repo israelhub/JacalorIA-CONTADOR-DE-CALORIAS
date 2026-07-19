@@ -321,7 +321,10 @@ export class MissionsService {
   }
 
   async getStore(userId: string) {
-    await this.ensurePurchasedAvatarBackgroundsSynced(userId);
+    await Promise.all([
+      this.ensurePurchasedAvatarFramesSynced(userId),
+      this.ensurePurchasedAvatarBackgroundsSynced(userId),
+    ]);
 
     const [user, wallet] = await Promise.all([
       this.userModel.findByPk(userId, {
@@ -434,6 +437,8 @@ export class MissionsService {
   }
 
   async purchaseAvatarFrame(userId: string, frameId: string) {
+    await this.ensurePurchasedAvatarFramesSynced(userId);
+
     const normalizedFrameId = frameId.trim();
     const catalogItem = await this.storeCatalogService.findActiveByKey(normalizedFrameId);
     if (!catalogItem || catalogItem.category !== 'avatar_frame') {
@@ -457,11 +462,7 @@ export class MissionsService {
         throw new BadRequestException('Usuário não encontrado.');
       }
 
-      const purchased = new Set(
-        (Array.isArray(user.purchasedAvatarFrameIds) ? user.purchasedAvatarFrameIds : [])
-          .map((value) => value.trim())
-          .filter((value) => value.length > 0),
-      );
+      const purchased = await this.syncUserPurchasedAvatarFrames(user, transaction);
 
       if (purchased.has(normalizedFrameId)) {
         if (user.equippedAvatarFrameId !== normalizedFrameId) {
@@ -967,6 +968,27 @@ export class MissionsService {
       .filter((value) => value.length > 0);
   }
 
+  private async ensurePurchasedAvatarFramesSynced(userId: string): Promise<void> {
+    const sequelize = this.userModel.sequelize;
+    if (!sequelize) {
+      return;
+    }
+
+    await sequelize.transaction(async (transaction) => {
+      const user = await this.userModel.findByPk(userId, {
+        attributes: ['id', 'equippedAvatarFrameId', 'purchasedAvatarFrameIds'],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (!user) {
+        return;
+      }
+
+      await this.syncUserPurchasedAvatarFrames(user, transaction);
+    });
+  }
+
   private async ensurePurchasedAvatarBackgroundsSynced(userId: string): Promise<void> {
     const sequelize = this.userModel.sequelize;
     if (!sequelize) {
@@ -986,6 +1008,75 @@ export class MissionsService {
 
       await this.syncUserPurchasedAvatarBackgrounds(user, transaction);
     });
+  }
+
+  private async loadPurchasedAvatarFrameIdsFromTransactions(
+    userId: string,
+    transaction?: Transaction,
+  ): Promise<string[]> {
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where: {
+        userId,
+        currency: 'gold',
+        sourceType: 'avatar_frame_purchase',
+      },
+      attributes: ['sourceId'],
+      transaction,
+    });
+    const activeKeys = new Set(await this.storeCatalogService.listActiveFrameKeys());
+
+    return rows
+      .map((row) => row.sourceId?.trim() ?? '')
+      .filter((id) => id.length > 0 && activeKeys.has(id));
+  }
+
+  private buildPurchasedAvatarFrameSet(
+    storedIds: unknown,
+    transactionOwnedIds: string[],
+  ): Set<string> {
+    const purchased = new Set(this.normalizeIdList(storedIds));
+
+    for (const id of transactionOwnedIds) {
+      purchased.add(id);
+    }
+
+    return purchased;
+  }
+
+  private async syncUserPurchasedAvatarFrames(
+    user: User,
+    transaction?: Transaction,
+  ): Promise<Set<string>> {
+    const transactionOwnedIds = await this.loadPurchasedAvatarFrameIdsFromTransactions(
+      user.id,
+      transaction,
+    );
+    const purchased = this.buildPurchasedAvatarFrameSet(
+      user.purchasedAvatarFrameIds,
+      transactionOwnedIds,
+    );
+    const equippedId = this.normalizeOptionalId(user.equippedAvatarFrameId);
+    const sanitizedEquipped =
+      equippedId && purchased.has(equippedId) ? equippedId : null;
+    const sortedPurchased = Array.from(purchased).sort();
+    const storedPurchased = this.normalizeIdList(user.purchasedAvatarFrameIds).sort();
+    const needsUpdate =
+      sortedPurchased.join(',') !== storedPurchased.join(',') ||
+      sanitizedEquipped !== equippedId;
+
+    if (needsUpdate) {
+      await user.update(
+        {
+          purchasedAvatarFrameIds: sortedPurchased,
+          equippedAvatarFrameId: sanitizedEquipped,
+        },
+        { transaction },
+      );
+      user.purchasedAvatarFrameIds = sortedPurchased;
+      user.equippedAvatarFrameId = sanitizedEquipped;
+    }
+
+    return purchased;
   }
 
   private async loadPurchasedAvatarBackgroundIdsFromTransactions(

@@ -9,7 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/config/api_config.dart';
 
 class AuthService {
-  static const Duration _apiTimeout = Duration(seconds: 45);
+  static const Duration _apiTimeout = Duration(seconds: 90);
+  static const int _maxAttempts = 3;
 
   static String get _baseUrl => ApiConfig.baseUrl;
   static const String _googleWebClientId = String.fromEnvironment(
@@ -19,7 +20,6 @@ class AuthService {
   );
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: const ['email', 'openid'],
-    // Sem google-services.json, Android deve usar o Web Client ID como serverClientId.
     clientId: (kIsWeb || defaultTargetPlatform == TargetPlatform.android)
         ? _googleWebClientId
         : null,
@@ -34,6 +34,61 @@ class AuthService {
         globalUser = jsonDecode(userJson) as Map<String, dynamic>;
       } catch (_) {}
     }
+
+    unawaited(warmupBackend());
+  }
+
+  static Future<void> warmupBackend() async {
+    if (!_isRemoteBackend) {
+      return;
+    }
+
+    try {
+      await http
+          .get(Uri.parse('$_baseUrl/health'))
+          .timeout(const Duration(seconds: 120));
+    } catch (_) {}
+  }
+
+  static bool get _isRemoteBackend {
+    final baseUrl = _baseUrl.toLowerCase();
+    return baseUrl.startsWith('https://') &&
+        !baseUrl.contains('localhost') &&
+        !baseUrl.contains('127.0.0.1');
+  }
+
+  Future<http.Response> _sendWithRetry(
+    Future<http.Response> Function() request, {
+    required String timeoutMessage,
+  }) async {
+    Object? lastError;
+
+    for (var attempt = 1; attempt <= _maxAttempts; attempt++) {
+      try {
+        return await request().timeout(
+          _apiTimeout,
+          onTimeout: () => throw TimeoutException(timeoutMessage),
+        );
+      } on TimeoutException catch (error) {
+        lastError = error;
+        if (attempt == _maxAttempts) {
+          rethrow;
+        }
+      } on http.ClientException catch (error) {
+        lastError = error;
+        if (attempt == _maxAttempts) {
+          rethrow;
+        }
+      }
+
+      await Future<void>.delayed(Duration(seconds: attempt * 2));
+    }
+
+    throw lastError ?? TimeoutException(timeoutMessage);
+  }
+
+  bool _isSuccessStatus(int statusCode) {
+    return statusCode == 200 || statusCode == 201;
   }
 
   Future<Map<String, dynamic>> signInWithGoogle() async {
@@ -59,20 +114,18 @@ class AuthService {
       }
 
       final uri = Uri.parse('$_baseUrl/auth/google');
-      final response = await http
-          .post(
-            uri,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              if (idToken != null && idToken.isNotEmpty) 'idToken': idToken,
-              if (accessToken != null && accessToken.isNotEmpty)
-                'accessToken': accessToken,
-            }),
-          )
-          .timeout(
-            _apiTimeout,
-            onTimeout: () => throw TimeoutException('Timeout no login Google'),
-          );
+      final response = await _sendWithRetry(
+        () => http.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            if (idToken != null && idToken.isNotEmpty) 'idToken': idToken,
+            if (accessToken != null && accessToken.isNotEmpty)
+              'accessToken': accessToken,
+          }),
+        ),
+        timeoutMessage: 'Timeout no login Google',
+      );
 
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       if (kDebugMode) {
@@ -81,15 +134,15 @@ class AuthService {
         );
       }
 
-      if (response.statusCode == 201 || response.statusCode == 200) {
+      if (_isSuccessStatus(response.statusCode)) {
         return body;
-      } else {
-        throw Exception(
-          _friendlyGoogleSignInMessage(
-            _extractMessage(body, 'Falha no login com Google'),
-          ),
-        );
       }
+
+      throw Exception(
+        _friendlyGoogleSignInMessage(
+          _extractMessage(body, 'Falha no login com Google'),
+        ),
+      );
     } catch (e) {
       throw Exception(_friendlyGoogleSignInMessage(e.toString()));
     }
@@ -101,28 +154,26 @@ class AuthService {
     required String password,
   }) async {
     final uri = Uri.parse('$_baseUrl/auth/register');
-    final response = await http
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'name': name,
-            'email': email,
-            'password': password,
-          }),
-        )
-        .timeout(
-          _apiTimeout,
-          onTimeout: () => throw TimeoutException('Timeout ao criar conta'),
-        );
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+        }),
+      ),
+      timeoutMessage: 'Timeout ao criar conta',
+    );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
-    if (response.statusCode == 201) {
+    if (_isSuccessStatus(response.statusCode)) {
       return body;
-    } else {
-      throw Exception(_extractMessage(body, 'Erro ao criar conta'));
     }
+
+    throw Exception(_extractMessage(body, 'Erro ao criar conta'));
   }
 
   Future<Map<String, dynamic>> signIn({
@@ -130,24 +181,22 @@ class AuthService {
     required String password,
   }) async {
     final uri = Uri.parse('$_baseUrl/auth/login');
-    final response = await http
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'email': email, 'password': password}),
-        )
-        .timeout(
-          _apiTimeout,
-          onTimeout: () => throw TimeoutException('Timeout ao entrar'),
-        );
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      ),
+      timeoutMessage: 'Timeout ao entrar',
+    );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
-    if (response.statusCode == 201) {
+    if (_isSuccessStatus(response.statusCode)) {
       return body;
-    } else {
-      throw Exception(_extractMessage(body, 'Credenciais invalidas'));
     }
+
+    throw Exception(_extractMessage(body, 'Credenciais invalidas'));
   }
 
   Future<Map<String, dynamic>> verifyEmail({
@@ -155,68 +204,62 @@ class AuthService {
     required String code,
   }) async {
     final uri = Uri.parse('$_baseUrl/auth/email/verify');
-    final response = await http
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'email': email, 'code': code}),
-        )
-        .timeout(
-          _apiTimeout,
-          onTimeout: () => throw TimeoutException('Timeout ao confirmar email'),
-        );
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'code': code}),
+      ),
+      timeoutMessage: 'Timeout ao confirmar email',
+    );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
-    if (response.statusCode == 201) {
+    if (_isSuccessStatus(response.statusCode)) {
       return body;
-    } else {
-      throw Exception(_extractMessage(body, 'Codigo invalido'));
     }
+
+    throw Exception(_extractMessage(body, 'Codigo invalido'));
   }
 
   Future<Map<String, dynamic>> resendCode({required String email}) async {
     final uri = Uri.parse('$_baseUrl/auth/email/resend-code');
-    final response = await http
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'email': email}),
-        )
-        .timeout(
-          _apiTimeout,
-          onTimeout: () => throw TimeoutException('Timeout ao reenviar codigo'),
-        );
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      ),
+      timeoutMessage: 'Timeout ao reenviar codigo',
+    );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
-    if (response.statusCode == 201) {
+    if (_isSuccessStatus(response.statusCode)) {
       return body;
-    } else {
-      throw Exception(_extractMessage(body, 'Erro ao reenviar codigo'));
     }
+
+    throw Exception(_extractMessage(body, 'Erro ao reenviar codigo'));
   }
 
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
     final uri = Uri.parse('$_baseUrl/auth/password/forgot');
-    final response = await http
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'email': email}),
-        )
-        .timeout(
-          _apiTimeout,
-          onTimeout: () => throw TimeoutException('Timeout ao solicitar reset'),
-        );
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      ),
+      timeoutMessage: 'Timeout ao solicitar reset',
+    );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
-    if (response.statusCode == 201 || response.statusCode == 200) {
+    if (_isSuccessStatus(response.statusCode)) {
       return body;
-    } else {
-      throw Exception(_extractMessage(body, 'Erro ao solicitar reset'));
     }
+
+    throw Exception(_extractMessage(body, 'Erro ao solicitar reset'));
   }
 
   Future<Map<String, dynamic>> resetPassword({
@@ -225,28 +268,26 @@ class AuthService {
     required String newPassword,
   }) async {
     final uri = Uri.parse('$_baseUrl/auth/password/reset');
-    final response = await http
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'email': email,
-            'code': code,
-            'newPassword': newPassword,
-          }),
-        )
-        .timeout(
-          _apiTimeout,
-          onTimeout: () => throw TimeoutException('Timeout ao redefinir senha'),
-        );
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'code': code,
+          'newPassword': newPassword,
+        }),
+      ),
+      timeoutMessage: 'Timeout ao redefinir senha',
+    );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
-    if (response.statusCode == 201 || response.statusCode == 200) {
+    if (_isSuccessStatus(response.statusCode)) {
       return body;
-    } else {
-      throw Exception(_extractMessage(body, 'Erro ao redefinir senha'));
     }
+
+    throw Exception(_extractMessage(body, 'Erro ao redefinir senha'));
   }
 
   Future<Map<String, dynamic>> validateResetCode({
@@ -254,24 +295,22 @@ class AuthService {
     required String code,
   }) async {
     final uri = Uri.parse('$_baseUrl/auth/password/validate-code');
-    final response = await http
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'email': email, 'code': code}),
-        )
-        .timeout(
-          _apiTimeout,
-          onTimeout: () => throw TimeoutException('Timeout ao validar codigo'),
-        );
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'code': code}),
+      ),
+      timeoutMessage: 'Timeout ao validar codigo',
+    );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
-    if (response.statusCode == 201 || response.statusCode == 200) {
+    if (_isSuccessStatus(response.statusCode)) {
       return body;
-    } else {
-      throw Exception(_extractMessage(body, 'Codigo invalido ou expirado'));
     }
+
+    throw Exception(_extractMessage(body, 'Codigo invalido ou expirado'));
   }
 
   static String? globalToken;
@@ -308,7 +347,7 @@ class AuthService {
     }
 
     if (lower.contains('timeout')) {
-      return 'Conexao com Google indisponivel. Verifique sua internet e tente novamente.';
+      return 'Servidor demorou para responder. Aguarde alguns segundos e tente novamente.';
     }
 
     if (lower.contains('access token google invalido')) {
@@ -360,12 +399,10 @@ class AuthService {
     final uri = Uri.parse('$_baseUrl/auth/profile');
     final headers = <String, String>{'Authorization': 'Bearer $token'};
 
-    final response = await http
-        .get(uri, headers: headers)
-        .timeout(
-          _apiTimeout,
-          onTimeout: () => throw TimeoutException('Timeout ao buscar perfil'),
-        );
+    final response = await _sendWithRetry(
+      () => http.get(uri, headers: headers),
+      timeoutMessage: 'Timeout ao buscar perfil',
+    );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -382,13 +419,10 @@ class AuthService {
     final uri = Uri.parse('$_baseUrl/auth/profile');
     final headers = _getHeaders();
 
-    final response = await http
-        .patch(uri, headers: headers, body: jsonEncode(data))
-        .timeout(
-          _apiTimeout,
-          onTimeout: () =>
-              throw TimeoutException('Timeout ao atualizar perfil'),
-        );
+    final response = await _sendWithRetry(
+      () => http.patch(uri, headers: headers, body: jsonEncode(data)),
+      timeoutMessage: 'Timeout ao atualizar perfil',
+    );
 
     if (response.statusCode == 401 || response.statusCode == 403) {
       throw Exception('Sessao invalida. Faca login novamente.');

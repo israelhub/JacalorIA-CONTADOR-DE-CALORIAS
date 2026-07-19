@@ -11,6 +11,18 @@ Parameters:
   BackendOriginDomain:
     Type: String
     Description: Dominio (sem https://) do ambiente Elastic Beanstalk, ex jacaloria-backend-env.eba-xxxx.sa-east-1.elasticbeanstalk.com
+  CustomDomainName:
+    Type: String
+    Default: jacaloria.online
+    Description: Dominio customizado (apex) apontando para o CloudFront
+  WwwDomainName:
+    Type: String
+    Default: www.jacaloria.online
+    Description: Subdominio www apontando para o CloudFront
+  AcmCertificateArn:
+    Type: String
+    Default: 'arn:aws:acm:us-east-1:942226532350:certificate/c48ca261-9e69-4ccb-8a7c-6ac3c6e828cd'
+    Description: Certificado ACM em us-east-1 para o dominio customizado
 
 Resources:
   FrontendBucket:
@@ -46,6 +58,13 @@ Resources:
         HttpVersion: http2and3
         IPV6Enabled: true
         PriceClass: PriceClass_All
+        Aliases:
+          - !Ref CustomDomainName
+          - !Ref WwwDomainName
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AcmCertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
         Origins:
           - Id: s3-frontend
             DomainName: !GetAtt FrontendBucket.RegionalDomainName
@@ -67,6 +86,17 @@ Resources:
           Compress: true
           # Managed-CachingOptimized
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        # SPA fallback: /friend e /group nao existem no S3; sem isso o OAC
+        # devolve XML AccessDenied (403) em vez do index.html do Flutter Web.
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
         CacheBehaviors:
           - PathPattern: /api/*
             TargetOriginId: eb-backend
@@ -102,9 +132,9 @@ Outputs:
   DistributionId:
     Value: !Ref Distribution
   DistributionDomainName:
-    Description: Dominio publico (HTTPS) da aplicacao
+    Description: Dominio CloudFront padrao
     Value: !GetAtt Distribution.DomainName
   AppUrl:
-    Value: !Sub 'https://${Distribution.DomainName}'
+    Value: !Sub 'https://${CustomDomainName}'
   ApiBaseUrl:
-    Value: !Sub 'https://${Distribution.DomainName}/api'
+    Value: !Sub 'https://${CustomDomainName}/api'

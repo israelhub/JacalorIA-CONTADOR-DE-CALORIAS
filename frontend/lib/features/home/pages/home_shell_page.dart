@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/invite/invite_link_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_main_bottom_navigation.dart';
 import '../../../shared/widgets/app_page_route.dart';
@@ -19,6 +20,16 @@ class HomeShellPage extends StatefulWidget {
     this.missionsPage,
     this.socialPage,
   });
+
+  /// Opens Social when a friend/group invite deep link is pending.
+  factory HomeShellPage.fromLaunch({Key? key}) {
+    return HomeShellPage(
+      key: key,
+      initialTab: InviteLinkService.hasPending
+          ? AppMainBottomTab.social
+          : AppMainBottomTab.home,
+    );
+  }
 
   final AppMainBottomTab initialTab;
   final Widget? performancePage;

@@ -1,5 +1,6 @@
 $clientId = $env:GOOGLE_WEB_CLIENT_ID
 $webPort = if ($env:FLUTTER_WEB_PORT) { $env:FLUTTER_WEB_PORT } else { '' }
+$apiBaseUrl = if ($env:API_BASE_URL) { $env:API_BASE_URL } else { 'https://jacaloria-backend.onrender.com/api' }
 
 if (-not $clientId) {
   $frontendEnvFiles = @(
@@ -98,7 +99,9 @@ $frontendDir = [System.IO.Path]::GetFullPath($frontendDir)
 
 Push-Location $frontendDir
 try {
-  & $flutterCmd run -d chrome --web-port=$webPort --dart-define="GOOGLE_WEB_CLIENT_ID=$clientId"
+  & $flutterCmd run -d web-server --web-hostname=127.0.0.1 --web-port=$webPort `
+    --dart-define="GOOGLE_WEB_CLIENT_ID=$clientId" `
+    --dart-define="API_BASE_URL=$apiBaseUrl"
 }
 finally {
   Pop-Location

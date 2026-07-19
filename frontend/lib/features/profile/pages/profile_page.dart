@@ -799,7 +799,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             builder: (context, constraints) {
                               final maxWidth = constraints.maxWidth;
                               final spacing = AppSpacing.md;
-                              final columns = maxWidth >= 720 ? 3 : 2;
+                              const columns = 2;
                               final availableWidth =
                                   maxWidth - (spacing * (columns - 1));
                               final cardWidth = availableWidth > 0

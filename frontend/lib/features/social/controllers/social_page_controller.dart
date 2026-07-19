@@ -247,7 +247,8 @@ class SocialPageController extends ChangeNotifier {
     }
     if (uri != null && uri.pathSegments.isNotEmpty) {
       final lastSegment = uri.pathSegments.last.trim();
-      if (lastSegment.isNotEmpty && lastSegment.toLowerCase() != 'friend') {
+      final lower = lastSegment.toLowerCase();
+      if (lastSegment.isNotEmpty && lower != 'friend' && lower != 'group') {
         return lastSegment.toUpperCase();
       }
     }

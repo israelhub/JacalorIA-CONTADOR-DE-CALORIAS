@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 
+import 'core/invite/invite_link_service.dart';
 import 'features/auth/pages/enter_page.dart';
 import 'features/auth/service/auth_service.dart';
 import 'features/home/pages/home_shell_page.dart';
@@ -9,6 +10,7 @@ import 'shared/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  InviteLinkService.captureFromUri(Uri.base);
   await AuthService.initialize();
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.portraitUp,
@@ -48,7 +50,7 @@ class MyApp extends StatelessWidget {
         ],
         supportedLocales: const <Locale>[_appLocale],
         home: AuthService.globalToken != null
-            ? const HomeShellPage()
+            ? HomeShellPage.fromLaunch()
             : const EnterPage(),
       ),
     );

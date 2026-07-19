@@ -5,9 +5,10 @@ export class CreateSocialGroupDto {
   @MaxLength(80)
   name: string;
 
+  @IsOptional()
   @IsString()
   @MaxLength(140)
-  description: string;
+  description?: string;
 
   @IsString()
   @IsIn(['offensive', 'daily_goal', 'xp', 'group_streak'])

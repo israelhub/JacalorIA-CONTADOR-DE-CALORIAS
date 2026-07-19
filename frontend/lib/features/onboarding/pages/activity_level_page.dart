@@ -53,7 +53,7 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
 
       if (mounted) {
         context.pushAndRemoveUntilSlidePage(
-          const HomeShellPage(),
+          HomeShellPage.fromLaunch(),
           (route) => false,
         );
       }

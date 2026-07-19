@@ -11,6 +11,7 @@ class AppConfirmModal extends StatelessWidget {
     this.confirmLabel = 'Confirmar',
     this.cancelLabel = 'Cancelar',
     this.isDanger = false,
+    this.barrierDismissible = true,
   });
 
   final String title;
@@ -18,6 +19,7 @@ class AppConfirmModal extends StatelessWidget {
   final String confirmLabel;
   final String cancelLabel;
   final bool isDanger;
+  final bool barrierDismissible;
 
   static Future<bool> show(
     BuildContext context, {
@@ -26,15 +28,18 @@ class AppConfirmModal extends StatelessWidget {
     String confirmLabel = 'Confirmar',
     String cancelLabel = 'Cancelar',
     bool isDanger = false,
+    bool barrierDismissible = true,
   }) async {
     final result = await showDialog<bool>(
       context: context,
+      barrierDismissible: barrierDismissible,
       builder: (_) => AppConfirmModal(
         title: title,
         message: message,
         confirmLabel: confirmLabel,
         cancelLabel: cancelLabel,
         isDanger: isDanger,
+        barrierDismissible: barrierDismissible,
       ),
     );
     return result ?? false;
@@ -42,7 +47,7 @@ class AppConfirmModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
+    final dialog = Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Container(
@@ -94,6 +99,12 @@ class AppConfirmModal extends StatelessWidget {
         ),
       ),
     );
+
+    if (barrierDismissible) {
+      return dialog;
+    }
+
+    return PopScope(canPop: false, child: dialog);
   }
 }
 
