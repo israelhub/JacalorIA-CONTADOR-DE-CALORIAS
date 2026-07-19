@@ -49,7 +49,7 @@ class _EnterPageState extends State<EnterPage> {
 
     final nextPage = _authController.shouldCompleteOnboarding
         ? const WelcomePage()
-        : const HomeShellPage();
+        : HomeShellPage.fromLaunch();
     context.pushAndRemoveUntilSlidePage(nextPage, (route) => false);
   }
 

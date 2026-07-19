@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../core/invite/invite_link_service.dart';
 import '../../auth/service/auth_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
@@ -44,6 +45,7 @@ class SocialPage extends StatefulWidget {
 class _SocialPageState extends State<SocialPage> {
   static const Duration _tabTransitionDuration = Duration(milliseconds: 320);
   late final SocialPageController _controller;
+  bool _processingPendingInvite = false;
 
   @override
   void initState() {
@@ -52,6 +54,7 @@ class _SocialPageState extends State<SocialPage> {
       service: widget.service,
       authService: widget.authService ?? AuthService(),
     );
+    _controller.addListener(_onControllerChanged);
     _controller.loadAll();
   }
 
@@ -65,8 +68,52 @@ class _SocialPageState extends State<SocialPage> {
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerChanged);
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onControllerChanged() {
+    if (!mounted || _processingPendingInvite) return;
+    if (_controller.isLoading || _controller.errorMessage != null) return;
+    if (!InviteLinkService.hasPending) return;
+    _processPendingInvite();
+  }
+
+  Future<void> _processPendingInvite() async {
+    final invite = InviteLinkService.take();
+    if (invite == null || _processingPendingInvite) return;
+
+    _processingPendingInvite = true;
+    try {
+      if (invite.kind == InviteLinkKind.friend) {
+        _controller.changeTab(0);
+        try {
+          await _controller.addFriendByLink(invite.code);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pedido de amizade enviado')),
+          );
+        } catch (error) {
+          _showError(error);
+        }
+        return;
+      }
+
+      _controller.changeTab(1);
+      try {
+        final detail = await _controller.joinGroupByCode(invite.code);
+        if (!mounted) return;
+        await context.pushSlidePage(
+          SocialGroupDetailPage(groupId: detail.group.id, initialDetail: detail),
+        );
+        if (mounted) await _controller.loadAll();
+      } catch (error) {
+        _showError(error);
+      }
+    } finally {
+      _processingPendingInvite = false;
+    }
   }
 
   @override

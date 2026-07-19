@@ -71,7 +71,7 @@ class _ResetPasswordCodePageState extends State<ResetPasswordCodePage> {
     }
 
     if (sent) {
-      _showMessage('Codigo reenviado. Verifique seu e-mail.');
+      _showMessage('Codigo reenviado. Verificar na caixa de spam.');
       return;
     }
 
@@ -112,6 +112,13 @@ class _ResetPasswordCodePageState extends State<ResetPasswordCodePage> {
                         'Digite o codigo enviado para ${widget.email}.',
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Verificar na caixa de spam.',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textMuted,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xl),

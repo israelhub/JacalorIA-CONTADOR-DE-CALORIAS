@@ -243,13 +243,15 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
                           color: AppColors.brand900Variant,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        group.description,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
+                      if (group.description.trim().isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          group.description,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      ),
+                      ],
                       const SizedBox(height: AppSpacing.sm),
                       Wrap(
                         spacing: AppSpacing.sm,

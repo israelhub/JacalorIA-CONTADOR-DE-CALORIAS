@@ -162,7 +162,7 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
     }
 
     if (isResent) {
-      _showMessage('Código reenviado com sucesso.');
+      _showMessage('Código reenviado com sucesso. Verificar na caixa de spam.');
       return;
     }
 
@@ -220,7 +220,7 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                       horizontal: AppSpacing.xxl,
                     ),
                     child: Text(
-                      'Verifique o seu spam.',
+                      'Verificar na caixa de spam.',
                       textAlign: TextAlign.center,
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.textMuted,

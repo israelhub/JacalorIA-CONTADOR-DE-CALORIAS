@@ -6,7 +6,7 @@ class ApiConfig {
   );
   static const String _configuredShareBaseUrl = String.fromEnvironment(
     'SHARE_BASE_URL',
-    defaultValue: 'https://jacaloria.app',
+    defaultValue: 'https://jacaloria.online',
   );
 
   static String get baseUrl {

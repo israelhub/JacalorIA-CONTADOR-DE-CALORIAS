@@ -39,6 +39,7 @@ void main() {
         find.text('Enviamos um código para teste@jacaloria.app.'),
         findsOneWidget,
       );
+      expect(find.text('Verificar na caixa de spam.'), findsOneWidget);
       expect(find.byType(TextField), findsNWidgets(6));
       expect(find.text('Confirmar'), findsOneWidget);
       expect(find.text('Reenviar código'), findsOneWidget);

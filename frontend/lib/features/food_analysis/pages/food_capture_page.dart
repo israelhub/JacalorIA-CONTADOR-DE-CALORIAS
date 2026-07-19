@@ -1,5 +1,4 @@
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import 'package:image_picker/image_picker.dart';
@@ -174,14 +173,6 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
   }
 
   Future<void> _initializeCamera() async {
-    if (kIsWeb) {
-      setState(() {
-        _isCameraInitializing = false;
-        _cameraError = null;
-      });
-      return;
-    }
-
     try {
       setState(() {
         _isCameraInitializing = true;
@@ -190,7 +181,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
-        throw StateError('Nenhuma câmera disponível');
+        throw StateError('Nenhuma câmera disponível neste dispositivo.');
       }
 
       final backCamera = cameras
@@ -202,7 +193,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
       final controller = CameraController(
         selectedCamera,
-        ResolutionPreset.high,
+        ResolutionPreset.medium,
         enableAudio: false,
       );
       await controller.initialize();
@@ -222,12 +213,34 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
         return;
       }
 
+      await _cameraController?.dispose();
       setState(() {
         _cameraController = null;
         _isCameraInitializing = false;
-        _cameraError = error.toString().replaceFirst('Exception: ', '');
+        _cameraError = _mapCameraError(error);
       });
     }
+  }
+
+  String _mapCameraError(Object error) {
+    if (error is CameraException) {
+      switch (error.code) {
+        case 'CameraAccessDenied':
+        case 'CameraAccessDeniedWithoutPrompt':
+        case 'AudioAccessDenied':
+        case 'AudioAccessDeniedWithoutPrompt':
+          return 'Permissão da câmera negada. Habilite o acesso no navegador '
+              'e toque em "Tentar novamente".';
+        case 'CameraAccessRestricted':
+          return 'Acesso à câmera está restrito neste dispositivo.';
+        default:
+          return error.description?.isNotEmpty == true
+              ? error.description!
+              : 'Não foi possível abrir a câmera.';
+      }
+    }
+
+    return error.toString().replaceFirst('Exception: ', '');
   }
 
   Future<void> _openTextEntry() async {

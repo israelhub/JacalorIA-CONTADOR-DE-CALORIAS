@@ -339,7 +339,7 @@ export class SocialService {
     const group = await this.socialGroupModel.create({
       ownerId: userId,
       name: dto.name.trim(),
-      description: dto.description.trim(),
+      description: dto.description?.trim() ?? '',
       competitionType: dto.competitionType,
       iconKey: dto.iconKey,
       durationDays,

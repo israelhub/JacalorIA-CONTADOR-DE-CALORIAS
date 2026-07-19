@@ -4,3 +4,7 @@ flutter_launcher_icons:
   image_path: "assets/images/app_icon.png"
   remove_alpha_ios: true
   min_sdk_android: 21
+  # Web icons are maintained as WebP in frontend/web/ (favicon + PWA icons)
+  # from the same app_icon.png source — do not overwrite with PNG via this tool.
+  web:
+    generate: false

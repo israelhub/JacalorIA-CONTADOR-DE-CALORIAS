@@ -29,7 +29,7 @@ class _SignUpPageState extends State<SignUpPage> {
       }
 
       context.pushAndRemoveUntilSlidePage(
-        const HomeShellPage(),
+        HomeShellPage.fromLaunch(),
         (route) => false,
       );
     });
@@ -89,7 +89,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
     final nextPage = _authController.shouldCompleteOnboarding
         ? const WelcomePage()
-        : const HomeShellPage();
+        : HomeShellPage.fromLaunch();
     context.pushAndRemoveUntilSlidePage(nextPage, (route) => false);
   }
 

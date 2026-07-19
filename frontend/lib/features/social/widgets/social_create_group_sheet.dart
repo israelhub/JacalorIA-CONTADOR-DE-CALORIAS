@@ -94,9 +94,7 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
   }
 
   bool get _canSubmit =>
-      _nameController.text.trim().isNotEmpty &&
-      _descriptionController.text.trim().isNotEmpty &&
-      !_isSaving;
+      _nameController.text.trim().isNotEmpty && !_isSaving;
 
   Future<void> _submit() async {
     if (!_canSubmit) {
@@ -227,7 +225,7 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 AppInputField(
-                  label: 'Descrição',
+                  label: 'Descrição (opcional)',
                   hint: 'Sobre o grupo',
                   controller: _descriptionController,
                   onChanged: (_) => setState(() {}),

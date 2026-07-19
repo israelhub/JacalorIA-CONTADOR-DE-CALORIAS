@@ -63,7 +63,7 @@ class _LoginPageState extends State<LoginPage> {
 
     final nextPage = _authController.shouldCompleteOnboarding
         ? const WelcomePage()
-        : const HomeShellPage();
+        : HomeShellPage.fromLaunch();
     context.pushAndRemoveUntilSlidePage(nextPage, (route) => false);
   }
 
@@ -78,7 +78,7 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     context.pushAndRemoveUntilSlidePage(
-      const HomeShellPage(),
+      HomeShellPage.fromLaunch(),
       (route) => false,
     );
   }
