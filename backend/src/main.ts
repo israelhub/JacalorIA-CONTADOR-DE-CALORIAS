@@ -51,16 +51,26 @@ async function bootstrap() {
   const betaDir = join(process.cwd(), 'public', 'beta');
   if (existsSync(betaDir)) {
     const httpAdapter = app.getHttpAdapter().getInstance();
-    httpAdapter.get(
-      '/beta',
-      (_req: unknown, res: { redirect: (code: number, url: string) => void }) => {
-        res.redirect(301, '/beta/');
+    // Express trata /beta e /beta/ iguais no get(); so match by raw URL.
+    httpAdapter.use(
+      (
+        req: { method?: string; url?: string },
+        res: { redirect: (code: number, url: string) => void },
+        next: () => void,
+      ) => {
+        const pathOnly = (req.url ?? '').split('?')[0];
+        if (req.method === 'GET' && pathOnly === '/beta') {
+          res.redirect(301, '/beta/');
+          return;
+        }
+        next();
       },
     );
     app.use(
-      '/beta',
+      '/beta/',
       expressStatic(betaDir, {
         index: 'index.html',
+        redirect: false,
         fallthrough: false,
       }),
     );
