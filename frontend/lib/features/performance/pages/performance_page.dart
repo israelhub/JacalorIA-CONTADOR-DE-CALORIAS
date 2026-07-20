@@ -66,7 +66,8 @@ class _PerformancePageState extends State<PerformancePage> {
     final hasPerformance = _performance != null;
     setState(() {
       _isLoading = !hasPerformance;
-      _isMonthLoading = hasPerformance;
+      // Avoid flashing overlays when soft-refreshing cached content.
+      _isMonthLoading = hasPerformance && !silent;
       _errorMessage = null;
     });
 
@@ -102,11 +103,6 @@ class _PerformancePageState extends State<PerformancePage> {
       setState(() {
         _isWeightHistoryLoading = true;
       });
-    } else {
-      _isWeightHistoryLoading = true;
-      if (mounted) {
-        setState(() {});
-      }
     }
 
     try {

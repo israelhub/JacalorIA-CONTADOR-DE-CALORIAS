@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/analytics/analytics_service.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_floating_circle_button.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/framed_avatar.dart';
 import '../../../../shared/widgets/app_page_route.dart';
@@ -1012,8 +1013,11 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: AppSpacing.sm),
             ],
-            _ProfileActionToggleButton(
+            AppFloatingCircleButton(
               icon: _isActionsExpanded ? Icons.close_rounded : Icons.edit_rounded,
+              semanticLabel: _isActionsExpanded
+                  ? 'Fechar ações do perfil'
+                  : 'Abrir ações do perfil',
               onPressed: () {
                 setState(() {
                   _isActionsExpanded = !_isActionsExpanded;
@@ -1081,69 +1085,6 @@ class _ProfileCustomizationCategorySwitcher extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ProfileActionToggleButton extends StatefulWidget {
-  const _ProfileActionToggleButton({required this.icon, required this.onPressed});
-
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  State<_ProfileActionToggleButton> createState() =>
-      _ProfileActionToggleButtonState();
-}
-
-class _ProfileActionToggleButtonState extends State<_ProfileActionToggleButton> {
-  bool _isPressed = false;
-
-  void _setPressed(bool value) {
-    if (_isPressed == value) {
-      return;
-    }
-
-    setState(() {
-      _isPressed = value;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => _setPressed(true),
-      onTapCancel: () => _setPressed(false),
-      onTapUp: (_) => _setPressed(false),
-      onTap: widget.onPressed,
-      child: AnimatedSlide(
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOutCubic,
-        offset: Offset(0, _isPressed ? 0.012 : 0),
-        child: AnimatedScale(
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOutBack,
-          scale: _isPressed ? 0.965 : 1,
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.action500,
-              shape: BoxShape.circle,
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.action500Shadow,
-                  offset: Offset(0, 4),
-                  blurRadius: 0,
-                ),
-              ],
-            ),
-            alignment: Alignment.center,
-            child: Icon(widget.icon, color: Colors.white, size: 26),
-          ),
-        ),
       ),
     );
   }

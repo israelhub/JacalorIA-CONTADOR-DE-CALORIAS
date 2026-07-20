@@ -188,7 +188,20 @@ export class StreakService {
 
       const existingApplied = this.normalizeDayKeySet(user.streakBlockerAppliedDayKeys);
       const plan = this.buildCoveragePlan(mealDayKeys, existingApplied, todayStart);
-      if (plan.missingDayKeys.length === 0) {
+      // Never auto-consume blockers for "today" (day still in progress).
+      // Only protect the single most recent completed miss (yesterday).
+      // Multi-day historical gaps are recovered via the store "Restaurar" item.
+      const completedMissing = plan.missingDayKeys.filter((key) => key < todayKey);
+      if (completedMissing.length === 0) {
+        return;
+      }
+
+      const yesterdayDate = new Date(todayStart);
+      yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
+      const yesterdayKey = this.toDayKeyInAppTimeZone(yesterdayDate);
+      const onlyYesterdayMissed =
+        completedMissing.length === 1 && completedMissing[0] === yesterdayKey;
+      if (!onlyYesterdayMissed) {
         return;
       }
 
@@ -196,17 +209,12 @@ export class StreakService {
         0,
         parseNumber(user.offensiveBlockerInventoryCount),
       );
-      const missingCount = plan.missingDayKeys.length;
-      if (currentInventory < missingCount) {
+      if (currentInventory < 1) {
         return;
       }
-      const nextInventory = currentInventory - missingCount;
+      const nextInventory = currentInventory - 1;
       const nextApplied = new Set<string>(existingApplied);
-      for (const key of plan.missingDayKeys) {
-        if (key <= todayKey) {
-          nextApplied.add(key);
-        }
-      }
+      nextApplied.add(yesterdayKey);
 
       await user.update(
         {
