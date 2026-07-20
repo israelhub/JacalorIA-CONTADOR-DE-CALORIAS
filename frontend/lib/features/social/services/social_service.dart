@@ -217,13 +217,16 @@ class SocialService {
     required String groupId,
     required String memberUserId,
   }) async {
-    final response = await http.delete(
+    final response = await http.post(
       Uri.parse(
-        '$_baseUrl/social/groups/${groupId.trim()}/members/${memberUserId.trim()}',
+        '$_baseUrl/social/groups/${groupId.trim()}/members/${memberUserId.trim()}/remove',
       ),
       headers: _headers(),
     );
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final body = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Erro ao excluir membro do grupo.',
+    );
     if (response.statusCode == 200 || response.statusCode == 201) {
       return SocialGroupDetail.fromJson(body);
     }
@@ -296,6 +299,27 @@ class SocialService {
     final headers = <String, String>{'Authorization': 'Bearer $token'};
     if (withJsonContentType) headers['Content-Type'] = 'application/json';
     return headers;
+  }
+
+  Map<String, dynamic> _decodeJsonMap(String rawBody, {required String fallbackError}) {
+    final trimmed = rawBody.trimLeft();
+    if (trimmed.isEmpty) {
+      throw Exception(fallbackError);
+    }
+    if (trimmed.startsWith('<')) {
+      throw Exception(
+        'A API não reconheceu esta ação. Reinicie o backend local ou publique a versão mais recente.',
+      );
+    }
+    try {
+      final decoded = jsonDecode(rawBody);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      throw Exception(fallbackError);
+    } on FormatException {
+      throw Exception(fallbackError);
+    }
   }
 
   String _extractMessage(Map<String, dynamic> body, String fallback) {

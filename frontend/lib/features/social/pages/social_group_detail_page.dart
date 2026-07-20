@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image/image.dart' as img;
+import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/analytics/analytics_service.dart';
 import '../../../core/files/bytes_file_saver.dart';
 import '../../../core/config/api_config.dart';
+import '../../../core/images/widget_image_exporter.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/app_button.dart';
@@ -20,6 +21,7 @@ import '../helpers/social_group_helpers.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
 import '../widgets/social_activity_item.dart';
+import '../widgets/social_group_result_share_card.dart';
 import '../widgets/social_ranking_item.dart';
 
 class SocialGroupDetailPage extends StatefulWidget {
@@ -630,98 +632,19 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
 
   Future<Uint8List> _buildResultJpgBytes() async {
     final detail = _detail!;
-    final groupName = detail.group.name.trim().isEmpty ? 'Grupo' : detail.group.name.trim();
-    final ranking = detail.ranking;
-    final width = 1080;
-    final headerHeight = 220;
-    final rowHeight = 110;
-    final bodyPadding = 56;
-    final rankBlockHeight = 60 + (ranking.length * rowHeight) + 30;
-    final height = headerHeight + rankBlockHeight + bodyPadding;
-    final canvas = img.Image(width: width, height: height);
-    img.fill(canvas, color: img.ColorRgb8(255, 255, 253));
-
-    img.fillRect(canvas, x1: 32, y1: 28, x2: width - 32, y2: headerHeight - 24, color: img.ColorRgb8(238, 247, 230));
-    img.drawRect(canvas, x1: 32, y1: 28, x2: width - 32, y2: headerHeight - 24, color: img.ColorRgb8(212, 236, 196), thickness: 3);
-    img.drawString(
-      canvas,
-      'Resultado final do grupo',
-      font: img.arial24,
-      x: 58,
-      y: 54,
-      color: img.ColorRgb8(25, 54, 41),
+    // Warm brand fonts so accents ("Sequência") rasterize correctly.
+    await GoogleFonts.pendingFonts([
+      GoogleFonts.baloo2(),
+      GoogleFonts.nunito(),
+    ]);
+    final logicalSize = SocialGroupResultShareCard.measureLogicalSize(detail);
+    return exportWidgetToImageBytes(
+      widget: SocialGroupResultShareCard(detail: detail),
+      logicalSize: logicalSize,
+      pixelRatio: 2,
+      asJpeg: true,
+      jpegQuality: 92,
     );
-    img.drawString(
-      canvas,
-      groupName,
-      font: img.arial48,
-      x: 58,
-      y: 84,
-      color: img.ColorRgb8(30, 81, 62),
-    );
-    img.drawString(
-      canvas,
-      'Parabens aos vencedores.',
-      font: img.arial24,
-      x: 58,
-      y: 142,
-      color: img.ColorRgb8(77, 101, 89),
-    );
-
-    try {
-      final mascotData = await rootBundle.load('assets/images/Jaca_acenando_v2.webp');
-      final mascotDecoded = img.decodeImage(mascotData.buffer.asUint8List());
-      if (mascotDecoded != null) {
-        final mascot = img.copyResize(mascotDecoded, width: 180);
-        img.compositeImage(canvas, mascot, dstX: width - 240, dstY: 30);
-      }
-    } catch (_) {}
-
-    final blockTop = headerHeight + 8;
-    img.fillRect(canvas, x1: 32, y1: blockTop, x2: width - 32, y2: height - 32, color: img.ColorRgb8(255, 255, 253));
-    img.drawRect(canvas, x1: 32, y1: blockTop, x2: width - 32, y2: height - 32, color: img.ColorRgb8(239, 227, 215), thickness: 3);
-
-    var y = blockTop + 20;
-    for (final entry in ranking) {
-      final isCurrent = entry.isCurrentUser;
-      if (isCurrent) {
-        img.fillRect(canvas, x1: 40, y1: y - 6, x2: width - 40, y2: y + rowHeight - 16, color: img.ColorRgb8(238, 247, 230));
-      }
-      final metric = socialRankingMetric(
-        competitionType: detail.group.competitionType,
-        points: entry.points,
-        streakDays: entry.streakDays,
-      );
-
-      img.drawString(
-        canvas,
-        '${entry.position}',
-        font: img.arial24,
-        x: 62,
-        y: y + 20,
-        color: img.ColorRgb8(77, 101, 89),
-      );
-      img.drawString(
-        canvas,
-        entry.name,
-        font: img.arial24,
-        x: 132,
-        y: y + 20,
-        color: img.ColorRgb8(25, 54, 41),
-      );
-      img.drawString(
-        canvas,
-        '${metric.displayValue} ${metric.label.toLowerCase()}',
-        font: img.arial24,
-        x: width - 320,
-        y: y + 20,
-        color: img.ColorRgb8(240, 138, 36),
-      );
-      y += rowHeight;
-      img.drawLine(canvas, x1: 48, y1: y - 18, x2: width - 48, y2: y - 18, color: img.ColorRgb8(244, 244, 240));
-    }
-
-    return Uint8List.fromList(img.encodeJpg(canvas, quality: 92));
   }
 
   Future<void> _downloadRankingJpg() async {

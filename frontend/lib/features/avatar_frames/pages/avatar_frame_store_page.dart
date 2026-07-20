@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/analytics/analytics_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_modal.dart';
 import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/avatar_profile_preview.dart';
@@ -315,21 +316,76 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
       return;
     }
 
+    final missingGold =
+        priceGold > _goldBalance ? priceGold - _goldBalance : 0;
+
     await showDialog<void>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Ouro insuficiente'),
-          content: Text(
-            'Você não tem ouro suficiente para comprar este item.\n'
-            'Preço: $priceGold ouro.',
+        return AppModal(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ouro insuficiente',
+                style: AppTextStyles.missionsSectionTitle.copyWith(
+                  color: AppColors.brand900Variant,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Você precisa de mais ouro para comprar este item. '
+                'Complete missões para ganhar recompensas.',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.missionsGoldPill,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.performanceCardBorder),
+                ),
+                child: Column(
+                  children: [
+                    _InsufficientGoldRow(
+                      label: 'Seu saldo',
+                      value: _goldBalance,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _InsufficientGoldRow(
+                      label: 'Preço do item',
+                      value: priceGold,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                      child: Divider(
+                        height: 1,
+                        color: AppColors.performanceCardBorder,
+                      ),
+                    ),
+                    _InsufficientGoldRow(
+                      label: 'Faltam',
+                      value: missingGold,
+                      emphasize: true,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: AppButton(
+                  label: 'Entendi',
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Entendi'),
-            ),
-          ],
         );
       },
     );
@@ -886,6 +942,52 @@ class _PressableCategoryButtonState extends State<_PressableCategoryButton> {
           child: widget.child,
         ),
       ),
+    );
+  }
+}
+
+class _InsufficientGoldRow extends StatelessWidget {
+  const _InsufficientGoldRow({
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+  });
+
+  final String label;
+  final int value;
+  final bool emphasize;
+
+  @override
+  Widget build(BuildContext context) {
+    final valueColor = emphasize
+        ? AppColors.missionsRewardGold
+        : AppColors.brand900Variant;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textMuted,
+              fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+        Text(
+          '$value',
+          style: AppTextStyles.captionStrong.copyWith(
+            color: valueColor,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Icon(
+          Icons.monetization_on_rounded,
+          size: 16,
+          color: valueColor,
+        ),
+      ],
     );
   }
 }

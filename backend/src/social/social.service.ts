@@ -250,22 +250,32 @@ export class SocialService {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
         normalizedQuery,
       );
+
+    // Friendly shareable ID ("Copiar ID") is the friend invite code, not the UUID.
+    let inviteMatchedUserId: string | null = null;
+    if (!normalizedQuery.includes('@') && !isUuid) {
+      const inviteCode = normalizedQuery.toUpperCase();
+      const link = await this.socialFriendLinkModel.findOne({
+        where: { inviteCode },
+        attributes: ['userId'],
+      });
+      if (link?.userId && link.userId !== userId) {
+        inviteMatchedUserId = link.userId;
+      }
+    }
+
+    const fuzzyClause = {
+      [Op.or]: [
+        ...(isUuid ? [{ id: normalizedQuery }] : []),
+        ...(inviteMatchedUserId ? [{ id: inviteMatchedUserId }] : []),
+        { name: { [Op.iLike]: `%${normalizedQuery}%` } },
+        { email: { [Op.iLike]: `%${normalizedQuery}%` } },
+      ],
+    };
+
     const queryClause = normalizedQuery.includes('@')
       ? { email: { [Op.iLike]: normalizedQuery } }
-      : isUuid
-      ? {
-          [Op.or]: [
-            { id: normalizedQuery },
-            { name: { [Op.iLike]: `%${normalizedQuery}%` } },
-            { email: { [Op.iLike]: `%${normalizedQuery}%` } },
-          ],
-        }
-      : {
-          [Op.or]: [
-            { name: { [Op.iLike]: `%${normalizedQuery}%` } },
-            { email: { [Op.iLike]: `%${normalizedQuery}%` } },
-          ],
-        };
+      : fuzzyClause;
 
     const users = await this.userModel.findAll({
       where: {
@@ -1032,7 +1042,7 @@ export class SocialService {
         points: stats?.averageCalories ?? -1,
         goalDeviation: stats?.goalDeviation ?? -1,
       };
-    }) as SocialGroupMember[];
+    }) as unknown as SocialGroupMember[];
   }
 
   private async loadCaloriesByUserDay(

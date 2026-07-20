@@ -72,7 +72,7 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
               TextField(
                 controller: _queryController,
                 decoration: InputDecoration(
-                  hintText: 'Digite ID ou e-mail',
+                  hintText: 'Digite ID amigável, e-mail ou nome',
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
                   fillColor: AppColors.surfaceAlt,
