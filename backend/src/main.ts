@@ -1,11 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const configService = app.get(ConfigService);
   const bodyLimit = configService.get<string>('BODY_LIMIT', '10mb');
@@ -44,10 +46,16 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Dashboard estático em /beta (fora do prefixo /api)
+  app.useStaticAssets(join(process.cwd(), 'public'), {
+    index: false,
+  });
+
   app.setGlobalPrefix('api');
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
   console.log(`Backend rodando em http://localhost:${port}/api`);
+  console.log(`Dashboard beta: http://localhost:${port}/beta/`);
 }
 bootstrap();

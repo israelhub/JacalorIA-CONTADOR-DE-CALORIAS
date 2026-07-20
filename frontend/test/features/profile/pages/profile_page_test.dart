@@ -30,4 +30,53 @@ void main() {
     expect(find.text('Ganhar massa'), findsOneWidget);
     expect(find.text('Muito ativo'), findsOneWidget);
   });
+
+  testWidgets('exibe objetivo maintainWeight em portugues', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const ProfilePage(
+          initialProfile: {
+            'objective': 'maintainWeight',
+          },
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Manter peso'), findsOneWidget);
+    expect(find.text('Maintainweight'), findsNothing);
+  });
+
+  testWidgets('exibe objetivo loseWeight em portugues', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const ProfilePage(
+          initialProfile: {
+            'objective': 'loseWeight',
+          },
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Emagrecer'), findsOneWidget);
+  });
+
+  testWidgets('exibe objetivo gainMass em portugues', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const ProfilePage(
+          initialProfile: {
+            'objective': 'gainMass',
+          },
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ganhar massa'), findsOneWidget);
+  });
 }

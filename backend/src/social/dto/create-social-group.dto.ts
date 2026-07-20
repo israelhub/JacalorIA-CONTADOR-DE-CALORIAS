@@ -11,7 +11,7 @@ export class CreateSocialGroupDto {
   description?: string;
 
   @IsString()
-  @IsIn(['offensive', 'daily_goal', 'xp', 'group_streak'])
+  @IsIn(['offensive', 'daily_goal', 'xp', 'group_streak', 'goal_average'])
   competitionType: string;
 
   @IsString()

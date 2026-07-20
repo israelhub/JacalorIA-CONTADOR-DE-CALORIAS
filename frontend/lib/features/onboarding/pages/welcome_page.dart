@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_page_route.dart';
 
+import '../../../core/analytics/analytics_service.dart';
 import 'personal_data_page.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
@@ -18,6 +19,7 @@ class _WelcomePageState extends State<WelcomePage> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('onboarding_welcome');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;

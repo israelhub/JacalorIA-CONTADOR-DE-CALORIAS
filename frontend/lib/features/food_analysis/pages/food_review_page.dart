@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../core/analytics/analytics_service.dart';
 import '../../home/services/meal_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_page_route.dart';
@@ -88,6 +89,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('food_review');
     _analysis = widget.analysis;
     _confirmedSignature = widget.analysis.itemsSignature();
     _recordedAt = widget.recordedAt ?? DateTime.now();

@@ -18,6 +18,7 @@ import {
   UserCurrencyTransaction,
 } from './models/user-currency-transaction.model';
 import { StoreCatalogService } from './store-catalog.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 type DailyTotals = {
   calories: number;
@@ -89,6 +90,7 @@ export class MissionsService {
     private readonly userCurrencyTransactionModel: typeof UserCurrencyTransaction,
     private readonly streakService: StreakService,
     private readonly storeCatalogService: StoreCatalogService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async getMissions(userId: string) {
@@ -523,7 +525,7 @@ export class MissionsService {
       );
 
       const wallet = await this.getWalletSnapshot(userId, transaction);
-      return {
+      const result = {
         message: 'Moldura comprada e equipada.',
         profile: {
           equippedAvatarFrameId: normalizedFrameId,
@@ -538,6 +540,17 @@ export class MissionsService {
           xpLifetimeSpent: wallet.xpLifetimeSpent,
         },
       };
+
+      await this.analyticsService.trackSafe(userId, {
+        eventName: 'store_purchase',
+        properties: {
+          item_type: 'avatar_frame',
+          item_id: normalizedFrameId,
+          price_gold: priceGold,
+        },
+      });
+
+      return result;
     });
   }
 
@@ -624,7 +637,7 @@ export class MissionsService {
       );
 
       const wallet = await this.getWalletSnapshot(userId, transaction);
-      return {
+      const result = {
         message: 'Fundo comprado e equipado.',
         profile: {
           equippedAvatarBackgroundId: normalizedBackgroundId,
@@ -639,6 +652,17 @@ export class MissionsService {
           xpLifetimeSpent: wallet.xpLifetimeSpent,
         },
       };
+
+      await this.analyticsService.trackSafe(userId, {
+        eventName: 'store_purchase',
+        properties: {
+          item_type: 'avatar_background',
+          item_id: normalizedBackgroundId,
+          price_gold: priceGold,
+        },
+      });
+
+      return result;
     });
   }
 
@@ -759,7 +783,7 @@ export class MissionsService {
       );
 
       const wallet = await this.getWalletSnapshot(userId, transaction);
-      return {
+      const result = {
         message: `Bloqueador${normalizedQuantity > 1 ? 'es' : ''} comprado${
           normalizedQuantity > 1 ? 's' : ''
         } com sucesso.`,
@@ -778,6 +802,18 @@ export class MissionsService {
           xpLifetimeSpent: wallet.xpLifetimeSpent,
         },
       };
+
+      await this.analyticsService.trackSafe(userId, {
+        eventName: 'store_purchase',
+        properties: {
+          item_type: 'offensive_blocker',
+          item_id: normalizedBlockerId,
+          quantity: normalizedQuantity,
+          price_gold: totalPriceGold,
+        },
+      });
+
+      return result;
     });
   }
 
@@ -943,9 +979,42 @@ export class MissionsService {
       return;
     }
 
+    const referenceKeys = Array.from(
+      new Set(transactions.map((row) => row.referenceKey)),
+    );
+    const existing = await this.userCurrencyTransactionModel.findAll({
+      where: {
+        userId,
+        referenceKey: { [Op.in]: referenceKeys },
+      },
+      attributes: ['referenceKey'],
+    });
+    const existingKeys = new Set(
+      existing.map((row) => row.referenceKey).filter(Boolean),
+    );
+    const newlyAwardedKeys = referenceKeys.filter((key) => !existingKeys.has(key));
+
     await this.userCurrencyTransactionModel.bulkCreate(transactions, {
       ignoreDuplicates: true,
     });
+
+    for (const mission of completedMissions) {
+      const periodKey = this.buildMissionPeriodKey(mission.type, referenceDate);
+      const referenceKey = `mission_reward:${mission.key}:${periodKey}`;
+      if (!newlyAwardedKeys.includes(referenceKey)) {
+        continue;
+      }
+      await this.analyticsService.trackSafe(userId, {
+        eventName: 'mission_reward_earned',
+        properties: {
+          mission_key: mission.key,
+          mission_type: mission.type,
+          period: periodKey,
+          reward_gold: parseNumber(mission.rewardGold),
+          reward_xp: parseNumber(mission.rewardXp),
+        },
+      });
+    }
   }
 
   private buildMissionPeriodKey(missionType: MissionType, referenceDate: Date): string {

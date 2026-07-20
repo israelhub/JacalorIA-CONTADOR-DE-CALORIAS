@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../shared/widgets/app_page_route.dart';
 
+import 'package:jacaloria/core/analytics/analytics_service.dart';
 import 'package:jacaloria/features/home/pages/home_shell_page.dart';
 import 'package:jacaloria/features/onboarding/widgets/onboarding_select_option_button.dart';
 import 'package:jacaloria/features/onboarding/widgets/onboarding_step_header.dart';
@@ -37,6 +40,7 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('onboarding_activity_level');
     _authService = widget.authService ?? AuthService();
   }
 
@@ -51,6 +55,13 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
 
       await _authService.updateProfile(data);
       await _markFirstHomeAccessForCurrentUser();
+
+      AnalyticsService.instance.track(
+        'onboarding_step_completed',
+        properties: {'step': 'activity_level'},
+      );
+      AnalyticsService.instance.track('onboarding_completed');
+      unawaited(AnalyticsService.instance.flush());
 
       if (mounted) {
         context.pushAndRemoveUntilSlidePage(

@@ -36,6 +36,7 @@ class _SocialPublicGroupsDialogState extends State<SocialPublicGroupsDialog> {
   static const List<MapEntry<String, String>> _types = <MapEntry<String, String>>[
     MapEntry('offensive', 'Sequência'),
     MapEntry('daily_goal', 'Meta diária'),
+    MapEntry('goal_average', 'Média de meta'),
     MapEntry('xp', 'XP'),
     MapEntry('group_streak', 'Sequência dos amigos'),
   ];

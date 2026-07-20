@@ -13,6 +13,7 @@ import { SocialFriendship } from '../social/models/social-friendship.model';
 import { SocialGroup } from '../social/models/social-group.model';
 import { SocialGroupActivity } from '../social/models/social-group-activity.model';
 import { SocialGroupMember } from '../social/models/social-group-member.model';
+import { AnalyticsEvent } from '../analytics/models/analytics-event.model';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { SocialGroupMember } from '../social/models/social-group-member.model';
             SocialFriendship,
             SocialFriendLink,
             SocialFriendRequest,
+            AnalyticsEvent,
           ],
           autoLoadModels: true,
           synchronize: !isProd,

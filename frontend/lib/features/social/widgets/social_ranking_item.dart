@@ -2,19 +2,30 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/framed_avatar.dart';
+import '../helpers/social_group_helpers.dart';
 import '../models/social_group_models.dart';
 
 class SocialRankingItem extends StatelessWidget {
-  const SocialRankingItem({super.key, required this.entry});
+  const SocialRankingItem({
+    super.key,
+    required this.entry,
+    this.competitionType = 'offensive',
+  });
 
   final SocialRankingEntry entry;
+  final String competitionType;
 
   @override
   Widget build(BuildContext context) {
     final subtitle = entry.isLeader ? 'Líder do grupo' : entry.subtitle.trim();
     final rowColor = entry.isCurrentUser
-      ? AppColors.missionsXpPill.withValues(alpha: 0.75)
+        ? AppColors.missionsXpPill.withValues(alpha: 0.75)
         : AppColors.surface;
+    final metric = socialRankingMetric(
+      competitionType: competitionType,
+      points: entry.points,
+      streakDays: entry.streakDays,
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -86,21 +97,21 @@ class SocialRankingItem extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '${entry.streakDays}',
+                    metric.displayValue,
                     style: AppTextStyles.homeMealKcal.copyWith(
                       color: AppColors.brand900Variant,
                     ),
                   ),
                   const SizedBox(width: 2),
-                  const Icon(
-                    Icons.local_fire_department_rounded,
+                  Icon(
+                    metric.icon,
                     size: 12,
-                    color: AppColors.missionsRewardGold,
+                    color: metric.iconColor,
                   ),
                 ],
               ),
               Text(
-                'Sequência',
+                metric.label,
                 style: AppTextStyles.captionStrong.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w400,

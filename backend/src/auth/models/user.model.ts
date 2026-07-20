@@ -135,6 +135,10 @@ export class User extends Model {
   @Column({ type: DataType.BOOLEAN, field: 'hide_guide_me' })
   hideGuideMe: boolean | null;
 
+  @AllowNull(true)
+  @Column({ type: DataType.DATE, field: 'last_active_at' })
+  lastActiveAt: Date | null;
+
   @CreatedAt
   @Column({ field: 'created_at' })
   createdAt: Date;

@@ -9,10 +9,12 @@ import { MissionsController } from './missions.controller';
 import { MissionsService } from './missions.service';
 import { StoreCatalogService } from './store-catalog.service';
 import { StreakModule } from '../streak/streak.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
   imports: [
     StreakModule,
+    AnalyticsModule,
     SequelizeModule.forFeature([
       Mission,
       Meal,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/analytics/analytics_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../helpers/food_review_helpers.dart';
@@ -65,6 +66,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('food_capture');
     _initializeCamera();
   }
 
@@ -299,6 +301,11 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       return;
     }
 
+    AnalyticsService.instance.track(
+      'meal_capture_started',
+      properties: {'entry': 'camera'},
+    );
+
     setState(() {
       _isBusy = true;
       _error = null;
@@ -362,6 +369,13 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
     if (_isBusy) {
       return;
     }
+
+    AnalyticsService.instance.track(
+      'meal_capture_started',
+      properties: {
+        'entry': source == ImageSource.camera ? 'camera' : 'gallery',
+      },
+    );
 
     setState(() {
       _isBusy = true;

@@ -11,10 +11,12 @@ import { SocialGroupMember } from './models/social-group-member.model';
 import { SocialGroup } from './models/social-group.model';
 import { SocialService } from './social.service';
 import { StreakModule } from '../streak/streak.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
   imports: [
     StreakModule,
+    AnalyticsModule,
     SequelizeModule.forFeature([
       SocialGroup,
       SocialGroupMember,

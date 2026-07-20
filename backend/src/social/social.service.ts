@@ -15,7 +15,9 @@ import { SocialGroupActivity } from './models/social-group-activity.model';
 import { SocialGroupMember } from './models/social-group-member.model';
 import { SocialGroup } from './models/social-group.model';
 import { StreakService } from '../streak/streak.service';
+import { hasReachedCalorieGoal } from '../shared/utils/calorie-goal.util';
 import { parseNumber } from '../shared/utils/number-parser.util';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class SocialService {
@@ -37,6 +39,7 @@ export class SocialService {
     @InjectModel(Meal)
     private readonly mealModel: typeof Meal,
     private readonly streakService: StreakService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async listGroups(userId: string) {
@@ -62,7 +65,9 @@ export class SocialService {
     );
 
     return {
-      groups: memberGroups.map((group) => this.toGroupSummary(group, userId, streakByUserId)),
+      groups: await Promise.all(
+        memberGroups.map((group) => this.toGroupSummary(group, userId, streakByUserId)),
+      ),
     };
   }
 
@@ -163,6 +168,11 @@ export class SocialService {
         },
       },
     );
+
+    await this.analyticsService.trackSafe(userId, {
+      eventName: 'friend_added',
+      properties: { friend_user_id: request.requesterId },
+    });
 
     return this.listFriends(userId);
   }
@@ -391,6 +401,10 @@ export class SocialService {
         message: `${actor?.name ?? 'Usuário'} entrou no grupo por link`,
         metadata: { inviteCode: code, actorName: actor?.name ?? 'Usuário' },
       });
+      await this.analyticsService.trackSafe(userId, {
+        eventName: 'group_joined',
+        properties: { group_id: group.id, via: 'invite' },
+      });
     }
 
     return this.getGroupDetail(group.id, userId);
@@ -435,7 +449,9 @@ export class SocialService {
     );
 
     return {
-      groups: publicGroups.map((group) => this.toGroupSummary(group, userId, streakByUserId)),
+      groups: await Promise.all(
+        publicGroups.map((group) => this.toGroupSummary(group, userId, streakByUserId)),
+      ),
     };
   }
 
@@ -453,6 +469,10 @@ export class SocialService {
         activityType: 'joined_public',
         message: `${actor?.name ?? 'Usuário'} entrou no grupo público`,
         metadata: { groupId: group.id, actorName: actor?.name ?? 'Usuário' },
+      });
+      await this.analyticsService.trackSafe(userId, {
+        eventName: 'group_joined',
+        properties: { group_id: group.id, via: 'public' },
       });
     }
 
@@ -593,7 +613,7 @@ export class SocialService {
   async getGroupDetail(groupId: string, userId: string) {
     const group = await this.findGroupForMember(groupId, userId);
     const streakByUserId = await this.streakService.buildStreakByUserIds((group.members ?? []).map((member) => member.userId));
-    return this.toGroupDetail(group, userId, streakByUserId);
+    return await this.toGroupDetail(group, userId, streakByUserId);
   }
 
   private async findGroupForMember(groupId: string, userId: string) {
@@ -728,12 +748,14 @@ export class SocialService {
     return rows.reduce((sum, row) => sum + parseNumber(row.points), 0);
   }
 
-  private toGroupSummary(group: SocialGroup, userId: string, streakByUserId?: Map<string, number>) {
-    const members = this.sortMembers(this.withComputedStreaks(group.members ?? [], streakByUserId), group.competitionType);
-    const currentUser = this.findCurrentUserMember(members, userId);
-    const topMember = members[0];
+  private async toGroupSummary(group: SocialGroup, userId: string, streakByUserId?: Map<string, number>) {
+    const ranked = await this.buildRankedMembers(group, streakByUserId);
+    const currentUserEntry = ranked.find((entry) => entry.member.userId === userId);
+    const topMember = ranked[0]?.member;
     const remainingDays = this.getRemainingDays(group.endsAt, group.competitionType);
-    const groupStreakDefeated = group.competitionType === 'group_streak' && members.some((member) => parseNumber(member.streakDays) <= 0);
+    const groupStreakDefeated =
+      group.competitionType === 'group_streak' &&
+      ranked.some((entry) => parseNumber(entry.member.streakDays) <= 0);
 
     return {
       id: group.id,
@@ -742,10 +764,10 @@ export class SocialService {
       iconKey: group.iconKey,
       competitionType: group.competitionType,
       durationDays: group.durationDays,
-      memberCount: members.length,
-      rankPosition: currentUser ? members.indexOf(currentUser) + 1 : members.length,
-      points: currentUser?.points ?? 0,
-      streakDays: currentUser?.streakDays ?? 0,
+      memberCount: ranked.length,
+      rankPosition: currentUserEntry?.position ?? ranked.length,
+      points: currentUserEntry?.member.points ?? 0,
+      streakDays: currentUserEntry?.member.streakDays ?? 0,
       leaderName: topMember?.user?.name ?? group.owner?.name ?? 'Líder do grupo',
       remainingDays,
       isDefeated: groupStreakDefeated,
@@ -755,11 +777,13 @@ export class SocialService {
     };
   }
 
-  private toGroupDetail(group: SocialGroup, userId: string, streakByUserId?: Map<string, number>) {
-    const members = this.sortMembers(this.withComputedStreaks(group.members ?? [], streakByUserId), group.competitionType);
-    const topMember = members[0];
+  private async toGroupDetail(group: SocialGroup, userId: string, streakByUserId?: Map<string, number>) {
+    const ranked = await this.buildRankedMembers(group, streakByUserId);
+    const topMember = ranked[0]?.member;
     const remainingDays = this.getRemainingDays(group.endsAt, group.competitionType);
-    const groupStreakDefeated = group.competitionType === 'group_streak' && members.some((member) => parseNumber(member.streakDays) <= 0);
+    const groupStreakDefeated =
+      group.competitionType === 'group_streak' &&
+      ranked.some((entry) => parseNumber(entry.member.streakDays) <= 0);
 
     return {
       group: {
@@ -771,15 +795,13 @@ export class SocialService {
         durationDays: group.durationDays,
         isPublic: group.isPublic,
         inviteCode: (group as SocialGroup & { inviteCode?: string }).inviteCode ?? null,
-        memberCount: members.length,
+        memberCount: ranked.length,
         remainingDays,
         isDefeated: groupStreakDefeated,
-        rule: group.competitionType === 'group_streak'
-          ? 'A sequência do grupo só aumenta se todos os membros estiverem ativos.'
-          : null,
+        rule: this.getCompetitionRule(group.competitionType),
         leaderName: topMember?.user?.name ?? group.owner?.name ?? 'Líder do grupo',
       },
-      ranking: members.map((member, index) => ({
+      ranking: ranked.map(({ member, position }) => ({
         id: member.id,
         userId: member.userId,
         name: member.user?.name ?? 'Sem nome',
@@ -789,7 +811,7 @@ export class SocialService {
         streakDays: member.streakDays,
         isCurrentUser: member.userId === userId,
         isLeader: member.isLeader,
-        position: index + 1,
+        position,
         subtitle: member.isLeader ? 'Líder do grupo' : '',
       })),
       recentActivities: this.mapActivities(group.activities ?? []),
@@ -838,36 +860,250 @@ export class SocialService {
     return legacyMessage.replace(/^Você\b/i, actorName);
   }
 
+  private async buildRankedMembers(group: SocialGroup, streakByUserId?: Map<string, number>) {
+    let members = this.withComputedStreaks(group.members ?? [], streakByUserId);
+    if (group.competitionType === 'daily_goal') {
+      members = await this.withComputedDailyGoalPoints(members, group.startsAt, group.endsAt);
+    } else if (group.competitionType === 'goal_average') {
+      members = await this.withComputedGoalAveragePoints(members, group.startsAt, group.endsAt);
+    }
+    const sorted = this.sortMembers(members, group.competitionType);
+    return this.assignSharedPositions(sorted, group.competitionType);
+  }
+
+  private getCompetitionRule(competitionType: string): string | null {
+    if (competitionType === 'group_streak') {
+      return 'A sequência do grupo só aumenta se todos os membros estiverem ativos.';
+    }
+    if (competitionType === 'goal_average') {
+      return 'Ganha quem tiver a média de calorias dos dias registrados mais próxima da própria meta.';
+    }
+    return null;
+  }
+
   private withComputedStreaks(members: SocialGroupMember[], streakByUserId?: Map<string, number>) {
     if (!streakByUserId || streakByUserId.size === 0) {
       return members;
     }
 
     return members.map((member) => ({
-      ...(member.toJSON() as Record<string, unknown>),
+      ...(this.memberToPlain(member)),
       streakDays: streakByUserId.get(member.userId) ?? 0,
     })) as SocialGroupMember[];
   }
 
-  private sortMembers(members: SocialGroupMember[], competitionType: string) {
-    return [...members].sort((left, right) => {
-      if (competitionType === 'offensive' || competitionType === 'group_streak') {
-        const streakDelta = parseNumber(right.streakDays) - parseNumber(left.streakDays);
-        if (streakDelta !== 0) return streakDelta;
+  private async withComputedDailyGoalPoints(
+    members: SocialGroupMember[],
+    startsAt: Date,
+    endsAt: Date,
+  ) {
+    const userIds = [...new Set(members.map((member) => member.userId).filter(Boolean))];
+    if (userIds.length === 0) {
+      return members;
+    }
 
-        const pointsDelta = parseNumber(right.points) - parseNumber(left.points);
-        if (pointsDelta !== 0) return pointsDelta;
+    const pointsByUserId = await this.buildDailyGoalPointsByUserIds(userIds, startsAt, endsAt);
+    return members.map((member) => ({
+      ...this.memberToPlain(member),
+      points: pointsByUserId.get(member.userId) ?? 0,
+    })) as SocialGroupMember[];
+  }
 
-        return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
+  private async withComputedGoalAveragePoints(
+    members: SocialGroupMember[],
+    startsAt: Date,
+    endsAt: Date,
+  ) {
+    const userIds = [...new Set(members.map((member) => member.userId).filter(Boolean))];
+    if (userIds.length === 0) {
+      return members;
+    }
+
+    const pointsByUserId = await this.buildGoalAveragePointsByUserIds(userIds, startsAt, endsAt);
+    return members.map((member) => ({
+      ...this.memberToPlain(member),
+      // -1 = sem dias registrados; ranking trata como pior pontuação.
+      points: pointsByUserId.get(member.userId) ?? -1,
+    })) as SocialGroupMember[];
+  }
+
+  private async loadCaloriesByUserDay(
+    userIds: string[],
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<{
+    userById: Map<string, User>;
+    caloriesByUserDay: Map<string, Map<string, number>>;
+  }> {
+    const rangeStart = new Date(startsAt);
+    const rangeEnd = new Date(endsAt);
+    const empty = {
+      userById: new Map<string, User>(),
+      caloriesByUserDay: new Map<string, Map<string, number>>(),
+    };
+    if (!Number.isFinite(rangeStart.getTime()) || !Number.isFinite(rangeEnd.getTime())) {
+      return empty;
+    }
+
+    const [users, meals] = await Promise.all([
+      this.userModel.findAll({
+        where: { id: { [Op.in]: userIds } },
+        attributes: ['id', 'dailyCalorieGoal', 'objective'],
+      }),
+      this.mealModel.findAll({
+        where: {
+          userId: { [Op.in]: userIds },
+          status: MealStatus.Active,
+          createdAt: { [Op.between]: [rangeStart, rangeEnd] },
+        },
+        attributes: ['userId', 'calories', 'createdAt'],
+      }),
+    ]);
+
+    const userById = new Map(users.map((user) => [user.id, user]));
+    const caloriesByUserDay = new Map<string, Map<string, number>>();
+
+    for (const meal of meals) {
+      if (!meal.userId) continue;
+      const dayKey = this.streakService.toDayKeyInAppTimeZone(new Date(meal.createdAt));
+      if (!caloriesByUserDay.has(meal.userId)) {
+        caloriesByUserDay.set(meal.userId, new Map());
+      }
+      const dayMap = caloriesByUserDay.get(meal.userId)!;
+      dayMap.set(dayKey, (dayMap.get(dayKey) ?? 0) + parseNumber(meal.calories));
+    }
+
+    return { userById, caloriesByUserDay };
+  }
+
+  private async buildDailyGoalPointsByUserIds(
+    userIds: string[],
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<Map<string, number>> {
+    const pointsByUserId = new Map<string, number>(userIds.map((userId) => [userId, 0]));
+    const { userById, caloriesByUserDay } = await this.loadCaloriesByUserDay(
+      userIds,
+      startsAt,
+      endsAt,
+    );
+
+    for (const userId of userIds) {
+      const user = userById.get(userId);
+      const dayMap = caloriesByUserDay.get(userId);
+      if (!user || !dayMap) {
+        continue;
       }
 
-      const pointsDelta = parseNumber(right.points) - parseNumber(left.points);
-      if (pointsDelta !== 0) return pointsDelta;
+      let goalHits = 0;
+      for (const consumedCalories of dayMap.values()) {
+        if (
+          hasReachedCalorieGoal({
+            consumedCalories,
+            dailyCalorieGoal: parseNumber(user.dailyCalorieGoal, 2000),
+            objective: user.objective,
+          })
+        ) {
+          goalHits += 1;
+        }
+      }
+      pointsByUserId.set(userId, goalHits);
+    }
 
-      const streakDelta = parseNumber(right.streakDays) - parseNumber(left.streakDays);
-      if (streakDelta !== 0) return streakDelta;
+    return pointsByUserId;
+  }
 
-      return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
+  /** Distância absoluta (kcal) entre a média dos dias com refeição e a meta. Menor = melhor. */
+  private async buildGoalAveragePointsByUserIds(
+    userIds: string[],
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<Map<string, number>> {
+    const pointsByUserId = new Map<string, number>(userIds.map((userId) => [userId, -1]));
+    const { userById, caloriesByUserDay } = await this.loadCaloriesByUserDay(
+      userIds,
+      startsAt,
+      endsAt,
+    );
+
+    for (const userId of userIds) {
+      const user = userById.get(userId);
+      const dayMap = caloriesByUserDay.get(userId);
+      if (!user || !dayMap || dayMap.size === 0) {
+        continue;
+      }
+
+      let totalCalories = 0;
+      for (const consumedCalories of dayMap.values()) {
+        totalCalories += consumedCalories;
+      }
+      const averageCalories = totalCalories / dayMap.size;
+      const goal = parseNumber(user.dailyCalorieGoal, 2000);
+      pointsByUserId.set(userId, Math.round(Math.abs(averageCalories - goal)));
+    }
+
+    return pointsByUserId;
+  }
+
+  private memberToPlain(member: SocialGroupMember): Record<string, unknown> {
+    if (typeof member.toJSON === 'function') {
+      return member.toJSON() as Record<string, unknown>;
+    }
+    return { ...(member as unknown as Record<string, unknown>) };
+  }
+
+  private getPrimaryScore(member: SocialGroupMember, competitionType: string) {
+    if (competitionType === 'offensive' || competitionType === 'group_streak') {
+      return parseNumber(member.streakDays);
+    }
+    if (competitionType === 'goal_average') {
+      const deviation = parseNumber(member.points, -1);
+      // Sem registro fica no fim do ranking (pior que qualquer distância real).
+      return deviation < 0 ? Number.POSITIVE_INFINITY : deviation;
+    }
+    return parseNumber(member.points);
+  }
+
+  private isAscendingCompetition(competitionType: string) {
+    return competitionType === 'goal_average';
+  }
+
+  private sortMembers(members: SocialGroupMember[], competitionType: string) {
+    return [...members].sort((left, right) => {
+      const leftScore = this.getPrimaryScore(left, competitionType);
+      const rightScore = this.getPrimaryScore(right, competitionType);
+      const primaryDelta = this.isAscendingCompetition(competitionType)
+        ? leftScore - rightScore
+        : rightScore - leftScore;
+      if (primaryDelta !== 0) return primaryDelta;
+
+      if (competitionType === 'offensive' || competitionType === 'group_streak') {
+        const pointsDelta = parseNumber(right.points) - parseNumber(left.points);
+        if (pointsDelta !== 0) return pointsDelta;
+      } else {
+        const streakDelta = parseNumber(right.streakDays) - parseNumber(left.streakDays);
+        if (streakDelta !== 0) return streakDelta;
+      }
+
+      // Ordem estável só para exibição — não define posição.
+      return String(left.userId).localeCompare(String(right.userId));
+    });
+  }
+
+  private assignSharedPositions(members: SocialGroupMember[], competitionType: string) {
+    let previousPrimary: number | null = null;
+    let previousPosition = 0;
+
+    return members.map((member, index) => {
+      const primaryScore = this.getPrimaryScore(member, competitionType);
+      const position =
+        previousPrimary !== null && primaryScore === previousPrimary
+          ? previousPosition
+          : index + 1;
+
+      previousPrimary = primaryScore;
+      previousPosition = position;
+      return { member, position };
     });
   }
 

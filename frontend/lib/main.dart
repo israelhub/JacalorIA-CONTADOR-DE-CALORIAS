@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 
+import 'core/analytics/analytics_service.dart';
 import 'core/invite/invite_link_service.dart';
 import 'core/safe_area/web_safe_area_media_query.dart';
 import 'features/auth/pages/enter_page.dart';
@@ -13,6 +14,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   InviteLinkService.captureFromUri(Uri.base);
   await AuthService.initialize();
+  await AnalyticsService.instance.initialize();
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.portraitUp,
   ]);
