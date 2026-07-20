@@ -51,12 +51,18 @@ class _HomeShellPageState extends State<HomeShellPage>
   static const int _missionsIndex = 2;
   static const int _socialIndex = 3;
 
+  /// Avoid refetching every tab switch; keep in-memory data and soft-refresh
+  /// only when content is considered stale.
+  static const Duration _tabStaleAfter = Duration(seconds: 60);
+
   late int _currentIndex;
   late DateTime _selectedHomeDate;
   late final PageController _pageController;
   int _performanceRefreshVersion = 0;
   int _missionsRefreshVersion = 0;
   int _socialRefreshVersion = 0;
+  final Set<int> _visitedTabs = <int>{};
+  final Map<int, DateTime> _lastTabRefreshAt = <int, DateTime>{};
 
   @override
   void initState() {
@@ -65,6 +71,8 @@ class _HomeShellPageState extends State<HomeShellPage>
     _currentIndex = _tabToIndex(widget.initialTab);
     _selectedHomeDate = normalizeHomeDate(DateTime.now());
     _pageController = PageController(initialPage: _currentIndex);
+    _visitedTabs.add(_currentIndex);
+    _lastTabRefreshAt[_currentIndex] = DateTime.now();
     AnalyticsService.instance.trackAppOpen();
     _trackTabOpened(_currentIndex);
   }
@@ -81,6 +89,8 @@ class _HomeShellPageState extends State<HomeShellPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       AnalyticsService.instance.trackAppOpen(properties: {'from': 'resume'});
+      // Soft-refresh the visible tab after returning to the app.
+      _forceSoftRefreshForIndex(_currentIndex);
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden ||
@@ -137,12 +147,33 @@ class _HomeShellPageState extends State<HomeShellPage>
     };
   }
 
-  void _bumpRefreshForIndex(int index) {
+  void _bumpRefreshForIndex(int index, {bool force = false}) {
+    if (index == _homeIndex) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final isFirstVisit = !_visitedTabs.contains(index);
+    _visitedTabs.add(index);
+
+    // First visit: the page loads itself in initState — avoid a double fetch
+    // that delays things like the social notification FAB.
+    if (isFirstVisit && !force) {
+      _lastTabRefreshAt[index] = now;
+      return;
+    }
+
+    final last = _lastTabRefreshAt[index];
+    if (!force &&
+        last != null &&
+        now.difference(last) < _tabStaleAfter) {
+      return;
+    }
+
+    _lastTabRefreshAt[index] = now;
     switch (index) {
       case _performanceIndex:
         _performanceRefreshVersion++;
-        break;
-      case _homeIndex:
         break;
       case _missionsIndex:
         _missionsRefreshVersion++;
@@ -151,6 +182,15 @@ class _HomeShellPageState extends State<HomeShellPage>
         _socialRefreshVersion++;
         break;
     }
+  }
+
+  void _forceSoftRefreshForIndex(int index) {
+    if (!mounted || index == _homeIndex) {
+      return;
+    }
+    setState(() {
+      _bumpRefreshForIndex(index, force: true);
+    });
   }
 
   Future<void> _goToTab(AppMainBottomTab tab) async {

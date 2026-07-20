@@ -6,11 +6,14 @@ import '../../../core/invite/invite_link_service.dart';
 import '../../auth/service/auth_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_floating_circle_button.dart';
 import '../../../shared/widgets/app_guide_card.dart';
 import '../../../shared/widgets/app_page_header.dart';
 import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_page_route.dart';
+import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../home/widgets/home_weight_quick_edit_button.dart';
 import '../controllers/social_page_controller.dart';
 import '../models/social_group_models.dart';
 import 'social_add_friend_page.dart';
@@ -121,8 +124,31 @@ class _SocialPageState extends State<SocialPage> {
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
+        final bottomInset =
+            homeShellFabBottomClearance +
+            MediaQuery.viewPaddingOf(context).bottom;
+        final showRequestsFab =
+            !_controller.isLoading &&
+            _controller.errorMessage == null &&
+            _controller.tabIndex == 0 &&
+            _controller.pendingFriendRequestCount > 0;
+
         return Scaffold(
           backgroundColor: AppColors.surface,
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          floatingActionButton: showRequestsFab
+              ? Padding(
+                  padding: EdgeInsets.only(bottom: bottomInset),
+                  child: AppFloatingCircleButton(
+                    key: const ValueKey('friend-requests-button'),
+                    icon: Icons.notifications_rounded,
+                    semanticLabel:
+                        'Abrir solicitações de amizade, ${_controller.pendingFriendRequestCount} pendentes',
+                    badgeCount: _controller.pendingFriendRequestCount,
+                    onPressed: _openFriendRequestsModal,
+                  ),
+                )
+              : null,
           body: SafeArea(child: _buildContent()),
         );
       },
@@ -131,9 +157,7 @@ class _SocialPageState extends State<SocialPage> {
 
   Widget _buildContent() {
     if (_controller.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.action500),
-      );
+      return const _SocialBodySkeleton();
     }
 
     if (_controller.errorMessage != null) {
@@ -284,9 +308,34 @@ class _SocialPageState extends State<SocialPage> {
 
   Future<void> _openJoinGroupDialog() async {
     final result = await context.pushSlidePage<SocialJoinGroupDialogResult>(
-      const SocialJoinGroupPage(),
+      SocialJoinGroupPage(
+        fetchPublicGroups: ({
+          required String query,
+          int? durationDays,
+          String? competitionType,
+        }) {
+          return widget.service.fetchPublicGroups(
+            query: query,
+            durationDays: durationDays,
+            competitionType: competitionType,
+          );
+        },
+      ),
     );
     if (result == null) return;
+
+    final publicGroupId = result.publicGroupId?.trim() ?? '';
+    if (publicGroupId.isNotEmpty) {
+      await _guardedAction(() async {
+        final detail = await widget.service.joinPublicGroup(publicGroupId);
+        if (!mounted) return;
+        await context.pushSlidePage(
+          SocialGroupDetailPage(groupId: detail.group.id, initialDetail: detail),
+        );
+        if (mounted) await _controller.loadAll();
+      });
+      return;
+    }
 
     if (result.openPublicGroups) {
       if (!mounted) return;
@@ -433,6 +482,34 @@ class _SocialPageState extends State<SocialPage> {
     AppToast.error(
       context,
       message: error.toString().replaceFirst('Exception: ', ''),
+    );
+  }
+}
+
+class _SocialBodySkeleton extends StatelessWidget {
+  const _SocialBodySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SingleChildScrollView(
+      physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSkeletonBox(height: AppSpacing.xxl, width: 140),
+          SizedBox(height: AppSpacing.lg),
+          AppSkeletonBox(height: 44, borderRadius: AppRadius.lg),
+          SizedBox(height: AppSpacing.lg),
+          AppSkeletonBox(height: 52, borderRadius: AppRadius.lg),
+          SizedBox(height: AppSpacing.lg),
+          AppSkeletonBox(height: 88, borderRadius: AppRadius.lg),
+          SizedBox(height: AppSpacing.md),
+          AppSkeletonBox(height: 88, borderRadius: AppRadius.lg),
+          SizedBox(height: AppSpacing.md),
+          AppSkeletonBox(height: 88, borderRadius: AppRadius.lg),
+        ],
+      ),
     );
   }
 }

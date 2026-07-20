@@ -3,9 +3,21 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
+import '../../../shared/widgets/app_page_route.dart';
+import '../models/social_group_models.dart';
+import 'social_public_groups_page.dart';
 
 class SocialJoinGroupPage extends StatefulWidget {
-  const SocialJoinGroupPage({super.key});
+  const SocialJoinGroupPage({
+    super.key,
+    required this.fetchPublicGroups,
+  });
+
+  final Future<List<SocialGroupSummary>> Function({
+    required String query,
+    int? durationDays,
+    String? competitionType,
+  }) fetchPublicGroups;
 
   @override
   State<SocialJoinGroupPage> createState() => _SocialJoinGroupPageState();
@@ -18,6 +30,18 @@ class _SocialJoinGroupPageState extends State<SocialJoinGroupPage> {
   void dispose() {
     _codeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openPublicGroups() async {
+    final selectedGroupId = await context.pushSlidePage<String>(
+      SocialPublicGroupsPage(fetchGroups: widget.fetchPublicGroups),
+    );
+    if (!mounted || selectedGroupId == null || selectedGroupId.trim().isEmpty) {
+      return;
+    }
+    Navigator.of(context).pop(
+      SocialJoinGroupDialogResult.byPublicGroupId(selectedGroupId.trim()),
+    );
   }
 
   @override
@@ -57,9 +81,7 @@ class _SocialJoinGroupPageState extends State<SocialJoinGroupPage> {
               AppButton(
                 label: 'Ver grupos públicos',
                 variant: AppButtonVariant.outline,
-                onPressed: () => Navigator.of(context).pop(
-                  const SocialJoinGroupDialogResult.openPublicGroups(),
-                ),
+                onPressed: _openPublicGroups,
               ),
               const SizedBox(height: AppSpacing.lg),
               AppButton(
@@ -77,14 +99,22 @@ class _SocialJoinGroupPageState extends State<SocialJoinGroupPage> {
 }
 
 class SocialJoinGroupDialogResult {
-  const SocialJoinGroupDialogResult._({this.code, required this.openPublicGroups});
+  const SocialJoinGroupDialogResult._({
+    this.code,
+    this.publicGroupId,
+    required this.openPublicGroups,
+  });
 
   const SocialJoinGroupDialogResult.byCode(String code)
       : this._(code: code, openPublicGroups: false);
+
+  const SocialJoinGroupDialogResult.byPublicGroupId(String publicGroupId)
+      : this._(publicGroupId: publicGroupId, openPublicGroups: false);
 
   const SocialJoinGroupDialogResult.openPublicGroups()
       : this._(openPublicGroups: true);
 
   final String? code;
+  final String? publicGroupId;
   final bool openPublicGroups;
 }

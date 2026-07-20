@@ -27,6 +27,9 @@ class SocialPageController extends ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
+  bool _hasLoadedOnce = false;
+  bool get hasLoadedOnce => _hasLoadedOnce;
+
   bool _showIntro = false;
   bool get showIntro => _showIntro;
 
@@ -100,14 +103,16 @@ class SocialPageController extends ChangeNotifier {
   }
 
   Future<void> loadAll({bool silent = false}) async {
-    final hadData = _groups.isNotEmpty || _friends.isNotEmpty;
+    final hadData = _hasLoadedOnce;
     final localUserId = _resolveLocalUserId();
     try {
       if (await _readHideIntroLocal(localUserId)) {
         _showIntro = false;
       }
     } catch (_) {}
-    _isLoading = silent ? false : true;
+
+    // Keep showing cached content while refreshing in the background.
+    _isLoading = silent ? false : !hadData;
     _errorMessage = null;
     notifyListeners();
 
@@ -145,6 +150,7 @@ class SocialPageController extends ChangeNotifier {
       _currentUserAvatarUrl = profile['avatarUrl']?.toString();
       _currentUserAvatarFrameId = profile['equippedAvatarFrameId']?.toString();
       _showIntro = !(hideIntroLocal || _isGuideHidden(profile));
+      _hasLoadedOnce = true;
       _isLoading = false;
       notifyListeners();
     } catch (error) {

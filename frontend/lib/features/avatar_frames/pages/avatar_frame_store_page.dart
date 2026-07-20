@@ -120,6 +120,11 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         _blockerInventory = AvatarFrameCatalog.blockerInventoryFromProfile(
           _profileSnapshot,
         );
+        for (final blocker in _catalog.blockers) {
+          if (blocker.isInventoryBlocker && blocker.quantityOwned > 0) {
+            _blockerInventory[blocker.id] = blocker.quantityOwned;
+          }
+        }
         _goldBalance = _toInt(summary['gold'], _goldBalance);
         _isLoadingCatalog = false;
       });
@@ -675,8 +680,8 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                           crossAxisSpacing: AppSpacing.md,
                           mainAxisSpacing: AppSpacing.md,
                           childAspectRatio: constraints.maxWidth >= 720
-                              ? 0.9
-                              : 0.74,
+                              ? 0.82
+                              : 0.68,
                         ),
                         itemBuilder: (context, index) {
                           final item = items[index];
@@ -997,7 +1002,15 @@ class _StoreTile extends StatelessWidget {
         ? 'Equipar'
         : 'Comprar';
     final buttonEnabled = !isSaving && (item.isStreakRestore ? item.restoreAvailable : true);
-    final displayPrice = item.isStreakRestore ? item.priceGold : item.priceGold;
+    final metaLabel = item.isInventoryBlocker
+        ? (effectiveBlockerQuantity > 0 ? 'x$effectiveBlockerQuantity' : ' ')
+        : item.isStreakRestore
+        ? (item.missingDaysUntilToday > 0
+            ? '${item.missingDaysUntilToday} dia${item.missingDaysUntilToday > 1 ? 's' : ''}'
+            : ' ')
+        : isOwned
+        ? 'Comprado'
+        : ' ';
 
     return Material(
       color: AppColors.surface,
@@ -1031,65 +1044,53 @@ class _StoreTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.name,
-                      style: AppTextStyles.homeMealTitle.copyWith(
-                        color: AppColors.brand900Variant,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              SizedBox(
+                height: 40,
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: Text(
+                    item.name,
+                    style: AppTextStyles.homeMealTitle.copyWith(
+                      color: AppColors.brand900Variant,
+                      height: 1.15,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.monetization_on_rounded,
-                        size: 16,
-                        color: AppColors.missionsRewardGold,
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        '$displayPrice',
-                        style: AppTextStyles.captionStrong.copyWith(
-                          color: AppColors.brand900Variant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: AppSpacing.xs),
-              Row(
-                children: [
-                  const Spacer(),
-                  if (item.isInventoryBlocker && effectiveBlockerQuantity > 0)
-                    Text(
-                      'x$effectiveBlockerQuantity',
-                      style: AppTextStyles.captionStrong.copyWith(
-                        color: AppColors.action500,
-                      ),
-                    )
-                  else if (item.isStreakRestore && item.missingDaysUntilToday > 0)
-                    Text(
-                      '${item.missingDaysUntilToday} dia${item.missingDaysUntilToday > 1 ? 's' : ''}',
-                      style: AppTextStyles.captionStrong.copyWith(
-                        color: AppColors.action500,
-                      ),
-                    )
-                  else if (isOwned)
-                    Text(
-                      'Comprado',
-                      style: AppTextStyles.captionStrong.copyWith(
-                        color: AppColors.action500,
+              SizedBox(
+                height: 20,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        metaLabel,
+                        style: AppTextStyles.captionStrong.copyWith(
+                          color: metaLabel.trim().isEmpty
+                              ? Colors.transparent
+                              : AppColors.action500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                ],
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      '${item.priceGold}',
+                      style: AppTextStyles.captionStrong.copyWith(
+                        color: AppColors.brand900Variant,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(
+                      Icons.monetization_on_rounded,
+                      size: 16,
+                      color: AppColors.missionsRewardGold,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
               AppButton(

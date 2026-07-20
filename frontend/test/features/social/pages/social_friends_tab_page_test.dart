@@ -15,7 +15,36 @@ SocialFriend _friend() {
 }
 
 void main() {
-  testWidgets('oculta o botão de solicitações quando não há pedidos pendentes', (
+  testWidgets('mostra adicionar amigo e lista sem botão de solicitações inline', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 420,
+              child: SocialFriendsTabPage(
+                friends: [_friend()],
+                onAddFriend: () {},
+                pendingRequestCount: 3,
+                onOpenRequests: () {},
+                onOpenFriendProfile: (_) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Adicionar amigo'), findsOneWidget);
+    expect(find.byKey(const ValueKey('friend-requests-button')), findsNothing);
+    expect(find.text('Seus amigos'), findsOneWidget);
+    expect(find.text('Ana Paula'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('oculta solicitações inline mesmo sem pedidos pendentes', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -40,42 +69,5 @@ void main() {
     expect(find.text('Adicionar amigo'), findsOneWidget);
     expect(find.byKey(const ValueKey('friend-requests-button')), findsNothing);
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('exibe botão flutuante de solicitações quando há pedidos pendentes', (
-    tester,
-  ) async {
-    var openedRequests = false;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: SizedBox(
-              width: 420,
-              child: SocialFriendsTabPage(
-                friends: [_friend()],
-                onAddFriend: () {},
-                pendingRequestCount: 3,
-                onOpenRequests: () => openedRequests = true,
-                onOpenFriendProfile: (_) {},
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    expect(find.text('Adicionar amigo'), findsOneWidget);
-    expect(find.byKey(const ValueKey('friend-requests-button')), findsOneWidget);
-    expect(find.text('3'), findsOneWidget);
-    expect(find.text('Seus amigos'), findsOneWidget);
-    expect(find.text('Ana Paula'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-
-    await tester.tap(find.byKey(const ValueKey('friend-requests-button')));
-    await tester.pump();
-
-    expect(openedRequests, isTrue);
   });
 }

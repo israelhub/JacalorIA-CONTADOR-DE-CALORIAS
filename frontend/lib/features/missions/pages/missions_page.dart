@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_page_header.dart';
 import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_section_header.dart';
+import '../../../shared/widgets/app_skeleton.dart';
 import '../models/missions_overview.dart';
 import '../services/missions_service.dart';
 import '../widgets/mission_card.dart';
@@ -89,9 +90,10 @@ class _MissionsPageState extends State<MissionsPage> {
 
   Future<void> _loadMissions({bool silent = false}) async {
     final hadData = _overview != null;
-    if (!silent || _overview == null) {
+    if (!silent || !hadData) {
       setState(() {
-        _isLoading = true;
+        // Only show the blocking loader when there is no cached content yet.
+        _isLoading = !hadData;
         _errorMessage = null;
       });
     } else {
@@ -157,9 +159,7 @@ class _MissionsPageState extends State<MissionsPage> {
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.action500),
-      );
+      return const _MissionsBodySkeleton();
     }
 
     if (_errorMessage != null || _overview == null) {
@@ -619,5 +619,33 @@ class _GoldStatementPage extends StatelessWidget {
     final hour = local.hour.toString().padLeft(2, '0');
     final minute = local.minute.toString().padLeft(2, '0');
     return '$day/$month/$year $hour:$minute';
+  }
+}
+
+class _MissionsBodySkeleton extends StatelessWidget {
+  const _MissionsBodySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SingleChildScrollView(
+      physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSkeletonBox(height: AppSpacing.xxl, width: 160),
+          SizedBox(height: AppSpacing.lg),
+          AppSkeletonBox(height: 72, borderRadius: AppRadius.lg),
+          SizedBox(height: AppSpacing.lg),
+          AppSkeletonBox(height: AppSpacing.lg, width: 120),
+          SizedBox(height: AppSpacing.md),
+          AppSkeletonBox(height: 96, borderRadius: AppRadius.lg),
+          SizedBox(height: AppSpacing.md),
+          AppSkeletonBox(height: 96, borderRadius: AppRadius.lg),
+          SizedBox(height: AppSpacing.md),
+          AppSkeletonBox(height: 96, borderRadius: AppRadius.lg),
+        ],
+      ),
+    );
   }
 }
