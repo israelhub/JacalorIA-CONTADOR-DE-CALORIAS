@@ -308,11 +308,14 @@ export class AuthService {
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.authRepository.findByEmailWithPassword(dto.email);
 
-    if (!user || !user.emailVerified) {
-      return {
-        message:
-          'Se o email existir e estiver verificado, um codigo de redefinicao sera enviado. Verificar na caixa de spam.',
-      };
+    if (!user) {
+      throw new BadRequestException('E-mail nao cadastrado.');
+    }
+
+    if (!user.emailVerified) {
+      throw new BadRequestException(
+        'Confirme seu e-mail antes de redefinir a senha.',
+      );
     }
 
     const resetCode = this.generateCodeDifferentFrom(user.verificationCode);
@@ -336,7 +339,7 @@ export class AuthService {
 
     return {
       message:
-        'Se o email existir e estiver verificado, um codigo de redefinicao sera enviado. Verificar na caixa de spam.',
+        'Codigo de redefinicao enviado. Verificar na caixa de spam.',
     };
   }
 

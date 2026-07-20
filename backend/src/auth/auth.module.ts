@@ -40,6 +40,6 @@ import { StreakModule } from '../streak/streak.module';
   ],
   controllers: [AuthController],
   providers: [AuthRepository, AuthService, JwtStrategy, OptionalJwtAuthGuard],
-  exports: [AuthService, OptionalJwtAuthGuard],
+  exports: [AuthService, OptionalJwtAuthGuard, PassportModule, JwtModule],
 })
 export class AuthModule {}

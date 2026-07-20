@@ -236,7 +236,32 @@ class SocialPageController extends ChangeNotifier {
   }
 
   Future<List<SocialUserSearchResult>> searchUsers(String query) {
-    return _service.searchUsers(query);
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return Future.value(const <SocialUserSearchResult>[]);
+    }
+
+    // Keep name/email searches as-typed; only normalize invite links / codes.
+    final looksLikeEmail = trimmed.contains('@');
+    final looksLikeUuid = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+    ).hasMatch(trimmed);
+    final looksLikeInviteCode = RegExp(r'^[A-Za-z0-9]{4,12}$').hasMatch(trimmed);
+    final looksLikeInviteLink =
+        trimmed.toLowerCase().contains('friend') ||
+        trimmed.toLowerCase().contains('code=') ||
+        trimmed.toUpperCase().startsWith('JACALORIA-FRIEND-');
+
+    if (!looksLikeEmail &&
+        !looksLikeUuid &&
+        (looksLikeInviteCode || looksLikeInviteLink)) {
+      final normalized = extractInviteCode(trimmed);
+      return _service.searchUsers(
+        normalized.isNotEmpty ? normalized : trimmed,
+      );
+    }
+
+    return _service.searchUsers(trimmed);
   }
 
   String friendLinkValue() {

@@ -105,7 +105,7 @@ export class SocialController {
     return this.socialService.addGroupMembers(groupId, req.user.sub, dto);
   }
 
-  @Delete('groups/:groupId/members/:memberUserId')
+  @Post('groups/:groupId/members/:memberUserId/remove')
   removeGroupMember(
     @Req() req: any,
     @Param('groupId') groupId: string,

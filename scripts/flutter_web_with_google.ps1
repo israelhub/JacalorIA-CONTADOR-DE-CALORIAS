@@ -1,8 +1,9 @@
 $clientId = $env:GOOGLE_WEB_CLIENT_ID
 $webPort = if ($env:FLUTTER_WEB_PORT) { $env:FLUTTER_WEB_PORT } else { '' }
-$apiBaseUrl = if ($env:API_BASE_URL) { $env:API_BASE_URL } else { 'https://jacaloria-backend.onrender.com/api' }
+# Prefer explicit env, then frontend .env, then local backend.
+$apiBaseUrl = if ($env:API_BASE_URL) { $env:API_BASE_URL } else { '' }
 
-if (-not $clientId) {
+if (-not $clientId -or -not $webPort -or -not $apiBaseUrl) {
   $frontendEnvFiles = @(
     (Join-Path $PSScriptRoot "..\frontend\.env"),
     (Join-Path $PSScriptRoot "..\frontend\.env.local")
@@ -13,16 +14,19 @@ if (-not $clientId) {
       continue
     }
 
-    $line = Get-Content -LiteralPath $envFile |
-      Where-Object { $_ -match '^GOOGLE_WEB_CLIENT_ID=' } |
-      Select-Object -First 1
+    $lines = Get-Content -LiteralPath $envFile
 
-    if ($line -and -not $clientId) {
-      $clientId = ($line -split '=', 2)[1].Trim().Trim('"')
+    if (-not $clientId) {
+      $line = $lines |
+        Where-Object { $_ -match '^GOOGLE_WEB_CLIENT_ID=' } |
+        Select-Object -First 1
+      if ($line) {
+        $clientId = ($line -split '=', 2)[1].Trim().Trim('"')
+      }
     }
 
     if (-not $webPort) {
-      $portLine = Get-Content -LiteralPath $envFile |
+      $portLine = $lines |
         Where-Object { $_ -match '^FLUTTER_WEB_PORT=' } |
         Select-Object -First 1
       if ($portLine) {
@@ -30,10 +34,23 @@ if (-not $clientId) {
       }
     }
 
-    if ($clientId -and $webPort) {
+    if (-not $apiBaseUrl) {
+      $apiLine = $lines |
+        Where-Object { $_ -match '^API_BASE_URL=' } |
+        Select-Object -First 1
+      if ($apiLine) {
+        $apiBaseUrl = ($apiLine -split '=', 2)[1].Trim().Trim('"')
+      }
+    }
+
+    if ($clientId -and $webPort -and $apiBaseUrl) {
       break
     }
   }
+}
+
+if (-not $apiBaseUrl) {
+  $apiBaseUrl = 'http://localhost:3000/api'
 }
 
 if (-not $clientId) {
@@ -96,6 +113,8 @@ if (-not $clientId) {
 
 $frontendDir = Join-Path $PSScriptRoot "..\frontend"
 $frontendDir = [System.IO.Path]::GetFullPath($frontendDir)
+
+Write-Host "Flutter Web -> API_BASE_URL=$apiBaseUrl (porta $webPort)" -ForegroundColor Cyan
 
 Push-Location $frontendDir
 try {

@@ -39,6 +39,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     AppToast.error(context, message: message);
   }
 
+  void _showSuccess(String message) {
+    AppToast.show(context, message: message);
+  }
+
   Future<void> _handleSendCode() async {
     final email = _emailController.text.trim();
     if (!AuthHelpers.isValidEmail(email)) {
@@ -52,6 +56,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     }
 
     if (sent) {
+      _showSuccess('Codigo enviado. Verificar na caixa de spam.');
       context.pushSlidePage(ResetPasswordCodePage(email: email));
       return;
     }

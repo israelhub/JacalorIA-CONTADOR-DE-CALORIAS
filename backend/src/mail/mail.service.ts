@@ -149,6 +149,7 @@ export class MailService {
     subjectType: 'bug' | 'suggestion';
     description: string;
     userId?: string;
+    userName?: string;
     userEmail?: string;
     contactEmail?: string;
   }): Promise<boolean> {
@@ -180,6 +181,9 @@ export class MailService {
       '',
       '---',
       params.userId ? `User ID: ${params.userId}` : 'User ID: (nao autenticado)',
+      params.userName
+        ? `Nome: ${params.userName}`
+        : 'Nome: (nao autenticado)',
       params.userEmail
         ? `E-mail da conta: ${params.userEmail}`
         : 'E-mail da conta: (nao autenticado)',
