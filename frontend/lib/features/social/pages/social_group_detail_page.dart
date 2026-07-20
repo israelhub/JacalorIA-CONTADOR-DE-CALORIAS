@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -631,6 +632,19 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     return 'ranking-final-$groupName-${DateTime.now().millisecondsSinceEpoch}.jpg';
   }
 
+  Future<void> _precacheRankingAvatars(SocialGroupDetail detail) async {
+    if (!mounted) return;
+    for (final entry in detail.ranking) {
+      final url = entry.avatarUrl?.trim();
+      if (url == null || url.isEmpty || !url.startsWith('http')) {
+        continue;
+      }
+      try {
+        await precacheImage(CachedNetworkImageProvider(url), context);
+      } catch (_) {}
+    }
+  }
+
   Future<Uint8List> _buildResultJpgBytes() async {
     final detail = _detail!;
     // Warm brand fonts so accents ("Sequência") rasterize correctly.
@@ -638,6 +652,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       GoogleFonts.baloo2(),
       GoogleFonts.nunito(),
     ]);
+    await _precacheRankingAvatars(detail);
     final logicalSize = SocialGroupResultShareCard.measureLogicalSize(detail);
     return exportWidgetToImageBytes(
       widget: SocialGroupResultShareCard(detail: detail),

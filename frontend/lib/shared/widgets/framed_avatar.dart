@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/avatar_frames/models/avatar_frame_catalog.dart';
@@ -159,24 +160,34 @@ class _AvatarCircle extends StatelessWidget {
         ? fallbackText!.trim()[0].toUpperCase()
         : null;
 
+    final fallback = _FallbackAvatar(
+      initial: initial,
+      backgroundColor: backgroundColor,
+    );
+
     return ClipOval(
       child: SizedBox.square(
         dimension: size,
         child: imageUrl != null
-            ? Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _FallbackAvatar(
-                  initial: initial,
-                  backgroundColor: backgroundColor,
+            ? Image(
+                image: CachedNetworkImageProvider(
+                  imageUrl,
+                  maxWidth: _cacheDimension(context),
+                  maxHeight: _cacheDimension(context),
                 ),
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                errorBuilder: (_, __, ___) => fallback,
               )
-            : _FallbackAvatar(
-                initial: initial,
-                backgroundColor: backgroundColor,
-              ),
+            : fallback,
       ),
     );
+  }
+
+  int? _cacheDimension(BuildContext context) {
+    final dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
+    final dimension = (size * dpr).round();
+    return dimension > 0 ? dimension : null;
   }
 
   String? _resolveAvatarUrl(String? raw) {

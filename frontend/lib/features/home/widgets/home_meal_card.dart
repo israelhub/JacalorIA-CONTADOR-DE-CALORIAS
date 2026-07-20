@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
@@ -62,9 +63,10 @@ class HomeMealCard extends StatelessWidget {
                 child: imageBytes != null
                     ? Image.memory(imageBytes!, fit: BoxFit.cover)
                     : imageUrl != null
-                    ? Image.network(
-                        imageUrl!,
+                    ? Image(
+                        image: CachedNetworkImageProvider(imageUrl!),
                         fit: BoxFit.cover,
+                        gaplessPlayback: true,
                         errorBuilder: (_, __, ___) => const ColoredBox(
                           color: AppColors.homeMetaCardSurface,
                           child: Icon(

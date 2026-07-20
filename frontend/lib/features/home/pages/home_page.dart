@@ -1,5 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../avatar_frames/models/avatar_background_catalog.dart';
+import '../../avatar_frames/models/avatar_frame_catalog.dart';
 import '../../../shared/widgets/app_page_route.dart';
 
 import '../../food_analysis/models/food_meal_record.dart';
@@ -249,12 +252,26 @@ class _HomePageState extends State<HomePage> {
       const AssetImage(HomePage._mealAsset),
     ];
 
+    for (final frame in AvatarFrameCatalog.items) {
+      final assetPath = frame.assetPath;
+      if (assetPath != null && assetPath.isNotEmpty) {
+        providers.add(AssetImage(assetPath));
+      }
+    }
+
+    final backgroundAsset = AvatarBackgroundCatalog.assetPathForId(
+      AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(profile),
+    );
+    if (backgroundAsset != null && backgroundAsset.isNotEmpty) {
+      providers.add(AssetImage(backgroundAsset));
+    }
+
     final avatarUrl =
         profile?['avatarUrl'] as String? ?? profile?['avatar_url'] as String?;
     if (avatarUrl != null &&
         avatarUrl.isNotEmpty &&
         avatarUrl.startsWith('http')) {
-      providers.add(NetworkImage(avatarUrl));
+      providers.add(CachedNetworkImageProvider(avatarUrl));
     }
 
     for (final meal in meals) {
@@ -267,7 +284,7 @@ class _HomePageState extends State<HomePage> {
       if (imageUrl != null &&
           imageUrl.isNotEmpty &&
           imageUrl.startsWith('http')) {
-        providers.add(NetworkImage(imageUrl));
+        providers.add(CachedNetworkImageProvider(imageUrl));
         continue;
       }
 
@@ -661,16 +678,22 @@ class _HomeBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset =
-        homeShellFabBottomClearance + MediaQuery.viewPaddingOf(context).bottom;
+    final viewPaddingBottom = MediaQuery.viewPaddingOf(context).bottom;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final listBottomInset = homeShellFabBottomClearance + viewPaddingBottom;
+    // When the keyboard is open, skip nav clearance — the system already
+    // lifts the FAB by viewInsets; keep only a small gap above the keys.
+    final fabBottomInset =
+        keyboardInset > 0 ? AppSpacing.sm : listBottomInset;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
+      resizeToAvoidBottomInset: true,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: onWeightUpdated == null
           ? null
           : Padding(
-              padding: EdgeInsets.only(bottom: bottomInset),
+              padding: EdgeInsets.only(bottom: fabBottomInset),
               child: HomeWeightQuickEditButton(
                 userProfile: userProfile,
                 onWeightUpdated: onWeightUpdated,
@@ -744,7 +767,7 @@ class _HomeBody extends StatelessWidget {
                               const SizedBox(height: AppSpacing.lg),
                           ];
                         }),
-                    SizedBox(height: AppSpacing.xxxl + bottomInset + 56),
+                    SizedBox(height: AppSpacing.xxxl + listBottomInset + 56),
                   ],
                 ),
               ),

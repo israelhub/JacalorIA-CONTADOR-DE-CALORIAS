@@ -28,9 +28,9 @@ class HomeWeightQuickEditButton extends StatefulWidget {
 
 class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
   final TextEditingController _weightController = TextEditingController();
+  final FocusNode _weightFocusNode = FocusNode();
   var _isExpanded = false;
   var _isSaving = false;
-  var _isEditingText = false;
   double _weight = 0;
   var _weightUnit = 'kg';
 
@@ -52,6 +52,7 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
 
   @override
   void dispose() {
+    _weightFocusNode.dispose();
     _weightController.dispose();
     super.dispose();
   }
@@ -85,58 +86,22 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
     return value.toStringAsFixed(1);
   }
 
-  double get _step {
-    switch (_weightUnit) {
-      case 'lb':
-        return 1;
-      case 'g':
-        return 100;
-      case 'kg':
-      default:
-        return 0.1;
-    }
-  }
-
   Future<void> _toggle() async {
     if (_isExpanded) {
-      if (_isEditingText) {
-        _applyEditedWeightLocally();
-      }
-      setState(() => _isExpanded = false);
-      await _persistWeight();
+      await _finishEditing();
       return;
     }
 
     _hydrateFromProfile();
     setState(() {
-      _isEditingText = false;
       _weightController.text = _formatWeight(_weight);
       _isExpanded = true;
     });
-  }
-
-  void _adjustWeight(double delta) {
-    if (_isSaving) {
-      return;
-    }
-    final next = ((_weight + delta) * 10).roundToDouble() / 10;
-    if (next <= 0) {
-      return;
-    }
-    setState(() {
-      _weight = next;
-      _isEditingText = false;
-      _weightController.text = _formatWeight(_weight);
-    });
-  }
-
-  void _startEditing() {
-    if (_isSaving) {
-      return;
-    }
-    setState(() {
-      _isEditingText = true;
-      _weightController.text = _formatWeight(_weight);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _weightFocusNode.requestFocus();
       _weightController.selection = TextSelection(
         baseOffset: 0,
         extentOffset: _weightController.text.length,
@@ -149,12 +114,17 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
     if (parsed != null && parsed > 0) {
       _weight = parsed;
     }
-    _isEditingText = false;
     _weightController.text = _formatWeight(_weight);
   }
 
-  void _submitEditedWeight() {
-    setState(_applyEditedWeightLocally);
+  Future<void> _finishEditing() async {
+    if (!_isExpanded || _isSaving) {
+      return;
+    }
+    _weightFocusNode.unfocus();
+    _applyEditedWeightLocally();
+    setState(() => _isExpanded = false);
+    await _persistWeight();
   }
 
   Future<void> _persistWeight() async {
@@ -228,16 +198,12 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
               ? Padding(
                   key: const ValueKey('weight-controls'),
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: _WeightControls(
-                    weightText: _formatWeight(_weight),
+                  child: _WeightInputPanel(
                     weightUnit: _weightUnit,
                     controller: _weightController,
-                    isEditingText: _isEditingText,
+                    focusNode: _weightFocusNode,
                     isSaving: _isSaving,
-                    onDecrease: () => _adjustWeight(-_step),
-                    onIncrease: () => _adjustWeight(_step),
-                    onStartEdit: _startEditing,
-                    onSubmitEdit: _submitEditedWeight,
+                    onSubmitted: _finishEditing,
                   ),
                 )
               : const SizedBox.shrink(key: ValueKey('weight-controls-hidden')),
@@ -245,9 +211,9 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
         AppFloatingCircleButton(
           key: const ValueKey('home-weight-quick-edit-button'),
           icon: _isExpanded
-              ? Icons.close_rounded
+              ? Icons.check_rounded
               : Icons.monitor_weight_outlined,
-          semanticLabel: _isExpanded ? 'Fechar edição de peso' : 'Atualizar peso',
+          semanticLabel: _isExpanded ? 'Salvar peso' : 'Atualizar peso',
           onPressed: _toggle,
         ),
       ],
@@ -255,28 +221,20 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
   }
 }
 
-class _WeightControls extends StatelessWidget {
-  const _WeightControls({
-    required this.weightText,
+class _WeightInputPanel extends StatelessWidget {
+  const _WeightInputPanel({
     required this.weightUnit,
     required this.controller,
-    required this.isEditingText,
+    required this.focusNode,
     required this.isSaving,
-    required this.onDecrease,
-    required this.onIncrease,
-    required this.onStartEdit,
-    required this.onSubmitEdit,
+    required this.onSubmitted,
   });
 
-  final String weightText;
   final String weightUnit;
   final TextEditingController controller;
-  final bool isEditingText;
+  final FocusNode focusNode;
   final bool isSaving;
-  final VoidCallback onDecrease;
-  final VoidCallback onIncrease;
-  final VoidCallback onStartEdit;
-  final VoidCallback onSubmitEdit;
+  final Future<void> Function() onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -285,8 +243,9 @@ class _WeightControls extends StatelessWidget {
       elevation: 0,
       borderRadius: BorderRadius.circular(AppRadius.xl),
       child: Container(
+        width: 148,
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
+          horizontal: AppSpacing.md,
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
@@ -295,76 +254,49 @@ class _WeightControls extends StatelessWidget {
           border: Border.all(color: AppColors.borderBrand),
           boxShadow: AppShadows.md,
         ),
-        child: Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppFloatingCircleButton(
-              icon: Icons.remove_rounded,
-              size: 44,
-              iconSize: 22,
-              semanticLabel: 'Diminuir peso',
-              onPressed: onDecrease,
+            TextField(
+              controller: controller,
+              focusNode: focusNode,
+              enabled: !isSaving,
+              autofocus: true,
+              textAlign: TextAlign.center,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              textInputAction: TextInputAction.done,
+              enableSuggestions: false,
+              autocorrect: false,
+              // Keeps the field visible above the soft keyboard on small screens.
+              scrollPadding: const EdgeInsets.only(bottom: 120),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                LengthLimitingTextInputFormatter(6),
+              ],
+              style: AppTextStyles.headingSmall.copyWith(
+                color: AppColors.brand900Variant,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                hintText: '0',
+                hintStyle: AppTextStyles.headingSmall.copyWith(
+                  color: AppColors.textSecondary.withValues(alpha: 0.45),
+                ),
+              ),
+              onSubmitted: (_) => onSubmitted(),
+              // Only dismiss the keyboard — save/close via Done or the check FAB,
+              // otherwise tapping the FAB would collapse then immediately reopen.
+              onTapOutside: (_) => focusNode.unfocus(),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            SizedBox(
-              width: 72,
-              child: isEditingText
-                  ? TextField(
-                      controller: controller,
-                      autofocus: true,
-                      textAlign: TextAlign.center,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                      ],
-                      style: AppTextStyles.headingSmall.copyWith(
-                        color: AppColors.brand900Variant,
-                      ),
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      onSubmitted: (_) => onSubmitEdit(),
-                      onTapOutside: (_) => onSubmitEdit(),
-                    )
-                  : InkWell(
-                      onTap: isSaving ? null : onStartEdit,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.xs,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              weightText.isEmpty ? '--' : weightText,
-                              textAlign: TextAlign.center,
-                              style: AppTextStyles.headingSmall.copyWith(
-                                color: AppColors.brand900Variant,
-                              ),
-                            ),
-                            Text(
-                              weightUnit,
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            AppFloatingCircleButton(
-              icon: Icons.add_rounded,
-              size: 44,
-              iconSize: 22,
-              semanticLabel: 'Aumentar peso',
-              onPressed: onIncrease,
+            Text(
+              weightUnit,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),

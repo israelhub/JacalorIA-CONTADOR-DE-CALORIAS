@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/framed_avatar.dart';
 import '../helpers/social_group_helpers.dart';
 import '../models/social_group_models.dart';
 
@@ -19,15 +20,12 @@ class SocialGroupResultShareCard extends StatelessWidget {
   static Size measureLogicalSize(SocialGroupDetail detail) {
     final ranking = detail.ranking;
     const header = 420.0;
-    const podium = 300.0;
     const listHeader = 72.0;
-    const row = 108.0;
+    const row = 118.0;
     const footer = 160.0;
-    final restCount = ranking.length > 3 ? ranking.length - 3 : 0;
     final height =
         header +
-        (ranking.isNotEmpty ? podium : 0) +
-        (restCount > 0 ? listHeader + (restCount * row) : 24) +
+        (ranking.isNotEmpty ? listHeader + (ranking.length * row) : 24) +
         footer;
     return Size(cardWidth, height.clamp(1350, 3600));
   }
@@ -37,9 +35,6 @@ class SocialGroupResultShareCard extends StatelessWidget {
     final group = detail.group;
     final ranking = detail.ranking;
     final competition = socialCompetitionLabel(group.competitionType);
-    final top = ranking.take(3).toList(growable: false);
-    final listEntries =
-        ranking.length > 3 ? ranking.sublist(3) : const <SocialRankingEntry>[];
 
     return Container(
       width: cardWidth,
@@ -126,7 +121,7 @@ class SocialGroupResultShareCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            'Parabéns aos vencedores — desafio concluído!',
+                            'Parabéns aos vencedores! Desafio concluído!',
                             style: GoogleFonts.nunito(
                               fontSize: 28,
                               fontWeight: FontWeight.w600,
@@ -149,17 +144,10 @@ class SocialGroupResultShareCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (top.isNotEmpty) ...[
-                  const SizedBox(height: 36),
-                  _PodiumRow(
-                    entries: top,
-                    competitionType: group.competitionType,
-                  ),
-                ],
-                if (listEntries.isNotEmpty) ...[
+                if (ranking.isNotEmpty) ...[
                   const SizedBox(height: 36),
                   Text(
-                    'DEMAIS COLOCAÇÕES',
+                    'RANKING FINAL',
                     style: GoogleFonts.nunito(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
@@ -168,7 +156,7 @@ class SocialGroupResultShareCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ...listEntries.map(
+                  ...ranking.map(
                     (entry) => Padding(
                       padding: const EdgeInsets.only(bottom: 14),
                       child: _RankRow(
@@ -241,14 +229,6 @@ class _GlowOrb extends StatelessWidget {
   }
 }
 
-String _initialLetter(String name) {
-  final trimmed = name.trim();
-  if (trimmed.isEmpty) {
-    return '?';
-  }
-  return String.fromCharCode(trimmed.runes.first).toUpperCase();
-}
-
 class _TagChip extends StatelessWidget {
   const _TagChip({
     required this.label,
@@ -280,177 +260,16 @@ class _TagChip extends StatelessWidget {
   }
 }
 
-class _PodiumRow extends StatelessWidget {
-  const _PodiumRow({
-    required this.entries,
-    required this.competitionType,
-  });
-
-  final List<SocialRankingEntry> entries;
-  final String competitionType;
-
-  @override
-  Widget build(BuildContext context) {
-    SocialRankingEntry? at(int index) =>
-        index < entries.length ? entries[index] : null;
-
-    final first = at(0);
-    final second = at(1);
-    final third = at(2);
-
-    return SizedBox(
-      height: 260,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-            child: second == null
-                ? const SizedBox.shrink()
-                : _PodiumSlot(
-                    entry: second,
-                    competitionType: competitionType,
-                    place: second.position,
-                    height: 170,
-                    accent: const Color(0xFF9EA7B3),
-                  ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: first == null
-                ? const SizedBox.shrink()
-                : _PodiumSlot(
-                    entry: first,
-                    competitionType: competitionType,
-                    place: first.position,
-                    height: 220,
-                    accent: const Color(0xFFE3B640),
-                    isChampion: first.position == 1,
-                  ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: third == null
-                ? const SizedBox.shrink()
-                : _PodiumSlot(
-                    entry: third,
-                    competitionType: competitionType,
-                    place: third.position,
-                    height: 150,
-                    accent: const Color(0xFFB8793F),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PodiumSlot extends StatelessWidget {
-  const _PodiumSlot({
-    required this.entry,
-    required this.competitionType,
-    required this.place,
-    required this.height,
-    required this.accent,
-    this.isChampion = false,
-  });
-
-  final SocialRankingEntry entry;
-  final String competitionType;
-  final int place;
-  final double height;
-  final Color accent;
-  final bool isChampion;
-
-  @override
-  Widget build(BuildContext context) {
-    final metric = socialRankingMetric(
-      competitionType: competitionType,
-      points: entry.points,
-      streakDays: entry.streakDays,
-    );
-    final initial = _initialLetter(entry.name);
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        if (isChampion)
-          Icon(Icons.emoji_events_rounded, color: accent, size: 42),
-        Container(
-          width: isChampion ? 96 : 80,
-          height: isChampion ? 96 : 80,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.12),
-            border: Border.all(color: accent, width: 4),
-          ),
-          child: Text(
-            initial,
-            style: GoogleFonts.baloo2(
-              fontSize: isChampion ? 42 : 34,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          entry.name,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.nunito(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              metric.displayValue,
-              style: GoogleFonts.baloo2(
-                fontSize: 30,
-                fontWeight: FontWeight.w700,
-                color: accent,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(metric.icon, size: 22, color: accent),
-          ],
-        ),
-        Text(
-          metric.label,
-          style: GoogleFonts.nunito(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: Colors.white.withValues(alpha: 0.75),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          height: height * 0.28,
-          width: double.infinity,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: 0.28),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-            border: Border.all(color: accent.withValues(alpha: 0.55), width: 2),
-          ),
-          child: Text(
-            '$placeº',
-            style: GoogleFonts.baloo2(
-              fontSize: 36,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ],
-    );
+Color? _placeAccent(int position) {
+  switch (position) {
+    case 1:
+      return const Color(0xFFE3B640);
+    case 2:
+      return const Color(0xFF9EA7B3);
+    case 3:
+      return const Color(0xFFB8793F);
+    default:
+      return null;
   }
 }
 
@@ -470,20 +289,23 @@ class _RankRow extends StatelessWidget {
       points: entry.points,
       streakDays: entry.streakDays,
     );
-    final initial = _initialLetter(entry.name);
     final highlight = entry.isCurrentUser;
+    final accent = _placeAccent(entry.position);
+    final placeColor = accent ?? AppColors.brand300;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
       decoration: BoxDecoration(
         color: highlight
             ? AppColors.action500.withValues(alpha: 0.22)
             : Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: highlight
-              ? AppColors.action500.withValues(alpha: 0.55)
-              : Colors.white.withValues(alpha: 0.1),
+          color: accent != null
+              ? accent.withValues(alpha: 0.65)
+              : highlight
+                  ? AppColors.action500.withValues(alpha: 0.55)
+                  : Colors.white.withValues(alpha: 0.1),
           width: 2,
         ),
       ),
@@ -496,25 +318,24 @@ class _RankRow extends StatelessWidget {
               style: GoogleFonts.baloo2(
                 fontSize: 32,
                 fontWeight: FontWeight.w700,
-                color: AppColors.brand300,
+                color: placeColor,
               ),
             ),
           ),
           Container(
-            width: 64,
-            height: 64,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.14),
-            ),
-            child: Text(
-              initial,
-              style: GoogleFonts.baloo2(
-                fontSize: 30,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
+            decoration: accent == null
+                ? null
+                : BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: accent, width: 3),
+                  ),
+            padding: accent == null ? EdgeInsets.zero : const EdgeInsets.all(2),
+            child: FramedAvatar(
+              size: 64,
+              avatarUrl: entry.avatarUrl,
+              frameId: entry.avatarFrameId,
+              fallbackText: entry.name,
+              backgroundColor: Colors.white.withValues(alpha: 0.14),
             ),
           ),
           const SizedBox(width: 18),
@@ -541,11 +362,15 @@ class _RankRow extends StatelessWidget {
                     style: GoogleFonts.baloo2(
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: accent ?? Colors.white,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Icon(metric.icon, size: 24, color: metric.iconColor),
+                  Icon(
+                    metric.icon,
+                    size: 24,
+                    color: accent ?? metric.iconColor,
+                  ),
                 ],
               ),
               Text(
