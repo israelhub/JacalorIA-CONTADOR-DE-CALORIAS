@@ -6,6 +6,7 @@ import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../core/analytics/analytics_service.dart';
 import '../../../core/config/api_config.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -48,6 +49,10 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen(
+      'social_group_detail',
+      properties: {'group_id': widget.groupId},
+    );
     _detail = widget.initialDetail;
     _isLoading = _detail == null;
     if (_detail == null) {
@@ -342,7 +347,11 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
               borderRadius: BorderRadius.circular(AppRadius.md),
               child: Column(
                 children: [
-                  for (final entry in detail.ranking) SocialRankingItem(entry: entry),
+                  for (final entry in detail.ranking)
+                    SocialRankingItem(
+                      entry: entry,
+                      competitionType: detail.group.competitionType,
+                    ),
                 ],
               ),
             ),
@@ -629,6 +638,11 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       if (isCurrent) {
         img.fillRect(canvas, x1: 40, y1: y - 6, x2: width - 40, y2: y + rowHeight - 16, color: img.ColorRgb8(238, 247, 230));
       }
+      final metric = socialRankingMetric(
+        competitionType: detail.group.competitionType,
+        points: entry.points,
+        streakDays: entry.streakDays,
+      );
 
       img.drawString(
         canvas,
@@ -648,7 +662,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       );
       img.drawString(
         canvas,
-        '${entry.streakDays} sequencia',
+        '${metric.displayValue} ${metric.label.toLowerCase()}',
         font: img.arial24,
         x: width - 320,
         y: y + 20,

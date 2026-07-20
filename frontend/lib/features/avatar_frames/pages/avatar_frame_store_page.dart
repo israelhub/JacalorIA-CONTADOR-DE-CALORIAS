@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/analytics/analytics_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -59,6 +60,7 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('avatar_store');
     _profileSnapshot = Map<String, dynamic>.from(widget.profile);
     _purchasedFrameIds = AvatarFrameCatalog.purchasedIdsFromProfile(
       _profileSnapshot,

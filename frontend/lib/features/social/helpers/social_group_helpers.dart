@@ -29,7 +29,41 @@ String socialCompetitionLabel(String competitionType) {
     'daily_goal' => 'Meta diária',
     'xp' => 'XP',
     'group_streak' => 'Sequência dos amigos',
+    'goal_average' => 'Média de meta',
     _ => 'Sequência',
+  };
+}
+
+({String displayValue, String label, IconData icon, Color iconColor}) socialRankingMetric({
+  required String competitionType,
+  required int points,
+  required int streakDays,
+}) {
+  return switch (competitionType) {
+    'daily_goal' => (
+        displayValue: '$points',
+        label: 'Metas',
+        icon: Icons.flag_rounded,
+        iconColor: AppColors.accent500,
+      ),
+    'xp' => (
+        displayValue: '$points',
+        label: 'XP',
+        icon: Icons.bolt_rounded,
+        iconColor: AppColors.missionsRewardGold,
+      ),
+    'goal_average' => (
+        displayValue: points < 0 ? '—' : '$points',
+        label: points < 0 ? 'sem dados' : 'da meta',
+        icon: Icons.track_changes_rounded,
+        iconColor: AppColors.accent500,
+      ),
+    _ => (
+        displayValue: '$streakDays',
+        label: 'Sequência',
+        icon: Icons.local_fire_department_rounded,
+        iconColor: AppColors.missionsRewardGold,
+      ),
   };
 }
 

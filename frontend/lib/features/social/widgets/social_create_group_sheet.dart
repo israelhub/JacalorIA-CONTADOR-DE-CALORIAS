@@ -38,6 +38,7 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
   static const _competitionTypes = <_CompetitionTypeOption>[
     _CompetitionTypeOption('offensive', 'Sequência'),
     _CompetitionTypeOption('daily_goal', 'Meta diária'),
+    _CompetitionTypeOption('goal_average', 'Média de meta'),
     _CompetitionTypeOption('xp', 'XP'),
     _CompetitionTypeOption('group_streak', 'Sequência dos amigos'),
   ];
@@ -66,6 +67,8 @@ class _SocialCreateGroupSheetState extends State<SocialCreateGroupSheet> {
     return switch (_selectedCompetitionType) {
       'offensive' => 'Vence quem mantiver a maior sequência ativa no desafio.',
       'daily_goal' => 'Ganha quem bater mais vezes a própria meta diária.',
+      'goal_average' =>
+        'Ganha quem tiver a média de calorias dos dias registrados mais próxima da própria meta.',
       'xp' => 'Pontua as ações saudáveis para ranquear evolução no grupo.',
       'group_streak' => 'A sequência só cresce quando todos do grupo permanecem ativos.',
       _ => 'Vence quem mantiver a maior sequência ativa no desafio.',

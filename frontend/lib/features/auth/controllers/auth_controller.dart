@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/analytics/analytics_service.dart';
 import '../service/auth_service.dart';
 
 class AuthController extends ChangeNotifier {
@@ -51,6 +53,7 @@ class AuthController extends ChangeNotifier {
       if (currentUser != null) {
         await prefs.setString('auth_user', jsonEncode(currentUser));
       }
+      await _onAuthenticatedSession();
     } catch (e) {
       final message = e.toString().replaceFirst('Exception: ', '').trim();
       if (_isGoogleSignInCancellation(message)) {
@@ -115,6 +118,7 @@ class AuthController extends ChangeNotifier {
         await prefs.setString('auth_user', jsonEncode(currentUser));
       }
 
+      await _onAuthenticatedSession();
       return true;
     } catch (e) {
       error = e.toString().replaceFirst('Exception: ', '');
@@ -158,6 +162,7 @@ class AuthController extends ChangeNotifier {
         );
       }
 
+      await _onAuthenticatedSession();
       return true;
     } catch (e) {
       error = e.toString().replaceFirst('Exception: ', '');
@@ -242,6 +247,12 @@ class AuthController extends ChangeNotifier {
   void clearError() {
     error = null;
     notifyListeners();
+  }
+
+  Future<void> _onAuthenticatedSession() async {
+    await AnalyticsService.instance.startSession();
+    AnalyticsService.instance.trackAppOpen(properties: {'from': 'auth'});
+    unawaited(AnalyticsService.instance.flush());
   }
 
   void _setLoading(bool value) {

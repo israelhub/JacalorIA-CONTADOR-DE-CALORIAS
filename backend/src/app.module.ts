@@ -8,6 +8,7 @@ import { MealsModule } from './meals/meals.module';
 import { PerformanceModule } from './performance/performance.module';
 import { MissionsModule } from './missions/missions.module';
 import { SocialModule } from './social/social.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { SocialModule } from './social/social.module';
     PerformanceModule,
     MissionsModule,
     SocialModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

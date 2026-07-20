@@ -5,20 +5,40 @@ import { Meal } from './models/meal.model';
 import { CreateMealDto } from './dto/create-meal.dto';
 import { UpdateMealDto } from './dto/update-meal.dto';
 import { MealStatus } from './models/meal.model';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class MealsService {
   constructor(
     @InjectModel(Meal)
     private readonly mealModel: typeof Meal,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async create(createMealDto: CreateMealDto, userId: string): Promise<Meal> {
-    return this.mealModel.create({
+    const meal = await this.mealModel.create({
       ...createMealDto,
       userId,
       status: MealStatus.Active,
     });
+
+    const hasImage = Boolean(createMealDto.imageUrl?.trim());
+    const hasAnalysisItems =
+      Array.isArray(createMealDto.analysisItems) &&
+      createMealDto.analysisItems.length > 0;
+
+    await this.analyticsService.trackSafe(userId, {
+      eventName: 'meal_saved',
+      properties: {
+        source: hasImage || hasAnalysisItems ? 'ai_photo' : 'manual',
+        meal_id: meal.id,
+        has_image: hasImage,
+        has_analysis_items: hasAnalysisItems,
+        calories: createMealDto.calories,
+      },
+    });
+
+    return meal;
   }
 
   async findAll(

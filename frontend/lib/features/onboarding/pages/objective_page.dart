@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_page_route.dart';
 
+import '../../../core/analytics/analytics_service.dart';
 import 'activity_level_page.dart';
 import '../widgets/onboarding_select_option_button.dart';
 import '../widgets/onboarding_step_header.dart';
@@ -20,6 +21,12 @@ class ObjectivePage extends StatefulWidget {
 
 class _ObjectivePageState extends State<ObjectivePage> {
   ObjectiveType _selectedObjective = ObjectiveType.loseWeight;
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('onboarding_objective');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +108,11 @@ class _ObjectivePageState extends State<ObjectivePage> {
                       widget.onboardingData,
                     );
                     data['objective'] = _selectedObjective.name;
+
+                    AnalyticsService.instance.track(
+                      'onboarding_step_completed',
+                      properties: {'step': 'objective'},
+                    );
 
                     context.pushSlidePage(
                       ActivityLevelPage(onboardingData: data),

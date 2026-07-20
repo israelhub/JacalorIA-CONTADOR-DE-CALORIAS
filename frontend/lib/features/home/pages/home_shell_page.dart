@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../../core/analytics/analytics_service.dart';
 import '../../../core/invite/invite_link_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_main_bottom_navigation.dart';
@@ -41,7 +44,8 @@ class HomeShellPage extends StatefulWidget {
   State<HomeShellPage> createState() => _HomeShellPageState();
 }
 
-class _HomeShellPageState extends State<HomeShellPage> {
+class _HomeShellPageState extends State<HomeShellPage>
+    with WidgetsBindingObserver {
   static const int _performanceIndex = 0;
   static const int _homeIndex = 1;
   static const int _missionsIndex = 2;
@@ -57,15 +61,55 @@ class _HomeShellPageState extends State<HomeShellPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentIndex = _tabToIndex(widget.initialTab);
     _selectedHomeDate = normalizeHomeDate(DateTime.now());
     _pageController = PageController(initialPage: _currentIndex);
+    AnalyticsService.instance.trackAppOpen();
+    _trackTabOpened(_currentIndex);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(AnalyticsService.instance.leaveForeground(reason: 'dispose'));
     _pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      AnalyticsService.instance.trackAppOpen(properties: {'from': 'resume'});
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      unawaited(
+        AnalyticsService.instance.leaveForeground(reason: state.name),
+      );
+    }
+  }
+
+  void _trackTabOpened(int index) {
+    switch (index) {
+      case _missionsIndex:
+        AnalyticsService.instance.trackScreen('missions');
+        AnalyticsService.instance.track('missions_tab_opened');
+        break;
+      case _socialIndex:
+        AnalyticsService.instance.trackScreen('social');
+        AnalyticsService.instance.track('social_tab_opened');
+        break;
+      case _performanceIndex:
+        AnalyticsService.instance.trackScreen('performance');
+        AnalyticsService.instance.track('performance_tab_opened');
+        break;
+      case _homeIndex:
+        AnalyticsService.instance.trackScreen('home');
+        AnalyticsService.instance.track('home_tab_opened');
+        break;
+    }
   }
 
   AppMainBottomTab get _activeTab {
@@ -119,6 +163,7 @@ class _HomeShellPageState extends State<HomeShellPage> {
       _currentIndex = nextIndex;
       _bumpRefreshForIndex(nextIndex);
     });
+    _trackTabOpened(nextIndex);
 
     await _pageController.animateToPage(
       nextIndex,
@@ -128,6 +173,10 @@ class _HomeShellPageState extends State<HomeShellPage> {
   }
 
   Future<void> _openFoodCapture() async {
+    AnalyticsService.instance.track(
+      'meal_capture_started',
+      properties: {'entry': 'center_action'},
+    );
     await context.pushSlidePage(const FoodCapturePage());
   }
 
@@ -155,6 +204,7 @@ class _HomeShellPageState extends State<HomeShellPage> {
             _currentIndex = index;
             _bumpRefreshForIndex(index);
           });
+          _trackTabOpened(index);
         },
         children: [
           widget.performancePage ??

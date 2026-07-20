@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/analytics/analytics_service.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/framed_avatar.dart';
@@ -55,6 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.trackScreen('profile');
     _profileData = Map<String, dynamic>.from(
       widget.initialProfile ?? const <String, dynamic>{},
     );
@@ -579,23 +581,25 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   String _formatObjective(String? value) {
-    final raw = (value ?? '').trim().toLowerCase();
+    final raw = (value ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z]'), '');
     if (raw.isEmpty) return 'Não informado';
 
     const labels = <String, String>{
-      'lose_weight': 'Perder peso',
       'loseweight': 'Emagrecer',
-      'weight_loss': 'Perder peso',
-      'maintain_weight': 'Manter peso',
+      'weightloss': 'Emagrecer',
+      'cut': 'Emagrecer',
+      'maintainweight': 'Manter peso',
       'maintenance': 'Manter peso',
       'maintain': 'Manter peso',
-      'gain_weight': 'Ganhar peso',
-      'weight_gain': 'Ganhar peso',
+      'gainweight': 'Ganhar massa',
+      'weightgain': 'Ganhar massa',
       'gainmass': 'Ganhar massa',
-      'gain_mass': 'Ganhar massa',
       'bulk': 'Ganhar massa',
-      'gain_muscle': 'Ganhar massa muscular',
-      'muscle_gain': 'Ganhar massa muscular',
+      'gainmuscle': 'Ganhar massa',
+      'musclegain': 'Ganhar massa',
       'recomposition': 'Recomposição corporal',
     };
 

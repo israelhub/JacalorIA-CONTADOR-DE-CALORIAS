@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:jacaloria/features/social/models/social_group_models.dart';
 import 'package:jacaloria/features/social/widgets/social_ranking_item.dart';
-import 'package:jacaloria/shared/theme/app_theme.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 
@@ -24,33 +23,75 @@ SocialRankingEntry _entryForPosition(int position) {
 }
 
 void main() {
-  testWidgets('mostra trofeu para top 3 com cores corretas', (tester) async {
-    final expectedColors = <int, Color>{
-      1: AppColors.accent500,
-      2: AppColors.socialRankingSilver,
-      3: AppColors.socialRankingBronze,
-    };
-
-    for (final entry in expectedColors.entries) {
-      await tester.pumpWidget(
-        _wrap(SocialRankingItem(entry: _entryForPosition(entry.key))),
-      );
-
-      final trophyIcon = tester.widget<Icon>(
-        find.byIcon(Icons.emoji_events_rounded),
-      );
-
-      expect(trophyIcon.color, entry.value);
-    }
-  });
-
-  testWidgets('mostra numero a partir da quarta posicao', (tester) async {
+  testWidgets('mostra posicao e metrica de sequencia por padrao', (tester) async {
     await tester.pumpWidget(
-      _wrap(SocialRankingItem(entry: _entryForPosition(4))),
+      _wrap(SocialRankingItem(entry: _entryForPosition(1))),
     );
 
-    expect(find.byIcon(Icons.emoji_events_rounded), findsNothing);
-    expect(find.text('4'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('12'), findsOneWidget);
+    expect(find.text('Sequência'), findsOneWidget);
+    expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
+  });
+
+  testWidgets('mostra metas batidas no modo meta diaria', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        SocialRankingItem(
+          entry: _entryForPosition(2),
+          competitionType: 'daily_goal',
+        ),
+      ),
+    );
+
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('100'), findsOneWidget);
+    expect(find.text('Metas'), findsOneWidget);
+    expect(find.byIcon(Icons.flag_rounded), findsOneWidget);
+  });
+
+  testWidgets('mostra distancia da meta no modo media de meta', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        SocialRankingItem(
+          entry: _entryForPosition(1),
+          competitionType: 'goal_average',
+        ),
+      ),
+    );
+
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('100'), findsOneWidget);
+    expect(find.text('da meta'), findsOneWidget);
+    expect(find.byIcon(Icons.track_changes_rounded), findsOneWidget);
+  });
+
+  testWidgets('mostra sem dados quando nao ha media registrada', (tester) async {
+    final entry = SocialRankingEntry(
+      id: 'ranking-empty',
+      userId: 'user-empty',
+      name: 'Sem registro',
+      avatarUrl: null,
+      avatarFrameId: null,
+      points: -1,
+      streakDays: 0,
+      isCurrentUser: false,
+      isLeader: false,
+      position: 3,
+      subtitle: '',
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        SocialRankingItem(
+          entry: entry,
+          competitionType: 'goal_average',
+        ),
+      ),
+    );
+
+    expect(find.text('—'), findsOneWidget);
+    expect(find.text('sem dados'), findsOneWidget);
   });
 
   testWidgets('nao mostra tag VOCE para usuario atual', (tester) async {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_page_route.dart';
 
+import '../../../core/analytics/analytics_service.dart';
 import 'objective_page.dart';
 import '../widgets/onboarding_input_field.dart';
 import '../widgets/onboarding_step_header.dart';
@@ -26,6 +27,12 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   String? _selectedSex;
   String _selectedWeightUnit = 'kg';
   String _selectedHeightUnit = 'cm';
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('onboarding_personal_data');
+  }
 
   static const List<String> _sexOptions = [
     'Masculino',
@@ -216,6 +223,11 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                               'heightUnit': _selectedHeightUnit,
                               if (sex != null) 'sex': sex,
                             };
+
+                            AnalyticsService.instance.track(
+                              'onboarding_step_completed',
+                              properties: {'step': 'personal_data'},
+                            );
 
                             context.pushSlidePage(
                               ObjectivePage(onboardingData: data),
