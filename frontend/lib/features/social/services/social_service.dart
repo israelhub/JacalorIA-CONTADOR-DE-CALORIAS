@@ -90,11 +90,19 @@ class SocialService {
     throw Exception(_extractMessage(body, 'Erro ao recusar solicitação.'));
   }
 
-  Future<SocialFriendProfile> fetchFriendProfile(String friendUserId) async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/social/friends/${friendUserId.trim()}/profile'),
-      headers: _headers(),
+  Future<SocialFriendProfile> fetchFriendProfile(
+    String friendUserId, {
+    String? groupId,
+  }) async {
+    final normalizedGroupId = groupId?.trim();
+    final uri = Uri.parse(
+      '$_baseUrl/social/friends/${friendUserId.trim()}/profile',
+    ).replace(
+      queryParameters: (normalizedGroupId == null || normalizedGroupId.isEmpty)
+          ? null
+          : {'groupId': normalizedGroupId},
     );
+    final response = await http.get(uri, headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
       return SocialFriendProfile.fromJson(body);

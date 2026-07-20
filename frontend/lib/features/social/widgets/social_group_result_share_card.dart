@@ -309,7 +309,7 @@ class _PodiumRow extends StatelessWidget {
                 : _PodiumSlot(
                     entry: second,
                     competitionType: competitionType,
-                    place: 2,
+                    place: second.position,
                     height: 170,
                     accent: const Color(0xFF9EA7B3),
                   ),
@@ -321,10 +321,10 @@ class _PodiumRow extends StatelessWidget {
                 : _PodiumSlot(
                     entry: first,
                     competitionType: competitionType,
-                    place: 1,
+                    place: first.position,
                     height: 220,
                     accent: const Color(0xFFE3B640),
-                    isChampion: true,
+                    isChampion: first.position == 1,
                   ),
           ),
           const SizedBox(width: 16),
@@ -334,7 +334,7 @@ class _PodiumRow extends StatelessWidget {
                 : _PodiumSlot(
                     entry: third,
                     competitionType: competitionType,
-                    place: 3,
+                    place: third.position,
                     height: 150,
                     accent: const Color(0xFFB8793F),
                   ),

@@ -99,6 +99,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       SocialFriendProfilePage(
         friendId: entry.userId,
         initialFriendName: entry.name,
+        groupId: widget.groupId,
         service: widget._service,
       ),
     );

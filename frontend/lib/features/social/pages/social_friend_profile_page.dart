@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/avatar_profile_preview.dart';
@@ -15,11 +14,13 @@ class SocialFriendProfilePage extends StatefulWidget {
     super.key,
     required this.friendId,
     this.initialFriendName,
+    this.groupId,
     SocialService? service,
   }) : service = service ?? const SocialService();
 
   final String friendId;
   final String? initialFriendName;
+  final String? groupId;
   final SocialService service;
 
   @override
@@ -47,7 +48,10 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
     });
 
     try {
-      final data = await widget.service.fetchFriendProfile(widget.friendId);
+      final data = await widget.service.fetchFriendProfile(
+        widget.friendId,
+        groupId: widget.groupId,
+      );
       if (!mounted) return;
       setState(() {
         _profile = data;
@@ -151,24 +155,10 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(
-                        '${profile.friendCount} amigos',
-                        textAlign: TextAlign.right,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
+                    _buildHeaderFriendshipSlot(profile),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                if (!profile.isSelf) ...[
-                  _buildFriendshipAction(profile),
-                  const SizedBox(height: AppSpacing.xl),
-                ],
+                const SizedBox(height: AppSpacing.xl),
                 _sectionTitle('Resumo'),
                 const SizedBox(height: AppSpacing.sm),
                 LayoutBuilder(
@@ -298,38 +288,59 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
     );
   }
 
+  Widget _buildHeaderFriendshipSlot(SocialFriendProfile profile) {
+    if (profile.isSelf) {
+      return Text(
+        '${profile.friendCount} amigos',
+        textAlign: TextAlign.right,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.textSecondary,
+        ),
+      );
+    }
+
+    return Flexible(
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: _buildFriendshipAction(profile),
+      ),
+    );
+  }
+
   Widget _buildFriendshipAction(SocialFriendProfile profile) {
     if (profile.isFriend) {
-      return AppButton(
+      return _CompactFriendshipButton(
         label: 'Amigos',
-        variant: AppButtonVariant.outline,
-        leadingIcon: Icons.people_alt_rounded,
+        icon: Icons.people_alt_rounded,
+        filled: false,
         onPressed: _isRemovingFriend ? null : _onRemoveFriendPressed,
       );
     }
 
     if (profile.isOutgoingRequest) {
-      return AppButton(
+      return const _CompactFriendshipButton(
         label: 'Solicitado',
-        variant: AppButtonVariant.outline,
-        leadingIcon: Icons.hourglass_top_rounded,
+        icon: Icons.hourglass_top_rounded,
+        filled: false,
         onPressed: null,
       );
     }
 
     if (profile.isIncomingRequest) {
-      return AppButton(
+      return const _CompactFriendshipButton(
         label: 'Solicitou você',
-        variant: AppButtonVariant.outline,
-        leadingIcon: Icons.person_add_alt_1_rounded,
+        icon: Icons.person_add_alt_1_rounded,
+        filled: false,
         onPressed: null,
       );
     }
 
-    return AppButton(
+    return _CompactFriendshipButton(
       label: 'Adicionar amigo',
-      variant: AppButtonVariant.primary,
-      leadingIcon: Icons.person_add_alt_1_rounded,
+      icon: Icons.person_add_alt_1_rounded,
+      filled: true,
       onPressed: _isAddingFriend ? null : _onAddFriendPressed,
     );
   }
@@ -422,5 +433,69 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
       return value;
     }
     return '${value.substring(0, maxChars)}...';
+  }
+}
+
+class _CompactFriendshipButton extends StatelessWidget {
+  const _CompactFriendshipButton({
+    required this.label,
+    required this.icon,
+    required this.filled,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool filled;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final foreground = filled ? Colors.white : AppColors.action500;
+    final background = filled ? AppColors.action500 : AppColors.surface;
+
+    return Opacity(
+      opacity: enabled ? 1 : 0.7,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 180),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: filled
+                  ? null
+                  : Border.all(color: AppColors.borderAlt),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: foreground),
+                const SizedBox(width: AppSpacing.xs),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.captionStrong.copyWith(
+                      color: foreground,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
