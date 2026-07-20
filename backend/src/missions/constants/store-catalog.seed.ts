@@ -93,9 +93,17 @@ export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
   {
     itemKey: 'offensive_guard',
     category: 'offensive_blocker',
-    name: 'Bloqueador de ofensiva',
-    description: 'Protege sua sequencia quando voce falha um dia.',
+    name: 'Bloqueador de sequência',
+    description: null,
     priceGold: 80,
     sortOrder: 10,
+  },
+  {
+    itemKey: 'streak_restore',
+    category: 'streak_restore',
+    name: 'Restaurar sequências perdidas até então',
+    description: null,
+    priceGold: 0,
+    sortOrder: 20,
   },
 ];

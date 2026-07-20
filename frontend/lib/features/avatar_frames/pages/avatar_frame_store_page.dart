@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/analytics/analytics_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/avatar_profile_preview.dart';
 import '../../../shared/widgets/framed_avatar.dart';
@@ -161,6 +162,10 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
   }
 
   bool _isOwned(StoreCatalogItem item) {
+    if (item.isStreakRestore) {
+      return false;
+    }
+
     switch (item.type) {
       case StoreItemType.frame:
         return _purchasedFrameIds.contains(item.id);
@@ -183,11 +188,10 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
   }
 
   bool _canPurchase(StoreCatalogItem item) {
-    if (item.isConsumable) {
-      final requiredCost = _requiredBlockerRecoveryCost();
-      if (requiredCost > 0) {
-        return _goldBalance >= requiredCost;
-      }
+    if (item.isStreakRestore) {
+      return item.restoreAvailable && _goldBalance >= item.priceGold;
+    }
+    if (item.isInventoryBlocker) {
       return _goldBalance >= item.priceGold;
     }
     if (_isOwned(item)) {
@@ -196,31 +200,48 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     return _goldBalance >= item.priceGold;
   }
 
+  int get _totalBlockerInventory {
+    final fromMap = _blockerInventory.values.fold<int>(0, (sum, value) => sum + value);
+    if (fromMap > 0) {
+      return fromMap;
+    }
+    return _toInt(
+      _profileSnapshot['offensiveBlockerInventoryCount'] ??
+          _profileSnapshot['offensive_blocker_inventory_count'],
+      0,
+    );
+  }
+
   Future<void> _buyOrEquip(StoreCatalogItem item) async {
     if (_isSaving) {
       return;
     }
 
     final isOwned = _isOwned(item);
-    final blockerQuantity = _requiredBlockerPurchaseQuantity();
-    final blockerCost = _requiredBlockerRecoveryCost();
-    final needsPurchase = item.isConsumable || !isOwned;
-    if (needsPurchase) {
-      final minimumCost = item.isConsumable && blockerCost > 0
-          ? blockerCost
-          : item.priceGold;
-      if (_goldBalance < minimumCost) {
+    final needsPurchase = item.isInventoryBlocker || (!isOwned && !item.isStreakRestore);
+    if (item.isStreakRestore) {
+      if (!item.restoreAvailable) {
+        _showToast('Não há sequência perdida para restaurar.');
+        return;
+      }
+      if (_goldBalance < item.priceGold) {
         await _showInsufficientFundsDialog(item.priceGold);
         return;
       }
-    }
-
-    if (item.isConsumable && blockerCost > 0) {
-      final confirmed = await _confirmBlockerRecoveryPurchase(
-        quantity: blockerQuantity,
-        totalCost: blockerCost,
+      final blockersNeeded = _blockerRecovery.requiredBlockersTotal;
+      final blockersToBuy = _blockerRecovery.requiredPurchaseQuantity;
+      final confirmed = await _confirmStreakRestorePurchase(
+        missingDays: item.missingDaysUntilToday,
+        blockersNeeded: blockersNeeded,
+        blockersToBuy: blockersToBuy,
+        totalCost: item.priceGold,
       );
       if (!confirmed) {
+        return;
+      }
+    } else if (needsPurchase) {
+      if (_goldBalance < item.priceGold) {
+        await _showInsufficientFundsDialog(item.priceGold);
         return;
       }
     }
@@ -247,11 +268,16 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
               : 'Fundo comprado e equipado.';
           break;
         case StoreItemType.blocker:
-          response = await _missionsService.purchaseBlocker(
-            blockerId: item.id,
-            quantity: blockerQuantity > 0 ? blockerQuantity : 1,
-          );
-          successMessage = 'Bloqueador comprado.';
+          if (item.isStreakRestore) {
+            response = await _missionsService.purchaseStreakRestore();
+            successMessage = 'Sequência restaurada.';
+          } else {
+            response = await _missionsService.purchaseBlocker(
+              blockerId: item.id,
+              quantity: 1,
+            );
+            successMessage = 'Bloqueador comprado.';
+          }
           break;
       }
 
@@ -426,33 +452,35 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     });
   }
 
-  int _requiredBlockerPurchaseQuantity() {
-    final quantity = _blockerRecovery.requiredPurchaseQuantity;
-    return quantity > 0 ? quantity : 0;
-  }
-
-  int _requiredBlockerRecoveryCost() {
-    final quantity = _requiredBlockerPurchaseQuantity();
-    if (quantity <= 0) {
-      return 0;
-    }
-    return _blockerRecovery.requiredPurchaseCostGold;
-  }
-
-  Future<bool> _confirmBlockerRecoveryPurchase({
-    required int quantity,
+  Future<bool> _confirmStreakRestorePurchase({
+    required int missingDays,
+    required int blockersNeeded,
+    required int blockersToBuy,
     required int totalCost,
   }) async {
+    final inventoryUsed = blockersNeeded - blockersToBuy;
+    final buffer = StringBuffer(
+      'Restaurar $missingDays dia${missingDays > 1 ? 's' : ''} de sequência',
+    );
+    if (inventoryUsed > 0) {
+      buffer.write(
+        ' usando $inventoryUsed bloqueador${inventoryUsed > 1 ? 'es' : ''} do inventário',
+      );
+    }
+    if (blockersToBuy > 0) {
+      buffer.write(
+        '${inventoryUsed > 0 ? ' e comprando' : ' comprando'} '
+        '$blockersToBuy bloqueador${blockersToBuy > 1 ? 'es' : ''}',
+      );
+    }
+    buffer.write('.\nCusto em ouro: $totalCost.\n\nDeseja continuar?');
+
     final result = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Confirmar compra'),
-          content: Text(
-            'Para preencher sua sequência até hoje você precisa de '
-            '$quantity bloqueador${quantity > 1 ? 'es' : ''}.\n'
-            'Custo total: $totalCost ouro.\n\nDeseja continuar?',
-          ),
+          title: const Text('Confirmar restauração'),
+          content: Text(buffer.toString()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -543,11 +571,14 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
               ),
               const SizedBox(width: AppSpacing.sm),
               _GoldPill(value: _goldBalance.toString()),
+              const SizedBox(width: AppSpacing.xs),
+              _BlockerPill(value: _totalBlockerInventory.toString()),
             ],
           ),
         ),
         body: SafeArea(
-          child: SingleChildScrollView(
+          child: AppRefreshScrollView(
+            onRefresh: _loadCatalog,
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
               AppSpacing.lg,
@@ -889,6 +920,41 @@ class _GoldPill extends StatelessWidget {
   }
 }
 
+class _BlockerPill extends StatelessWidget {
+  const _BlockerPill({required this.value});
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 31,
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.performanceCardBorder),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(
+            Icons.shield_rounded,
+            size: 14,
+            color: AppColors.action500,
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            value,
+            style: AppTextStyles.missionsPillValue.copyWith(
+              color: AppColors.brand900Variant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StoreTile extends StatelessWidget {
   const _StoreTile({
     required this.item,
@@ -921,14 +987,17 @@ class _StoreTile extends StatelessWidget {
     final effectiveBlockerQuantity = blockerQuantity > 0
         ? blockerQuantity
         : blockerQuantityFallback;
-    final label = item.isConsumable
+    final label = item.isStreakRestore
+        ? (item.restoreAvailable ? 'Restaurar' : 'Indisponível')
+        : item.isInventoryBlocker
         ? 'Comprar'
         : isEquipped
-      ? 'Desequipar'
+        ? 'Desequipar'
         : isOwned
         ? 'Equipar'
         : 'Comprar';
-    final buttonEnabled = !isSaving;
+    final buttonEnabled = !isSaving && (item.isStreakRestore ? item.restoreAvailable : true);
+    final displayPrice = item.isStreakRestore ? item.priceGold : item.priceGold;
 
     return Material(
       color: AppColors.surface,
@@ -986,7 +1055,7 @@ class _StoreTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 2),
                       Text(
-                        '${item.priceGold}',
+                        '$displayPrice',
                         style: AppTextStyles.captionStrong.copyWith(
                           color: AppColors.brand900Variant,
                         ),
@@ -995,22 +1064,20 @@ class _StoreTile extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 1),
-              Text(
-                item.description,
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 1),
+              const SizedBox(height: AppSpacing.xs),
               Row(
                 children: [
                   const Spacer(),
-                  if (item.isConsumable && effectiveBlockerQuantity > 0)
+                  if (item.isInventoryBlocker && effectiveBlockerQuantity > 0)
                     Text(
                       'x$effectiveBlockerQuantity',
+                      style: AppTextStyles.captionStrong.copyWith(
+                        color: AppColors.action500,
+                      ),
+                    )
+                  else if (item.isStreakRestore && item.missingDaysUntilToday > 0)
+                    Text(
+                      '${item.missingDaysUntilToday} dia${item.missingDaysUntilToday > 1 ? 's' : ''}',
                       style: AppTextStyles.captionStrong.copyWith(
                         color: AppColors.action500,
                       ),
@@ -1028,7 +1095,7 @@ class _StoreTile extends StatelessWidget {
               AppButton(
                 label: label,
                 onPressed: buttonEnabled ? onPressed : null,
-                variant: isOwned && !item.isConsumable
+                variant: isOwned && !item.isInventoryBlocker && !item.isStreakRestore
                     ? AppButtonVariant.outline
                     : AppButtonVariant.primary,
                 textStyle: AppTextStyles.buttonSmall,
@@ -1130,6 +1197,22 @@ class _StoreItemPreview extends StatelessWidget {
           ),
         );
       case StoreItemType.blocker:
+        if (item.isStreakRestore) {
+          return Container(
+            width: 112,
+            height: 112,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.surfaceAlt,
+              border: Border.all(color: AppColors.performanceCardBorder),
+            ),
+            child: const Icon(
+              Icons.history_rounded,
+              size: 42,
+              color: AppColors.brand900Variant,
+            ),
+          );
+        }
         return Container(
           width: 112,
           height: 112,

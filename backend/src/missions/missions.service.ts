@@ -11,6 +11,7 @@ import {
   AVATAR_BACKGROUND_NONE_ID,
   AVATAR_FRAME_NONE_ID,
   OFFENSIVE_BLOCKER_DEFAULT_ID,
+  STREAK_RESTORE_ITEM_ID,
 } from './constants/avatar-frame-store';
 import { Mission, MissionType } from './models/mission.model';
 import {
@@ -66,6 +67,10 @@ type StoreItem = {
   equipped: boolean;
   quantityOwned?: number;
   quantityPerPurchase?: number;
+  storeAction?: 'inventory_blocker' | 'streak_restore';
+  restoreAvailable?: boolean;
+  missingDaysUntilToday?: number;
+  requiredBlockersTotal?: number;
 };
 
 type BlockerRecoverySummary = {
@@ -361,11 +366,13 @@ export class MissionsService {
       currentGold,
     });
 
-    const [frameCatalog, backgroundCatalog, blockerCatalog] = await Promise.all([
-      this.storeCatalogService.listActiveByCategory('avatar_frame'),
-      this.storeCatalogService.listActiveByCategory('avatar_background'),
-      this.storeCatalogService.listActiveByCategory('offensive_blocker'),
-    ]);
+    const [frameCatalog, backgroundCatalog, blockerCatalog, restoreCatalog] =
+      await Promise.all([
+        this.storeCatalogService.listActiveByCategory('avatar_frame'),
+        this.storeCatalogService.listActiveByCategory('avatar_background'),
+        this.storeCatalogService.listActiveByCategory('offensive_blocker'),
+        this.storeCatalogService.listActiveByCategory('streak_restore'),
+      ]);
 
     const frameItems: StoreItem[] = frameCatalog.map((entry) => ({
       id: entry.itemKey,
@@ -388,21 +395,39 @@ export class MissionsService {
     const defaultBlocker = blockerCatalog.find(
       (entry) => entry.itemKey === OFFENSIVE_BLOCKER_DEFAULT_ID,
     );
+    const restoreCatalogItem =
+      restoreCatalog.find((entry) => entry.itemKey === STREAK_RESTORE_ITEM_ID) ??
+      null;
     const blockerPriceGold = defaultBlocker?.priceGold ?? 0;
-    const blockerItems: StoreItem[] = defaultBlocker
-      ? [
-          {
-            id: defaultBlocker.itemKey,
-            name: defaultBlocker.name,
-            description: defaultBlocker.description ?? '',
-            priceGold: blockerPriceGold,
-            owned: blockerInventoryCount > 0,
-            equipped: equippedBlockerId === defaultBlocker.itemKey,
-            quantityOwned: blockerInventoryCount,
-            quantityPerPurchase: 1,
-          },
-        ]
-      : [];
+    const blockerItems: StoreItem[] = [];
+
+    if (defaultBlocker) {
+      blockerItems.push({
+        id: defaultBlocker.itemKey,
+        name: defaultBlocker.name,
+        description: defaultBlocker.description ?? '',
+        priceGold: blockerPriceGold,
+        owned: blockerInventoryCount > 0,
+        equipped: equippedBlockerId === defaultBlocker.itemKey,
+        quantityOwned: blockerInventoryCount,
+        quantityPerPurchase: 1,
+        storeAction: 'inventory_blocker',
+      });
+    }
+
+    blockerItems.push({
+      id: STREAK_RESTORE_ITEM_ID,
+      name:
+        restoreCatalogItem?.name ?? 'Restaurar sequências perdidas até então',
+      description: restoreCatalogItem?.description ?? '',
+      priceGold: blockerRecovery.requiredPurchaseCostGold,
+      owned: false,
+      equipped: false,
+      storeAction: 'streak_restore',
+      restoreAvailable: blockerRecovery.missingDaysUntilToday > 0,
+      missingDaysUntilToday: blockerRecovery.missingDaysUntilToday,
+      requiredBlockersTotal: blockerRecovery.requiredBlockersTotal,
+    });
 
     return {
       summary: {
@@ -426,7 +451,7 @@ export class MissionsService {
         },
         {
           id: 'offensive_blockers',
-          title: 'Bloqueadores de ofensiva',
+          title: 'Bloqueadores de sequência',
           items: blockerItems,
         },
       ],
@@ -457,7 +482,9 @@ export class MissionsService {
       throw new BadRequestException('Serviço indisponível no momento.');
     }
 
-    return sequelize.transaction(async (transaction) => {
+    let storePurchaseAnalytics: Record<string, unknown> | null = null;
+
+    const response = await sequelize.transaction(async (transaction) => {
       const user = await this.userModel.findByPk(userId, {
         attributes: ['id', 'equippedAvatarFrameId', 'purchasedAvatarFrameIds'],
         transaction,
@@ -525,7 +552,13 @@ export class MissionsService {
       );
 
       const wallet = await this.getWalletSnapshot(userId, transaction);
-      const result = {
+      storePurchaseAnalytics = {
+        item_type: 'avatar_frame',
+        item_id: normalizedFrameId,
+        price_gold: priceGold,
+      };
+
+      return {
         message: 'Moldura comprada e equipada.',
         profile: {
           equippedAvatarFrameId: normalizedFrameId,
@@ -540,18 +573,16 @@ export class MissionsService {
           xpLifetimeSpent: wallet.xpLifetimeSpent,
         },
       };
+    });
 
+    if (storePurchaseAnalytics) {
       await this.analyticsService.trackSafe(userId, {
         eventName: 'store_purchase',
-        properties: {
-          item_type: 'avatar_frame',
-          item_id: normalizedFrameId,
-          price_gold: priceGold,
-        },
+        properties: storePurchaseAnalytics,
       });
+    }
 
-      return result;
-    });
+    return response;
   }
 
   async purchaseAvatarBackground(userId: string, backgroundId: string) {
@@ -569,7 +600,9 @@ export class MissionsService {
       throw new BadRequestException('Serviço indisponível no momento.');
     }
 
-    return sequelize.transaction(async (transaction) => {
+    let storePurchaseAnalytics: Record<string, unknown> | null = null;
+
+    const response = await sequelize.transaction(async (transaction) => {
       const user = await this.userModel.findByPk(userId, {
         attributes: ['id', 'equippedAvatarBackgroundId', 'purchasedAvatarBackgroundIds'],
         transaction,
@@ -637,7 +670,13 @@ export class MissionsService {
       );
 
       const wallet = await this.getWalletSnapshot(userId, transaction);
-      const result = {
+      storePurchaseAnalytics = {
+        item_type: 'avatar_background',
+        item_id: normalizedBackgroundId,
+        price_gold: priceGold,
+      };
+
+      return {
         message: 'Fundo comprado e equipado.',
         profile: {
           equippedAvatarBackgroundId: normalizedBackgroundId,
@@ -652,18 +691,16 @@ export class MissionsService {
           xpLifetimeSpent: wallet.xpLifetimeSpent,
         },
       };
+    });
 
+    if (storePurchaseAnalytics) {
       await this.analyticsService.trackSafe(userId, {
         eventName: 'store_purchase',
-        properties: {
-          item_type: 'avatar_background',
-          item_id: normalizedBackgroundId,
-          price_gold: priceGold,
-        },
+        properties: storePurchaseAnalytics,
       });
+    }
 
-      return result;
-    });
+    return response;
   }
 
   async purchaseOffensiveBlocker(userId: string, blockerId: string, quantity = 1) {
@@ -680,22 +717,25 @@ export class MissionsService {
     }
     const blockerPriceGold = blockerCatalogItem.priceGold;
 
-    let normalizedQuantity = Number.isFinite(quantity) ? Math.floor(quantity) : 1;
+    const normalizedQuantity = Number.isFinite(quantity) ? Math.floor(quantity) : 1;
     if (normalizedQuantity <= 0) {
       throw new BadRequestException('Quantidade inválida para compra de bloqueador.');
     }
+
+    const totalPriceGold = normalizedQuantity * blockerPriceGold;
     const sequelize = this.userModel.sequelize;
     if (!sequelize) {
       throw new BadRequestException('Serviço indisponível no momento.');
     }
 
-    return sequelize.transaction(async (transaction) => {
+    let storePurchaseAnalytics: Record<string, unknown> | null = null;
+
+    const response = await sequelize.transaction(async (transaction) => {
       const user = await this.userModel.findByPk(userId, {
         attributes: [
           'id',
           'equippedOffensiveBlockerId',
           'offensiveBlockerInventoryCount',
-          'streakBlockerAppliedDayKeys',
         ],
         transaction,
         lock: transaction.LOCK.UPDATE,
@@ -707,23 +747,6 @@ export class MissionsService {
 
       const currentInventory = Math.max(0, parseNumber(user.offensiveBlockerInventoryCount));
       const currentGold = await this.getBalanceByCurrency(userId, 'gold', transaction);
-      const blockerRecovery = await this.buildBlockerRecoverySummary({
-        userId,
-        inventoryCount: currentInventory,
-        currentGold,
-        transaction,
-      });
-
-      if (blockerRecovery.requiredPurchaseQuantity > 0) {
-        if (!blockerRecovery.canAffordRecoveryPurchase) {
-          throw new BadRequestException(
-            `Você precisa de ${blockerRecovery.requiredPurchaseQuantity} bloqueadores para recuperar sua sequência até hoje (custo: ${blockerRecovery.requiredPurchaseCostGold} ouro).`,
-          );
-        }
-        normalizedQuantity = blockerRecovery.requiredPurchaseQuantity;
-      }
-
-      const totalPriceGold = normalizedQuantity * blockerPriceGold;
 
       if (currentGold < totalPriceGold) {
         throw new BadRequestException('Ouro insuficiente para comprar bloqueadores.');
@@ -748,28 +771,7 @@ export class MissionsService {
         { transaction },
       );
 
-      const nextInventoryRaw = currentInventory + normalizedQuantity;
-      const now = new Date();
-      const todayStart = this.streakService.getDayStartInAppTimeZone(now);
-      const appliedKeys = new Set(
-        this.normalizeIdList(user.streakBlockerAppliedDayKeys).filter((key) =>
-          /^\d{4}-\d{2}-\d{2}$/.test(key),
-        ),
-      );
-      const mealDayKeys = await this.getMealDayKeysUntilNow(userId, now, transaction);
-      const missingDayKeys = this.buildTrailingMissingDayKeys(
-        mealDayKeys,
-        appliedKeys,
-        todayStart,
-      );
-
-      let nextInventory = nextInventoryRaw;
-      if (missingDayKeys.length > 0 && nextInventoryRaw >= missingDayKeys.length) {
-        for (const key of missingDayKeys) {
-          appliedKeys.add(key);
-        }
-        nextInventory = nextInventoryRaw - missingDayKeys.length;
-      }
+      const nextInventory = currentInventory + normalizedQuantity;
 
       await user.update(
         {
@@ -777,13 +779,19 @@ export class MissionsService {
           equippedOffensiveBlockerId:
             this.normalizeOptionalId(user.equippedOffensiveBlockerId) ??
             OFFENSIVE_BLOCKER_DEFAULT_ID,
-          streakBlockerAppliedDayKeys: Array.from(appliedKeys).sort(),
         },
         { transaction },
       );
 
       const wallet = await this.getWalletSnapshot(userId, transaction);
-      const result = {
+      storePurchaseAnalytics = {
+        item_type: 'offensive_blocker',
+        item_id: normalizedBlockerId,
+        quantity: normalizedQuantity,
+        price_gold: totalPriceGold,
+      };
+
+      return {
         message: `Bloqueador${normalizedQuantity > 1 ? 'es' : ''} comprado${
           normalizedQuantity > 1 ? 's' : ''
         } com sucesso.`,
@@ -802,19 +810,172 @@ export class MissionsService {
           xpLifetimeSpent: wallet.xpLifetimeSpent,
         },
       };
+    });
 
+    if (storePurchaseAnalytics) {
       await this.analyticsService.trackSafe(userId, {
         eventName: 'store_purchase',
-        properties: {
-          item_type: 'offensive_blocker',
-          item_id: normalizedBlockerId,
-          quantity: normalizedQuantity,
-          price_gold: totalPriceGold,
-        },
+        properties: storePurchaseAnalytics,
+      });
+    }
+
+    return response;
+  }
+
+  async purchaseStreakRestore(userId: string) {
+    const restoreCatalogItem = await this.storeCatalogService.findActiveByKey(
+      STREAK_RESTORE_ITEM_ID,
+    );
+    if (!restoreCatalogItem || restoreCatalogItem.category !== 'streak_restore') {
+      throw new BadRequestException('Restauração de sequência indisponível.');
+    }
+
+    const blockerPriceGold =
+      (await this.storeCatalogService.getActivePriceGold(OFFENSIVE_BLOCKER_DEFAULT_ID)) ?? 0;
+
+    const sequelize = this.userModel.sequelize;
+    if (!sequelize) {
+      throw new BadRequestException('Serviço indisponível no momento.');
+    }
+
+    let storePurchaseAnalytics: Record<string, unknown> | null = null;
+
+    const response = await sequelize.transaction(async (transaction) => {
+      const user = await this.userModel.findByPk(userId, {
+        attributes: [
+          'id',
+          'equippedOffensiveBlockerId',
+          'offensiveBlockerInventoryCount',
+          'streakBlockerAppliedDayKeys',
+        ],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
       });
 
-      return result;
+      if (!user) {
+        throw new BadRequestException('Usuário não encontrado.');
+      }
+
+      const currentInventory = Math.max(0, parseNumber(user.offensiveBlockerInventoryCount));
+      const currentGold = await this.getBalanceByCurrency(userId, 'gold', transaction);
+      const blockerRecovery = await this.buildBlockerRecoverySummary({
+        userId,
+        inventoryCount: currentInventory,
+        currentGold,
+        transaction,
+      });
+
+      if (blockerRecovery.missingDaysUntilToday <= 0) {
+        throw new BadRequestException('Não há sequência perdida para restaurar.');
+      }
+
+      const blockersToBuy = blockerRecovery.requiredPurchaseQuantity;
+      const totalPriceGold = blockerRecovery.requiredPurchaseCostGold;
+
+      if (currentGold < totalPriceGold) {
+        throw new BadRequestException(
+          `Ouro insuficiente para restaurar a sequência (custo: ${totalPriceGold} ouro).`,
+        );
+      }
+
+      if (blockersToBuy > 0) {
+        await this.userCurrencyTransactionModel.create(
+          {
+            userId,
+            currency: 'gold',
+            amountSigned: -totalPriceGold,
+            type: 'debit',
+            sourceType: 'streak_restore_purchase',
+            sourceId: STREAK_RESTORE_ITEM_ID,
+            referenceKey: null,
+            metadata: {
+              restoreItemId: STREAK_RESTORE_ITEM_ID,
+              blockersPurchased: blockersToBuy,
+              blockersRequiredTotal: blockerRecovery.requiredBlockersTotal,
+              missingDaysUntilToday: blockerRecovery.missingDaysUntilToday,
+              priceGoldPerBlocker: blockerPriceGold,
+              totalPriceGold,
+            },
+          },
+          { transaction },
+        );
+      }
+
+      const now = new Date();
+      const todayStart = this.streakService.getDayStartInAppTimeZone(now);
+      const appliedKeys = new Set(
+        this.normalizeIdList(user.streakBlockerAppliedDayKeys).filter((key) =>
+          /^\d{4}-\d{2}-\d{2}$/.test(key),
+        ),
+      );
+      const mealDayKeys = await this.getMealDayKeysUntilNow(userId, now, transaction);
+      const missingDayKeys = this.buildTrailingMissingDayKeys(
+        mealDayKeys,
+        appliedKeys,
+        todayStart,
+      );
+
+      const nextInventoryRaw = currentInventory + blockersToBuy;
+      if (missingDayKeys.length === 0 || nextInventoryRaw < missingDayKeys.length) {
+        throw new BadRequestException(
+          'Não foi possível restaurar a sequência. Tente novamente.',
+        );
+      }
+
+      for (const key of missingDayKeys) {
+        appliedKeys.add(key);
+      }
+
+      const nextInventory = nextInventoryRaw - missingDayKeys.length;
+
+      await user.update(
+        {
+          offensiveBlockerInventoryCount: nextInventory,
+          equippedOffensiveBlockerId:
+            this.normalizeOptionalId(user.equippedOffensiveBlockerId) ??
+            OFFENSIVE_BLOCKER_DEFAULT_ID,
+          streakBlockerAppliedDayKeys: Array.from(appliedKeys).sort(),
+        },
+        { transaction },
+      );
+
+      const wallet = await this.getWalletSnapshot(userId, transaction);
+      storePurchaseAnalytics = {
+        item_type: 'streak_restore',
+        item_id: STREAK_RESTORE_ITEM_ID,
+        blockers_purchased: blockersToBuy,
+        blockers_consumed: missingDayKeys.length,
+        missing_days: blockerRecovery.missingDaysUntilToday,
+        price_gold: totalPriceGold,
+      };
+
+      return {
+        message: 'Sequência restaurada com sucesso.',
+        profile: {
+          equippedOffensiveBlockerId:
+            this.normalizeOptionalId(user.equippedOffensiveBlockerId) ??
+            OFFENSIVE_BLOCKER_DEFAULT_ID,
+          offensiveBlockerInventoryCount: nextInventory,
+        },
+        summary: {
+          gold: wallet.gold,
+          xp: wallet.xp,
+          goldLifetimeEarned: wallet.goldLifetimeEarned,
+          goldLifetimeSpent: wallet.goldLifetimeSpent,
+          xpLifetimeEarned: wallet.xpLifetimeEarned,
+          xpLifetimeSpent: wallet.xpLifetimeSpent,
+        },
+      };
     });
+
+    if (storePurchaseAnalytics) {
+      await this.analyticsService.trackSafe(userId, {
+        eventName: 'store_purchase',
+        properties: storePurchaseAnalytics,
+      });
+    }
+
+    return response;
   }
 
   async getGoldStatement(userId: string) {

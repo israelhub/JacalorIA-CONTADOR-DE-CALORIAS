@@ -9,6 +9,7 @@ import { PerformanceModule } from './performance/performance.module';
 import { MissionsModule } from './missions/missions.module';
 import { SocialModule } from './social/social.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     MissionsModule,
     SocialModule,
     AnalyticsModule,
+    SupportModule,
   ],
 })
 export class AppModule {}

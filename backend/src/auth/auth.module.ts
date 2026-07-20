@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { AuthRepository } from './auth.repository';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { OptionalJwtAuthGuard } from './guards/optional-jwt-auth.guard';
 import { User } from './models/user.model';
 import { MailModule } from '../mail/mail.module';
 import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
@@ -38,7 +39,7 @@ import { StreakModule } from '../streak/streak.module';
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthRepository, AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [AuthRepository, AuthService, JwtStrategy, OptionalJwtAuthGuard],
+  exports: [AuthService, OptionalJwtAuthGuard],
 })
 export class AuthModule {}

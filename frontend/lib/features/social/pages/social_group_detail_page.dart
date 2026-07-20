@@ -1,19 +1,19 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/analytics/analytics_service.dart';
+import '../../../core/files/bytes_file_saver.dart';
 import '../../../core/config/api_config.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
+import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_section_header.dart';
-import '../widgets/social_create_group_sheet.dart';
+import 'social_create_group_page.dart';
 import '../widgets/social_invite_group_friends_dialog.dart';
 import '../helpers/social_group_helpers.dart';
 import '../models/social_group_models.dart';
@@ -420,11 +420,8 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     }
     final isCurrentUserLeader = currentUserEntry?.isLeader == true;
 
-    final result = await showModalBottomSheet<SocialGroupDetail>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => SocialCreateGroupSheet(
+    final result = await context.pushSlidePage<SocialGroupDetail>(
+      SocialCreateGroupPage(
         service: widget._service,
         existingGroup: _detail!.group,
         onDeleteRequested: isCurrentUserLeader ? _deleteGroup : null,
@@ -565,18 +562,13 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     AppToast.show(context, message: 'ID do grupo copiado');
   }
 
-  Future<File> _writeJpgFile() async {
-    final bytes = await _buildResultJpgBytes();
+  String _resultJpgFilename() {
     final groupName = (_detail?.group.name ?? 'grupo')
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
         .replaceAll(RegExp(r'-+'), '-')
         .replaceAll(RegExp(r'^-|-$'), '');
-    final file = File(
-      '${(await _resolveDownloadsDirectory()).path}${Platform.pathSeparator}ranking-final-$groupName-${DateTime.now().millisecondsSinceEpoch}.jpg',
-    );
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
+    return 'ranking-final-$groupName-${DateTime.now().millisecondsSinceEpoch}.jpg';
   }
 
   Future<Uint8List> _buildResultJpgBytes() async {
@@ -675,35 +667,21 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     return Uint8List.fromList(img.encodeJpg(canvas, quality: 92));
   }
 
-  Future<Directory> _resolveDownloadsDirectory() async {
-    if (Platform.isAndroid) {
-      final dir = Directory('/storage/emulated/0/Download');
-      if (!dir.existsSync()) {
-        await dir.create(recursive: true);
-      }
-      return dir;
-    }
-    final picked = await getDownloadsDirectory();
-    if (picked != null) {
-      if (!picked.existsSync()) {
-        await picked.create(recursive: true);
-      }
-      return picked;
-    }
-    final fallback = Directory('${Directory.systemTemp.path}${Platform.pathSeparator}downloads');
-    if (!fallback.existsSync()) {
-      await fallback.create(recursive: true);
-    }
-    return fallback;
-  }
-
   Future<void> _downloadRankingJpg() async {
     if (_exportingAction != null) return;
     setState(() => _exportingAction = _ExportAction.download);
     try {
-      await _writeJpgFile();
+      final bytes = await _buildResultJpgBytes();
+      await saveBytesToDownloads(
+        bytes: bytes,
+        filename: _resultJpgFilename(),
+        mimeType: 'image/jpeg',
+      );
       if (!mounted) return;
-      AppToast.show(context, message: 'Imagem salva com sucesso');
+      AppToast.show(
+        context,
+        message: kIsWeb ? 'Download iniciado' : 'Imagem salva com sucesso',
+      );
     } catch (error) {
       if (!mounted) return;
       AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), isError: true);
@@ -716,11 +694,35 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     if (_exportingAction != null) return;
     setState(() => _exportingAction = _ExportAction.share);
     try {
-      final file = await _writeJpgFile();
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'Resultado final do grupo ${_detail?.group.name ?? ''}',
-      );
+      final bytes = await _buildResultJpgBytes();
+      final filename = _resultJpgFilename();
+      final shareText = 'Resultado final do grupo ${_detail?.group.name ?? ''}';
+
+      if (kIsWeb) {
+        try {
+          await Share.shareXFiles(
+            [XFile.fromData(bytes, mimeType: 'image/jpeg', name: filename)],
+            text: shareText,
+          );
+        } catch (_) {
+          await saveBytesToDownloads(
+            bytes: bytes,
+            filename: filename,
+            mimeType: 'image/jpeg',
+          );
+          if (!mounted) return;
+          AppToast.show(
+            context,
+            message: 'Compartilhamento indisponível. Imagem baixada.',
+          );
+        }
+      } else {
+        final path = await writeBytesToTempForSharing(bytes: bytes, filename: filename);
+        await Share.shareXFiles(
+          [XFile(path)],
+          text: shareText,
+        );
+      }
     } catch (error) {
       if (!mounted) return;
       AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), isError: true);

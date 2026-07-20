@@ -18,6 +18,7 @@ export type CurrencyTransactionSource =
   | 'avatar_background_purchase'
   | 'offensive_blocker_purchase'
   | 'offensive_blocker_auto_purchase'
+  | 'streak_restore_purchase'
   | 'manual_adjustment';
 
 @Table({

@@ -30,12 +30,16 @@
     if (message) {
       gateError.hidden = false;
       gateError.textContent = message;
+    } else {
+      gateError.hidden = true;
+      gateError.textContent = "";
     }
   }
 
   function showApp() {
     gate.hidden = true;
     app.hidden = false;
+    window.scrollTo(0, 0);
   }
 
   function formatDuration(sec) {
@@ -225,7 +229,16 @@
       });
       if (res.status === 401) {
         clearToken();
-        showGate("Token inválido. Configure BETA_DASHBOARD_TOKEN e tente de novo.");
+        let detail = "Token inválido.";
+        try {
+          const body = await res.json();
+          if (body?.message) detail = body.message;
+        } catch (_) {
+          /* ignore */
+        }
+        showGate(
+          `${detail} Use o token de produção (AWS), não o de desenvolvimento local.`,
+        );
         return;
       }
       if (!res.ok) {

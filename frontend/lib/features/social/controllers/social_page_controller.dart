@@ -36,6 +36,9 @@ class SocialPageController extends ChangeNotifier {
   String _friendInviteCode = '';
   String get friendInviteCode => _friendInviteCode;
 
+  /// Short alphanumeric code for sharing/adding friends (not the internal UUID).
+  String get shareableFriendId => _friendInviteCode.trim().toUpperCase();
+
   String _currentUserId = '';
   String get currentUserId => _currentUserId;
 

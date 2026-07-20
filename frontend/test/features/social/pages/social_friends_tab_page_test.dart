@@ -15,7 +15,34 @@ SocialFriend _friend() {
 }
 
 void main() {
-  testWidgets('mantém o botão de notificações inteiro e acionável', (
+  testWidgets('oculta o botão de solicitações quando não há pedidos pendentes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 420,
+              child: SocialFriendsTabPage(
+                friends: [_friend()],
+                onAddFriend: () {},
+                pendingRequestCount: 0,
+                onOpenRequests: () {},
+                onOpenFriendProfile: (_) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Adicionar amigo'), findsOneWidget);
+    expect(find.byKey(const ValueKey('friend-requests-button')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('exibe botão flutuante de solicitações quando há pedidos pendentes', (
     tester,
   ) async {
     var openedRequests = false;
@@ -41,6 +68,7 @@ void main() {
 
     expect(find.text('Adicionar amigo'), findsOneWidget);
     expect(find.byKey(const ValueKey('friend-requests-button')), findsOneWidget);
+    expect(find.text('3'), findsOneWidget);
     expect(find.text('Seus amigos'), findsOneWidget);
     expect(find.text('Ana Paula'), findsOneWidget);
     expect(tester.takeException(), isNull);

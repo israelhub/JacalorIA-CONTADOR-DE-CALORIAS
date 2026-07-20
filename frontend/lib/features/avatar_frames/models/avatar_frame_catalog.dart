@@ -18,6 +18,8 @@ enum StoreCategory { blockers, frames, backgrounds }
 
 enum StoreItemType { blocker, frame, background }
 
+enum StoreBlockerAction { inventory, restore }
+
 class StoreCatalogItem {
   const StoreCatalogItem({
     required this.id,
@@ -26,6 +28,9 @@ class StoreCatalogItem {
     required this.description,
     required this.priceGold,
     this.quantityOwned = 0,
+    this.blockerAction = StoreBlockerAction.inventory,
+    this.restoreAvailable = false,
+    this.missingDaysUntilToday = 0,
   });
 
   final String id;
@@ -34,8 +39,14 @@ class StoreCatalogItem {
   final String description;
   final int priceGold;
   final int quantityOwned;
+  final StoreBlockerAction blockerAction;
+  final bool restoreAvailable;
+  final int missingDaysUntilToday;
 
   bool get isConsumable => type == StoreItemType.blocker;
+  bool get isStreakRestore =>
+      blockerAction == StoreBlockerAction.restore || id == 'streak_restore';
+  bool get isInventoryBlocker => isConsumable && !isStreakRestore;
 }
 
 class StoreCatalogData {
@@ -339,15 +350,31 @@ List<StoreCatalogItem> _parseStoreItems(
         final price = AvatarFrameCatalog._asInt(
           map['priceGold'] ?? map['price'] ?? map['goldCost'],
         );
+        final storeAction = map['storeAction']?.toString().trim().toLowerCase() ??
+            map['store_action']?.toString().trim().toLowerCase();
+        final idTrimmed = id.trim();
+        final blockerAction = storeAction == 'streak_restore' ||
+                idTrimmed == 'streak_restore'
+            ? StoreBlockerAction.restore
+            : StoreBlockerAction.inventory;
 
         return StoreCatalogItem(
-          id: id.trim(),
+          id: idTrimmed,
           type: type,
           name: name,
           description: description,
           priceGold: price,
           quantityOwned: AvatarFrameCatalog._asInt(
             map['quantityOwned'] ?? map['quantity'] ?? map['count'],
+          ),
+          blockerAction: type == StoreItemType.blocker
+              ? blockerAction
+              : StoreBlockerAction.inventory,
+          restoreAvailable:
+              map['restoreAvailable'] == true ||
+              map['restore_available'] == true,
+          missingDaysUntilToday: AvatarFrameCatalog._asInt(
+            map['missingDaysUntilToday'] ?? map['missing_days_until_today'],
           ),
         );
       })

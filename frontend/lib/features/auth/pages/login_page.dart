@@ -10,6 +10,7 @@ import '../../home/pages/home_shell_page.dart';
 import '../../onboarding/pages/welcome_page.dart';
 import 'forgot_password_page.dart';
 import 'sign_up_page.dart';
+import '../../support/pages/support_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, this.authController, this.initialErrorMessage});
@@ -237,6 +238,35 @@ class _LoginPageState extends State<LoginPage> {
                                 },
                             ),
                           ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Center(
+                      child: TextButton(
+                        onPressed: _authController.isLoading
+                            ? null
+                            : () {
+                                context.pushSlidePage(
+                                  SupportPage(
+                                    initialEmail: _emailController.text.trim(),
+                                  ),
+                                );
+                              },
+                        style: TextButton.styleFrom(
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xs,
+                            vertical: AppSpacing.xs,
+                          ),
+                        ),
+                        child: Text(
+                          'Algum problema? Contate o suporte',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.action500,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),

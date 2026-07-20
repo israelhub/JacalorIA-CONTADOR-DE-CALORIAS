@@ -8,22 +8,23 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_guide_card.dart';
 import '../../../shared/widgets/app_page_header.dart';
+import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../controllers/social_page_controller.dart';
 import '../models/social_group_models.dart';
+import 'social_add_friend_page.dart';
+import 'social_create_group_page.dart';
 import 'social_friend_profile_page.dart';
+import 'social_friend_requests_page.dart';
 import 'social_group_detail_page.dart';
 import 'social_friends_tab_page.dart';
 import 'social_groups_tab_page.dart';
+import 'social_join_group_page.dart';
+import 'social_public_groups_page.dart';
+import 'social_search_user_page.dart';
 import '../services/social_service.dart';
-import '../widgets/social_create_group_sheet.dart';
-import '../widgets/social_add_friend_dialog.dart';
-import '../widgets/social_friend_requests_dialog.dart';
-import '../widgets/social_join_group_dialog.dart';
-import '../widgets/social_public_groups_dialog.dart';
 import '../widgets/social_qr_scan_sheet.dart';
-import '../widgets/social_search_user_dialog.dart';
 import '../widgets/social_segmented_control.dart';
 
 class SocialPage extends StatefulWidget {
@@ -160,7 +161,8 @@ class _SocialPageState extends State<SocialPage> {
     final activeGroups = _controller.groups.where((group) => !_isGroupFinished(group)).toList(growable: false);
     final historyGroups = _controller.groups.where(_isGroupFinished).toList(growable: false);
 
-    return SingleChildScrollView(
+    return AppRefreshScrollView(
+      onRefresh: () => _controller.loadAll(silent: true),
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,25 +237,19 @@ class _SocialPageState extends State<SocialPage> {
 
   Future<void> _openAddFriendModal() async {
     final qrPayload = _controller.friendLinkValue();
-    final rootNavigator = Navigator.of(context);
-    await showDialog<void>(
-      context: context,
-      builder: (_) => SocialAddFriendDialog(
+    await context.pushSlidePage<void>(
+      SocialAddFriendPage(
         userName: _controller.currentUserName,
         userAvatarUrl: _controller.currentUserAvatarUrl,
         userAvatarFrameId: _controller.currentUserAvatarFrameId,
         qrPayload: qrPayload,
-        onCopyId: _copyCurrentUserId,
-        onSearchUser: () async {
-          rootNavigator.pop();
-          if (!mounted) return;
-          await _openSearchUserModal();
-        },
+        onCopyId: _copyShareableFriendId,
+        onSearchUser: _openSearchUserPage,
         onScanQr: () async {
           final value = await _scanQrCode();
           if (value == null || value.trim().isEmpty) return;
           if (!mounted) return;
-          rootNavigator.pop();
+          Navigator.of(context).pop();
           if (!mounted) return;
           await _submitFriendLookup(value);
         },
@@ -287,17 +283,15 @@ class _SocialPageState extends State<SocialPage> {
   }
 
   Future<void> _openJoinGroupDialog() async {
-    final result = await showDialog<SocialJoinGroupDialogResult>(
-      context: context,
-      builder: (context) => const SocialJoinGroupDialog(),
+    final result = await context.pushSlidePage<SocialJoinGroupDialogResult>(
+      const SocialJoinGroupPage(),
     );
     if (result == null) return;
 
     if (result.openPublicGroups) {
       if (!mounted) return;
-      final selectedGroupId = await showDialog<String>(
-        context: context,
-        builder: (context) => SocialPublicGroupsDialog(
+      final selectedGroupId = await context.pushSlidePage<String>(
+        SocialPublicGroupsPage(
           fetchGroups: ({
             required String query,
             int? durationDays,
@@ -336,11 +330,8 @@ class _SocialPageState extends State<SocialPage> {
   }
 
   Future<void> _openCreateGroupSheet() async {
-    final result = await showModalBottomSheet<SocialGroupDetail>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => SocialCreateGroupSheet(service: widget.service),
+    final result = await context.pushSlidePage<SocialGroupDetail>(
+      SocialCreateGroupPage(service: widget.service),
     );
 
     if (result == null || !mounted) return;
@@ -374,10 +365,9 @@ class _SocialPageState extends State<SocialPage> {
     await Share.share(_controller.friendLinkValue());
   }
 
-  Future<void> _openSearchUserModal() async {
-    await showDialog<void>(
-      context: context,
-      builder: (context) => SocialSearchUserDialog(
+  Future<void> _openSearchUserPage() async {
+    await context.pushSlidePage<void>(
+      SocialSearchUserPage(
         searchUsers: _controller.searchUsers,
         onAddUser: (user) async {
           await _runFriendRequestAction(() => _controller.addFriendById(user.id));
@@ -387,9 +377,8 @@ class _SocialPageState extends State<SocialPage> {
   }
 
   Future<void> _openFriendRequestsModal() async {
-    await showDialog<void>(
-      context: context,
-      builder: (context) => SocialFriendRequestsDialog(
+    await context.pushSlidePage<void>(
+      SocialFriendRequestsPage(
         requests: _controller.pendingFriendRequests,
         onAccept: (request) => _runFriendRequestAction(
           () => _controller.acceptFriendRequest(request.id),
@@ -410,15 +399,16 @@ class _SocialPageState extends State<SocialPage> {
     }
   }
 
-  Future<void> _copyCurrentUserId() async {
-    if (_controller.currentUserId.isEmpty) {
-      _showError(Exception('ID do usuário indisponível no momento'));
+  Future<void> _copyShareableFriendId() async {
+    final shareableId = _controller.shareableFriendId;
+    if (shareableId.isEmpty) {
+      _showError(Exception('ID de amizade indisponível no momento'));
       return;
     }
 
-    await Clipboard.setData(ClipboardData(text: _controller.currentUserId));
+    await Clipboard.setData(ClipboardData(text: shareableId));
     if (!mounted) return;
-    AppToast.success(context, message: 'ID do usuário copiado');
+    AppToast.success(context, message: 'ID copiado');
   }
 
   Future<String?> _scanQrCode() {

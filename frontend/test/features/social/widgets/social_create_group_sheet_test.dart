@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:jacaloria/features/social/models/social_group_models.dart';
 import 'package:jacaloria/features/social/services/social_service.dart';
-import 'package:jacaloria/features/social/widgets/social_create_group_sheet.dart';
+import 'package:jacaloria/features/social/pages/social_create_group_page.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 
 class _FakeSocialService extends SocialService {
@@ -66,7 +66,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: SocialCreateGroupSheet(service: _FakeSocialService())),
+        home: Scaffold(body: SocialCreateGroupPage(service: _FakeSocialService())),
       ),
     );
 
@@ -78,7 +78,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('social-duration-14')));
     await tester.pumpAndSettle();
 
-    final chip = tester.widget<Container>(
+    final chip = tester.widget<AnimatedContainer>(
       find.byKey(const ValueKey('social-duration-14')),
     );
     final decoration = chip.decoration as BoxDecoration;

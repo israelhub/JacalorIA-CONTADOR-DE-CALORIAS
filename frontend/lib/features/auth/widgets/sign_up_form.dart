@@ -4,7 +4,9 @@ import '../helpers/auth_helpers.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
+import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/or_divider.dart';
+import '../../support/pages/support_page.dart';
 
 class SignUpForm extends StatefulWidget {
   const SignUpForm({
@@ -162,6 +164,35 @@ class _SignUpFormState extends State<SignUpForm> {
                 child: Text('Entrar', style: AppTextStyles.bodyLarge),
               ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Center(
+            child: TextButton(
+              onPressed: widget.isLoading
+                  ? null
+                  : () {
+                      context.pushSlidePage(
+                        SupportPage(
+                          initialEmail: _emailController.text.trim(),
+                        ),
+                      );
+                    },
+              style: TextButton.styleFrom(
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: AppSpacing.xs,
+                ),
+              ),
+              child: Text(
+                'Algum problema? Contate o suporte',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.action500,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           ),
         ],
       ),
