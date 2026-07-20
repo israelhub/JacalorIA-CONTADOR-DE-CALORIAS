@@ -8,6 +8,7 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_guide_card.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_page_header.dart';
+import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_section_header.dart';
 import '../models/missions_overview.dart';
 import '../services/missions_service.dart';
@@ -185,7 +186,8 @@ class _MissionsPageState extends State<MissionsPage> {
 
     final overview = _overview!;
 
-    return SingleChildScrollView(
+    return AppRefreshScrollView(
+      onRefresh: () => _loadMissions(silent: true),
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
         AppSpacing.lg,
@@ -588,6 +590,9 @@ class _GoldStatementPage extends StatelessWidget {
     if (key == 'offensive_blocker_purchase' ||
         key == 'offensive_blocker_auto_purchase') {
       return 'Compra de bloqueador';
+    }
+    if (key == 'streak_restore_purchase') {
+      return 'Restauração de sequência';
     }
     if (key == 'blocker_purchase' || key == 'profile_blocker_purchase') {
       return 'Compra de bloqueador';

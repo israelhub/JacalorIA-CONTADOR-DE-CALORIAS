@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/analytics/analytics_service.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/framed_avatar.dart';
 import '../../../../shared/widgets/app_page_route.dart';
 import '../../../../shared/widgets/app_toast.dart';
@@ -10,6 +11,7 @@ import '../../../../shared/widgets/avatar_profile_preview.dart';
 import '../../avatar_frames/models/avatar_frame_catalog.dart';
 import '../../avatar_frames/pages/avatar_frame_store_page.dart';
 import '../../auth/pages/enter_page.dart';
+import '../../support/pages/support_page.dart';
 import '../../auth/service/auth_service.dart';
 import '../../missions/services/missions_service.dart';
 import '../../social/widgets/social_profile_info_card.dart';
@@ -747,7 +749,8 @@ class _ProfilePageState extends State<ProfilePage> {
               offset: _isContentReady ? Offset.zero : const Offset(0, 0.02),
               duration: const Duration(milliseconds: 280),
               curve: Curves.easeOut,
-              child: SingleChildScrollView(
+              child: AppRefreshScrollView(
+                onRefresh: _refreshProfileSnapshot,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -939,6 +942,22 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xl),
+                          SizedBox(
+                            height: AppSpacing.huge + AppSpacing.xs,
+                            child: AppButton(
+                              label: 'Suporte',
+                              onPressed: (_isSaving || _isSigningOut)
+                                  ? null
+                                  : () {
+                                      context.pushSlidePage(
+                                        const SupportPage(),
+                                      );
+                                    },
+                              variant: AppButtonVariant.outline,
+                              leadingIcon: Icons.support_agent_rounded,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
                           SizedBox(
                             height: AppSpacing.huge + AppSpacing.xs,
                             child: AppButton(

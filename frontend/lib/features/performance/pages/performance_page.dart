@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_page_header.dart';
+import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_section_header.dart';
 import '../helpers/performance_month_helpers.dart';
@@ -294,7 +295,8 @@ class _PerformancePageState extends State<PerformancePage> {
       performance.calendarMonth,
     );
 
-    return SingleChildScrollView(
+    return AppRefreshScrollView(
+      onRefresh: _refreshOnEnter,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.lg,

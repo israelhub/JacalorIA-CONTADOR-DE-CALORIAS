@@ -65,7 +65,7 @@ class AppInput extends StatelessWidget {
   }
 }
 
-class AppInputField extends StatelessWidget {
+class AppInputField extends StatefulWidget {
   const AppInputField({
     super.key,
     required this.label,
@@ -74,6 +74,7 @@ class AppInputField extends StatelessWidget {
     this.enabled = true,
     this.readOnly = false,
     this.obscureText = false,
+    this.showPasswordVisibilityToggle = true,
     this.onTap,
     this.onChanged,
     this.validator,
@@ -88,6 +89,7 @@ class AppInputField extends StatelessWidget {
   final bool enabled;
   final bool readOnly;
   final bool obscureText;
+  final bool showPasswordVisibilityToggle;
   final VoidCallback? onTap;
   final ValueChanged<String>? onChanged;
   final String? Function(String?)? validator;
@@ -96,12 +98,33 @@ class AppInputField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
 
   @override
+  State<AppInputField> createState() => _AppInputFieldState();
+}
+
+class _AppInputFieldState extends State<AppInputField> {
+  late bool _isObscured;
+
+  @override
+  void initState() {
+    super.initState();
+    _isObscured = widget.obscureText;
+  }
+
+  @override
+  void didUpdateWidget(covariant AppInputField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.obscureText != widget.obscureText) {
+      _isObscured = widget.obscureText;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (validator != null) {
+    if (widget.validator != null) {
       return _buildWithValidation();
     }
 
-    final showLabel = label.trim().isNotEmpty;
+    final showLabel = widget.label.trim().isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,17 +133,17 @@ class AppInputField extends StatelessWidget {
           _buildLabel(),
           const SizedBox(height: AppSpacing.sm),
         ],
-        _buildContainer(child: _buildTextField(onChanged: onChanged)),
+        _buildContainer(child: _buildTextField(onChanged: widget.onChanged)),
       ],
     );
   }
 
   Widget _buildWithValidation() {
-    final showLabel = label.trim().isNotEmpty;
+    final showLabel = widget.label.trim().isNotEmpty;
 
     return FormField<String>(
-      initialValue: controller?.text ?? '',
-      validator: validator,
+      initialValue: widget.controller?.text ?? '',
+      validator: widget.validator,
       builder: (state) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +174,7 @@ class AppInputField extends StatelessWidget {
 
   Widget _buildLabel() {
     return Text(
-      label,
+      widget.label,
       style: AppTextStyles.bodyLarge.copyWith(
         color: AppColors.textPrimary,
         fontWeight: FontWeight.w700,
@@ -175,26 +198,44 @@ class AppInputField extends StatelessWidget {
     );
   }
 
+  Widget? _buildSuffixIcon() {
+    if (widget.suffixIcon != null) {
+      return widget.suffixIcon;
+    }
+
+    if (widget.obscureText && widget.showPasswordVisibilityToggle) {
+      return IconButton(
+        onPressed: () => setState(() => _isObscured = !_isObscured),
+        color: AppColors.textSecondary,
+        icon: Icon(
+          _isObscured ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+        ),
+      );
+    }
+
+    return null;
+  }
+
   Widget _buildTextField({ValueChanged<String>? onChanged}) {
     return TextField(
-      controller: controller,
-      enabled: enabled,
-      readOnly: readOnly,
-      obscureText: obscureText,
-      onTap: onTap,
+      controller: widget.controller,
+      enabled: widget.enabled,
+      readOnly: widget.readOnly,
+      obscureText: widget.obscureText && _isObscured,
+      onTap: widget.onTap,
       onChanged: onChanged,
-      keyboardType: keyboardType,
+      keyboardType: widget.keyboardType,
       textAlignVertical: TextAlignVertical.center,
-      inputFormatters: inputFormatters,
+      inputFormatters: widget.inputFormatters,
       style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
-        hintText: hint,
+        hintText: widget.hint,
         hintStyle: AppTextStyles.bodyLarge.copyWith(
           color: AppColors.textSecondary,
         ),
         filled: true,
         fillColor: AppColors.surface,
-        suffixIcon: suffixIcon,
+        suffixIcon: _buildSuffixIcon(),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.md,

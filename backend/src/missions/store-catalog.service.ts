@@ -19,21 +19,39 @@ export class StoreCatalogService implements OnModuleInit {
 
   async ensureSeeded(): Promise<void> {
     const count = await this.storeCatalogItemModel.count();
-    if (count > 0) {
+    if (count === 0) {
+      await this.storeCatalogItemModel.bulkCreate(
+        DEFAULT_STORE_CATALOG_ITEMS.map((item) => ({
+          itemKey: item.itemKey,
+          category: item.category,
+          name: item.name,
+          description: item.description,
+          priceGold: item.priceGold,
+          sortOrder: item.sortOrder,
+          isActive: true,
+        })),
+      );
       return;
     }
 
-    await this.storeCatalogItemModel.bulkCreate(
-      DEFAULT_STORE_CATALOG_ITEMS.map((item) => ({
-        itemKey: item.itemKey,
-        category: item.category,
-        name: item.name,
-        description: item.description,
-        priceGold: item.priceGold,
-        sortOrder: item.sortOrder,
+    for (const seed of DEFAULT_STORE_CATALOG_ITEMS) {
+      const existing = await this.storeCatalogItemModel.findOne({
+        where: { itemKey: seed.itemKey },
+      });
+      if (existing) {
+        continue;
+      }
+
+      await this.storeCatalogItemModel.create({
+        itemKey: seed.itemKey,
+        category: seed.category,
+        name: seed.name,
+        description: seed.description,
+        priceGold: seed.priceGold,
+        sortOrder: seed.sortOrder,
         isActive: true,
-      })),
-    );
+      });
+    }
   }
 
   async listActiveByCategory(

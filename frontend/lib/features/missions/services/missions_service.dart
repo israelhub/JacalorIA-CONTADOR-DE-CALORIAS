@@ -87,6 +87,17 @@ class MissionsService {
     );
   }
 
+  Future<Map<String, dynamic>> purchaseStreakRestore() {
+    return _postJsonWithFallback(
+      const <String>[
+        '/missions/store/streak-restore/purchase',
+        '/missions/store/streak-restore',
+      ],
+      body: const <String, dynamic>{},
+      fallbackError: 'Erro ao restaurar sequência.',
+    );
+  }
+
   Future<List<Map<String, dynamic>>> fetchGoldStatement() async {
     final body = await _getJsonWithFallback(const <String>[
       '/missions/wallet/gold-statement',
@@ -214,6 +225,12 @@ class MissionsService {
     final message = body['message'] ?? body['error'];
     if (message is String && message.isNotEmpty) {
       return message;
+    }
+    if (message is List) {
+      return message
+          .map((value) => value.toString())
+          .where((value) => value.isNotEmpty)
+          .join(', ');
     }
     return null;
   }

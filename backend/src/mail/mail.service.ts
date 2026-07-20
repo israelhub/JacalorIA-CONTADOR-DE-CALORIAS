@@ -144,4 +144,68 @@ export class MailService {
       return false;
     }
   }
+
+  async sendSupportMessage(params: {
+    subjectType: 'bug' | 'suggestion';
+    description: string;
+    userId?: string;
+    userEmail?: string;
+    contactEmail?: string;
+  }): Promise<boolean> {
+    if (!this.isMailEnabled()) {
+      this.logger.warn('MAIL_ENABLED=false. Email de suporte nao enviado.');
+      return false;
+    }
+
+    const from = this.configService.get<string>('MAIL_FROM');
+    const to = this.configService.get<string>('MAIL_SUPPORT_TO');
+
+    if (!from) {
+      this.logger.error('MAIL_FROM nao configurado.');
+      return false;
+    }
+
+    if (!to) {
+      this.logger.error('MAIL_SUPPORT_TO nao configurado.');
+      return false;
+    }
+
+    const subjectLabel = params.subjectType === 'bug' ? 'Bug' : 'Sugestao';
+    const replyTo = params.contactEmail ?? params.userEmail;
+    const textLines = [
+      `Tipo: ${subjectLabel}`,
+      '',
+      'Descricao:',
+      params.description,
+      '',
+      '---',
+      params.userId ? `User ID: ${params.userId}` : 'User ID: (nao autenticado)',
+      params.userEmail
+        ? `E-mail da conta: ${params.userEmail}`
+        : 'E-mail da conta: (nao autenticado)',
+      replyTo ? `Contato para resposta: ${replyTo}` : 'Contato para resposta: (nao informado)',
+    ];
+
+    const htmlBody = textLines
+      .map((line) => `<p>${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`)
+      .join('');
+
+    try {
+      const transporter = this.getTransporter();
+      await transporter.sendMail({
+        from,
+        to,
+        ...(replyTo ? { replyTo } : {}),
+        subject: `[Jacaloria Suporte] ${subjectLabel}`,
+        text: textLines.join('\n'),
+        html: htmlBody,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Falha ao enviar email de suporte: ${(error as Error).message}`,
+      );
+      return false;
+    }
+  }
 }

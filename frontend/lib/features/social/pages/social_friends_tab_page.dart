@@ -38,11 +38,13 @@ class SocialFriendsTabPage extends StatelessWidget {
                 onPressed: onAddFriend,
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            _FriendRequestBellButton(
-              pendingCount: pendingRequestCount,
-              onPressed: onOpenRequests,
-            ),
+            if (pendingRequestCount > 0) ...[
+              const SizedBox(width: AppSpacing.sm),
+              _PendingFriendRequestsFloatingButton(
+                pendingCount: pendingRequestCount,
+                onPressed: onOpenRequests,
+              ),
+            ],
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -76,8 +78,8 @@ class SocialFriendsTabPage extends StatelessWidget {
   }
 }
 
-class _FriendRequestBellButton extends StatelessWidget {
-  const _FriendRequestBellButton({
+class _PendingFriendRequestsFloatingButton extends StatelessWidget {
+  const _PendingFriendRequestsFloatingButton({
     required this.pendingCount,
     required this.onPressed,
   });
@@ -85,70 +87,60 @@ class _FriendRequestBellButton extends StatelessWidget {
   final int pendingCount;
   final VoidCallback onPressed;
 
+  String get _countLabel => pendingCount > 99 ? '99+' : pendingCount.toString();
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
       key: const ValueKey('friend-requests-button'),
       button: true,
-      label: pendingCount > 0
-          ? 'Abrir solicitações de amizade, $pendingCount pendentes'
-          : 'Abrir solicitações de amizade',
+      label: 'Abrir solicitações de amizade, $pendingCount pendentes',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
           onTap: onPressed,
-          child: SizedBox(
-            width: 44,
+          child: Container(
             height: 44,
-            child: Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: AppColors.borderAlt),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.shadowButtonAlt,
-                        offset: Offset(0, 4),
-                        blurRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.notifications_none_rounded,
-                    color: AppColors.action500,
-                    size: 20,
-                  ),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.accent500,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(color: AppColors.brand900Variant.withValues(alpha: 0.12)),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.action500Shadow,
+                  offset: Offset(0, 4),
+                  blurRadius: 0,
                 ),
-                if (pendingCount > 0)
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      constraints: const BoxConstraints(minWidth: 16),
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent500,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(color: AppColors.surface, width: 2),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        pendingCount > 99 ? '99+' : pendingCount.toString(),
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.captionStrong.copyWith(
-                          color: AppColors.brand900Variant,
-                          height: 1,
-                        ),
-                      ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.person_add_alt_1_rounded,
+                  color: AppColors.brand900Variant,
+                  size: 18,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Container(
+                  constraints: const BoxConstraints(minWidth: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.brand900Variant,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    _countLabel,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.captionStrong.copyWith(
+                      color: AppColors.surface,
+                      height: 1,
                     ),
                   ),
+                ),
               ],
             ),
           ),

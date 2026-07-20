@@ -14,7 +14,8 @@ import {
 export type StoreCatalogCategory =
   | 'avatar_frame'
   | 'avatar_background'
-  | 'offensive_blocker';
+  | 'offensive_blocker'
+  | 'streak_restore';
 
 @Table({
   tableName: 'store_catalog_items',
