@@ -297,8 +297,12 @@ export class SocialService {
 
   async getFriendProfile(userId: string, friendUserId: string) {
     const friendId = friendUserId.trim();
-    if (!(await this.areFriends(userId, friendId))) {
-      throw new NotFoundException('Amigo não encontrado');
+    const isSelf = userId === friendId;
+    const isFriend = !isSelf && (await this.areFriends(userId, friendId));
+    const canView =
+      isSelf || isFriend || (await this.shareGroupMembership(userId, friendId));
+    if (!canView) {
+      throw new NotFoundException('Perfil não encontrado');
     }
 
     const friend = await this.userModel.findByPk(friendId, {
@@ -314,7 +318,7 @@ export class SocialService {
       ],
     });
     if (!friend) {
-      throw new NotFoundException('Amigo não encontrado');
+      throw new NotFoundException('Perfil não encontrado');
     }
 
     const streakDays = await this.streakService.getUserStreak(friendId);
@@ -328,6 +332,9 @@ export class SocialService {
     const favoriteDish = this.getFavoriteDish(meals);
     const preferredPeriod = this.getPreferredPeriod(meals);
     const totalXp = await this.sumUserPoints(friend.id);
+    const friendRequestStatus = isSelf || isFriend
+      ? 'none'
+      : await this.getFriendRequestStatusBetween(userId, friendId);
 
     return {
       id: friend.id,
@@ -343,6 +350,9 @@ export class SocialService {
       birthDate: friend.birthDate ?? null,
       objective: friend.objective ?? null,
       sex: friend.sex ?? null,
+      isFriend,
+      isSelf,
+      friendRequestStatus,
     };
   }
 
@@ -564,6 +574,54 @@ export class SocialService {
     return this.getGroupDetail(group.id, userId);
   }
 
+  async removeGroupMember(groupId: string, userId: string, memberUserId: string) {
+    const targetUserId = memberUserId.trim();
+    if (!targetUserId) {
+      throw new BadRequestException('Membro inválido');
+    }
+    if (targetUserId === userId) {
+      throw new BadRequestException('Use a opção de sair do grupo para remover a si mesmo');
+    }
+
+    const group = await this.findGroupForMember(groupId, userId);
+    const currentUser = this.findCurrentUserMember(group.members ?? [], userId);
+    if (!currentUser?.isLeader && group.ownerId !== userId) {
+      throw new BadRequestException('Apenas o líder pode excluir membros do grupo');
+    }
+
+    const targetMember = this.findCurrentUserMember(group.members ?? [], targetUserId);
+    if (!targetMember) {
+      throw new NotFoundException('Membro não encontrado neste grupo');
+    }
+    if (targetMember.isLeader || group.ownerId === targetUserId) {
+      throw new BadRequestException('Não é possível excluir o líder do grupo');
+    }
+
+    await this.socialGroupMemberModel.destroy({
+      where: { groupId: group.id, userId: targetUserId },
+    });
+
+    const [actor, removedUser] = await Promise.all([
+      this.userModel.findByPk(userId, { attributes: ['name'] }),
+      this.userModel.findByPk(targetUserId, { attributes: ['name'] }),
+    ]);
+    const actorName = actor?.name ?? 'Usuário';
+    const removedName = removedUser?.name ?? 'Usuário';
+    await this.socialGroupActivityModel.create({
+      groupId: group.id,
+      userId,
+      activityType: 'removed',
+      message: `${actorName} removeu ${removedName} do grupo`,
+      metadata: {
+        actorName,
+        removedUserId: targetUserId,
+        removedName,
+      },
+    });
+
+    return this.getGroupDetail(group.id, userId);
+  }
+
   async leaveGroup(groupId: string, userId: string) {
     const group = await this.findGroupForMember(groupId, userId);
     const currentUser = this.findCurrentUserMember(group.members ?? [], userId);
@@ -734,10 +792,48 @@ export class SocialService {
     return this.socialFriendshipModel.create({ userLowId: lowId, userHighId: highId } as never);
   }
 
+  private async getFriendRequestStatusBetween(
+    userId: string,
+    otherUserId: string,
+  ): Promise<'none' | 'outgoing' | 'incoming'> {
+    const request = await this.socialFriendRequestModel.findOne({
+      where: {
+        status: 'pending',
+        [Op.or]: [
+          { requesterId: userId, recipientId: otherUserId },
+          { requesterId: otherUserId, recipientId: userId },
+        ],
+      },
+      attributes: ['requesterId', 'recipientId'],
+    });
+    if (!request) return 'none';
+    if (request.requesterId === userId) return 'outgoing';
+    return 'incoming';
+  }
+
   private async areFriends(userA: string, userB: string) {
     const [lowId, highId] = [userA, userB].sort();
     const friendship = await this.socialFriendshipModel.findOne({ where: { userLowId: lowId, userHighId: highId }, attributes: ['id'] });
     return Boolean(friendship);
+  }
+
+  private async shareGroupMembership(userA: string, userB: string) {
+    if (!userA || !userB || userA === userB) return false;
+
+    const viewerMemberships = await this.socialGroupMemberModel.findAll({
+      where: { userId: userA },
+      attributes: ['groupId'],
+    });
+    if (viewerMemberships.length === 0) return false;
+
+    const shared = await this.socialGroupMemberModel.findOne({
+      where: {
+        userId: userB,
+        groupId: { [Op.in]: viewerMemberships.map((m) => m.groupId) },
+      },
+      attributes: ['id'],
+    });
+    return Boolean(shared);
   }
 
   private async countFriends(userId: string) {
@@ -926,12 +1022,17 @@ export class SocialService {
       return members;
     }
 
-    const pointsByUserId = await this.buildGoalAveragePointsByUserIds(userIds, startsAt, endsAt);
-    return members.map((member) => ({
-      ...this.memberToPlain(member),
-      // -1 = sem dias registrados; ranking trata como pior pontuação.
-      points: pointsByUserId.get(member.userId) ?? -1,
-    })) as SocialGroupMember[];
+    const statsByUserId = await this.buildGoalAverageStatsByUserIds(userIds, startsAt, endsAt);
+    return members.map((member) => {
+      const stats = statsByUserId.get(member.userId);
+      return {
+        ...this.memberToPlain(member),
+        // points = média diária (exibida); goalDeviation = |média − meta| (ranking).
+        // -1 = sem dias registrados; ranking trata como pior pontuação.
+        points: stats?.averageCalories ?? -1,
+        goalDeviation: stats?.goalDeviation ?? -1,
+      };
+    }) as SocialGroupMember[];
   }
 
   private async loadCaloriesByUserDay(
@@ -1020,13 +1121,17 @@ export class SocialService {
     return pointsByUserId;
   }
 
-  /** Distância absoluta (kcal) entre a média dos dias com refeição e a meta. Menor = melhor. */
-  private async buildGoalAveragePointsByUserIds(
+  /**
+   * Média das calorias diárias no período do grupo (1 dia = total do dia;
+   * N dias = soma dos totais diários / N) e distância absoluta até a meta.
+   * Ranking usa a distância (menor = melhor); a UI exibe a média.
+   */
+  private async buildGoalAverageStatsByUserIds(
     userIds: string[],
     startsAt: Date,
     endsAt: Date,
-  ): Promise<Map<string, number>> {
-    const pointsByUserId = new Map<string, number>(userIds.map((userId) => [userId, -1]));
+  ): Promise<Map<string, { averageCalories: number; goalDeviation: number }>> {
+    const statsByUserId = new Map<string, { averageCalories: number; goalDeviation: number }>();
     const { userById, caloriesByUserDay } = await this.loadCaloriesByUserDay(
       userIds,
       startsAt,
@@ -1044,12 +1149,15 @@ export class SocialService {
       for (const consumedCalories of dayMap.values()) {
         totalCalories += consumedCalories;
       }
-      const averageCalories = totalCalories / dayMap.size;
+      const averageCalories = Math.round(totalCalories / dayMap.size);
       const goal = parseNumber(user.dailyCalorieGoal, 2000);
-      pointsByUserId.set(userId, Math.round(Math.abs(averageCalories - goal)));
+      statsByUserId.set(userId, {
+        averageCalories,
+        goalDeviation: Math.round(Math.abs(averageCalories - goal)),
+      });
     }
 
-    return pointsByUserId;
+    return statsByUserId;
   }
 
   private memberToPlain(member: SocialGroupMember): Record<string, unknown> {
@@ -1064,9 +1172,11 @@ export class SocialService {
       return parseNumber(member.streakDays);
     }
     if (competitionType === 'goal_average') {
-      const deviation = parseNumber(member.points, -1);
+      const plain = member as SocialGroupMember & { goalDeviation?: number };
+      const hasAverage = parseNumber(member.points, -1) >= 0;
+      const deviation = parseNumber(plain.goalDeviation, -1);
       // Sem registro fica no fim do ranking (pior que qualquer distância real).
-      return deviation < 0 ? Number.POSITIVE_INFINITY : deviation;
+      return hasAverage && deviation >= 0 ? deviation : Number.POSITIVE_INFINITY;
     }
     return parseNumber(member.points);
   }

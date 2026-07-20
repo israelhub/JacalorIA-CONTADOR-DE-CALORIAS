@@ -21,7 +21,8 @@ export class AiService {
     analyzeFoodDto: AnalyzeFoodDto,
     userId: string,
   ): Promise<FoodAnalysisResponse> {
-    const hasImage = Boolean(analyzeFoodDto.imageBase64?.trim());
+      const hasImage = Boolean(analyzeFoodDto.imageBase64?.trim());
+    const hasManualText = Boolean(analyzeFoodDto.manualText?.trim());
     const itemCount = Array.isArray(analyzeFoodDto.items)
       ? analyzeFoodDto.items.length
       : undefined;
@@ -31,6 +32,7 @@ export class AiService {
       eventName: 'ai_analyze_requested',
       properties: {
         has_image: hasImage,
+        has_manual_text: hasManualText,
         item_count: itemCount ?? null,
         source: 'server',
       },

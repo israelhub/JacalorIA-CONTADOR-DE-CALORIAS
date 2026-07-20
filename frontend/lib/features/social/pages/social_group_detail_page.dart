@@ -14,6 +14,7 @@ import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_section_header.dart';
 import 'social_create_group_page.dart';
+import 'social_friend_profile_page.dart';
 import '../widgets/social_invite_group_friends_dialog.dart';
 import '../helpers/social_group_helpers.dart';
 import '../models/social_group_models.dart';
@@ -45,6 +46,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
   bool _isLeavingGroup = false;
   bool _isDeletingGroup = false;
   bool _isInvitingFriends = false;
+  String? _removingMemberUserId;
 
   @override
   void initState() {
@@ -86,6 +88,18 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _openMemberProfile(SocialRankingEntry entry) async {
+    if (entry.userId.trim().isEmpty) return;
+
+    await context.pushSlidePage<void>(
+      SocialFriendProfilePage(
+        friendId: entry.userId,
+        initialFriendName: entry.name,
+        service: widget._service,
+      ),
+    );
   }
 
   @override
@@ -351,6 +365,13 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
                     SocialRankingItem(
                       entry: entry,
                       competitionType: detail.group.competitionType,
+                      onTap: () => _openMemberProfile(entry),
+                      onRemove: isCurrentUserLeader &&
+                              !entry.isCurrentUser &&
+                              !entry.isLeader
+                          ? () => _removeMember(entry)
+                          : null,
+                      isRemoving: _removingMemberUserId == entry.userId,
                     ),
                 ],
               ),
@@ -458,6 +479,42 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       if (!mounted) return;
       AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), isError: true);
       setState(() => _isLeavingGroup = false);
+    }
+  }
+
+  Future<void> _removeMember(SocialRankingEntry entry) async {
+    if (_removingMemberUserId != null) return;
+
+    final shouldRemove = await AppConfirmModal.show(
+      context,
+      title: 'Excluir membro',
+      message: 'Remover ${entry.name} deste grupo?',
+      confirmLabel: 'Excluir',
+      cancelLabel: 'Cancelar',
+      isDanger: true,
+    );
+    if (!shouldRemove || !mounted) return;
+
+    setState(() => _removingMemberUserId = entry.userId);
+    try {
+      final updated = await widget._service.removeGroupMember(
+        groupId: widget.groupId,
+        memberUserId: entry.userId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _detail = updated;
+        _removingMemberUserId = null;
+      });
+      AppToast.show(context, message: '${entry.name} foi removido do grupo');
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.show(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+      setState(() => _removingMemberUserId = null);
     }
   }
 

@@ -105,6 +105,15 @@ export class SocialController {
     return this.socialService.addGroupMembers(groupId, req.user.sub, dto);
   }
 
+  @Delete('groups/:groupId/members/:memberUserId')
+  removeGroupMember(
+    @Req() req: any,
+    @Param('groupId') groupId: string,
+    @Param('memberUserId') memberUserId: string,
+  ) {
+    return this.socialService.removeGroupMember(groupId, req.user.sub, memberUserId);
+  }
+
   @Post('groups/:groupId/leave')
   leaveGroup(@Req() req: any, @Param('groupId') groupId: string) {
     return this.socialService.leaveGroup(groupId, req.user.sub);

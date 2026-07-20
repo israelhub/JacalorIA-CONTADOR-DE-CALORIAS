@@ -50,7 +50,7 @@ void main() {
     expect(find.byIcon(Icons.flag_rounded), findsOneWidget);
   });
 
-  testWidgets('mostra distancia da meta no modo media de meta', (tester) async {
+  testWidgets('mostra media de calorias no modo media de meta', (tester) async {
     await tester.pumpWidget(
       _wrap(
         SocialRankingItem(
@@ -62,7 +62,7 @@ void main() {
 
     expect(find.text('1'), findsOneWidget);
     expect(find.text('100'), findsOneWidget);
-    expect(find.text('da meta'), findsOneWidget);
+    expect(find.text('média'), findsOneWidget);
     expect(find.byIcon(Icons.track_changes_rounded), findsOneWidget);
   });
 
@@ -112,5 +112,23 @@ void main() {
     await tester.pumpWidget(_wrap(SocialRankingItem(entry: currentUserEntry)));
 
     expect(find.text('VOCÊ'), findsNothing);
+  });
+
+  testWidgets('chama onTap ao tocar no ranking', (tester) async {
+    var tapped = false;
+
+    await tester.pumpWidget(
+      _wrap(
+        SocialRankingItem(
+          entry: _entryForPosition(1),
+          onTap: () => tapped = true,
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Usuário 1'));
+    await tester.pump();
+
+    expect(tapped, isTrue);
   });
 }

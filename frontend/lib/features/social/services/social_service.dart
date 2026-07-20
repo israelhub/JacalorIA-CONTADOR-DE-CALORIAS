@@ -99,7 +99,7 @@ class SocialService {
     if (response.statusCode == 200) {
       return SocialFriendProfile.fromJson(body);
     }
-    throw Exception(_extractMessage(body, 'Erro ao carregar perfil do amigo.'));
+      throw Exception(_extractMessage(body, 'Erro ao carregar perfil.'));
   }
 
   Future<SocialFriendsData> removeFriend(String friendUserId) async {
@@ -211,6 +211,23 @@ class SocialService {
       return SocialGroupDetail.fromJson(body);
     }
     throw Exception(_extractMessage(body, 'Erro ao convidar amigos para o grupo.'));
+  }
+
+  Future<SocialGroupDetail> removeGroupMember({
+    required String groupId,
+    required String memberUserId,
+  }) async {
+    final response = await http.delete(
+      Uri.parse(
+        '$_baseUrl/social/groups/${groupId.trim()}/members/${memberUserId.trim()}',
+      ),
+      headers: _headers(),
+    );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return SocialGroupDetail.fromJson(body);
+    }
+    throw Exception(_extractMessage(body, 'Erro ao excluir membro do grupo.'));
   }
 
   Future<SocialGroupDetail> createGroup({

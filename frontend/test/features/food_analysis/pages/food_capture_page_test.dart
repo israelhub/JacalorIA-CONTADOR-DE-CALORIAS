@@ -34,6 +34,11 @@ class _EmptyAnalysisService extends FoodAnalysisService {
   }) async {
     return _emptyAnalysis;
   }
+
+  @override
+  Future<FoodAnalysisResult> analyzeManualText(String manualText) async {
+    return _emptyAnalysis;
+  }
 }
 
 const _emptyAnalysis = FoodAnalysisResult(
@@ -154,12 +159,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
 
         await tester.enterText(
-          find.byKey(const ValueKey('food-review-name-field-0')),
-          'Objeto estranho',
-        );
-        await tester.enterText(
-          find.byKey(const ValueKey('food-review-measurement-field-0')),
-          '100 g',
+          find.byKey(const ValueKey('manual-food-entry-field')),
+          'texto sem alimento reconhecivel',
         );
 
         await tester.tap(find.text('Continuar'));

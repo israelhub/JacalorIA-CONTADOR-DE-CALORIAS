@@ -248,7 +248,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
   }
 
   Future<void> _openTextEntry() async {
-    final typedItems = await showModalBottomSheet<List<FoodAnalysisItem>>(
+    final typedText = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
@@ -256,7 +256,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       builder: (context) => const _ManualFoodEntrySheet(),
     );
 
-    if (!mounted || typedItems == null || typedItems.isEmpty) {
+    if (!mounted || typedText == null || typedText.trim().isEmpty) {
       return;
     }
 
@@ -264,29 +264,57 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       imageBytes: null,
       title: 'Analisando...',
       message: 'A inteligência artificial está analisando sua refeição...',
-      operation: () => widget._analysisService.recalculate(items: typedItems),
+      operation: () => widget._analysisService.analyzeManualText(typedText),
     );
 
     if (!mounted || aiManualAnalysis == null) {
       return;
     }
 
-    final manualAnalysis = _hasIdentifiedFood(aiManualAnalysis)
-        ? aiManualAnalysis
-        : FoodAnalysisResult(
-            items: typedItems,
-            totals: const FoodAnalysisTotals(
-              calories: 0,
-              protein: 0,
-              carbs: 0,
-              fat: 0,
-            ),
-            justification: '',
-          );
+    if (!_hasIdentifiedFood(aiManualAnalysis)) {
+      final parsedFallback = parseManualFoodBlock(typedText);
+      if (parsedFallback.isEmpty) {
+        await _handleAnalysisResult(aiManualAnalysis);
+        return;
+      }
+
+      final fallbackAnalysis = FoodAnalysisResult(
+        items: parsedFallback
+            .map(
+              (item) => FoodAnalysisItem(
+                name: item.name,
+                grams: item.grams,
+                unit: item.unit,
+                calories: 0,
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+              ),
+            )
+            .toList(growable: false),
+        totals: const FoodAnalysisTotals(
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+        ),
+        justification: '',
+      );
+
+      final updatedMeal = await _pushReviewPage(
+        imageBytes: null,
+        analysis: fallbackAnalysis,
+      );
+
+      if (updatedMeal != null && mounted) {
+        Navigator.of(context).pop(updatedMeal);
+      }
+      return;
+    }
 
     final updatedMeal = await _pushReviewPage(
       imageBytes: null,
-      analysis: manualAnalysis,
+      analysis: aiManualAnalysis,
     );
 
     if (updatedMeal != null && mounted) {
@@ -675,8 +703,13 @@ class _ManualFoodEntrySheet extends StatefulWidget {
 
 class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
   static const String _entryInstructions =
-      'Escreva um alimento por linha no formato: Nome - quantidade em gramas.\n'
-      'Exemplo:\nArroz - 120 g\nFeijão - 90 g\nFrango grelhado - 150 g';
+      'Escreva um alimento por linha.\n'
+      'Simples: Nome - quantidade\n'
+      'Ex.: Arroz - 120 g\n'
+      '\n'
+      'Com tabela nutricional (prioridade):\n'
+      'Alimento - porção da tabela - kcal - quanto consumiu\n'
+      'Ex.: Whey - 100 g - 380 kcal - consumi 30 g';
 
   final TextEditingController _manualEntryController = TextEditingController();
   String? _error;
@@ -780,34 +813,19 @@ class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
   }
 
   void _submit() {
-    final parsedItems = parseManualFoodBlock(_manualEntryController.text);
+    final text = _manualEntryController.text.trim();
 
-    if (parsedItems.isEmpty) {
+    if (text.isEmpty) {
       setState(() {
         _error =
-            'Use o formato Nome - quantidade em gramas. Exemplo: Arroz - 120 g';
+            'Digite os alimentos. Ex.: Arroz - 120 g  ou  Whey - 100 g - 380 kcal - consumi 30 g';
       });
       return;
     }
 
-    final items = parsedItems
-        .map(
-          (item) => FoodAnalysisItem(
-            name: item.name,
-            grams: item.grams,
-            unit: item.unit,
-            calories: 0,
-            protein: 0,
-            carbs: 0,
-            fat: 0,
-          ),
-        )
-        .toList(growable: false);
-
-    Navigator.of(context).pop(items);
+    Navigator.of(context).pop(text);
   }
 }
-
 class _NoFoodIdentifiedSheet extends StatelessWidget {
   const _NoFoodIdentifiedSheet();
 
