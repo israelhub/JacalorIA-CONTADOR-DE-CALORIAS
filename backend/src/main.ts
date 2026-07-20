@@ -2,7 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { json, urlencoded } from 'express';
+import { json, urlencoded, static as expressStatic } from 'express';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import { AppModule } from './app.module';
 
@@ -46,10 +47,26 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Dashboard estático em /beta (fora do prefixo /api)
-  app.useStaticAssets(join(process.cwd(), 'public'), {
-    index: false,
-  });
+  // Dashboard beta: GET /beta e /beta/* (fora do prefixo /api)
+  const betaDir = join(process.cwd(), 'public', 'beta');
+  if (existsSync(betaDir)) {
+    const httpAdapter = app.getHttpAdapter().getInstance();
+    httpAdapter.get(
+      '/beta',
+      (_req: unknown, res: { redirect: (code: number, url: string) => void }) => {
+        res.redirect(301, '/beta/');
+      },
+    );
+    app.use(
+      '/beta',
+      expressStatic(betaDir, {
+        index: 'index.html',
+        fallthrough: false,
+      }),
+    );
+  } else {
+    console.warn(`Dashboard beta: pasta nao encontrada em ${betaDir}`);
+  }
 
   app.setGlobalPrefix('api');
 
