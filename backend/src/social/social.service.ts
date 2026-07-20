@@ -305,12 +305,22 @@ export class SocialService {
     };
   }
 
-  async getFriendProfile(userId: string, friendUserId: string) {
+  async getFriendProfile(
+    userId: string,
+    friendUserId: string,
+    options?: { groupId?: string },
+  ) {
     const friendId = friendUserId.trim();
-    const isSelf = userId === friendId;
-    const isFriend = !isSelf && (await this.areFriends(userId, friendId));
+    const viewerId = userId.trim();
+    const isSelf = viewerId.toLowerCase() === friendId.toLowerCase();
+    const isFriend = !isSelf && (await this.areFriends(viewerId, friendId));
+    const sharedGroupId = options?.groupId?.trim();
     const canView =
-      isSelf || isFriend || (await this.shareGroupMembership(userId, friendId));
+      isSelf ||
+      isFriend ||
+      (sharedGroupId
+        ? await this.areGroupCoMembers(viewerId, friendId, sharedGroupId)
+        : await this.shareGroupMembership(viewerId, friendId));
     if (!canView) {
       throw new NotFoundException('Perfil não encontrado');
     }
@@ -344,7 +354,7 @@ export class SocialService {
     const totalXp = await this.sumUserPoints(friend.id);
     const friendRequestStatus = isSelf || isFriend
       ? 'none'
-      : await this.getFriendRequestStatusBetween(userId, friendId);
+      : await this.getFriendRequestStatusBetween(viewerId, friendId);
 
     return {
       id: friend.id,
@@ -846,6 +856,20 @@ export class SocialService {
     return Boolean(shared);
   }
 
+  private async areGroupCoMembers(userA: string, userB: string, groupId: string) {
+    if (!userA || !userB || !groupId) return false;
+
+    const memberships = await this.socialGroupMemberModel.findAll({
+      where: {
+        groupId,
+        userId: { [Op.in]: [userA, userB] },
+      },
+      attributes: ['userId'],
+    });
+    const memberIds = new Set(memberships.map((item) => item.userId));
+    return memberIds.has(userA) && memberIds.has(userB);
+  }
+
   private async countFriends(userId: string) {
     return this.socialFriendshipModel.count({
       where: { [Op.or]: [{ userLowId: userId }, { userHighId: userId }] },
@@ -989,7 +1013,7 @@ export class SocialService {
       return 'A sequência do grupo só aumenta se todos os membros estiverem ativos.';
     }
     if (competitionType === 'goal_average') {
-      return 'Ganha quem tiver a média de calorias dos dias registrados mais próxima da própria meta.';
+      return 'Ganha quem tiver a média de calorias dos dias do grupo mais próxima da própria meta.';
     }
     return null;
   }
@@ -1132,9 +1156,11 @@ export class SocialService {
   }
 
   /**
-   * Média das calorias diárias no período do grupo (1 dia = total do dia;
-   * N dias = soma dos totais diários / N) e distância absoluta até a meta.
-   * Ranking usa a distância (menor = melhor); a UI exibe a média.
+   * Média das calorias diárias no período do grupo:
+   * dias decorridos = calendário desde startsAt até min(now, endsAt) (mín. 1 no dia da criação);
+   * média = soma dos totais diários / dias decorridos (dia sem refeição conta como 0).
+   * Sem nenhuma refeição no período → sem média (ranking empata no fim / todos em 1º se ninguém registrou).
+   * Ranking usa |média − meta| (menor = melhor); a UI exibe a média.
    */
   private async buildGoalAverageStatsByUserIds(
     userIds: string[],
@@ -1142,6 +1168,11 @@ export class SocialService {
     endsAt: Date,
   ): Promise<Map<string, { averageCalories: number; goalDeviation: number }>> {
     const statsByUserId = new Map<string, { averageCalories: number; goalDeviation: number }>();
+    const elapsedDays = this.countElapsedCompetitionDays(startsAt, endsAt);
+    if (elapsedDays <= 0) {
+      return statsByUserId;
+    }
+
     const { userById, caloriesByUserDay } = await this.loadCaloriesByUserDay(
       userIds,
       startsAt,
@@ -1159,7 +1190,8 @@ export class SocialService {
       for (const consumedCalories of dayMap.values()) {
         totalCalories += consumedCalories;
       }
-      const averageCalories = Math.round(totalCalories / dayMap.size);
+      // Dias sem refeição não entram em dayMap → contribuem 0 ao numerador.
+      const averageCalories = Math.round(totalCalories / elapsedDays);
       const goal = parseNumber(user.dailyCalorieGoal, 2000);
       statsByUserId.set(userId, {
         averageCalories,
@@ -1168,6 +1200,25 @@ export class SocialService {
     }
 
     return statsByUserId;
+  }
+
+  /** Dias de calendário (fuso do app) inclusivos de startsAt até min(now, endsAt). */
+  private countElapsedCompetitionDays(startsAt: Date, endsAt: Date, now = new Date()): number {
+    const rangeStartMs = new Date(startsAt).getTime();
+    const rangeEndMs = new Date(endsAt).getTime();
+    if (!Number.isFinite(rangeStartMs) || !Number.isFinite(rangeEndMs)) {
+      return 0;
+    }
+
+    const effectiveEndMs = Math.min(now.getTime(), rangeEndMs);
+    if (effectiveEndMs < rangeStartMs) {
+      return 0;
+    }
+
+    const startDay = this.streakService.getDayStartInAppTimeZone(new Date(rangeStartMs));
+    const endDay = this.streakService.getDayStartInAppTimeZone(new Date(effectiveEndMs));
+    const msPerDay = 24 * 60 * 60 * 1000;
+    return Math.floor((endDay.getTime() - startDay.getTime()) / msPerDay) + 1;
   }
 
   private memberToPlain(member: SocialGroupMember): Record<string, unknown> {

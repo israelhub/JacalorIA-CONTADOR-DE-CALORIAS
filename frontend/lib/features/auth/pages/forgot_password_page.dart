@@ -56,7 +56,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     }
 
     if (sent) {
-      _showSuccess('Codigo enviado. Verificar na caixa de spam.');
+      _showSuccess('Codigo enviado.');
       context.pushSlidePage(ResetPasswordCodePage(email: email));
       return;
     }
@@ -96,13 +96,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         'Informe seu e-mail para receber o codigo de redefinicao.',
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        'Verificar na caixa de spam.',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textMuted,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xl),

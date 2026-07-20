@@ -15,7 +15,7 @@ class SocialFriendProfile {
     required this.birthDate,
     required this.objective,
     required this.sex,
-    this.isFriend = true,
+    this.isFriend = false,
     this.isSelf = false,
     this.friendRequestStatus = 'none',
   });
@@ -61,7 +61,7 @@ class SocialFriendProfile {
       birthDate: json['birthDate']?.toString(),
       objective: json['objective']?.toString(),
       sex: json['sex']?.toString(),
-      isFriend: json.containsKey('isFriend') ? json['isFriend'] == true : true,
+      isFriend: json['isFriend'] == true,
       isSelf: json['isSelf'] == true,
       friendRequestStatus:
           json['friendRequestStatus']?.toString() ?? 'none',

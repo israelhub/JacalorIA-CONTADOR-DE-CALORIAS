@@ -52,8 +52,14 @@ export class SocialController {
   }
 
   @Get('friends/:friendUserId/profile')
-  getFriendProfile(@Req() req: any, @Param('friendUserId') friendUserId: string) {
-    return this.socialService.getFriendProfile(req.user.sub, friendUserId);
+  getFriendProfile(
+    @Req() req: any,
+    @Param('friendUserId') friendUserId: string,
+    @Query('groupId') groupId?: string,
+  ) {
+    return this.socialService.getFriendProfile(req.user.sub, friendUserId, {
+      groupId,
+    });
   }
 
   @Get('users/search')
