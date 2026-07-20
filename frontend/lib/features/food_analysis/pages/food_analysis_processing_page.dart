@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
@@ -268,10 +269,11 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
 
     final imageUrl = (widget.imageUrl ?? '').trim();
     if (imageUrl.toLowerCase().startsWith('http')) {
-      return Image.network(
-        imageUrl,
+      return Image(
+        image: CachedNetworkImageProvider(imageUrl),
         fit: BoxFit.cover,
         width: double.infinity,
+        gaplessPlayback: true,
         errorBuilder: (_, __, ___) => _buildMissingImage(),
       );
     }

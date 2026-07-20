@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
@@ -107,10 +108,11 @@ class _FoodReviewMealHeaderState extends State<FoodReviewMealHeader> {
                     width: double.infinity,
                   )
                 : hasNetworkImage
-                ? Image.network(
-                    widget.imageUrl!,
+                ? Image(
+                    image: CachedNetworkImageProvider(widget.imageUrl!),
                     fit: BoxFit.cover,
                     width: double.infinity,
+                    gaplessPlayback: true,
                     errorBuilder: (_, __, ___) => Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

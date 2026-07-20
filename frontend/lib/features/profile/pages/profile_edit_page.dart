@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -396,7 +397,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           radius: 44,
                           backgroundColor: AppColors.surfaceAlt,
                           backgroundImage: avatarUrl?.startsWith('http') == true
-                              ? NetworkImage(avatarUrl!)
+                              ? CachedNetworkImageProvider(avatarUrl!)
                               : null,
                           child: avatarUrl?.startsWith('http') == true
                               ? null

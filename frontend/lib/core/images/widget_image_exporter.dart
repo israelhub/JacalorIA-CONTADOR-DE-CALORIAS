@@ -67,13 +67,15 @@ Future<Uint8List> exportWidgetToImageBytes({
   pipelineOwner.flushCompositingBits();
   pipelineOwner.flushPaint();
 
-  // Allow Google Fonts / deferred glyphs to settle.
-  await Future<void>.delayed(const Duration(milliseconds: 80));
-  buildOwner.buildScope(rootElement);
-  buildOwner.finalizeTree();
-  pipelineOwner.flushLayout();
-  pipelineOwner.flushCompositingBits();
-  pipelineOwner.flushPaint();
+  // Allow Google Fonts / network avatars / deferred glyphs to settle.
+  for (var i = 0; i < 3; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    buildOwner.buildScope(rootElement);
+    buildOwner.finalizeTree();
+    pipelineOwner.flushLayout();
+    pipelineOwner.flushCompositingBits();
+    pipelineOwner.flushPaint();
+  }
 
   final ui.Image image = await repaintBoundary.toImage(pixelRatio: pixelRatio);
   final byteData = await image.toByteData(format: ui.ImageByteFormat.png);

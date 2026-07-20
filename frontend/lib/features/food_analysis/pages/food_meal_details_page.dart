@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/helpers/profile_value_helpers.dart';
@@ -497,10 +498,11 @@ class _MealHeroImage extends StatelessWidget {
     }
 
     if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return Image.network(
-        imageUrl!,
+      return Image(
+        image: CachedNetworkImageProvider(imageUrl!),
         fit: BoxFit.cover,
         width: double.infinity,
+        gaplessPlayback: true,
         errorBuilder: (_, __, ___) => _buildMissingImage(),
       );
     }

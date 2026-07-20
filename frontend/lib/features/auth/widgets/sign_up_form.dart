@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../helpers/auth_helpers.dart';
@@ -6,6 +7,7 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/or_divider.dart';
+import '../../legal/pages/terms_page.dart';
 import '../../support/pages/support_page.dart';
 
 class SignUpForm extends StatefulWidget {
@@ -37,9 +39,20 @@ class _SignUpFormState extends State<SignUpForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  late final TapGestureRecognizer _termsTapRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsTapRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        context.pushSlidePage(const TermsPage());
+      };
+  }
 
   @override
   void dispose() {
+    _termsTapRecognizer.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -126,6 +139,28 @@ class _SignUpFormState extends State<SignUpForm> {
               onPressed: widget.isLoading ? null : _submit,
               variant: AppButtonVariant.primary,
             ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text.rich(
+            TextSpan(
+              text: 'Ao se cadastrar, você concorda com os ',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textMuted,
+              ),
+              children: [
+                TextSpan(
+                  text: 'Termos e Condições',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.action500,
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                    decorationColor: AppColors.action500,
+                  ),
+                  recognizer: _termsTapRecognizer,
+                ),
+              ],
+            ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.lg),
           const OrDivider(),
