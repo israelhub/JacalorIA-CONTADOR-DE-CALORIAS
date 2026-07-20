@@ -1,5 +1,14 @@
 import { AnalyzeFoodDto } from '../dto/analyze-food.dto';
 
+export type FoodNutritionLabel = {
+  /** Porção de referência da tabela (ex.: 100). */
+  referenceGrams: number;
+  calories: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+};
+
 export type FoodAnalysisItem = {
   name: string;
   grams: number;
@@ -7,7 +16,13 @@ export type FoodAnalysisItem = {
   protein: number;
   carbs: number;
   fat: number;
-  source?: 'taco_db' | 'recipe_decomposition' | 'ai_estimate';
+  /** Dados da tabela nutricional informados pelo usuário; o sistema calcula a proporção. */
+  nutritionLabel?: FoodNutritionLabel;
+  source?:
+    | 'nutrition_label'
+    | 'taco_db'
+    | 'recipe_decomposition'
+    | 'ai_estimate';
   matchedFood?: string;
 };
 

@@ -5,7 +5,6 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/avatar_profile_preview.dart';
-import '../../profile/helpers/profile_date_helpers.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
 import '../widgets/social_profile_info_card.dart';
@@ -32,6 +31,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
   SocialFriendProfile? _profile;
   bool _isLoading = true;
   bool _isRemovingFriend = false;
+  bool _isAddingFriend = false;
   String? _error;
 
   @override
@@ -107,10 +107,6 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
     final profile = _profile;
     if (profile == null) return const SizedBox.shrink();
 
-    final birthDate = profile.birthDate == null || profile.birthDate!.isEmpty
-        ? 'Não informado'
-        : formatProfileDisplayDate(profile.birthDate!);
-
     final preferredPeriod = switch (profile.preferredPeriod) {
       'morning' => 'Manhã',
       'afternoon' => 'Tarde',
@@ -119,7 +115,6 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
     };
 
     final objective = _formatObjective(profile.objective);
-    final sex = _normalizeLabel(profile.sex);
 
     return SingleChildScrollView(
       child: Column(
@@ -170,13 +165,10 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                AppButton(
-                  label: 'Amigos',
-                  variant: AppButtonVariant.outline,
-                  leadingIcon: Icons.people_alt_rounded,
-                  onPressed: _isRemovingFriend ? null : _onRemoveFriendPressed,
-                ),
-                const SizedBox(height: AppSpacing.xl),
+                if (!profile.isSelf) ...[
+                  _buildFriendshipAction(profile),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
                 _sectionTitle('Resumo'),
                 const SizedBox(height: AppSpacing.sm),
                 LayoutBuilder(
@@ -251,20 +243,6 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                 _sectionTitle('Informações'),
                 const SizedBox(height: AppSpacing.sm),
                 _infoCard(
-                  icon: Icons.cake_rounded,
-                  iconColor: AppColors.socialInfoBirthDateBase,
-                  label: 'Data de nascimento',
-                  value: birthDate,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _infoCard(
-                  icon: Icons.person_rounded,
-                  iconColor: AppColors.socialInfoSex,
-                  label: 'Sexo',
-                  value: sex,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _infoCard(
                   icon: Icons.flag_rounded,
                   iconColor: AppColors.socialInfoObjective,
                   label: 'Objetivo',
@@ -318,6 +296,63 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
       label: label,
       value: value,
     );
+  }
+
+  Widget _buildFriendshipAction(SocialFriendProfile profile) {
+    if (profile.isFriend) {
+      return AppButton(
+        label: 'Amigos',
+        variant: AppButtonVariant.outline,
+        leadingIcon: Icons.people_alt_rounded,
+        onPressed: _isRemovingFriend ? null : _onRemoveFriendPressed,
+      );
+    }
+
+    if (profile.isOutgoingRequest) {
+      return AppButton(
+        label: 'Solicitado',
+        variant: AppButtonVariant.outline,
+        leadingIcon: Icons.hourglass_top_rounded,
+        onPressed: null,
+      );
+    }
+
+    if (profile.isIncomingRequest) {
+      return AppButton(
+        label: 'Solicitou você',
+        variant: AppButtonVariant.outline,
+        leadingIcon: Icons.person_add_alt_1_rounded,
+        onPressed: null,
+      );
+    }
+
+    return AppButton(
+      label: 'Adicionar amigo',
+      variant: AppButtonVariant.primary,
+      leadingIcon: Icons.person_add_alt_1_rounded,
+      onPressed: _isAddingFriend ? null : _onAddFriendPressed,
+    );
+  }
+
+  Future<void> _onAddFriendPressed() async {
+    setState(() => _isAddingFriend = true);
+    try {
+      await widget.service.addFriendById(widget.friendId);
+      if (!mounted) return;
+      setState(() {
+        _profile = _profile?.copyWith(friendRequestStatus: 'outgoing');
+        _isAddingFriend = false;
+      });
+      AppToast.show(context, message: 'Solicitação de amizade enviada');
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.show(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+      setState(() => _isAddingFriend = false);
+    }
   }
 
   Future<void> _onRemoveFriendPressed() async {

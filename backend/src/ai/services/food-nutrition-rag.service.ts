@@ -114,15 +114,23 @@ export class FoodNutritionRagService {
       }
 
       const foods = await this.loadFoods();
-      if (!foods.length) {
-        return this.withFallbackSource(response);
-      }
 
+      let labelMatches = 0;
       let dbMatches = 0;
       let recipeMatches = 0;
       let aiFallbacks = 0;
 
       const items = response.items.map((item) => {
+        if (this.hasValidNutritionLabel(item)) {
+          labelMatches += 1;
+          return this.calculateFromNutritionLabel(item);
+        }
+
+        if (!foods.length) {
+          aiFallbacks += 1;
+          return this.markAsAiEstimate(item);
+        }
+
         const dbMatch = this.findBestFoodMatch(item.name, foods, MATCH_THRESHOLD);
         if (dbMatch) {
           dbMatches += 1;
@@ -143,6 +151,7 @@ export class FoodNutritionRagService {
         items,
         totals: this.sumTotals(items),
         justification: this.buildJustification(response.justification, {
+          labelMatches,
           dbMatches,
           recipeMatches,
           aiFallbacks,
@@ -156,7 +165,13 @@ export class FoodNutritionRagService {
   }
 
   private withFallbackSource(response: FoodAnalysisResponse): FoodAnalysisResponse {
-    const items = (response.items ?? []).map((item) => this.markAsAiEstimate(item));
+    const items = (response.items ?? []).map((item) => {
+      if (this.hasValidNutritionLabel(item)) {
+        return this.calculateFromNutritionLabel(item);
+      }
+
+      return this.markAsAiEstimate(item);
+    });
     return {
       ...response,
       items,
@@ -450,6 +465,55 @@ export class FoodNutritionRagService {
     };
   }
 
+  private hasValidNutritionLabel(item: FoodAnalysisItem): boolean {
+    const label = item.nutritionLabel;
+    if (!label) {
+      return false;
+    }
+
+    return (
+      this.safeNumber(label.referenceGrams) > 0 &&
+      this.safeNumber(label.calories) >= 0
+    );
+  }
+
+  /**
+   * Calcula macros a partir da tabela nutricional informada pelo usuário.
+   * Fórmula: valor = (consumido / referência) * valor_da_tabela
+   */
+  private calculateFromNutritionLabel(item: FoodAnalysisItem): FoodAnalysisItem {
+    const label = item.nutritionLabel!;
+    const referenceGrams = this.safeNumber(label.referenceGrams);
+    const consumedGrams = this.safeNumber(item.grams);
+    const factor = referenceGrams > 0 ? consumedGrams / referenceGrams : 0;
+
+    const calories = this.round(this.safeNumber(label.calories) * factor);
+    const protein =
+      label.protein !== undefined
+        ? this.round(this.safeNumber(label.protein) * factor)
+        : this.round(this.safeNumber(item.protein));
+    const carbs =
+      label.carbs !== undefined
+        ? this.round(this.safeNumber(label.carbs) * factor)
+        : this.round(this.safeNumber(item.carbs));
+    const fat =
+      label.fat !== undefined
+        ? this.round(this.safeNumber(label.fat) * factor)
+        : this.round(this.safeNumber(item.fat));
+
+    return {
+      name: item.name?.trim() || 'Alimento',
+      grams: this.round(consumedGrams),
+      calories,
+      protein,
+      carbs,
+      fat,
+      nutritionLabel: label,
+      source: 'nutrition_label',
+      matchedFood: `Tabela nutricional (${referenceGrams} g)`,
+    };
+  }
+
   private calcValueFromPer100g(
     per100g: number | null,
     grams: number,
@@ -586,9 +650,33 @@ export class FoodNutritionRagService {
 
   private buildJustification(
     baseJustification: string,
-    stats: { dbMatches: number; recipeMatches: number; aiFallbacks: number },
+    stats: {
+      labelMatches: number;
+      dbMatches: number;
+      recipeMatches: number;
+      aiFallbacks: number;
+    },
   ): string {
-    const note = `Calorias refinadas com TACO: ${stats.dbMatches} item(ns) por correspondência direta, ${stats.recipeMatches} por decomposição de receita e ${stats.aiFallbacks} por estimativa da IA.`;
+    const parts: string[] = [];
+    if (stats.labelMatches > 0) {
+      parts.push(
+        `${stats.labelMatches} item(ns) pela tabela nutricional informada`,
+      );
+    }
+    if (stats.dbMatches > 0) {
+      parts.push(`${stats.dbMatches} por correspondência TACO`);
+    }
+    if (stats.recipeMatches > 0) {
+      parts.push(`${stats.recipeMatches} por decomposição de receita`);
+    }
+    if (stats.aiFallbacks > 0) {
+      parts.push(`${stats.aiFallbacks} por estimativa da IA`);
+    }
+
+    const note =
+      parts.length > 0
+        ? `Calorias refinadas: ${parts.join(', ')}.`
+        : 'Calorias refinadas com as fontes disponíveis.';
 
     const normalized = (baseJustification ?? '').trim();
     if (!normalized) {

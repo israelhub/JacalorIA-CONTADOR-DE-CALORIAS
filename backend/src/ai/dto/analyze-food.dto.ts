@@ -11,6 +11,11 @@ export class AnalyzeFoodDto {
   @IsString()
   mimeType?: string;
 
+  /** Texto livre digitado pelo usuário (ex.: tabela nutricional + quanto consumiu). */
+  @IsOptional()
+  @IsString()
+  manualText?: string;
+
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

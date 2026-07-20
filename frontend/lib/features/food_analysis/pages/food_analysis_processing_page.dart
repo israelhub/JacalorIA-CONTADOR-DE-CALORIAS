@@ -314,8 +314,10 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
     final normalizedMessage = message.toLowerCase();
     return normalizedMessage.contains('high demand') ||
         normalizedMessage.contains('alta demanda') ||
+        normalizedMessage.contains('sobrecarga') ||
         normalizedMessage.contains('too many requests') ||
-        normalizedMessage.contains('rate limit');
+        normalizedMessage.contains('rate limit') ||
+        normalizedMessage.contains('service unavailable');
   }
 
   void _retry() {

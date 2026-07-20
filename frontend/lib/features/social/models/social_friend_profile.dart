@@ -15,6 +15,9 @@ class SocialFriendProfile {
     required this.birthDate,
     required this.objective,
     required this.sex,
+    this.isFriend = true,
+    this.isSelf = false,
+    this.friendRequestStatus = 'none',
   });
 
   final String id;
@@ -30,6 +33,14 @@ class SocialFriendProfile {
   final String? birthDate;
   final String? objective;
   final String? sex;
+  final bool isFriend;
+  final bool isSelf;
+  final String friendRequestStatus;
+
+  bool get isOutgoingRequest => friendRequestStatus == 'outgoing';
+  bool get isIncomingRequest => friendRequestStatus == 'incoming';
+  bool get canSendRequest =>
+      !isFriend && !isSelf && !isOutgoingRequest && !isIncomingRequest;
 
   factory SocialFriendProfile.fromJson(Map<String, dynamic> json) {
     return SocialFriendProfile(
@@ -50,6 +61,34 @@ class SocialFriendProfile {
       birthDate: json['birthDate']?.toString(),
       objective: json['objective']?.toString(),
       sex: json['sex']?.toString(),
+      isFriend: json.containsKey('isFriend') ? json['isFriend'] == true : true,
+      isSelf: json['isSelf'] == true,
+      friendRequestStatus:
+          json['friendRequestStatus']?.toString() ?? 'none',
+    );
+  }
+
+  SocialFriendProfile copyWith({
+    bool? isFriend,
+    String? friendRequestStatus,
+  }) {
+    return SocialFriendProfile(
+      id: id,
+      name: name,
+      avatarUrl: avatarUrl,
+      avatarFrameId: avatarFrameId,
+      avatarBackgroundId: avatarBackgroundId,
+      streakDays: streakDays,
+      friendCount: friendCount,
+      totalXp: totalXp,
+      favoriteDish: favoriteDish,
+      preferredPeriod: preferredPeriod,
+      birthDate: birthDate,
+      objective: objective,
+      sex: sex,
+      isFriend: isFriend ?? this.isFriend,
+      isSelf: isSelf,
+      friendRequestStatus: friendRequestStatus ?? this.friendRequestStatus,
     );
   }
 }

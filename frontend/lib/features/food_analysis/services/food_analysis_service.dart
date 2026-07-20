@@ -22,9 +22,11 @@ class FoodAnalysisService {
   const FoodAnalysisService();
 
   static String get _baseUrl => ApiConfig.baseUrl;
+  /// Alinhado ao timeout total do backend (fallback de até 3 modelos).
+  static const Duration _analysisTimeout = Duration(minutes: 2, seconds: 10);
   static const String highDemandMessage =
-      'Pedimos desculpas, nossa IA está enfrentando um período de alta '
-      'demanda no momento. Tente novamente em alguns instantes.';
+      'Estamos enfrentando uma sobrecarga na IA. '
+      'Tente novamente em alguns instantes.';
 
   Map<String, String> _headers() {
     final headers = <String, String>{
@@ -63,6 +65,15 @@ class FoodAnalysisService {
     );
   }
 
+  Future<FoodAnalysisResult> analyzeManualText(String manualText) async {
+    return _postAnalysis(
+      <String, dynamic>{
+        'manualText': manualText,
+      },
+      hasImage: false,
+    );
+  }
+
   Future<FoodAnalysisResult> _postAnalysis(
     Map<String, dynamic> body, {
     required bool hasImage,
@@ -87,7 +98,7 @@ class FoodAnalysisService {
             body: jsonEncode(body),
           )
           .timeout(
-            const Duration(seconds: 25),
+            _analysisTimeout,
             onTimeout: () =>
                 throw TimeoutException('Timeout na análise de alimento'),
           );
@@ -132,7 +143,7 @@ class FoodAnalysisService {
           'source': 'client',
         },
       );
-      rethrow;
+      throw const FoodAnalysisHighDemandException(highDemandMessage);
     } on FoodAnalysisHighDemandException {
       rethrow;
     } catch (error) {
@@ -165,14 +176,16 @@ class FoodAnalysisService {
   }
 
   bool _isHighDemandError({required int statusCode, required String message}) {
-    if (statusCode == 429) {
+    if (statusCode == 429 || statusCode == 503) {
       return true;
     }
 
     final normalizedMessage = message.toLowerCase();
     return normalizedMessage.contains('high demand') ||
         normalizedMessage.contains('alta demanda') ||
+        normalizedMessage.contains('sobrecarga') ||
         normalizedMessage.contains('too many requests') ||
-        normalizedMessage.contains('rate limit');
+        normalizedMessage.contains('rate limit') ||
+        normalizedMessage.contains('service unavailable');
   }
 }

@@ -54,7 +54,7 @@ String socialCompetitionLabel(String competitionType) {
       ),
     'goal_average' => (
         displayValue: points < 0 ? '—' : '$points',
-        label: points < 0 ? 'sem dados' : 'da meta',
+        label: points < 0 ? 'sem dados' : 'média',
         icon: Icons.track_changes_rounded,
         iconColor: AppColors.accent500,
       ),
