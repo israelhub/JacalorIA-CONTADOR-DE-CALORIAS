@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_skeleton.dart';
 
 class HomeMealCard extends StatelessWidget {
   const HomeMealCard({
@@ -67,6 +68,15 @@ class HomeMealCard extends StatelessWidget {
                         image: CachedNetworkImageProvider(imageUrl!),
                         fit: BoxFit.cover,
                         gaplessPlayback: true,
+                        frameBuilder: (_, child, frame, wasSyncLoaded) {
+                          if (wasSyncLoaded || frame != null) {
+                            return child;
+                          }
+                          return const AppSkeletonBox(
+                            height: double.infinity,
+                            borderRadius: 0,
+                          );
+                        },
                         errorBuilder: (_, __, ___) => const ColoredBox(
                           color: AppColors.homeMetaCardSurface,
                           child: Icon(

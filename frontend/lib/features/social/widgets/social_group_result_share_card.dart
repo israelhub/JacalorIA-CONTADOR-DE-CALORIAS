@@ -333,8 +333,8 @@ class _RankRow extends StatelessWidget {
             child: FramedAvatar(
               size: 64,
               avatarUrl: entry.avatarUrl,
-              frameId: entry.avatarFrameId,
               fallbackText: entry.name,
+              unframedAvatarScale: 1,
               backgroundColor: Colors.white.withValues(alpha: 0.14),
             ),
           ),

@@ -678,22 +678,16 @@ class _HomeBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final viewPaddingBottom = MediaQuery.viewPaddingOf(context).bottom;
-    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    final listBottomInset = homeShellFabBottomClearance + viewPaddingBottom;
-    // When the keyboard is open, skip nav clearance — the system already
-    // lifts the FAB by viewInsets; keep only a small gap above the keys.
-    final fabBottomInset =
-        keyboardInset > 0 ? AppSpacing.sm : listBottomInset;
+    final bottomInset =
+        homeShellFabBottomClearance + MediaQuery.viewPaddingOf(context).bottom;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      resizeToAvoidBottomInset: true,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: onWeightUpdated == null
           ? null
           : Padding(
-              padding: EdgeInsets.only(bottom: fabBottomInset),
+              padding: EdgeInsets.only(bottom: bottomInset),
               child: HomeWeightQuickEditButton(
                 userProfile: userProfile,
                 onWeightUpdated: onWeightUpdated,
@@ -767,7 +761,7 @@ class _HomeBody extends StatelessWidget {
                               const SizedBox(height: AppSpacing.lg),
                           ];
                         }),
-                    SizedBox(height: AppSpacing.xxxl + listBottomInset + 56),
+                    SizedBox(height: AppSpacing.xxxl + bottomInset + 56),
                   ],
                 ),
               ),

@@ -14,6 +14,7 @@ import { SocialGroup } from '../social/models/social-group.model';
 import { SocialGroupActivity } from '../social/models/social-group-activity.model';
 import { SocialGroupMember } from '../social/models/social-group-member.model';
 import { AnalyticsEvent } from '../analytics/models/analytics-event.model';
+import { FoodImageAnalysis } from '../ai/models/food-image-analysis.model';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { AnalyticsEvent } from '../analytics/models/analytics-event.model';
             SocialFriendLink,
             SocialFriendRequest,
             AnalyticsEvent,
+            FoodImageAnalysis,
           ],
           autoLoadModels: true,
           synchronize: !isProd,

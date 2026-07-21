@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import 'core/analytics/analytics_service.dart';
 import 'core/invite/invite_link_service.dart';
@@ -14,6 +16,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   InviteLinkService.captureFromUri(Uri.base);
   await AuthService.initialize();
+  _warmUpAvatarCache();
   await AnalyticsService.instance.initialize();
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.portraitUp,
@@ -26,6 +29,28 @@ Future<void> main() async {
     ),
   );
   runApp(const MyApp());
+}
+
+/// Começa a baixar a foto de perfil para o cache em disco assim que o app
+/// abre, em paralelo com o resto do boot, para o avatar aparecer mais rápido
+/// na primeira sessão. No web o cache HTTP do navegador já cobre isso.
+void _warmUpAvatarCache() {
+  if (kIsWeb) {
+    return;
+  }
+
+  final user = AuthService.globalUser;
+  final avatarUrl =
+      (user?['avatarUrl'] ?? user?['avatar_url'])?.toString().trim();
+  if (avatarUrl == null || !avatarUrl.startsWith('http')) {
+    return;
+  }
+
+  Future<void>(() async {
+    try {
+      await DefaultCacheManager().getSingleFile(avatarUrl);
+    } catch (_) {}
+  });
 }
 
 class MyApp extends StatelessWidget {

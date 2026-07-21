@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/helpers/profile_value_helpers.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/macro_progress_indicator.dart';
 import '../../home/services/meal_service.dart';
@@ -503,6 +504,12 @@ class _MealHeroImage extends StatelessWidget {
         fit: BoxFit.cover,
         width: double.infinity,
         gaplessPlayback: true,
+        frameBuilder: (_, child, frame, wasSyncLoaded) {
+          if (wasSyncLoaded || frame != null) {
+            return child;
+          }
+          return const AppSkeletonBox(height: 250, borderRadius: 0);
+        },
         errorBuilder: (_, __, ___) => _buildMissingImage(),
       );
     }

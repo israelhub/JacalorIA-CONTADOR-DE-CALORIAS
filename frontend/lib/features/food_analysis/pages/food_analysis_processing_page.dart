@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_skeleton.dart';
 import '../models/food_analysis_result.dart';
 import '../services/food_analysis_service.dart';
 import '../widgets/food_analysis_page_header.dart';
@@ -274,6 +275,15 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
         fit: BoxFit.cover,
         width: double.infinity,
         gaplessPlayback: true,
+        frameBuilder: (_, child, frame, wasSyncLoaded) {
+          if (wasSyncLoaded || frame != null) {
+            return child;
+          }
+          return const AppSkeletonBox(
+            height: double.infinity,
+            borderRadius: 0,
+          );
+        },
         errorBuilder: (_, __, ___) => _buildMissingImage(),
       );
     }

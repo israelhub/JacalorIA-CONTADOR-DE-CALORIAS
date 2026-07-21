@@ -153,8 +153,6 @@ class _SignUpFormState extends State<SignUpForm> {
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.action500,
                     fontWeight: FontWeight.w700,
-                    decoration: TextDecoration.underline,
-                    decorationColor: AppColors.action500,
                   ),
                   recognizer: _termsTapRecognizer,
                 ),

@@ -50,6 +50,8 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
   bool _isDeletingGroup = false;
   bool _isInvitingFriends = false;
   String? _removingMemberUserId;
+  Uint8List? _resultJpgCache;
+  Future<Uint8List>? _resultJpgFuture;
 
   @override
   void initState() {
@@ -62,6 +64,8 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     _isLoading = _detail == null;
     if (_detail == null) {
       _loadDetail();
+    } else {
+      _prewarmResultJpgIfFinished();
     }
   }
 
@@ -80,7 +84,10 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       setState(() {
         _detail = detail;
         _isLoading = false;
+        _resultJpgCache = null;
+        _resultJpgFuture = null;
       });
+      _prewarmResultJpgIfFinished();
     } catch (error) {
       if (!mounted) {
         return;
@@ -645,6 +652,31 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     }
   }
 
+  /// Pre-renders the result image as soon as the finished group opens, so the
+  /// share button can call the native share sheet immediately. On web the
+  /// Web Share API only works within a user gesture; if generating the image
+  /// took seconds after the click, the browser would reject the share.
+  void _prewarmResultJpgIfFinished() {
+    final detail = _detail;
+    if (detail == null || detail.group.remainingDays > 0) return;
+    _resultJpgBytes().catchError((_) => Uint8List(0));
+  }
+
+  Future<Uint8List> _resultJpgBytes() {
+    final cached = _resultJpgCache;
+    if (cached != null) return Future.value(cached);
+    final pending = _resultJpgFuture;
+    if (pending != null) return pending;
+    final future = _buildResultJpgBytes().then((bytes) {
+      _resultJpgCache = bytes;
+      return bytes;
+    }).whenComplete(() {
+      _resultJpgFuture = null;
+    });
+    _resultJpgFuture = future;
+    return future;
+  }
+
   Future<Uint8List> _buildResultJpgBytes() async {
     final detail = _detail!;
     // Warm brand fonts so accents ("Sequência") rasterize correctly.
@@ -667,7 +699,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     if (_exportingAction != null) return;
     setState(() => _exportingAction = _ExportAction.download);
     try {
-      final bytes = await _buildResultJpgBytes();
+      final bytes = await _resultJpgBytes();
       await saveBytesToDownloads(
         bytes: bytes,
         filename: _resultJpgFilename(),
@@ -690,16 +722,19 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     if (_exportingAction != null) return;
     setState(() => _exportingAction = _ExportAction.share);
     try {
-      final bytes = await _buildResultJpgBytes();
+      final bytes = await _resultJpgBytes();
       final filename = _resultJpgFilename();
       final shareText = 'Resultado final do grupo ${_detail?.group.name ?? ''}';
 
       if (kIsWeb) {
         try {
-          await Share.shareXFiles(
+          final result = await Share.shareXFiles(
             [XFile.fromData(bytes, mimeType: 'image/jpeg', name: filename)],
             text: shareText,
           );
+          if (result.status == ShareResultStatus.unavailable) {
+            throw StateError('share unavailable');
+          }
         } catch (_) {
           await saveBytesToDownloads(
             bytes: bytes,
@@ -709,7 +744,8 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
           if (!mounted) return;
           AppToast.show(
             context,
-            message: 'Compartilhamento indisponível. Imagem baixada.',
+            message:
+                'Este navegador não suporta compartilhar imagens. Imagem baixada.',
           );
         }
       } else {

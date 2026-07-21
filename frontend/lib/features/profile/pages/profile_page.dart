@@ -955,7 +955,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       );
                                     },
                               variant: AppButtonVariant.outline,
-                              leadingIcon: Icons.support_agent_rounded,
+                              trailingIcon: Icons.support_agent_rounded,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.md),
