@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_skeleton.dart';
 
 class FoodReviewMealHeader extends StatefulWidget {
   const FoodReviewMealHeader({
@@ -113,6 +114,15 @@ class _FoodReviewMealHeaderState extends State<FoodReviewMealHeader> {
                     fit: BoxFit.cover,
                     width: double.infinity,
                     gaplessPlayback: true,
+                    frameBuilder: (_, child, frame, wasSyncLoaded) {
+                      if (wasSyncLoaded || frame != null) {
+                        return child;
+                      }
+                      return const AppSkeletonBox(
+                        height: double.infinity,
+                        borderRadius: 0,
+                      );
+                    },
                     errorBuilder: (_, __, ___) => Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

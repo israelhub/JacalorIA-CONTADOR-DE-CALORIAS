@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../features/avatar_frames/models/avatar_frame_catalog.dart';
 import '../theme/app_theme.dart';
+import 'app_skeleton.dart';
 
 class FramedAvatar extends StatelessWidget {
   const FramedAvatar({
@@ -177,6 +178,16 @@ class _AvatarCircle extends StatelessWidget {
                 ),
                 fit: BoxFit.cover,
                 gaplessPlayback: true,
+                frameBuilder: (_, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded || frame != null) {
+                    return child;
+                  }
+                  return AppSkeletonBox(
+                    width: size,
+                    height: size,
+                    borderRadius: size / 2,
+                  );
+                },
                 errorBuilder: (_, __, ___) => fallback,
               )
             : fallback,

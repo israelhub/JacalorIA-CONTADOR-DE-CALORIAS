@@ -263,7 +263,14 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
   Future<void> _pickAvatar() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    // Avatar renderiza no máximo ~200px lógicos; 640px físicos cobre telas 3x
+    // e derruba o upload/download de ~2 MB para dezenas de KB.
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 640,
+      maxHeight: 640,
+      imageQuality: 85,
+    );
     if (picked == null) {
       return;
     }
