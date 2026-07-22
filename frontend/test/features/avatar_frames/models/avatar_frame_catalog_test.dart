@@ -5,7 +5,7 @@ void main() {
   test('catalogo sempre inclui moldura padrao gratuita', () {
     expect(AvatarFrameCatalog.items.first.id, AvatarFrameCatalog.noneId);
     expect(AvatarFrameCatalog.items.first.isFree, isTrue);
-    expect(AvatarFrameCatalog.purchasableItems, hasLength(5));
+    expect(AvatarFrameCatalog.purchasableItems, hasLength(10));
   });
 
   test('normaliza ids comprados vindos do perfil', () {

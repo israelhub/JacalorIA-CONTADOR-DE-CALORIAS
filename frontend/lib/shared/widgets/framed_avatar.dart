@@ -68,9 +68,15 @@ class FramedAvatar extends StatelessWidget {
   double _effectiveFramedAvatarScale(String? id) {
     switch (id?.trim()) {
       case 'cat_ears_soft':
+      case 'fox_autumn_tail':
+      case 'panda_bamboo':
         return 0.8;
       case 'gator_tail_fin':
+      case 'fruit_ring':
         return 0.86;
+      case 'fire_streak':
+      case 'royal_gold':
+        return 0.82;
       default:
         return framedAvatarScale;
     }

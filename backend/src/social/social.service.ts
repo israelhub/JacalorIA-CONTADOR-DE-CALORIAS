@@ -399,6 +399,7 @@ export class SocialService {
     await this.socialGroupMemberModel.create({ groupId: group.id, userId, isLeader: true, points: 0 });
 
     const invitedIds = [...new Set((dto.memberUserIds ?? []).filter((id) => id !== userId))];
+    const addedMemberIds: string[] = [];
     for (const friendId of invitedIds) {
       const isFriend = await this.areFriends(userId, friendId);
       if (!isFriend) {
@@ -408,16 +409,22 @@ export class SocialService {
       const exists = await this.socialGroupMemberModel.findOne({ where: { groupId: group.id, userId: friendId } });
       if (!exists) {
         await this.socialGroupMemberModel.create({ groupId: group.id, userId: friendId, isLeader: false, points: 0 });
+        addedMemberIds.push(friendId);
       }
     }
 
+    const creatorName = user.name ?? 'Você';
     await this.socialGroupActivityModel.create({
       groupId: group.id,
       userId,
       activityType: 'created',
-      message: `${user.name ?? 'Você'} criou o grupo`,
-      metadata: { competitionType: dto.competitionType },
+      message: `${creatorName} criou o grupo`,
+      metadata: { competitionType: dto.competitionType, actorName: creatorName },
     });
+
+    if (addedMemberIds.length > 0) {
+      await this.createMembersAddedActivity(group.id, userId, creatorName, addedMemberIds);
+    }
 
     return this.getGroupDetail(group.id, userId);
   }
@@ -521,26 +528,45 @@ export class SocialService {
     const currentUser = this.findCurrentUserMember(group.members, userId);
     if (!currentUser?.isLeader && group.ownerId !== userId) throw new BadRequestException('Apenas o líder pode editar o grupo');
 
+    const nextName = dto.name?.trim() ?? group.name;
+    const nextDescription = dto.description?.trim() ?? group.description;
     const nextCompetitionType = dto.competitionType ?? group.competitionType;
+    const nextIconKey = dto.iconKey ?? group.iconKey;
+    const nextIsPublic = dto.isPublic ?? group.isPublic;
     const durationDays = nextCompetitionType === 'group_streak' ? 0 : dto.durationDays ?? group.durationDays;
+
+    const hasMeaningfulChange =
+      nextName !== group.name ||
+      nextDescription !== group.description ||
+      nextCompetitionType !== group.competitionType ||
+      nextIconKey !== group.iconKey ||
+      nextIsPublic !== group.isPublic ||
+      durationDays !== group.durationDays;
+
     await group.update({
-      name: dto.name?.trim() ?? group.name,
-      description: dto.description?.trim() ?? group.description,
+      name: nextName,
+      description: nextDescription,
       competitionType: nextCompetitionType,
-      iconKey: dto.iconKey ?? group.iconKey,
+      iconKey: nextIconKey,
       durationDays,
-      isPublic: dto.isPublic ?? group.isPublic,
+      isPublic: nextIsPublic,
       endsAt: this.addDays(group.startsAt, durationDays),
     } as never);
 
-    if (dto.durationDays != null || dto.competitionType || dto.iconKey) {
+    if (hasMeaningfulChange) {
       const actor = await this.userModel.findByPk(userId, { attributes: ['name'] });
+      const actorName = actor?.name ?? 'Usuário';
       await this.socialGroupActivityModel.create({
         groupId: group.id,
         userId,
         activityType: 'updated',
-        message: `${actor?.name ?? 'Usuário'} atualizou as informações do grupo`,
-        metadata: { durationDays, competitionType: nextCompetitionType, iconKey: dto.iconKey ?? group.iconKey, actorName: actor?.name ?? 'Usuário' },
+        message: `${actorName} atualizou as informações do grupo`,
+        metadata: {
+          durationDays,
+          competitionType: nextCompetitionType,
+          iconKey: nextIconKey,
+          actorName,
+        },
       });
     }
 
@@ -559,6 +585,7 @@ export class SocialService {
       throw new BadRequestException('Selecione ao menos um amigo para convidar');
     }
 
+    const addedMemberIds: string[] = [];
     for (const friendId of invitedIds) {
       if (friendId === userId) {
         continue;
@@ -579,17 +606,19 @@ export class SocialService {
           isLeader: false,
           points: 0,
         });
+        addedMemberIds.push(friendId);
       }
     }
 
-    const actor = await this.userModel.findByPk(userId, { attributes: ['name'] });
-    await this.socialGroupActivityModel.create({
-      groupId: group.id,
-      userId,
-      activityType: 'updated',
-      message: `${actor?.name ?? 'Usuário'} convidou amigos para o grupo`,
-      metadata: { invitedCount: invitedIds.length, actorName: actor?.name ?? 'Usuário' },
-    });
+    if (addedMemberIds.length > 0) {
+      const actor = await this.userModel.findByPk(userId, { attributes: ['name'] });
+      await this.createMembersAddedActivity(
+        group.id,
+        userId,
+        actor?.name ?? 'Usuário',
+        addedMemberIds,
+      );
+    }
 
     return this.getGroupDetail(group.id, userId);
   }
@@ -649,6 +678,7 @@ export class SocialService {
       throw new NotFoundException('Você não faz parte deste grupo');
     }
 
+    let transferredLeadershipTo: { userId: string; name: string } | null = null;
     if (currentUser.isLeader || group.ownerId === userId) {
       const nextLeader = [...(group.members ?? [])]
         .filter((member) => member.userId !== userId)
@@ -664,6 +694,11 @@ export class SocialService {
       );
 
       await group.update({ ownerId: nextLeader.userId } as never);
+      const nextLeaderUser = await this.userModel.findByPk(nextLeader.userId, { attributes: ['name'] });
+      transferredLeadershipTo = {
+        userId: nextLeader.userId,
+        name: nextLeaderUser?.name ?? 'Usuário',
+      };
     }
 
     await this.socialGroupMemberModel.destroy({
@@ -671,13 +706,30 @@ export class SocialService {
     });
 
     const actor = await this.userModel.findByPk(userId, { attributes: ['name'] });
+    const actorName = actor?.name ?? 'Usuário';
     await this.socialGroupActivityModel.create({
       groupId: group.id,
       userId,
       activityType: 'left',
-      message: `${actor?.name ?? 'Usuário'} saiu do grupo`,
-      metadata: { actorName: actor?.name ?? 'Usuário' },
+      message: `${actorName} saiu do grupo`,
+      metadata: { actorName },
     });
+
+    if (transferredLeadershipTo) {
+      await this.socialGroupActivityModel.create({
+        groupId: group.id,
+        userId: transferredLeadershipTo.userId,
+        activityType: 'leadership_transferred',
+        message: `${transferredLeadershipTo.name} assumiu a liderança do grupo`,
+        metadata: {
+          actorName: transferredLeadershipTo.name,
+          previousLeaderId: userId,
+          previousLeaderName: actorName,
+          newLeaderId: transferredLeadershipTo.userId,
+          newLeaderName: transferredLeadershipTo.name,
+        },
+      });
+    }
 
     return { success: true };
   }
@@ -968,11 +1020,53 @@ export class SocialService {
     }));
   }
 
+  private async createMembersAddedActivity(
+    groupId: string,
+    actorUserId: string,
+    actorName: string,
+    addedMemberIds: string[],
+  ) {
+    const addedUsers = await this.userModel.findAll({
+      where: { id: addedMemberIds },
+      attributes: ['id', 'name'],
+    });
+    const nameById = new Map(addedUsers.map((user) => [user.id, user.name ?? 'Usuário']));
+    const invitedNames = addedMemberIds.map((id) => nameById.get(id) ?? 'Usuário');
+    const message = this.formatMembersAddedMessage(actorName, invitedNames);
+
+    await this.socialGroupActivityModel.create({
+      groupId,
+      userId: actorUserId,
+      activityType: 'members_added',
+      message,
+      metadata: {
+        actorName,
+        invitedCount: addedMemberIds.length,
+        invitedUserIds: addedMemberIds,
+        invitedNames,
+      },
+    });
+  }
+
+  private formatMembersAddedMessage(actorName: string, invitedNames: string[]) {
+    if (invitedNames.length === 1) {
+      return `${actorName} adicionou ${invitedNames[0]} ao grupo`;
+    }
+    if (invitedNames.length === 2) {
+      return `${actorName} adicionou ${invitedNames[0]} e ${invitedNames[1]} ao grupo`;
+    }
+    if (invitedNames.length > 2) {
+      return `${actorName} adicionou ${invitedNames.length} pessoas ao grupo`;
+    }
+    return `${actorName} adicionou pessoas ao grupo`;
+  }
+
   private buildActivityMessage(activity: SocialGroupActivity) {
     const metadata = activity.metadata && typeof activity.metadata === 'object'
       ? (activity.metadata as Record<string, unknown>)
       : {};
     const actorName = activity.user?.name ?? (typeof metadata.actorName === 'string' ? metadata.actorName : null) ?? 'Usuário';
+    const legacyMessage = activity.message?.trim() ?? '';
 
     if (activity.activityType === 'created') {
       return `${actorName} criou o grupo`;
@@ -983,14 +1077,43 @@ export class SocialService {
     if (activity.activityType === 'joined_public') {
       return `${actorName} entrou no grupo público`;
     }
+    if (activity.activityType === 'members_added') {
+      const invitedNames = Array.isArray(metadata.invitedNames)
+        ? metadata.invitedNames.filter((name): name is string => typeof name === 'string' && name.trim().length > 0)
+        : [];
+      return this.formatMembersAddedMessage(actorName, invitedNames);
+    }
+    // Legacy: invites were wrongly stored as `updated` with "convidou amigos…"
+    if (
+      activity.activityType === 'updated' &&
+      /convidou amigos/i.test(legacyMessage)
+    ) {
+      const invitedCount = typeof metadata.invitedCount === 'number' ? metadata.invitedCount : null;
+      if (invitedCount === 1) {
+        return `${actorName} adicionou 1 pessoa ao grupo`;
+      }
+      if (invitedCount && invitedCount > 1) {
+        return `${actorName} adicionou ${invitedCount} pessoas ao grupo`;
+      }
+      return `${actorName} adicionou pessoas ao grupo`;
+    }
     if (activity.activityType === 'updated') {
       return `${actorName} atualizou as informações do grupo`;
+    }
+    if (activity.activityType === 'removed') {
+      const removedName =
+        (typeof metadata.removedName === 'string' ? metadata.removedName : null) ?? 'Usuário';
+      return `${actorName} removeu ${removedName} do grupo`;
     }
     if (activity.activityType === 'left') {
       return `${actorName} saiu do grupo`;
     }
+    if (activity.activityType === 'leadership_transferred') {
+      const newLeaderName =
+        (typeof metadata.newLeaderName === 'string' ? metadata.newLeaderName : null) ?? actorName;
+      return `${newLeaderName} assumiu a liderança do grupo`;
+    }
 
-    const legacyMessage = activity.message?.trim() ?? '';
     if (!legacyMessage) {
       return `${actorName} realizou uma ação no grupo`;
     }
