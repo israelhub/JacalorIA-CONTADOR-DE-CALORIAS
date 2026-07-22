@@ -204,6 +204,36 @@ class AvatarFrameCatalog {
       description: 'Moldura suave inspirada no estilo do Jaca.',
       assetPath: 'assets/images/avatar_frames/jaca.png',
     ),
+    AvatarFrameItem(
+      id: 'fox_autumn_tail',
+      name: 'Raposa de Outono',
+      description: 'Orelhas e cauda felpuda em tons de outono.',
+      assetPath: 'assets/images/avatar_frames/fox_tail.png',
+    ),
+    AvatarFrameItem(
+      id: 'panda_bamboo',
+      name: 'Panda Bamboo',
+      description: 'Orelhas e patinhas de panda com bambu fresco.',
+      assetPath: 'assets/images/avatar_frames/panda.png',
+    ),
+    AvatarFrameItem(
+      id: 'fire_streak',
+      name: 'Chama da Sequencia',
+      description: 'Anel em brasa com chamas da ofensiva.',
+      assetPath: 'assets/images/avatar_frames/fire_streak.png',
+    ),
+    AvatarFrameItem(
+      id: 'fruit_ring',
+      name: 'Coroa de Frutas',
+      description: 'Frutas e vegetais frescos ao redor do perfil.',
+      assetPath: 'assets/images/avatar_frames/fruit_ring.png',
+    ),
+    AvatarFrameItem(
+      id: 'royal_gold',
+      name: 'Ouro Real',
+      description: 'Anel dourado com coroa, gemas e moedas.',
+      assetPath: 'assets/images/avatar_frames/royal_gold.png',
+    ),
   ];
 
   static List<AvatarFrameItem> get purchasableItems =>
