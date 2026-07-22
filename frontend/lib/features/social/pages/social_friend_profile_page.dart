@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
+import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/avatar_profile_preview.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
 import '../widgets/social_profile_info_card.dart';
 import '../widgets/social_profile_metric_card.dart';
+import 'social_user_friends_page.dart';
 
 class SocialFriendProfilePage extends StatefulWidget {
   const SocialFriendProfilePage({
@@ -15,12 +17,14 @@ class SocialFriendProfilePage extends StatefulWidget {
     required this.friendId,
     this.initialFriendName,
     this.groupId,
+    this.viaUserId,
     SocialService? service,
   }) : service = service ?? const SocialService();
 
   final String friendId;
   final String? initialFriendName;
   final String? groupId;
+  final String? viaUserId;
   final SocialService service;
 
   @override
@@ -51,6 +55,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
       final data = await widget.service.fetchFriendProfile(
         widget.friendId,
         groupId: widget.groupId,
+        viaUserId: widget.viaUserId,
       );
       if (!mounted) return;
       setState(() {
@@ -64,6 +69,20 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _openFriendsList() async {
+    final profile = _profile;
+    if (profile == null) return;
+
+    await context.pushSlidePage<void>(
+      SocialUserFriendsPage(
+        userId: profile.id,
+        userName: profile.name,
+        groupId: widget.groupId,
+        viaUserId: widget.viaUserId,
+      ),
+    );
   }
 
   @override
@@ -107,7 +126,6 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
   }
 
   Widget _buildProfile() {
-    const summaryValueMaxChars = 14;
     final profile = _profile;
     if (profile == null) return const SizedBox.shrink();
 
@@ -144,18 +162,42 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: Text(
-                        profile.name,
-                        textAlign: TextAlign.left,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.missionsTitle.copyWith(
-                          color: AppColors.brand900Variant,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            profile.name,
+                            textAlign: TextAlign.left,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.missionsTitle.copyWith(
+                              color: AppColors.brand900Variant,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          InkWell(
+                            onTap: _openFriendsList,
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 2,
+                              ),
+                              child: Text(
+                                '${profile.friendCount} amigos',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.action500,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    _buildHeaderFriendshipSlot(profile),
+                    if (!profile.isSelf) ...[
+                      const SizedBox(width: AppSpacing.md),
+                      _buildHeaderFriendshipSlot(profile),
+                    ],
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -181,10 +223,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                             icon: Icons.local_fire_department_rounded,
                             iconColor: AppColors.socialMetricStreak,
                             label: 'Sequência',
-                            value: _truncateWithEllipsis(
-                              '${profile.streakDays} dias',
-                              summaryValueMaxChars,
-                            ),
+                            value: '${profile.streakDays} dias',
                           ),
                         ),
                         SizedBox(
@@ -193,12 +232,10 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                             icon: Icons.restaurant_menu_rounded,
                             iconColor: AppColors.socialMetricFavoriteDish,
                             label: 'Prato favorito',
-                            value: _truncateWithEllipsis(
-                              profile.favoriteDish?.trim().isNotEmpty == true
-                                  ? profile.favoriteDish!
-                                  : 'Sem registros',
-                              summaryValueMaxChars,
-                            ),
+                            value:
+                                profile.favoriteDish?.trim().isNotEmpty == true
+                                ? profile.favoriteDish!
+                                : 'Sem registros',
                           ),
                         ),
                         SizedBox(
@@ -207,10 +244,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                             icon: Icons.schedule_rounded,
                             iconColor: AppColors.socialMetricPreferredPeriod,
                             label: 'Come mais de',
-                            value: _truncateWithEllipsis(
-                              preferredPeriod,
-                              summaryValueMaxChars,
-                            ),
+                            value: preferredPeriod,
                           ),
                         ),
                         SizedBox(
@@ -219,10 +253,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                             icon: Icons.auto_awesome_rounded,
                             iconColor: AppColors.socialMetricXp,
                             label: 'Total de XP',
-                            value: _truncateWithEllipsis(
-                              '${profile.totalXp}',
-                              summaryValueMaxChars,
-                            ),
+                            value: '${profile.totalXp}',
                           ),
                         ),
                       ],
@@ -289,18 +320,6 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
   }
 
   Widget _buildHeaderFriendshipSlot(SocialFriendProfile profile) {
-    if (profile.isSelf) {
-      return Text(
-        '${profile.friendCount} amigos',
-        textAlign: TextAlign.right,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.textSecondary,
-        ),
-      );
-    }
-
     return Flexible(
       child: Align(
         alignment: Alignment.centerRight,
@@ -426,13 +445,6 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
     };
 
     return labels[raw] ?? _normalizeLabel(value);
-  }
-
-  String _truncateWithEllipsis(String value, int maxChars) {
-    if (value.length <= maxChars) {
-      return value;
-    }
-    return '${value.substring(0, maxChars)}...';
   }
 }
 

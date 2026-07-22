@@ -25,9 +25,26 @@ export class StreakService {
   }
 
   async buildStreakByUserIds(userIds: string[]): Promise<Map<string, number>> {
-    const uniqueUserIds = [...new Set(userIds.filter((id) => id.trim().length > 0))];
+    const dayKeysByUser = await this.buildEffectiveDayKeysByUserIds(userIds);
+    return this.buildStreakMapFromDayKeys(dayKeysByUser);
+  }
+
+  buildStreakMapFromDayKeys(dayKeysByUser: Map<string, Set<string>>): Map<string, number> {
     const streakByUserId = new Map<string, number>();
-    if (uniqueUserIds.length === 0) return streakByUserId;
+    for (const [userId, dayKeys] of dayKeysByUser) {
+      streakByUserId.set(userId, this.calculateStreakFromDayKeys(dayKeys));
+    }
+    return streakByUserId;
+  }
+
+  /**
+   * Dias com ofensiva efetiva (refeição ativa ou bloqueador aplicado), por usuário.
+   * Usado para streaks individuais e para fechar a sequência coletiva do grupo após 00:00.
+   */
+  async buildEffectiveDayKeysByUserIds(userIds: string[]): Promise<Map<string, Set<string>>> {
+    const uniqueUserIds = [...new Set(userIds.filter((id) => id.trim().length > 0))];
+    const effectiveByUserId = new Map<string, Set<string>>();
+    if (uniqueUserIds.length === 0) return effectiveByUserId;
 
     const [meals, users] = await Promise.all([
       this.mealModel.findAll({
@@ -47,14 +64,14 @@ export class StreakService {
       }),
     ]);
 
-    const dayKeysByUser = new Map<string, Set<string>>();
+    const mealDayKeysByUser = new Map<string, Set<string>>();
     for (const meal of meals) {
       const userId = meal.userId;
       const key = this.toDayKeyInAppTimeZone(new Date(meal.createdAt));
-      if (!dayKeysByUser.has(userId)) {
-        dayKeysByUser.set(userId, new Set<string>());
+      if (!mealDayKeysByUser.has(userId)) {
+        mealDayKeysByUser.set(userId, new Set<string>());
       }
-      dayKeysByUser.get(userId)!.add(key);
+      mealDayKeysByUser.get(userId)!.add(key);
     }
 
     const appliedKeysByUser = new Map<string, Set<string>>();
@@ -67,7 +84,7 @@ export class StreakService {
 
     const todayKey = this.toDayKeyInAppTimeZone(new Date());
     for (const userId of uniqueUserIds) {
-      const mealDayKeys = dayKeysByUser.get(userId) ?? new Set<string>();
+      const mealDayKeys = mealDayKeysByUser.get(userId) ?? new Set<string>();
       const appliedDayKeys = appliedKeysByUser.get(userId) ?? new Set<string>();
       const effectiveDayKeys = new Set<string>(mealDayKeys);
       for (const key of appliedDayKeys) {
@@ -75,11 +92,10 @@ export class StreakService {
           effectiveDayKeys.add(key);
         }
       }
-
-      streakByUserId.set(userId, this.calculateStreakFromDayKeys(effectiveDayKeys));
+      effectiveByUserId.set(userId, effectiveDayKeys);
     }
 
-    return streakByUserId;
+    return effectiveByUserId;
   }
 
   async getAppliedStreakBlockerDayKeys(userId: string): Promise<Set<string>> {

@@ -66,6 +66,34 @@ void main() {
     expect(find.byIcon(Icons.track_changes_rounded), findsOneWidget);
   });
 
+  testWidgets('mostra media decimal no modo media de meta', (tester) async {
+    final entry = SocialRankingEntry(
+      id: 'ranking-decimal',
+      userId: 'user-decimal',
+      name: 'Média decimal',
+      avatarUrl: null,
+      avatarFrameId: null,
+      points: 1884.5,
+      streakDays: 0,
+      isCurrentUser: false,
+      isLeader: false,
+      position: 1,
+      subtitle: '',
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        SocialRankingItem(
+          entry: entry,
+          competitionType: 'goal_average',
+        ),
+      ),
+    );
+
+    expect(find.text('1884.5'), findsOneWidget);
+    expect(find.text('média'), findsOneWidget);
+  });
+
   testWidgets('mostra sem dados quando nao ha media registrada', (tester) async {
     final entry = SocialRankingEntry(
       id: 'ranking-empty',

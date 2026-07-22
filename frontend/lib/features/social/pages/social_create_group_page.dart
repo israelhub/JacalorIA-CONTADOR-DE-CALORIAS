@@ -68,9 +68,10 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
       'offensive' => 'Vence quem mantiver a maior sequência ativa no desafio.',
       'daily_goal' => 'Ganha quem bater mais vezes a própria meta diária.',
       'goal_average' =>
-        'Ganha quem tiver a média de calorias dos dias do grupo mais próxima da própria meta.',
+        'A média é o total de calorias ÷ dias decorridos do grupo (sobe após 00:00). Ganha quem ficar mais perto da própria meta.',
       'xp' => 'Pontua as ações saudáveis para ranquear evolução no grupo.',
-      'group_streak' => 'A sequência só cresce quando todos do grupo permanecem ativos.',
+      'group_streak' =>
+        'À meia-noite, a sequência continua só se todos os membros ativos do dia cumpriram a ofensiva.',
       _ => 'Vence quem mantiver a maior sequência ativa no desafio.',
     };
   }

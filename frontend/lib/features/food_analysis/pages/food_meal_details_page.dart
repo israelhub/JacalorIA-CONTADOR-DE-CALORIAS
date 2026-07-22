@@ -12,6 +12,7 @@ import '../helpers/food_review_helpers.dart';
 import '../models/food_analysis_result.dart';
 import '../models/food_meal_record.dart';
 import '../services/food_analysis_service.dart';
+import '../services/meal_template_service.dart';
 import 'food_review_page.dart';
 import '../widgets/food_analysis_page_header.dart';
 import '../widgets/food_meal_item_row.dart';
@@ -23,13 +24,16 @@ class FoodMealDetailsPage extends StatefulWidget {
     this.userProfile,
     MealService mealService = const MealService(),
     FoodAnalysisService analysisService = const FoodAnalysisService(),
+    MealTemplateService templateService = const MealTemplateService(),
   }) : _mealService = mealService,
-       _analysisService = analysisService;
+       _analysisService = analysisService,
+       _templateService = templateService;
 
   final FoodMealRecord record;
   final Map<String, dynamic>? userProfile;
   final MealService _mealService;
   final FoodAnalysisService _analysisService;
+  final MealTemplateService _templateService;
 
   @override
   State<FoodMealDetailsPage> createState() => _FoodMealDetailsPageState();
@@ -39,6 +43,7 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
   late final List<bool> _sectionVisible;
   late FoodMealRecord _record;
   bool _started = false;
+  bool _isSavingTemplate = false;
 
   static const Duration _sectionRevealDuration = Duration(milliseconds: 280);
 
@@ -92,6 +97,17 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
       appBar: FoodAnalysisPageHeader(
         title: 'Detalhes da refeição',
         actions: [
+          IconButton(
+            tooltip: 'Salvar para reutilizar',
+            onPressed: _isSavingTemplate ? null : _handleSaveAsTemplate,
+            icon: _isSavingTemplate
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.bookmark_add_outlined),
+          ),
           IconButton(
             tooltip: 'Editar refeição',
             onPressed: _handleEditMeal,
@@ -322,6 +338,41 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleSaveAsTemplate() async {
+    if (_isSavingTemplate) {
+      return;
+    }
+
+    setState(() => _isSavingTemplate = true);
+
+    try {
+      await widget._templateService.saveFromMeal(_record);
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Refeição salva. Use-a ao registrar uma nova.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingTemplate = false);
+      }
+    }
   }
 
   Future<void> _handleEditMeal() async {

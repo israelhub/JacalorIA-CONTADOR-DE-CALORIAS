@@ -93,21 +93,54 @@ class SocialService {
   Future<SocialFriendProfile> fetchFriendProfile(
     String friendUserId, {
     String? groupId,
+    String? viaUserId,
   }) async {
     final normalizedGroupId = groupId?.trim();
+    final normalizedViaUserId = viaUserId?.trim();
+    final queryParameters = <String, String>{};
+    if (normalizedGroupId != null && normalizedGroupId.isNotEmpty) {
+      queryParameters['groupId'] = normalizedGroupId;
+    }
+    if (normalizedViaUserId != null && normalizedViaUserId.isNotEmpty) {
+      queryParameters['viaUserId'] = normalizedViaUserId;
+    }
     final uri = Uri.parse(
       '$_baseUrl/social/friends/${friendUserId.trim()}/profile',
-    ).replace(
-      queryParameters: (normalizedGroupId == null || normalizedGroupId.isEmpty)
-          ? null
-          : {'groupId': normalizedGroupId},
-    );
+    ).replace(queryParameters: queryParameters.isEmpty ? null : queryParameters);
     final response = await http.get(uri, headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
       return SocialFriendProfile.fromJson(body);
     }
       throw Exception(_extractMessage(body, 'Erro ao carregar perfil.'));
+  }
+
+  Future<List<SocialFriend>> fetchUserFriends(
+    String userId, {
+    String? groupId,
+    String? viaUserId,
+  }) async {
+    final normalizedGroupId = groupId?.trim();
+    final normalizedViaUserId = viaUserId?.trim();
+    final queryParameters = <String, String>{};
+    if (normalizedGroupId != null && normalizedGroupId.isNotEmpty) {
+      queryParameters['groupId'] = normalizedGroupId;
+    }
+    if (normalizedViaUserId != null && normalizedViaUserId.isNotEmpty) {
+      queryParameters['viaUserId'] = normalizedViaUserId;
+    }
+    final uri = Uri.parse(
+      '$_baseUrl/social/friends/${userId.trim()}/list',
+    ).replace(queryParameters: queryParameters.isEmpty ? null : queryParameters);
+    final response = await http.get(uri, headers: _headers());
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200) {
+      return (body['friends'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(SocialFriend.fromJson)
+          .toList(growable: false);
+    }
+    throw Exception(_extractMessage(body, 'Erro ao carregar amigos.'));
   }
 
   Future<SocialFriendsData> removeFriend(String friendUserId) async {

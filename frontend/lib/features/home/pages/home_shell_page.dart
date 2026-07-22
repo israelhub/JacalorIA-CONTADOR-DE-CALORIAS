@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_page_route.dart';
 import '../../food_analysis/pages/food_capture_page.dart';
 import '../../missions/pages/missions_page.dart';
 import '../../performance/pages/performance_page.dart';
+import '../../social/helpers/social_data_invalidator.dart';
 import '../../social/pages/social_page.dart';
 import '../helpers/home_date_helpers.dart';
 import 'home_page.dart';
@@ -89,7 +90,8 @@ class _HomeShellPageState extends State<HomeShellPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       AnalyticsService.instance.trackAppOpen(properties: {'from': 'resume'});
-      // Soft-refresh the visible tab after returning to the app.
+      // Soft-refresh the visible tab after returning to the app
+      // (inclui virada de dia para média calórica no social).
       _forceSoftRefreshForIndex(_currentIndex);
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
@@ -218,6 +220,12 @@ class _HomeShellPageState extends State<HomeShellPage>
       properties: {'entry': 'center_action'},
     );
     await context.pushSlidePage(const FoodCapturePage());
+    if (!mounted) {
+      return;
+    }
+    // Recalcula ranking de média calórica após possível registro de refeição.
+    SocialDataInvalidator.markDirty();
+    _forceSoftRefreshForIndex(_socialIndex);
   }
 
   Future<void> _goToHomeDate(DateTime date) async {

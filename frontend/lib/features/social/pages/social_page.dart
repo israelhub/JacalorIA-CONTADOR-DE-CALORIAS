@@ -15,6 +15,7 @@ import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../home/widgets/home_weight_quick_edit_button.dart';
 import '../controllers/social_page_controller.dart';
+import '../helpers/social_data_invalidator.dart';
 import '../models/social_group_models.dart';
 import 'social_add_friend_page.dart';
 import 'social_create_group_page.dart';
@@ -60,6 +61,7 @@ class _SocialPageState extends State<SocialPage> {
       authService: widget.authService ?? AuthService(),
     );
     _controller.addListener(_onControllerChanged);
+    SocialDataInvalidator.revision.addListener(_onSocialDataInvalidated);
     _controller.loadAll();
   }
 
@@ -67,15 +69,25 @@ class _SocialPageState extends State<SocialPage> {
   void didUpdateWidget(covariant SocialPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.refreshVersion != oldWidget.refreshVersion) {
-      _controller.loadAll(silent: true);
+      _reloadSocial(silent: true);
     }
   }
 
   @override
   void dispose() {
+    SocialDataInvalidator.revision.removeListener(_onSocialDataInvalidated);
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onSocialDataInvalidated() {
+    if (!mounted) return;
+    _reloadSocial(silent: true);
+  }
+
+  Future<void> _reloadSocial({bool silent = false}) async {
+    await _controller.loadAll(silent: silent);
   }
 
   void _onControllerChanged() {

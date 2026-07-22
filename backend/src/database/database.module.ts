@@ -3,6 +3,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../auth/models/user.model';
 import { Meal } from '../meals/models/meal.model';
+import { MealTemplate } from '../meal-templates/models/meal-template.model';
 import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
 import { Mission } from '../missions/models/mission.model';
 import { StoreCatalogItem } from '../missions/models/store-catalog-item.model';
@@ -59,6 +60,7 @@ import { FoodImageAnalysis } from '../ai/models/food-image-analysis.model';
           models: [
             User,
             Meal,
+            MealTemplate,
             UserWeightEntry,
             Mission,
             StoreCatalogItem,
