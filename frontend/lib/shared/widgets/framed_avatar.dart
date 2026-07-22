@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -14,7 +16,6 @@ class FramedAvatar extends StatelessWidget {
     this.fallbackText,
     this.onTap,
     this.backgroundColor = AppColors.surfaceAlt,
-    this.framedAvatarScale = 0.74,
     this.unframedAvatarScale = 0.9,
   });
 
@@ -24,16 +25,21 @@ class FramedAvatar extends StatelessWidget {
   final String? fallbackText;
   final VoidCallback? onTap;
   final Color backgroundColor;
-  final double framedAvatarScale;
+
+  /// Photo diameter as a fraction of [size]. Same with or without a frame.
   final double unframedAvatarScale;
 
   @override
   Widget build(BuildContext context) {
     final frame = AvatarFrameCatalog.byId(frameId);
     final hasFrame = frame?.assetPath != null;
-    final avatarSize = hasFrame
-        ? size * _effectiveFramedAvatarScale(frameId)
-        : size * unframedAvatarScale;
+    final avatarSize = size * unframedAvatarScale;
+    final frameSize = hasFrame
+        ? avatarSize * _frameOuterScale(frameId)
+        : avatarSize;
+    // Reserve space for the frame so ears/crowns/tails aren't clipped by parents.
+    final layoutSize = hasFrame ? math.max(size, frameSize) : size;
+
     final avatar = _AvatarCircle(
       size: avatarSize,
       avatarUrl: avatarUrl,
@@ -42,16 +48,20 @@ class FramedAvatar extends StatelessWidget {
     );
 
     final content = SizedBox.square(
-      dimension: size,
+      dimension: layoutSize,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
           avatar,
           if (hasFrame)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Image.asset(frame!.assetPath!, fit: BoxFit.contain),
+            IgnorePointer(
+              child: SizedBox.square(
+                dimension: frameSize,
+                child: Image.asset(
+                  frame!.assetPath!,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
         ],
@@ -65,21 +75,9 @@ class FramedAvatar extends StatelessWidget {
     return _PressableAvatar(onTap: onTap!, child: content);
   }
 
-  double _effectiveFramedAvatarScale(String? id) {
-    switch (id?.trim()) {
-      case 'cat_ears_soft':
-      case 'fox_autumn_tail':
-      case 'panda_bamboo':
-        return 0.8;
-      case 'gator_tail_fin':
-      case 'fruit_ring':
-        return 0.86;
-      case 'fire_streak':
-      case 'royal_gold':
-        return 0.82;
-      default:
-        return framedAvatarScale;
-    }
+  /// Frame display size / photo size for AI-generated frames (~70% hole).
+  double _frameOuterScale(String? id) {
+    return 1.42;
   }
 }
 

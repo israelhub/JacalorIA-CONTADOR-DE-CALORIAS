@@ -15,6 +15,7 @@ import '../models/food_meal_record.dart';
 import '../services/food_analysis_service.dart';
 import 'food_analysis_processing_page.dart';
 import 'food_review_page.dart';
+import 'saved_meals_page.dart';
 import '../widgets/food_analysis_page_header.dart';
 import '../widgets/food_review_confirm_button.dart';
 
@@ -91,10 +92,10 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(flex: 10, child: _buildCameraArea(context)),
-              const SizedBox(height: AppSpacing.lg),
+              Expanded(flex: 9, child: _buildCameraArea(context)),
+              const SizedBox(height: AppSpacing.md),
               Expanded(
-                flex: 2,
+                flex: 3,
                 child: Column(
                   children: [
                     if (_error != null) ...[
@@ -109,6 +110,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
                     ],
                     _CaptureActions(
                       onTextEntry: _openTextEntry,
+                      onSavedMeals: _openSavedMeals,
                       onCapture: _takePhoto,
                       onGallery: () => _pickAndAnalyze(ImageSource.gallery),
                       isCameraReady:
@@ -245,6 +247,22 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
     }
 
     return error.toString().replaceFirst('Exception: ', '');
+  }
+
+  Future<void> _openSavedMeals() async {
+    if (_isBusy) {
+      return;
+    }
+
+    final meal = await context.pushSlidePage<FoodMealRecord>(
+      const SavedMealsPage(),
+    );
+
+    if (!mounted || meal == null) {
+      return;
+    }
+
+    Navigator.of(context).pop(meal);
   }
 
   Future<void> _openTextEntry() async {
@@ -538,6 +556,7 @@ enum _NoFoodAction { goHome, retry }
 class _CaptureActions extends StatelessWidget {
   const _CaptureActions({
     required this.onTextEntry,
+    required this.onSavedMeals,
     required this.onCapture,
     required this.onGallery,
     required this.isCameraReady,
@@ -545,6 +564,7 @@ class _CaptureActions extends StatelessWidget {
   });
 
   final VoidCallback onTextEntry;
+  final VoidCallback onSavedMeals;
   final VoidCallback onCapture;
   final VoidCallback onGallery;
   final bool isCameraReady;
@@ -552,33 +572,56 @@ class _CaptureActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const shutterSize = 90.0;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    const shutterSize = 78.0;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 75,
-          child: _CaptureActionButton(
-            icon: Icons.edit_outlined,
-            label: 'Digitar',
-            onTap: onTextEntry,
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: isBusy ? null : onSavedMeals,
+            icon: const Icon(Icons.bookmark_outline, size: 18),
+            label: const Text('Usar refeição salva'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.brand900Variant,
+              side: const BorderSide(color: AppColors.borderLight),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              textStyle: AppTextStyles.captionStrong,
+            ),
           ),
         ),
-        SizedBox(
-          width: shutterSize,
-          height: shutterSize,
-          child: _CameraShutterButton(
-            onTap: isCameraReady && !isBusy ? onCapture : null,
-            isBusy: isBusy,
-          ),
-        ),
-        SizedBox(
-          width: 75,
-          child: _CaptureActionButton(
-            icon: Icons.photo_library_outlined,
-            label: 'Galeria',
-            onTap: onGallery,
-          ),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            SizedBox(
+              width: 75,
+              child: _CaptureActionButton(
+                icon: Icons.edit_outlined,
+                label: 'Digitar',
+                onTap: isBusy ? null : onTextEntry,
+              ),
+            ),
+            SizedBox(
+              width: shutterSize,
+              height: shutterSize,
+              child: _CameraShutterButton(
+                onTap: isCameraReady && !isBusy ? onCapture : null,
+                isBusy: isBusy,
+              ),
+            ),
+            SizedBox(
+              width: 75,
+              child: _CaptureActionButton(
+                icon: Icons.photo_library_outlined,
+                label: 'Galeria',
+                onTap: isBusy ? null : onGallery,
+              ),
+            ),
+          ],
         ),
       ],
     );

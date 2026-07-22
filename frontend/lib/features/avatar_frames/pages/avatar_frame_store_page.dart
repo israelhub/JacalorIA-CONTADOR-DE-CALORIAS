@@ -4,9 +4,9 @@ import '../../../core/analytics/analytics_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_modal.dart';
-import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/avatar_profile_preview.dart';
+import '../../../shared/widgets/frame_silhouette_icon.dart';
 import '../../../shared/widgets/framed_avatar.dart';
 import '../../auth/service/auth_service.dart';
 import '../../missions/services/missions_service.dart';
@@ -638,13 +638,12 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
           ),
         ),
         body: SafeArea(
-          child: AppRefreshScrollView(
-            onRefresh: _loadCatalog,
+          child: Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
               AppSpacing.lg,
               AppSpacing.lg,
-              AppSpacing.xxxl,
+              AppSpacing.lg,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -699,68 +698,85 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                if (_isLoadingCatalog)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.action500,
-                      ),
-                    ),
-                  )
-                else if (items.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.xl,
-                    ),
-                    child: Text(
-                      'Sem itens disponíveis nesta categoria.',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  )
-                else
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final crossAxisCount = constraints.maxWidth >= 720
-                          ? 3
-                          : 2;
-                      return GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: items.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: AppSpacing.md,
-                          mainAxisSpacing: AppSpacing.md,
-                          childAspectRatio: constraints.maxWidth >= 720
-                              ? 0.82
-                              : 0.68,
-                        ),
-                        itemBuilder: (context, index) {
-                          final item = items[index];
-                          return _StoreTileEntrance(
-                            index: index,
-                            child: _StoreTile(
-                              item: item,
-                              avatarUrl: avatarUrl,
-                              name: name,
-                              blockerQuantity: _blockerInventory[item.id] ?? 0,
-                              blockerQuantityFallback: item.quantityOwned,
-                              isOwned: _isOwned(item),
-                              isEquipped: _isEquipped(item),
-                              canPurchase: _canPurchase(item),
-                              isSaving: _isSaving,
-                              onPreview: () => _previewItem(item),
-                              onPressed: () => _toggleOwnedItem(item),
-                            ),
-                          );
-                        },
-                      );
-                    },
+                Expanded(
+                  child: RefreshIndicator(
+                    color: AppColors.action500,
+                    onRefresh: _loadCatalog,
+                    child: _isLoadingCatalog
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: const [
+                              SizedBox(height: AppSpacing.xl),
+                              Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.action500,
+                                ),
+                              ),
+                            ],
+                          )
+                        : items.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.xl,
+                                ),
+                                child: Text(
+                                  'Sem itens disponíveis nesta categoria.',
+                                  textAlign: TextAlign.center,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : LayoutBuilder(
+                            builder: (context, constraints) {
+                              final crossAxisCount =
+                                  constraints.maxWidth >= 720 ? 3 : 2;
+                              return GridView.builder(
+                                physics:
+                                    const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.only(
+                                  bottom: AppSpacing.xxxl,
+                                ),
+                                itemCount: items.length,
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: AppSpacing.md,
+                                  mainAxisSpacing: AppSpacing.md,
+                                  childAspectRatio: 1,
+                                ),
+                                itemBuilder: (context, index) {
+                                  final item = items[index];
+                                  return _StoreTileEntrance(
+                                    index: index,
+                                    child: _StoreTile(
+                                      item: item,
+                                      avatarUrl: avatarUrl,
+                                      name: name,
+                                      blockerQuantity:
+                                          _blockerInventory[item.id] ?? 0,
+                                      blockerQuantityFallback:
+                                          item.quantityOwned,
+                                      isOwned: _isOwned(item),
+                                      isEquipped: _isEquipped(item),
+                                      canPurchase: _canPurchase(item),
+                                      isSaving: _isSaving,
+                                      onPreview: () => _previewItem(item),
+                                      onPressed: () =>
+                                          _toggleOwnedItem(item),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
                   ),
+                ),
               ],
             ),
           ),
@@ -793,7 +809,13 @@ class _StoreCategorySwitcher extends StatelessWidget {
           Expanded(
             child: _CategoryButton(
               label: 'Bloqueadores',
-              icon: Icons.shield_rounded,
+              icon: Icon(
+                Icons.shield_rounded,
+                size: 26,
+                color: selected == StoreCategory.blockers
+                    ? AppColors.action500
+                    : AppColors.textSecondary,
+              ),
               isSelected: selected == StoreCategory.blockers,
               onTap: () => onSelected(StoreCategory.blockers),
             ),
@@ -801,7 +823,12 @@ class _StoreCategorySwitcher extends StatelessWidget {
           Expanded(
             child: _CategoryButton(
               label: 'Molduras',
-              icon: Icons.crop_rounded,
+              icon: FrameSilhouetteIcon(
+                size: 26,
+                color: selected == StoreCategory.frames
+                    ? AppColors.action500
+                    : AppColors.textSecondary,
+              ),
               isSelected: selected == StoreCategory.frames,
               onTap: () => onSelected(StoreCategory.frames),
             ),
@@ -809,7 +836,13 @@ class _StoreCategorySwitcher extends StatelessWidget {
           Expanded(
             child: _CategoryButton(
               label: 'Fundos',
-              icon: Icons.landscape_rounded,
+              icon: Icon(
+                Icons.landscape_rounded,
+                size: 26,
+                color: selected == StoreCategory.backgrounds
+                    ? AppColors.action500
+                    : AppColors.textSecondary,
+              ),
               isSelected: selected == StoreCategory.backgrounds,
               onTap: () => onSelected(StoreCategory.backgrounds),
             ),
@@ -829,7 +862,7 @@ class _CategoryButton extends StatelessWidget {
   });
 
   final String label;
-  final IconData icon;
+  final Widget icon;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -867,13 +900,9 @@ class _CategoryButton extends StatelessWidget {
                       child: ScaleTransition(scale: animation, child: child),
                     );
                   },
-                  child: Icon(
-                    icon,
+                  child: KeyedSubtree(
                     key: ValueKey<bool>(isSelected),
-                    size: 26,
-                    color: isSelected
-                        ? AppColors.action500
-                        : AppColors.textSecondary,
+                    child: icon,
                   ),
                 ),
               ),
@@ -1117,11 +1146,18 @@ class _StoreTile extends StatelessWidget {
     return Material(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(AppRadius.md),
+      clipBehavior: Clip.none,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: onPreview,
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.sm),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sm,
+            AppSpacing.xs,
+            AppSpacing.sm,
+            AppSpacing.xl,
+          ),
+          clipBehavior: Clip.none,
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -1137,7 +1173,8 @@ class _StoreTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: Center(
+                child: Align(
+                  alignment: const Alignment(0, -0.15),
                   child: _StoreItemPreview(
                     item: item,
                     avatarUrl: avatarUrl,
@@ -1146,24 +1183,18 @@ class _StoreTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
-              SizedBox(
-                height: 40,
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: Text(
-                    item.name,
-                    style: AppTextStyles.homeMealTitle.copyWith(
-                      color: AppColors.brand900Variant,
-                      height: 1.15,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              Text(
+                item.name,
+                style: AppTextStyles.homeMealTitle.copyWith(
+                  color: AppColors.brand900Variant,
+                  height: 1.1,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: 2),
               SizedBox(
-                height: 20,
+                height: 16,
                 child: Row(
                   children: [
                     Expanded(
@@ -1194,7 +1225,7 @@ class _StoreTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: AppSpacing.xs),
               AppButton(
                 label: label,
                 onPressed: buttonEnabled ? onPressed : null,
@@ -1263,7 +1294,7 @@ class _StoreItemPreview extends StatelessWidget {
     switch (item.type) {
       case StoreItemType.frame:
         return FramedAvatar(
-          size: 112,
+          size: 140,
           avatarUrl: avatarUrl,
           frameId: item.id,
           fallbackText: name,
@@ -1275,15 +1306,15 @@ class _StoreItemPreview extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.md),
             child: Image.asset(
               assetPath,
-              width: 112,
-              height: 112,
+              width: 140,
+              height: 140,
               fit: BoxFit.cover,
             ),
           );
         }
         return Container(
-          width: 112,
-          height: 112,
+          width: 140,
+          height: 140,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.md),
             gradient: const LinearGradient(
@@ -1295,15 +1326,15 @@ class _StoreItemPreview extends StatelessWidget {
           ),
           child: const Icon(
             Icons.landscape_rounded,
-            size: 42,
+            size: 52,
             color: AppColors.brand900Variant,
           ),
         );
       case StoreItemType.blocker:
         if (item.isStreakRestore) {
           return Container(
-            width: 112,
-            height: 112,
+            width: 140,
+            height: 140,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppColors.surfaceAlt,
@@ -1311,14 +1342,14 @@ class _StoreItemPreview extends StatelessWidget {
             ),
             child: const Icon(
               Icons.history_rounded,
-              size: 42,
+              size: 52,
               color: AppColors.brand900Variant,
             ),
           );
         }
         return Container(
-          width: 112,
-          height: 112,
+          width: 140,
+          height: 140,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.surfaceAlt,
@@ -1326,7 +1357,7 @@ class _StoreItemPreview extends StatelessWidget {
           ),
           child: const Icon(
             Icons.shield_rounded,
-            size: 42,
+            size: 52,
             color: AppColors.brand900Variant,
           ),
         );

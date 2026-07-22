@@ -36,7 +36,7 @@ class SocialGroupSummary {
   final String durationDaysLabel;
   final int memberCount;
   final int rankPosition;
-  final int points;
+  final num points;
   final int streakDays;
   final String leaderName;
   final String leaderLabel;
@@ -64,7 +64,7 @@ class SocialGroupSummary {
       durationDaysLabel: socialDurationLabel(durationDays),
       memberCount: socialToInt(json['memberCount']),
       rankPosition: socialToInt(json['rankPosition']),
-      points: socialToInt(json['points']),
+      points: socialToNum(json['points']),
       streakDays: socialToInt(json['streakDays']),
       leaderName: json['leaderName']?.toString() ?? 'Líder do grupo',
       leaderLabel: json['leaderLabel']?.toString() ?? 'Líder do grupo',

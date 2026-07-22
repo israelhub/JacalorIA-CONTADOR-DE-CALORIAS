@@ -18,6 +18,11 @@ import { StreakService } from '../streak/streak.service';
 import { hasReachedCalorieGoal } from '../shared/utils/calorie-goal.util';
 import { parseNumber } from '../shared/utils/number-parser.util';
 import { AnalyticsService } from '../analytics/analytics.service';
+import {
+  computeGoalAverageCalories,
+  computeGoalDeviation,
+  countInclusiveCalendarDays,
+} from './utils/goal-average.util';
 
 @Injectable()
 export class SocialService {
@@ -60,47 +65,44 @@ export class SocialService {
     });
 
     const memberGroups = groups.filter((group) => this.isCurrentUserMember(group.members, userId));
-    const streakByUserId = await this.streakService.buildStreakByUserIds(
-      memberGroups.flatMap((group) => (group.members ?? []).map((member) => member.userId)),
+    const memberUserIds = memberGroups.flatMap((group) => (group.members ?? []).map((member) => member.userId));
+    const { streakByUserId, offensiveDayKeysByUserId } = await this.loadGroupStreakContext(
+      memberGroups,
+      memberUserIds,
     );
 
     return {
       groups: await Promise.all(
-        memberGroups.map((group) => this.toGroupSummary(group, userId, streakByUserId)),
+        memberGroups.map((group) =>
+          this.toGroupSummary(group, userId, streakByUserId, offensiveDayKeysByUserId),
+        ),
       ),
     };
   }
 
   async listFriends(userId: string) {
-    const friendships = await this.socialFriendshipModel.findAll({
-      where: { [Op.or]: [{ userLowId: userId }, { userHighId: userId }] },
-      order: [['createdAt', 'DESC']],
-    });
-
-    const friendIds = friendships.map((item) => (item.userLowId === userId ? item.userHighId : item.userLowId));
-    const users = friendIds.length
-      ? await this.userModel.findAll({ where: { id: { [Op.in]: friendIds } }, attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'] })
-      : [];
-
-    const streakByUserId = await this.streakService.buildStreakByUserIds(friendIds);
-
-    const userById = new Map(users.map((user) => [user.id, user]));
     const links = await this.ensureFriendLink(userId);
     const pendingRequests = await this.listPendingRequests(userId);
 
     return {
-      friends: friendIds
-        .map((friendId) => userById.get(friendId))
-        .filter((user): user is User => Boolean(user))
-        .map((user) => ({
-          id: user.id,
-          name: user.name ?? 'Sem nome',
-          avatarUrl: user.avatarUrl ?? null,
-          avatarFrameId: user.equippedAvatarFrameId ?? null,
-          streakDays: streakByUserId.get(user.id) ?? 0,
-        })),
+      friends: await this.getFriendsPayload(userId),
       inviteCode: links.inviteCode,
       pendingRequests,
+    };
+  }
+
+  async listUserFriends(
+    viewerId: string,
+    targetUserId: string,
+    options?: { groupId?: string; viaUserId?: string },
+  ) {
+    const canView = await this.canViewUserProfile(viewerId, targetUserId, options);
+    if (!canView) {
+      throw new NotFoundException('Perfil não encontrado');
+    }
+
+    return {
+      friends: await this.getFriendsPayload(targetUserId.trim()),
     };
   }
 
@@ -308,19 +310,13 @@ export class SocialService {
   async getFriendProfile(
     userId: string,
     friendUserId: string,
-    options?: { groupId?: string },
+    options?: { groupId?: string; viaUserId?: string },
   ) {
     const friendId = friendUserId.trim();
     const viewerId = userId.trim();
     const isSelf = viewerId.toLowerCase() === friendId.toLowerCase();
     const isFriend = !isSelf && (await this.areFriends(viewerId, friendId));
-    const sharedGroupId = options?.groupId?.trim();
-    const canView =
-      isSelf ||
-      isFriend ||
-      (sharedGroupId
-        ? await this.areGroupCoMembers(viewerId, friendId, sharedGroupId)
-        : await this.shareGroupMembership(viewerId, friendId));
+    const canView = await this.canViewUserProfile(viewerId, friendId, options);
     if (!canView) {
       throw new NotFoundException('Perfil não encontrado');
     }
@@ -432,7 +428,7 @@ export class SocialService {
   async joinGroupByInviteCode(userId: string, inviteCode: string) {
     const code = inviteCode.trim().toUpperCase();
     const group = await this.socialGroupModel.findOne({ where: { inviteCode: code }, attributes: ['id', 'name'] });
-    if (!group) throw new NotFoundException('Link de grupo inválido');
+    if (!group) throw new NotFoundException('Código de grupo inválido');
 
     const exists = await this.socialGroupMemberModel.findOne({ where: { groupId: group.id, userId } });
     if (!exists) {
@@ -442,7 +438,7 @@ export class SocialService {
         groupId: group.id,
         userId,
         activityType: 'joined',
-        message: `${actor?.name ?? 'Usuário'} entrou no grupo por link`,
+        message: `${actor?.name ?? 'Usuário'} entrou no grupo por código`,
         metadata: { inviteCode: code, actorName: actor?.name ?? 'Usuário' },
       });
       await this.analyticsService.trackSafe(userId, {
@@ -488,13 +484,17 @@ export class SocialService {
     });
 
     const publicGroups = groups.filter((group) => !this.isCurrentUserMember(group.members, userId));
-    const streakByUserId = await this.streakService.buildStreakByUserIds(
-      publicGroups.flatMap((group) => (group.members ?? []).map((member) => member.userId)),
+    const memberUserIds = publicGroups.flatMap((group) => (group.members ?? []).map((member) => member.userId));
+    const { streakByUserId, offensiveDayKeysByUserId } = await this.loadGroupStreakContext(
+      publicGroups,
+      memberUserIds,
     );
 
     return {
       groups: await Promise.all(
-        publicGroups.map((group) => this.toGroupSummary(group, userId, streakByUserId)),
+        publicGroups.map((group) =>
+          this.toGroupSummary(group, userId, streakByUserId, offensiveDayKeysByUserId),
+        ),
       ),
     };
   }
@@ -749,8 +749,12 @@ export class SocialService {
 
   async getGroupDetail(groupId: string, userId: string) {
     const group = await this.findGroupForMember(groupId, userId);
-    const streakByUserId = await this.streakService.buildStreakByUserIds((group.members ?? []).map((member) => member.userId));
-    return await this.toGroupDetail(group, userId, streakByUserId);
+    const memberUserIds = (group.members ?? []).map((member) => member.userId);
+    const { streakByUserId, offensiveDayKeysByUserId } = await this.loadGroupStreakContext(
+      [group],
+      memberUserIds,
+    );
+    return await this.toGroupDetail(group, userId, streakByUserId, offensiveDayKeysByUserId);
   }
 
   private async findGroupForMember(groupId: string, userId: string) {
@@ -883,6 +887,71 @@ export class SocialService {
     return 'incoming';
   }
 
+  private async getFriendsPayload(userId: string) {
+    const friendships = await this.socialFriendshipModel.findAll({
+      where: { [Op.or]: [{ userLowId: userId }, { userHighId: userId }] },
+      order: [['createdAt', 'DESC']],
+    });
+
+    const friendIds = friendships.map((item) =>
+      item.userLowId === userId ? item.userHighId : item.userLowId,
+    );
+    const users = friendIds.length
+      ? await this.userModel.findAll({
+          where: { id: { [Op.in]: friendIds } },
+          attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'],
+        })
+      : [];
+
+    const streakByUserId = await this.streakService.buildStreakByUserIds(friendIds);
+    const userById = new Map(users.map((user) => [user.id, user]));
+
+    return friendIds
+      .map((friendId) => userById.get(friendId))
+      .filter((user): user is User => Boolean(user))
+      .map((user) => ({
+        id: user.id,
+        name: user.name ?? 'Sem nome',
+        avatarUrl: user.avatarUrl ?? null,
+        avatarFrameId: user.equippedAvatarFrameId ?? null,
+        streakDays: streakByUserId.get(user.id) ?? 0,
+      }));
+  }
+
+  private async canViewUserProfile(
+    viewerId: string,
+    targetUserId: string,
+    options?: { groupId?: string; viaUserId?: string },
+  ) {
+    const viewer = viewerId.trim();
+    const target = targetUserId.trim();
+    if (!viewer || !target) return false;
+
+    const isSelf = viewer.toLowerCase() === target.toLowerCase();
+    if (isSelf) return true;
+    if (await this.areFriends(viewer, target)) return true;
+
+    const sharedGroupId = options?.groupId?.trim();
+    if (sharedGroupId) {
+      if (await this.areGroupCoMembers(viewer, target, sharedGroupId)) return true;
+    } else if (await this.shareGroupMembership(viewer, target)) {
+      return true;
+    }
+
+    const viaUserId = options?.viaUserId?.trim();
+    if (!viaUserId || viaUserId.toLowerCase() === target.toLowerCase()) {
+      return false;
+    }
+
+    // Permite abrir o perfil de um amigo a partir da lista de amigos de alguém
+    // que o viewer já pode visualizar (amigo / grupo / próprio perfil).
+    const canViewVia = await this.canViewUserProfile(viewer, viaUserId, {
+      groupId: sharedGroupId,
+    });
+    if (!canViewVia) return false;
+    return this.areFriends(viaUserId, target);
+  }
+
   private async areFriends(userA: string, userB: string) {
     const [lowId, highId] = [userA, userB].sort();
     const friendship = await this.socialFriendshipModel.findOne({ where: { userLowId: lowId, userHighId: highId }, attributes: ['id'] });
@@ -937,14 +1006,21 @@ export class SocialService {
     return rows.reduce((sum, row) => sum + parseNumber(row.points), 0);
   }
 
-  private async toGroupSummary(group: SocialGroup, userId: string, streakByUserId?: Map<string, number>) {
+  private async toGroupSummary(
+    group: SocialGroup,
+    userId: string,
+    streakByUserId?: Map<string, number>,
+    offensiveDayKeysByUserId?: Map<string, Set<string>>,
+  ) {
     const ranked = await this.buildRankedMembers(group, streakByUserId);
     const currentUserEntry = ranked.find((entry) => entry.member.userId === userId);
     const topMember = ranked[0]?.member;
     const remainingDays = this.getRemainingDays(group.endsAt, group.competitionType);
-    const groupStreakDefeated =
-      group.competitionType === 'group_streak' &&
-      ranked.some((entry) => parseNumber(entry.member.streakDays) <= 0);
+    const groupStreakDefeated = this.isGroupStreakDefeated(
+      group,
+      group.members ?? [],
+      offensiveDayKeysByUserId,
+    );
 
     return {
       id: group.id,
@@ -966,13 +1042,20 @@ export class SocialService {
     };
   }
 
-  private async toGroupDetail(group: SocialGroup, userId: string, streakByUserId?: Map<string, number>) {
+  private async toGroupDetail(
+    group: SocialGroup,
+    userId: string,
+    streakByUserId?: Map<string, number>,
+    offensiveDayKeysByUserId?: Map<string, Set<string>>,
+  ) {
     const ranked = await this.buildRankedMembers(group, streakByUserId);
     const topMember = ranked[0]?.member;
     const remainingDays = this.getRemainingDays(group.endsAt, group.competitionType);
-    const groupStreakDefeated =
-      group.competitionType === 'group_streak' &&
-      ranked.some((entry) => parseNumber(entry.member.streakDays) <= 0);
+    const groupStreakDefeated = this.isGroupStreakDefeated(
+      group,
+      group.members ?? [],
+      offensiveDayKeysByUserId,
+    );
 
     return {
       group: {
@@ -1072,7 +1155,7 @@ export class SocialService {
       return `${actorName} criou o grupo`;
     }
     if (activity.activityType === 'joined') {
-      return `${actorName} entrou no grupo por link`;
+      return `${actorName} entrou no grupo por código`;
     }
     if (activity.activityType === 'joined_public') {
       return `${actorName} entrou no grupo público`;
@@ -1133,12 +1216,81 @@ export class SocialService {
 
   private getCompetitionRule(competitionType: string): string | null {
     if (competitionType === 'group_streak') {
-      return 'A sequência do grupo só aumenta se todos os membros estiverem ativos.';
+      return 'Todo dia, à meia-noite, a sequência continua só se todos os membros ativos daquele dia tiverem cumprido a ofensiva.';
     }
     if (competitionType === 'goal_average') {
-      return 'Ganha quem tiver a média de calorias dos dias do grupo mais próxima da própria meta.';
+      return 'A média é o total de calorias ÷ dias decorridos do grupo (desde a criação; sobe após 00:00). Ganha quem ficar mais perto da própria meta.';
     }
     return null;
+  }
+
+  private async loadGroupStreakContext(
+    groups: SocialGroup[],
+    memberUserIds: string[],
+  ): Promise<{
+    streakByUserId: Map<string, number>;
+    offensiveDayKeysByUserId?: Map<string, Set<string>>;
+  }> {
+    const needsGroupStreak = groups.some((group) => group.competitionType === 'group_streak');
+    if (needsGroupStreak) {
+      const offensiveDayKeysByUserId =
+        await this.streakService.buildEffectiveDayKeysByUserIds(memberUserIds);
+      return {
+        streakByUserId: this.streakService.buildStreakMapFromDayKeys(offensiveDayKeysByUserId),
+        offensiveDayKeysByUserId,
+      };
+    }
+
+    return {
+      streakByUserId: await this.streakService.buildStreakByUserIds(memberUserIds),
+    };
+  }
+
+  /**
+   * Sequência coletiva: só avalia dias já fechados (até ontem, fuso do app).
+   * Quebra se algum membro que já estava no grupo naquele dia não cumpriu a ofensiva.
+   * Grupos criados hoje (ainda sem meia-noite) não começam quebrados.
+   */
+  private isGroupStreakDefeated(
+    group: SocialGroup,
+    members: SocialGroupMember[],
+    offensiveDayKeysByUserId?: Map<string, Set<string>>,
+  ): boolean {
+    if (group.competitionType !== 'group_streak') {
+      return false;
+    }
+    if (!offensiveDayKeysByUserId || members.length === 0) {
+      return false;
+    }
+
+    const todayStart = this.streakService.getDayStartInAppTimeZone(new Date());
+    const yesterday = new Date(todayStart);
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+
+    const groupStartDay = this.streakService.getDayStartInAppTimeZone(new Date(group.startsAt));
+    if (groupStartDay.getTime() > yesterday.getTime()) {
+      return false;
+    }
+
+    const cursor = new Date(groupStartDay);
+    while (cursor.getTime() <= yesterday.getTime()) {
+      const dayKey = this.streakService.toDayKeyInAppTimeZone(cursor);
+      const activeMembers = members.filter((member) => {
+        const joinDay = this.streakService.getDayStartInAppTimeZone(new Date(member.createdAt));
+        return joinDay.getTime() <= cursor.getTime();
+      });
+
+      for (const member of activeMembers) {
+        const dayKeys = offensiveDayKeysByUserId.get(member.userId) ?? new Set<string>();
+        if (!dayKeys.has(dayKey)) {
+          return true;
+        }
+      }
+
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return false;
   }
 
   private withComputedStreaks(members: SocialGroupMember[], streakByUserId?: Map<string, number>) {
@@ -1200,15 +1352,24 @@ export class SocialService {
     userById: Map<string, User>;
     caloriesByUserDay: Map<string, Map<string, number>>;
   }> {
-    const rangeStart = new Date(startsAt);
-    const rangeEnd = new Date(endsAt);
+    const rangeStartMs = new Date(startsAt).getTime();
+    const rangeEndMs = new Date(endsAt).getTime();
     const empty = {
       userById: new Map<string, User>(),
       caloriesByUserDay: new Map<string, Map<string, number>>(),
     };
-    if (!Number.isFinite(rangeStart.getTime()) || !Number.isFinite(rangeEnd.getTime())) {
+    if (!Number.isFinite(rangeStartMs) || !Number.isFinite(rangeEndMs)) {
       return empty;
     }
+
+    const startDayKey = this.streakService.toDayKeyInAppTimeZone(new Date(rangeStartMs));
+    const endDayKey = this.streakService.toDayKeyInAppTimeZone(new Date(rangeEndMs));
+    // Janela com folga de 1 dia em UTC para não perder refeições nas bordas de fuso;
+    // o filtro final é por dia civil (app TZ), incluindo o dia inteiro de startsAt.
+    const queryStart = new Date(rangeStartMs);
+    queryStart.setUTCDate(queryStart.getUTCDate() - 1);
+    const queryEnd = new Date(rangeEndMs);
+    queryEnd.setUTCDate(queryEnd.getUTCDate() + 1);
 
     const [users, meals] = await Promise.all([
       this.userModel.findAll({
@@ -1219,7 +1380,7 @@ export class SocialService {
         where: {
           userId: { [Op.in]: userIds },
           status: MealStatus.Active,
-          createdAt: { [Op.between]: [rangeStart, rangeEnd] },
+          createdAt: { [Op.between]: [queryStart, queryEnd] },
         },
         attributes: ['userId', 'calories', 'createdAt'],
       }),
@@ -1231,6 +1392,9 @@ export class SocialService {
     for (const meal of meals) {
       if (!meal.userId) continue;
       const dayKey = this.streakService.toDayKeyInAppTimeZone(new Date(meal.createdAt));
+      if (dayKey < startDayKey || dayKey > endDayKey) {
+        continue;
+      }
       if (!caloriesByUserDay.has(meal.userId)) {
         caloriesByUserDay.set(meal.userId, new Map());
       }
@@ -1280,9 +1444,10 @@ export class SocialService {
 
   /**
    * Média das calorias diárias no período do grupo:
-   * dias decorridos = calendário desde startsAt até min(now, endsAt) (mín. 1 no dia da criação);
+   * dias decorridos = calendário (fuso do app) desde o dia de startsAt até min(now, endsAt);
+   * após cada 00:00 o denominador sobe; a cada refeição o numerador muda no próximo GET.
    * média = soma dos totais diários / dias decorridos (dia sem refeição conta como 0).
-   * Sem nenhuma refeição no período → sem média (ranking empata no fim / todos em 1º se ninguém registrou).
+   * Sem nenhuma refeição no período → sem média (fica no fim do ranking).
    * Ranking usa |média − meta| (menor = melhor); a UI exibe a média.
    */
   private async buildGoalAverageStatsByUserIds(
@@ -1296,10 +1461,12 @@ export class SocialService {
       return statsByUserId;
     }
 
+    // Limita o fim ao "agora" para o ranking acompanhar a virada do dia em tempo real.
+    const effectiveEndsAt = new Date(Math.min(Date.now(), new Date(endsAt).getTime()));
     const { userById, caloriesByUserDay } = await this.loadCaloriesByUserDay(
       userIds,
       startsAt,
-      endsAt,
+      effectiveEndsAt,
     );
 
     for (const userId of userIds) {
@@ -1314,11 +1481,11 @@ export class SocialService {
         totalCalories += consumedCalories;
       }
       // Dias sem refeição não entram em dayMap → contribuem 0 ao numerador.
-      const averageCalories = Math.round(totalCalories / elapsedDays);
+      const averageCalories = computeGoalAverageCalories(totalCalories, elapsedDays);
       const goal = parseNumber(user.dailyCalorieGoal, 2000);
       statsByUserId.set(userId, {
         averageCalories,
-        goalDeviation: Math.round(Math.abs(averageCalories - goal)),
+        goalDeviation: computeGoalDeviation(averageCalories, goal),
       });
     }
 
@@ -1340,8 +1507,7 @@ export class SocialService {
 
     const startDay = this.streakService.getDayStartInAppTimeZone(new Date(rangeStartMs));
     const endDay = this.streakService.getDayStartInAppTimeZone(new Date(effectiveEndMs));
-    const msPerDay = 24 * 60 * 60 * 1000;
-    return Math.floor((endDay.getTime() - startDay.getTime()) / msPerDay) + 1;
+    return countInclusiveCalendarDays(startDay.getTime(), endDay.getTime());
   }
 
   private memberToPlain(member: SocialGroupMember): Record<string, unknown> {

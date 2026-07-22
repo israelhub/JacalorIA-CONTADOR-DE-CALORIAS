@@ -6,6 +6,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_floating_circle_button.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/framed_avatar.dart';
+import '../../../../shared/widgets/frame_silhouette_icon.dart';
 import '../../../../shared/widgets/app_page_route.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/avatar_profile_preview.dart';
@@ -569,13 +570,6 @@ class _ProfilePageState extends State<ProfilePage> {
     return fallback;
   }
 
-  String _truncateWithEllipsis(String value, int maxChars) {
-    if (value.length <= maxChars) {
-      return value;
-    }
-    return '${value.substring(0, maxChars)}...';
-  }
-
   String _normalizeLabel(String? value) {
     final raw = value?.trim() ?? '';
     if (raw.isEmpty) return 'Não informado';
@@ -707,7 +701,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    const summaryValueMaxChars = 14;
     final friendCount = _intFromKeys(const [
       'friendCount',
       'friendsCount',
@@ -822,10 +815,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                       icon: Icons.local_fire_department_rounded,
                                       iconColor: AppColors.socialMetricStreak,
                                       label: 'Sequência',
-                                      value: _truncateWithEllipsis(
-                                        '${_intFromKeys(const ['streakDays', 'streak_days'])} dias',
-                                        summaryValueMaxChars,
-                                      ),
+                                      value:
+                                          '${_intFromKeys(const ['streakDays', 'streak_days'])} dias',
                                     ),
                                   ),
                                   SizedBox(
@@ -835,10 +826,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       iconColor:
                                           AppColors.socialMetricFavoriteDish,
                                       label: 'Prato favorito',
-                                      value: _truncateWithEllipsis(
-                                        favoriteDish,
-                                        summaryValueMaxChars,
-                                      ),
+                                      value: favoriteDish,
                                     ),
                                   ),
                                   SizedBox(
@@ -848,14 +836,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                       iconColor:
                                           AppColors.socialMetricPreferredPeriod,
                                       label: 'Come mais de',
-                                      value: _truncateWithEllipsis(
-                                        _formatPreferredPeriod(
-                                          _stringFromKeys(const [
-                                            'preferredPeriod',
-                                            'preferred_period',
-                                          ]),
-                                        ),
-                                        summaryValueMaxChars,
+                                      value: _formatPreferredPeriod(
+                                        _stringFromKeys(const [
+                                          'preferredPeriod',
+                                          'preferred_period',
+                                        ]),
                                       ),
                                     ),
                                   ),
@@ -865,10 +850,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                       icon: Icons.auto_awesome_rounded,
                                       iconColor: AppColors.socialMetricXp,
                                       label: 'Total de XP',
-                                      value: _truncateWithEllipsis(
-                                        '${_intFromKeys(const ['totalXp', 'total_xp', 'xp'])}',
-                                        summaryValueMaxChars,
-                                      ),
+                                      value:
+                                          '${_intFromKeys(const ['totalXp', 'total_xp', 'xp'])}',
                                     ),
                                   ),
                                 ],
@@ -1054,7 +1037,13 @@ class _ProfileCustomizationCategorySwitcher extends StatelessWidget {
           Expanded(
             child: _CategoryButton(
               label: 'Bloqueadores',
-              icon: Icons.shield_rounded,
+              icon: Icon(
+                Icons.shield_rounded,
+                size: 22,
+                color: selected == _ProfileCustomizationCategory.blockers
+                    ? AppColors.action500
+                    : AppColors.textSecondary,
+              ),
               isSelected: selected == _ProfileCustomizationCategory.blockers,
               onTap: () => onSelected(_ProfileCustomizationCategory.blockers),
             ),
@@ -1062,7 +1051,12 @@ class _ProfileCustomizationCategorySwitcher extends StatelessWidget {
           Expanded(
             child: _CategoryButton(
               label: 'Molduras',
-              icon: Icons.crop_rounded,
+              icon: FrameSilhouetteIcon(
+                size: 22,
+                color: selected == _ProfileCustomizationCategory.frames
+                    ? AppColors.action500
+                    : AppColors.textSecondary,
+              ),
               isSelected: selected == _ProfileCustomizationCategory.frames,
               onTap: () => onSelected(_ProfileCustomizationCategory.frames),
             ),
@@ -1070,7 +1064,13 @@ class _ProfileCustomizationCategorySwitcher extends StatelessWidget {
           Expanded(
             child: _CategoryButton(
               label: 'Capa',
-              icon: Icons.view_carousel_rounded,
+              icon: Icon(
+                Icons.view_carousel_rounded,
+                size: 22,
+                color: selected == _ProfileCustomizationCategory.covers
+                    ? AppColors.action500
+                    : AppColors.textSecondary,
+              ),
               isSelected: selected == _ProfileCustomizationCategory.covers,
               onTap: () => onSelected(_ProfileCustomizationCategory.covers),
             ),
@@ -1078,7 +1078,13 @@ class _ProfileCustomizationCategorySwitcher extends StatelessWidget {
           Expanded(
             child: _CategoryButton(
               label: 'Fundos',
-              icon: Icons.landscape_rounded,
+              icon: Icon(
+                Icons.landscape_rounded,
+                size: 22,
+                color: selected == _ProfileCustomizationCategory.backgrounds
+                    ? AppColors.action500
+                    : AppColors.textSecondary,
+              ),
               isSelected: selected == _ProfileCustomizationCategory.backgrounds,
               onTap: () =>
                   onSelected(_ProfileCustomizationCategory.backgrounds),
@@ -1099,7 +1105,7 @@ class _CategoryButton extends StatelessWidget {
   });
 
   final String label;
-  final IconData icon;
+  final Widget icon;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -1114,13 +1120,7 @@ class _CategoryButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 22,
-                color: isSelected
-                    ? AppColors.action500
-                    : AppColors.textSecondary,
-              ),
+              icon,
               const SizedBox(height: AppSpacing.xs),
               Text(
                 label,

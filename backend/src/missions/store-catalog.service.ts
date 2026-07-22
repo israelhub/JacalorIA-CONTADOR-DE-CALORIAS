@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { DEFAULT_STORE_CATALOG_ITEMS } from './constants/store-catalog.seed';
+import { DEFAULT_STORE_CATALOG_ITEMS, DEPRECATED_STORE_CATALOG_ITEM_KEYS } from './constants/store-catalog.seed';
 import {
   StoreCatalogCategory,
   StoreCatalogItem,
@@ -52,6 +52,16 @@ export class StoreCatalogService implements OnModuleInit {
         isActive: true,
       });
     }
+
+    await this.storeCatalogItemModel.update(
+      { isActive: false },
+      {
+        where: {
+          itemKey: [...DEPRECATED_STORE_CATALOG_ITEM_KEYS],
+          isActive: true,
+        },
+      },
+    );
   }
 
   async listActiveByCategory(

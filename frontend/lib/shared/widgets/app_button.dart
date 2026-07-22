@@ -94,7 +94,7 @@ class _PrimaryButton extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
         alignment: Alignment.center,
         child: (leadingIcon == null && trailingIcon == null)
             ? Text(

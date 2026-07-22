@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import 'social_model_parsers.dart';
 
 String socialDurationLabel(int durationDays) {
   if (durationDays <= 0) return 'Infinito';
@@ -36,24 +37,24 @@ String socialCompetitionLabel(String competitionType) {
 
 ({String displayValue, String label, IconData icon, Color iconColor}) socialRankingMetric({
   required String competitionType,
-  required int points,
+  required num points,
   required int streakDays,
 }) {
   return switch (competitionType) {
     'daily_goal' => (
-        displayValue: '$points',
+        displayValue: '${points.round()}',
         label: 'Metas',
         icon: Icons.flag_rounded,
         iconColor: AppColors.accent500,
       ),
     'xp' => (
-        displayValue: '$points',
+        displayValue: '${points.round()}',
         label: 'XP',
         icon: Icons.bolt_rounded,
         iconColor: AppColors.missionsRewardGold,
       ),
     'goal_average' => (
-        displayValue: points < 0 ? '—' : '$points',
+        displayValue: points < 0 ? '—' : socialFormatAverageCalories(points),
         label: points < 0 ? 'sem dados' : 'média',
         icon: Icons.track_changes_rounded,
         iconColor: AppColors.accent500,

@@ -11,30 +11,6 @@ export type StoreCatalogSeedItem = {
 
 export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
   {
-    itemKey: 'emerald_guard',
-    category: 'avatar_frame',
-    name: 'Guarda Esmeralda',
-    description: 'Folhas de armadura, ouro e cristais verdes.',
-    priceGold: 120,
-    sortOrder: 10,
-  },
-  {
-    itemKey: 'crystal_champion',
-    category: 'avatar_frame',
-    name: 'Campeao Cristalino',
-    description: 'Cristais violetas com laterais douradas.',
-    priceGold: 180,
-    sortOrder: 20,
-  },
-  {
-    itemKey: 'cosmic_blossom',
-    category: 'avatar_frame',
-    name: 'Floracao Cosmica',
-    description: 'Galhos magenta, estrelas e joias lunares.',
-    priceGold: 260,
-    sortOrder: 30,
-  },
-  {
     itemKey: 'cat_ears_soft',
     category: 'avatar_frame',
     name: 'Orelhas de Gato',
@@ -147,3 +123,10 @@ export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
     sortOrder: 20,
   },
 ];
+
+/** Keys removed from the public catalog; kept inactive for existing purchases. */
+export const DEPRECATED_STORE_CATALOG_ITEM_KEYS = [
+  'emerald_guard',
+  'crystal_champion',
+  'cosmic_blossom',
+] as const;

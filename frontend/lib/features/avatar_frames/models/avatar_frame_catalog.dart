@@ -175,24 +175,6 @@ class AvatarFrameCatalog {
       assetPath: null,
     ),
     AvatarFrameItem(
-      id: 'emerald_guard',
-      name: 'Guarda Esmeralda',
-      description: 'Folhas de armadura, ouro e cristais verdes.',
-      assetPath: 'assets/images/avatar_frames/emerald_guard.png',
-    ),
-    AvatarFrameItem(
-      id: 'crystal_champion',
-      name: 'Campeao Cristalino',
-      description: 'Cristais violetas com laterais douradas.',
-      assetPath: 'assets/images/avatar_frames/crystal_champion.png',
-    ),
-    AvatarFrameItem(
-      id: 'cosmic_blossom',
-      name: 'Floracao Cosmica',
-      description: 'Galhos magenta, estrelas e joias lunares.',
-      assetPath: 'assets/images/avatar_frames/cosmic_blossom.png',
-    ),
-    AvatarFrameItem(
       id: 'cat_ears_soft',
       name: 'Orelhas de Gato',
       description: 'Moldura suave com orelhinhas felinas.',

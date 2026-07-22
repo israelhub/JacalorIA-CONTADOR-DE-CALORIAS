@@ -31,6 +31,7 @@ class AvatarProfilePreview extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: height,
+      clipBehavior: Clip.none,
       decoration: BoxDecoration(
         color: AppColors.homeProgressTrack,
         image: backgroundAssetPath == null

@@ -30,7 +30,7 @@ class SocialRankingEntry {
   final String name;
   final String? avatarUrl;
   final String? avatarFrameId;
-  final int points;
+  final num points;
   final int streakDays;
   final bool isCurrentUser;
   final bool isLeader;
@@ -44,7 +44,7 @@ class SocialRankingEntry {
       name: json['name']?.toString() ?? '',
       avatarUrl: json['avatarUrl']?.toString(),
       avatarFrameId: json['avatarFrameId']?.toString(),
-      points: socialToInt(json['points']),
+      points: socialToNum(json['points']),
       streakDays: socialToInt(json['streakDays']),
       isCurrentUser: _toBool(json['isCurrentUser']),
       isLeader: _toBool(json['isLeader']),

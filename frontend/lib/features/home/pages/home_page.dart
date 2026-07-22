@@ -24,6 +24,7 @@ import '../widgets/home_meal_card.dart';
 import '../widgets/home_weight_quick_edit_button.dart';
 import '../../auth/service/auth_service.dart';
 import '../../profile/pages/profile_page.dart';
+import '../../social/helpers/social_data_invalidator.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({
@@ -508,6 +509,7 @@ class _HomePageState extends State<HomePage> {
       _records.insert(0, record);
     });
 
+    SocialDataInvalidator.markDirty();
     widget.onSelectedDateChanged?.call(recordDate);
   }
 
@@ -530,6 +532,8 @@ class _HomePageState extends State<HomePage> {
         _records.insert(0, updatedRecord);
       }
     });
+
+    SocialDataInvalidator.markDirty();
   }
 }
 

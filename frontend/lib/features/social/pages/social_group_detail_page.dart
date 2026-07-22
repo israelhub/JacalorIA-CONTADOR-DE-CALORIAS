@@ -14,10 +14,12 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_page_route.dart';
+import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_section_header.dart';
 import 'social_create_group_page.dart';
 import 'social_friend_profile_page.dart';
 import '../widgets/social_invite_group_friends_dialog.dart';
+import '../helpers/social_data_invalidator.dart';
 import '../helpers/social_group_helpers.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
@@ -41,9 +43,11 @@ class SocialGroupDetailPage extends StatefulWidget {
   State<SocialGroupDetailPage> createState() => _SocialGroupDetailPageState();
 }
 
-class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
+class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
+    with WidgetsBindingObserver {
   SocialGroupDetail? _detail;
   bool _isLoading = true;
+  bool _isRefreshing = false;
   String? _errorMessage;
   _ExportAction? _exportingAction;
   bool _isLeavingGroup = false;
@@ -52,26 +56,66 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
   String? _removingMemberUserId;
   Uint8List? _resultJpgCache;
   Future<Uint8List>? _resultJpgFuture;
+  String _lastLoadedDayKey = '';
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    SocialDataInvalidator.revision.addListener(_onSocialDataInvalidated);
     AnalyticsService.instance.trackScreen(
       'social_group_detail',
       properties: {'group_id': widget.groupId},
     );
     _detail = widget.initialDetail;
     _isLoading = _detail == null;
-    if (_detail == null) {
-      _loadDetail();
-    } else {
-      _prewarmResultJpgIfFinished();
+    _lastLoadedDayKey = _dayKey(DateTime.now());
+    // Sempre busca o ranking atualizado (média/dias decorridos mudam após 00:00 e refeições).
+    _loadDetail(silent: _detail != null);
+  }
+
+  @override
+  void dispose() {
+    SocialDataInvalidator.revision.removeListener(_onSocialDataInvalidated);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      return;
+    }
+    final todayKey = _dayKey(DateTime.now());
+    if (todayKey != _lastLoadedDayKey ||
+        widget.initialDetail?.group.competitionType == 'goal_average' ||
+        _detail?.group.competitionType == 'goal_average') {
+      _loadDetail(silent: true);
     }
   }
 
-  Future<void> _loadDetail() async {
+  void _onSocialDataInvalidated() {
+    if (!mounted) return;
+    _loadDetail(silent: true);
+  }
+
+  String _dayKey(DateTime date) {
+    final local = date.toLocal();
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    return '${local.year}-$month-$day';
+  }
+
+  Future<void> _loadDetail({bool silent = false}) async {
+    if (_isRefreshing) {
+      return;
+    }
+
     setState(() {
-      _isLoading = true;
+      _isRefreshing = true;
+      if (!silent || _detail == null) {
+        _isLoading = _detail == null;
+      }
       _errorMessage = null;
     });
 
@@ -84,6 +128,8 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       setState(() {
         _detail = detail;
         _isLoading = false;
+        _isRefreshing = false;
+        _lastLoadedDayKey = _dayKey(DateTime.now());
         _resultJpgCache = null;
         _resultJpgFuture = null;
       });
@@ -94,8 +140,11 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
       }
 
       setState(() {
-        _errorMessage = error.toString().replaceFirst('Exception: ', '');
-        _isLoading = false;
+        _isRefreshing = false;
+        if (_detail == null) {
+          _errorMessage = error.toString().replaceFirst('Exception: ', '');
+          _isLoading = false;
+        }
       });
     }
   }
@@ -163,7 +212,8 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage> {
     final isCurrentUserLeader = currentUserEntry?.isLeader == true;
     final canLeaveGroup = currentUserEntry != null;
 
-    return SingleChildScrollView(
+    return AppRefreshScrollView(
+      onRefresh: () => _loadDetail(silent: true),
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
         AppSpacing.lg,

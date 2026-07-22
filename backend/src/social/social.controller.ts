@@ -56,9 +56,24 @@ export class SocialController {
     @Req() req: any,
     @Param('friendUserId') friendUserId: string,
     @Query('groupId') groupId?: string,
+    @Query('viaUserId') viaUserId?: string,
   ) {
     return this.socialService.getFriendProfile(req.user.sub, friendUserId, {
       groupId,
+      viaUserId,
+    });
+  }
+
+  @Get('friends/:userId/list')
+  listUserFriends(
+    @Req() req: any,
+    @Param('userId') userId: string,
+    @Query('groupId') groupId?: string,
+    @Query('viaUserId') viaUserId?: string,
+  ) {
+    return this.socialService.listUserFriends(req.user.sub, userId, {
+      groupId,
+      viaUserId,
     });
   }
 
