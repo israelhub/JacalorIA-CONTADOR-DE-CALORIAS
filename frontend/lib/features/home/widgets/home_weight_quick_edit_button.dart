@@ -148,6 +148,7 @@ class _WeightEditSheet extends StatefulWidget {
 
 class _WeightEditSheetState extends State<_WeightEditSheet> {
   late final TextEditingController _controller;
+  late final FocusNode _focusNode;
 
   @override
   void initState() {
@@ -157,10 +158,35 @@ class _WeightEditSheetState extends State<_WeightEditSheet> {
         baseOffset: 0,
         extentOffset: widget.initialText.length,
       );
+    _focusNode = FocusNode();
+    // Bottom sheet animation often swallows TextField.autofocus; request
+    // focus after the route finishes so the soft keyboard opens immediately.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final animation = ModalRoute.of(context)?.animation;
+      if (animation == null || animation.isCompleted) {
+        _focusNode.requestFocus();
+        return;
+      }
+      void onStatus(AnimationStatus status) {
+        if (status != AnimationStatus.completed) {
+          return;
+        }
+        animation.removeStatusListener(onStatus);
+        if (mounted) {
+          _focusNode.requestFocus();
+        }
+      }
+
+      animation.addStatusListener(onStatus);
+    });
   }
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -217,6 +243,7 @@ class _WeightEditSheetState extends State<_WeightEditSheet> {
                     child: TextField(
                       key: const ValueKey('home-weight-edit-field'),
                       controller: _controller,
+                      focusNode: _focusNode,
                       autofocus: true,
                       textAlign: TextAlign.center,
                       keyboardType: const TextInputType.numberWithOptions(
