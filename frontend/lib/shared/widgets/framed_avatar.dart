@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -29,40 +31,58 @@ class FramedAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frame = AvatarFrameCatalog.byId(frameId);
-    final hasFrame = frame?.assetPath != null;
-    final avatarSize = hasFrame
-        ? size * _effectiveFramedAvatarScale(frameId)
-        : size * unframedAvatarScale;
-    final avatar = _AvatarCircle(
-      size: avatarSize,
-      avatarUrl: avatarUrl,
-      fallbackText: fallbackText,
-      backgroundColor: backgroundColor,
-    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final resolvedSize = _resolveSquareSize(constraints);
+        final frame = AvatarFrameCatalog.byId(frameId);
+        final hasFrame = frame?.assetPath != null;
+        final avatarSize = hasFrame
+            ? resolvedSize * _effectiveFramedAvatarScale(frameId)
+            : resolvedSize * unframedAvatarScale;
+        final avatar = _AvatarCircle(
+          size: avatarSize,
+          avatarUrl: avatarUrl,
+          fallbackText: fallbackText,
+          backgroundColor: backgroundColor,
+        );
 
-    final content = SizedBox.square(
-      dimension: size,
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
-        children: [
-          avatar,
-          if (hasFrame)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Image.asset(frame!.assetPath!, fit: BoxFit.contain),
-              ),
-            ),
-        ],
-      ),
-    );
+        final content = SizedBox.square(
+          dimension: resolvedSize,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              avatar,
+              if (hasFrame)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Image.asset(frame!.assetPath!, fit: BoxFit.contain),
+                  ),
+                ),
+            ],
+          ),
+        );
 
-    if (onTap == null) {
-      return content;
+        if (onTap == null) {
+          return content;
+        }
+
+        return _PressableAvatar(onTap: onTap!, child: content);
+      },
+    );
+  }
+
+  /// Keeps the avatar square when parents force tighter, non-square bounds
+  /// (e.g. store grid tiles on small screens).
+  double _resolveSquareSize(BoxConstraints constraints) {
+    var resolved = size;
+    if (constraints.maxWidth.isFinite) {
+      resolved = math.min(resolved, constraints.maxWidth);
     }
-
-    return _PressableAvatar(onTap: onTap!, child: content);
+    if (constraints.maxHeight.isFinite) {
+      resolved = math.min(resolved, constraints.maxHeight);
+    }
+    return math.max(0, resolved);
   }
 
   double _effectiveFramedAvatarScale(String? id) {

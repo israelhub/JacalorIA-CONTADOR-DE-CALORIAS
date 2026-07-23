@@ -33,6 +33,8 @@ class HomePage extends StatefulWidget {
     AuthService? authService,
     this.initialSelectedDate,
     this.onSelectedDateChanged,
+    this.mealSyncVersion = 0,
+    this.pendingSavedMeal,
   }) : _mealService = mealService ?? const MealService(),
        _authService = authService ?? AuthService();
 
@@ -55,6 +57,8 @@ class HomePage extends StatefulWidget {
   final AuthService _authService;
   final DateTime? initialSelectedDate;
   final ValueChanged<DateTime>? onSelectedDateChanged;
+  final int mealSyncVersion;
+  final FoodMealRecord? pendingSavedMeal;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -81,6 +85,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void didUpdateWidget(covariant HomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    if (widget.mealSyncVersion != oldWidget.mealSyncVersion &&
+        widget.pendingSavedMeal != null) {
+      _applySavedMeal(widget.pendingSavedMeal!);
+      return;
+    }
 
     if (widget.initialSelectedDate != oldWidget.initialSelectedDate &&
         widget.initialSelectedDate != null) {
@@ -154,6 +164,10 @@ class _HomePageState extends State<HomePage> {
           _isFirstHomeAccess = isFirstHomeAccess;
           _isDataLoading = false;
         });
+
+        if (widget.pendingSavedMeal != null) {
+          _applySavedMeal(widget.pendingSavedMeal!);
+        }
 
         Future<void>(() async {
           try {
@@ -491,6 +505,10 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    _applySavedMeal(record);
+  }
+
+  void _applySavedMeal(FoodMealRecord record) {
     final recordDate = normalizeHomeDate(record.createdAt ?? DateTime.now());
     final recordId = (record.id ?? '').trim();
     final shouldPlayCelebration = _hasCalorieGoalReachedForDate(
@@ -501,12 +519,14 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedDate = recordDate;
       _playMascotCelebration = shouldPlayCelebration;
+      _isDataLoading = false;
 
       if (recordId.isNotEmpty) {
         _records.removeWhere((item) => (item.id ?? '').trim() == recordId);
       }
 
       _records.insert(0, record);
+      _loadedDateKeys.add(_dateKey(recordDate));
     });
 
     SocialDataInvalidator.markDirty();

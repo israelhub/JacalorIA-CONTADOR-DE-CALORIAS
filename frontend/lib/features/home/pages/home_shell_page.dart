@@ -7,6 +7,7 @@ import '../../../core/invite/invite_link_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_main_bottom_navigation.dart';
 import '../../../shared/widgets/app_page_route.dart';
+import '../../food_analysis/models/food_meal_record.dart';
 import '../../food_analysis/pages/food_capture_page.dart';
 import '../../missions/pages/missions_page.dart';
 import '../../performance/pages/performance_page.dart';
@@ -62,6 +63,8 @@ class _HomeShellPageState extends State<HomeShellPage>
   int _performanceRefreshVersion = 0;
   int _missionsRefreshVersion = 0;
   int _socialRefreshVersion = 0;
+  int _homeMealSyncVersion = 0;
+  FoodMealRecord? _pendingSavedMeal;
   final Set<int> _visitedTabs = <int>{};
   final Map<int, DateTime> _lastTabRefreshAt = <int, DateTime>{};
 
@@ -219,13 +222,28 @@ class _HomeShellPageState extends State<HomeShellPage>
       'meal_capture_started',
       properties: {'entry': 'center_action'},
     );
-    await context.pushSlidePage(const FoodCapturePage());
+    final record = await context.pushSlidePage<FoodMealRecord>(
+      const FoodCapturePage(),
+    );
     if (!mounted) {
       return;
     }
+
+    if (record != null) {
+      final recordDate = normalizeHomeDate(record.createdAt ?? DateTime.now());
+      setState(() {
+        _selectedHomeDate = recordDate;
+        _pendingSavedMeal = record;
+        _homeMealSyncVersion++;
+      });
+      await _goToTab(AppMainBottomTab.home);
+    }
+
     // Recalcula ranking de média calórica após possível registro de refeição.
     SocialDataInvalidator.markDirty();
     _forceSoftRefreshForIndex(_socialIndex);
+    _forceSoftRefreshForIndex(_performanceIndex);
+    _forceSoftRefreshForIndex(_missionsIndex);
   }
 
   Future<void> _goToHomeDate(DateTime date) async {
@@ -263,6 +281,8 @@ class _HomeShellPageState extends State<HomeShellPage>
           widget.homePage ??
               HomePage(
                 initialSelectedDate: _selectedHomeDate,
+                mealSyncVersion: _homeMealSyncVersion,
+                pendingSavedMeal: _pendingSavedMeal,
                 onSelectedDateChanged: (date) {
                   setState(() {
                     _selectedHomeDate = normalizeHomeDate(date);

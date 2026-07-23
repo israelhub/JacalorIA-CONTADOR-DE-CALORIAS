@@ -71,7 +71,7 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
         'A média é o total de calorias ÷ dias decorridos do grupo (sobe após 00:00). Ganha quem ficar mais perto da própria meta.',
       'xp' => 'Pontua as ações saudáveis para ranquear evolução no grupo.',
       'group_streak' =>
-        'À meia-noite, a sequência continua só se todos os membros ativos do dia cumpriram a ofensiva.',
+        'Começa do zero para todos. Conta só os dias desde a criação do grupo; à meia-noite continua se todos os membros ativos cumpriram a ofensiva.',
       _ => 'Vence quem mantiver a maior sequência ativa no desafio.',
     };
   }
