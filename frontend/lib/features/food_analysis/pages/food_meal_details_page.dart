@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/helpers/profile_value_helpers.dart';
+import '../../../../shared/widgets/app_page_route.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_toast.dart';
@@ -45,6 +46,7 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
   late FoodMealRecord _record;
   bool _started = false;
   bool _isSavingTemplate = false;
+  bool _wasEdited = false;
 
   static const Duration _sectionRevealDuration = Duration(milliseconds: 280);
 
@@ -60,6 +62,21 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
         _revealSections();
       }
     });
+  }
+
+  FoodMealRecord _mergeEditedRecord(FoodMealRecord updated) {
+    final previous = _record;
+    final resolvedImageUrl = (updated.imageUrl ?? '').trim().isNotEmpty
+        ? updated.imageUrl
+        : previous.imageUrl;
+
+    return updated.copyWith(
+      imageBytes: updated.imageBytes ?? previous.imageBytes,
+      imageAsset: updated.imageAsset ?? previous.imageAsset,
+      imageUrl: resolvedImageUrl,
+      createdAt: updated.createdAt ?? previous.createdAt,
+      items: updated.items.isNotEmpty ? updated.items : previous.items,
+    );
   }
 
   void _revealSections() {
@@ -93,35 +110,43 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
       'dailyFatGoal',
     ], fallback: 60);
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: FoodAnalysisPageHeader(
-        title: 'Detalhes da refeição',
-        actions: [
-          IconButton(
-            tooltip: 'Salvar para reutilizar',
-            onPressed: _isSavingTemplate ? null : _handleSaveAsTemplate,
-            icon: _isSavingTemplate
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.bookmark_add_outlined),
-          ),
-          IconButton(
-            tooltip: 'Editar refeição',
-            onPressed: _handleEditMeal,
-            icon: const Icon(Icons.edit_outlined),
-          ),
-          IconButton(
-            tooltip: 'Excluir refeição',
-            onPressed: _handleDeleteMeal,
-            icon: const Icon(Icons.delete_outline),
-          ),
-        ],
-      ),
-      body: SafeArea(
+    return PopScope<FoodMealRecord>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          return;
+        }
+        Navigator.of(context).pop(_wasEdited ? _record : null);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.surface,
+        appBar: FoodAnalysisPageHeader(
+          title: 'Detalhes da refeição',
+          actions: [
+            IconButton(
+              tooltip: 'Salvar para reutilizar',
+              onPressed: _isSavingTemplate ? null : _handleSaveAsTemplate,
+              icon: _isSavingTemplate
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.bookmark_add_outlined),
+            ),
+            IconButton(
+              tooltip: 'Editar refeição',
+              onPressed: _handleEditMeal,
+              icon: const Icon(Icons.edit_outlined),
+            ),
+            IconButton(
+              tooltip: 'Excluir refeição',
+              onPressed: _handleDeleteMeal,
+              icon: const Icon(Icons.delete_outline),
+            ),
+          ],
+        ),
+        body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
@@ -367,6 +392,7 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -420,21 +446,20 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
       justification: '',
     );
 
-    final updatedMeal = await Navigator.of(context).push<FoodMealRecord>(
-      MaterialPageRoute(
-        builder: (_) => FoodReviewPage(
-          imageBytes: _record.imageBytes,
-          imageAsset: _record.imageAsset,
-          imageUrl: _record.imageUrl,
-          analysis: analysis,
+    final updatedMeal = await context.pushSlidePage<FoodMealRecord>(
+      FoodReviewPage(
+        imageBytes: _record.imageBytes,
+        imageAsset: _record.imageAsset,
+        imageUrl: _record.imageUrl,
+        analysis: analysis,
           analysisService: widget._analysisService,
+          mealService: widget._mealService,
           existingMealId: mealId,
-          initialMealTitle: _record.title,
-          initialTimeLabel: _record.timeLabel,
-          initialMealType: _record.mealType,
-          recordedAt: _record.createdAt,
-          showDetailsAfterSave: false,
-        ),
+        initialMealTitle: _record.title,
+        initialTimeLabel: _record.timeLabel,
+        initialMealType: _record.mealType,
+        recordedAt: _record.createdAt,
+        showDetailsAfterSave: false,
       ),
     );
 
@@ -443,7 +468,8 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
     }
 
     setState(() {
-      _record = updatedMeal;
+      _record = _mergeEditedRecord(updatedMeal);
+      _wasEdited = true;
     });
   }
 

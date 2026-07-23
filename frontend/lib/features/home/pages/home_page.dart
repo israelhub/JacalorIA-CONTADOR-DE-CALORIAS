@@ -545,10 +545,20 @@ class _HomePageState extends State<HomePage> {
     final updatedId = (updatedRecord.id ?? '').trim();
 
     setState(() {
-      if (updatedId.isNotEmpty) {
-        _records.removeWhere((item) => (item.id ?? '').trim() == updatedId);
+      final index = updatedId.isEmpty
+          ? -1
+          : _records.indexWhere((item) => (item.id ?? '').trim() == updatedId);
+
+      if (updatedRecord.status == 'deleted') {
+        if (index >= 0) {
+          _records.removeAt(index);
+        }
+        return;
       }
-      if (updatedRecord.status != 'deleted') {
+
+      if (index >= 0) {
+        _records[index] = updatedRecord;
+      } else {
         _records.insert(0, updatedRecord);
       }
     });
