@@ -65,7 +65,7 @@ FoodAnalysisResult _analysisFixture() {
 Widget _wrap(Widget child) => MaterialApp(home: child);
 
 Future<void> _pumpFoodReview(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(412, 917);
+  tester.view.physicalSize = const Size(412, 1600);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -112,20 +112,24 @@ void main() {
         find.byKey(const ValueKey('food-review-image-container')),
         findsOneWidget,
       );
-
-      final firstUnitField = find.byKey(
-        const ValueKey('food-review-quantity-unit-field-0'),
+      expect(find.text('Tipo de refeição'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('food-review-meal-type-lunch')),
+        findsOneWidget,
       );
-      expect(firstUnitField, findsOneWidget);
-      expect(find.text('g'), findsWidgets);
-
-      await tester.tap(
-        find.byKey(const ValueKey('food-review-quantity-unit-field-0')),
+      expect(
+        find.byKey(const ValueKey('food-review-meal-type-free')),
+        findsOneWidget,
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('ml').last);
-      await tester.pumpAndSettle();
-      expect(find.text('ml'), findsOneWidget);
+
+      expect(
+        find.byKey(const ValueKey('food-review-measurement-field-0')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('food-review-name-field-0')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('adiciona novo item ao tocar no botão tracejado', (
@@ -136,18 +140,17 @@ void main() {
 
       expect(find.text('Novo alimento'), findsNothing);
 
-      await tester.tap(
-        find.byKey(const ValueKey('food-review-add-item-button')),
-      );
+      await tester.ensureVisible(find.text('Adicionar novo alimento'));
+      await tester.tap(find.text('Adicionar novo alimento'));
       await tester.pump();
 
       expect(find.text('Novo alimento'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('food-review-unit-field-3')),
-        findsNothing,
+        find.byKey(const ValueKey('food-review-name-field-3')),
+        findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('food-review-quantity-unit-field-3')),
+        find.byKey(const ValueKey('food-review-measurement-field-3')),
         findsOneWidget,
       );
     });

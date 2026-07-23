@@ -18,27 +18,20 @@ export class StoreCatalogService implements OnModuleInit {
   }
 
   async ensureSeeded(): Promise<void> {
-    const count = await this.storeCatalogItemModel.count();
-    if (count === 0) {
-      await this.storeCatalogItemModel.bulkCreate(
-        DEFAULT_STORE_CATALOG_ITEMS.map((item) => ({
-          itemKey: item.itemKey,
-          category: item.category,
-          name: item.name,
-          description: item.description,
-          priceGold: item.priceGold,
-          sortOrder: item.sortOrder,
-          isActive: true,
-        })),
-      );
-      return;
-    }
-
     for (const seed of DEFAULT_STORE_CATALOG_ITEMS) {
       const existing = await this.storeCatalogItemModel.findOne({
         where: { itemKey: seed.itemKey },
       });
+
       if (existing) {
+        await existing.update({
+          category: seed.category,
+          name: seed.name,
+          description: seed.description,
+          priceGold: seed.priceGold,
+          sortOrder: seed.sortOrder,
+          isActive: true,
+        });
         continue;
       }
 
@@ -53,15 +46,17 @@ export class StoreCatalogService implements OnModuleInit {
       });
     }
 
-    await this.storeCatalogItemModel.update(
-      { isActive: false },
-      {
-        where: {
-          itemKey: [...DEPRECATED_STORE_CATALOG_ITEM_KEYS],
-          isActive: true,
+    if (DEPRECATED_STORE_CATALOG_ITEM_KEYS.length > 0) {
+      await this.storeCatalogItemModel.update(
+        { isActive: false },
+        {
+          where: {
+            itemKey: [...DEPRECATED_STORE_CATALOG_ITEM_KEYS],
+            isActive: true,
+          },
         },
-      },
-    );
+      );
+    }
   }
 
   async listActiveByCategory(

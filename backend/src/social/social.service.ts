@@ -1211,14 +1211,15 @@ export class SocialService {
     streakByUserId?: Map<string, number>,
     offensiveDayKeysByUserId?: Map<string, Set<string>>,
   ) {
-    let members =
-      group.competitionType === 'group_streak'
-        ? this.withComputedGroupScopedStreaks(
-            group.members ?? [],
-            group.startsAt,
-            offensiveDayKeysByUserId,
-          )
-        : this.withComputedStreaks(group.members ?? [], streakByUserId);
+    const usesGroupScopedStreak =
+      group.competitionType === 'group_streak' || group.competitionType === 'offensive';
+    let members = usesGroupScopedStreak
+      ? this.withComputedGroupScopedStreaks(
+          group.members ?? [],
+          group.startsAt,
+          offensiveDayKeysByUserId,
+        )
+      : this.withComputedStreaks(group.members ?? [], streakByUserId);
     if (group.competitionType === 'daily_goal') {
       members = await this.withComputedDailyGoalPoints(members, group.startsAt, group.endsAt);
     } else if (group.competitionType === 'goal_average') {
@@ -1231,6 +1232,9 @@ export class SocialService {
   private getCompetitionRule(competitionType: string): string | null {
     if (competitionType === 'group_streak') {
       return 'A sequência do grupo começa do zero e só conta os dias desde a criação. À meia-noite, continua só se todos os membros ativos daquele dia cumpriram a ofensiva.';
+    }
+    if (competitionType === 'offensive') {
+      return 'Todos começam do zero. Só contam os dias de sequência desde a criação do grupo.';
     }
     if (competitionType === 'goal_average') {
       return 'A média é o total de calorias ÷ dias decorridos do grupo (desde a criação; sobe após 00:00). Ganha quem ficar mais perto da própria meta.';
@@ -1245,8 +1249,11 @@ export class SocialService {
     streakByUserId: Map<string, number>;
     offensiveDayKeysByUserId?: Map<string, Set<string>>;
   }> {
-    const needsGroupStreak = groups.some((group) => group.competitionType === 'group_streak');
-    if (needsGroupStreak) {
+    const needsScopedStreak = groups.some(
+      (group) =>
+        group.competitionType === 'group_streak' || group.competitionType === 'offensive',
+    );
+    if (needsScopedStreak) {
       const offensiveDayKeysByUserId =
         await this.streakService.buildEffectiveDayKeysByUserIds(memberUserIds);
       return {
@@ -1277,21 +1284,24 @@ export class SocialService {
       return false;
     }
 
-    const todayStart = this.streakService.getDayStartInAppTimeZone(new Date());
-    const yesterday = new Date(todayStart);
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-
-    const groupStartDay = this.streakService.getDayStartInAppTimeZone(new Date(group.startsAt));
-    if (groupStartDay.getTime() > yesterday.getTime()) {
+    const todayKey = this.streakService.toDayKeyInAppTimeZone(new Date());
+    const yesterdayKey = this.streakService.shiftDayKey(todayKey, -1);
+    if (!yesterdayKey) {
       return false;
     }
 
-    const cursor = new Date(groupStartDay);
-    while (cursor.getTime() <= yesterday.getTime()) {
-      const dayKey = this.streakService.toDayKeyInAppTimeZone(cursor);
+    const groupStartKey = this.streakService.toDayKeyInAppTimeZone(new Date(group.startsAt));
+    // Ainda não fechou nenhum dia do grupo (criado hoje).
+    if (groupStartKey > yesterdayKey) {
+      return false;
+    }
+
+    let cursorKey: string | null = groupStartKey;
+    while (cursorKey && cursorKey <= yesterdayKey) {
+      const dayKey = cursorKey;
       const activeMembers = members.filter((member) => {
-        const joinDay = this.streakService.getDayStartInAppTimeZone(new Date(member.createdAt));
-        return joinDay.getTime() <= cursor.getTime();
+        const joinKey = this.streakService.toDayKeyInAppTimeZone(new Date(member.createdAt));
+        return joinKey <= dayKey;
       });
 
       for (const member of activeMembers) {
@@ -1301,7 +1311,7 @@ export class SocialService {
         }
       }
 
-      cursor.setUTCDate(cursor.getUTCDate() + 1);
+      cursorKey = this.streakService.shiftDayKey(cursorKey, 1);
     }
 
     return false;
@@ -1327,14 +1337,13 @@ export class SocialService {
     groupStartsAt: Date,
     offensiveDayKeysByUserId?: Map<string, Set<string>>,
   ) {
-    const groupStartDay = this.streakService.getDayStartInAppTimeZone(new Date(groupStartsAt));
+    const groupStartKey = this.streakService.toDayKeyInAppTimeZone(new Date(groupStartsAt));
 
     return members.map((member) => {
-      const joinDay = this.streakService.getDayStartInAppTimeZone(new Date(member.createdAt));
-      const windowStart =
-        joinDay.getTime() > groupStartDay.getTime() ? joinDay : groupStartDay;
+      const joinKey = this.streakService.toDayKeyInAppTimeZone(new Date(member.createdAt));
+      const windowStartKey = joinKey > groupStartKey ? joinKey : groupStartKey;
       const dayKeys = offensiveDayKeysByUserId?.get(member.userId) ?? new Set<string>();
-      const streakDays = this.streakService.calculateScopedStreakFromDayKeys(dayKeys, windowStart);
+      const streakDays = this.streakService.calculateScopedStreakFromDayKey(dayKeys, windowStartKey);
 
       return {
         ...this.memberToPlain(member),

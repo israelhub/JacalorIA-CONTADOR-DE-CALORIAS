@@ -4,7 +4,7 @@ import { Op } from 'sequelize';
 import { Meal } from './models/meal.model';
 import { CreateMealDto } from './dto/create-meal.dto';
 import { UpdateMealDto } from './dto/update-meal.dto';
-import { MealStatus } from './models/meal.model';
+import { MealStatus, MealType } from './models/meal.model';
 import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
@@ -18,6 +18,7 @@ export class MealsService {
   async create(createMealDto: CreateMealDto, userId: string): Promise<Meal> {
     const meal = await this.mealModel.create({
       ...createMealDto,
+      mealType: createMealDto.mealType ?? MealType.Free,
       userId,
       status: MealStatus.Active,
     });
@@ -35,6 +36,7 @@ export class MealsService {
         has_image: hasImage,
         has_analysis_items: hasAnalysisItems,
         calories: createMealDto.calories,
+        meal_type: createMealDto.mealType ?? MealType.Free,
       },
     });
 

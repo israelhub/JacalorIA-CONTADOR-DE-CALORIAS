@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_skeleton.dart';
+import '../helpers/food_review_helpers.dart';
 
 class FoodReviewMealHeader extends StatefulWidget {
   const FoodReviewMealHeader({
@@ -14,6 +15,8 @@ class FoodReviewMealHeader extends StatefulWidget {
     this.imageUrl,
     required this.titleController,
     required this.timeLabel,
+    required this.mealType,
+    required this.onMealTypeChanged,
     this.onTitleChanged,
   });
 
@@ -22,6 +25,8 @@ class FoodReviewMealHeader extends StatefulWidget {
   final String? imageUrl;
   final TextEditingController titleController;
   final String timeLabel;
+  final FoodMealType mealType;
+  final ValueChanged<FoodMealType> onMealTypeChanged;
   final ValueChanged<String>? onTitleChanged;
 
   @override
@@ -226,6 +231,42 @@ class _FoodReviewMealHeaderState extends State<FoodReviewMealHeader> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'Tipo de refeição',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: FoodMealType.values.map((type) {
+            final isSelected = widget.mealType == type;
+            return ChoiceChip(
+              key: ValueKey('food-review-meal-type-${type.apiValue}'),
+              selected: isSelected,
+              showCheckmark: false,
+              label: Text(type.chipLabel),
+              backgroundColor: AppColors.surfaceAlt,
+              selectedColor: AppColors.action500.withValues(alpha: 0.2),
+              side: BorderSide(
+                color: isSelected ? AppColors.action500 : AppColors.borderAlt,
+              ),
+              labelStyle: AppTextStyles.bodyMedium.copyWith(
+                color: isSelected
+                    ? AppColors.action500
+                    : AppColors.textSecondary,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+              onSelected: (_) => widget.onMealTypeChanged(type),
+            );
+          }).toList(growable: false),
         ),
       ],
     );

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/helpers/profile_value_helpers.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/theme/app_theme.dart';
+import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/macro_progress_indicator.dart';
 import '../../home/services/meal_service.dart';
 import '../helpers/food_review_helpers.dart';
@@ -142,23 +143,52 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
             _RevealSection(
               visible: _sectionVisible[1],
               duration: _sectionRevealDuration,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      mealTitle,
-                      style: AppTextStyles.homeUserName.copyWith(
-                        color: AppColors.textPrimary,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          mealTitle,
+                          style: AppTextStyles.homeUserName.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        _record.timeLabel,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          height: 22 / 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.action500.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(
+                        color: AppColors.action500.withValues(alpha: 0.35),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    _record.timeLabel,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
+                    child: Text(
+                      _record.mealType.displayLabel,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.brand900,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -353,20 +383,18 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Refeição salva. Use-a ao registrar uma nova.'),
-        ),
+      AppToast.success(
+        context,
+        message: 'Refeição salva. Use-a ao registrar uma nova.',
       );
     } catch (error) {
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.toString().replaceFirst('Exception: ', '')),
-        ),
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
       );
     } finally {
       if (mounted) {
@@ -402,6 +430,8 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
           analysisService: widget._analysisService,
           existingMealId: mealId,
           initialMealTitle: _record.title,
+          initialTimeLabel: _record.timeLabel,
+          initialMealType: _record.mealType,
           recordedAt: _record.createdAt,
           showDetailsAfterSave: false,
         ),

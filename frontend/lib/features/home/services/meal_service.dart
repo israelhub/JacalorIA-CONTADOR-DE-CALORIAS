@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 
 import '../../auth/service/auth_service.dart';
 import '../../../shared/services/supabase_storage_service.dart';
+import '../../food_analysis/helpers/food_review_helpers.dart';
 import '../../food_analysis/models/food_meal_record.dart';
 import '../../food_analysis/models/food_analysis_result.dart';
 
@@ -84,6 +85,11 @@ class MealService {
           description: json['description'] ?? '',
           kcalLabel: '${json['calories']} kcal',
           timeLabel: json['timeLabel'] ?? '12:00',
+          mealType: json['mealType'] != null || json['meal_type'] != null
+              ? foodMealTypeFromApi(
+                  (json['mealType'] ?? json['meal_type']) as String?,
+                )
+              : foodMealTypeFromTitle(json['title'] as String? ?? ''),
           calories: _asRoundedInt(json['calories']),
           protein: _asRoundedInt(json['protein']),
           carbs: _asRoundedInt(json['carbs']),
@@ -98,11 +104,11 @@ class MealService {
 
   DateTime? _parseDateTime(Object? value) {
     if (value is DateTime) {
-      return value;
+      return value.toLocal();
     }
 
     if (value is String && value.isNotEmpty) {
-      return DateTime.tryParse(value);
+      return DateTime.tryParse(value)?.toLocal();
     }
 
     return null;
@@ -125,6 +131,7 @@ class MealService {
       'carbs': analysis.totals.carbs.round(),
       'fat': analysis.totals.fat.round(),
       'timeLabel': record.timeLabel,
+      'mealType': record.mealType.apiValue,
       'imageUrl': imageUrl,
       'analysisItems': analysis.items.map((i) => i.toJson()).toList(),
     };
@@ -161,6 +168,7 @@ class MealService {
       'carbs': analysis.totals.carbs.round(),
       'fat': analysis.totals.fat.round(),
       'timeLabel': record.timeLabel,
+      'mealType': record.mealType.apiValue,
       'imageUrl': imageUrl,
       'analysisItems': analysis.items.map((i) => i.toJson()).toList(),
     };

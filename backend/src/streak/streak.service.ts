@@ -39,22 +39,37 @@ export class StreakService {
 
   /**
    * Sequência contada só a partir de `windowStart` (ex.: criação do grupo / entrada do membro).
-   * Ignora ofensivas anteriores à janela — usada na competição "Sequência dos amigos".
+   * Ignora ofensivas anteriores à janela.
+   * `windowStart` deve ser um instante real (createdAt/startsAt), não um token getDayStart.
    */
   calculateScopedStreakFromDayKeys(dayKeys: Set<string>, windowStart: Date): number {
-    const windowStartKey = this.toDayKeyInAppTimeZone(this.getDayStartInAppTimeZone(windowStart));
-    let streak = 0;
-    const cursor = this.getDayStartInAppTimeZone(new Date());
+    return this.calculateScopedStreakFromDayKey(
+      dayKeys,
+      this.toDayKeyInAppTimeZone(windowStart),
+    );
+  }
 
-    while (true) {
-      const key = this.toDayKeyInAppTimeZone(cursor);
-      if (key < windowStartKey) break;
-      if (!dayKeys.has(key)) break;
+  calculateScopedStreakFromDayKey(dayKeys: Set<string>, windowStartKey: string): number {
+    let streak = 0;
+    let cursorKey = this.toDayKeyInAppTimeZone(new Date());
+
+    while (cursorKey >= windowStartKey) {
+      if (!dayKeys.has(cursorKey)) break;
       streak += 1;
-      cursor.setDate(cursor.getDate() - 1);
+      const previous = this.shiftDayKey(cursorKey, -1);
+      if (!previous) break;
+      cursorKey = previous;
     }
 
     return streak;
+  }
+
+  /** Soma/subtrai dias em uma chave `YYYY-MM-DD` (calendário civil, sem fuso). */
+  shiftDayKey(dayKey: string, deltaDays: number): string | null {
+    const parsed = this.dayKeyToDate(dayKey);
+    if (!parsed) return null;
+    parsed.setUTCDate(parsed.getUTCDate() + deltaDays);
+    return this.toDayKeyFromAppDayStart(parsed);
   }
 
   /**
@@ -128,6 +143,10 @@ export class StreakService {
     return this.normalizeDayKeySet(user?.streakBlockerAppliedDayKeys);
   }
 
+  /**
+   * Token de dia civil: meia-noite UTC com Y-M-D do calendário no fuso do app.
+   * NÃO passe esse Date em toDayKeyInAppTimeZone — use toDayKeyFromAppDayStart.
+   */
   getDayStartInAppTimeZone(date: Date): Date {
     const parts = this.getDatePartsInAppTimeZone(date);
     return new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
@@ -141,9 +160,22 @@ export class StreakService {
     return dayStart;
   }
 
+  /** Day key a partir de um instante real (ex.: createdAt da refeição). */
   toDayKeyInAppTimeZone(date: Date): string {
     const parts = this.getDatePartsInAppTimeZone(date);
     return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+  }
+
+  /**
+   * Day key a partir de um token retornado por getDayStartInAppTimeZone /
+   * getWeekStartInAppTimeZone / dayKeyToDate. Usa componentes UTC do token
+   * (não reinterpretar no fuso — em America/Sao_Paulo isso deslocaria 1 dia).
+   */
+  toDayKeyFromAppDayStart(dayStart: Date): string {
+    const year = dayStart.getUTCFullYear();
+    const month = String(dayStart.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(dayStart.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   getDatePartsInAppTimeZone(date: Date): {
@@ -170,10 +202,10 @@ export class StreakService {
     const cursor = this.getDayStartInAppTimeZone(new Date());
 
     while (true) {
-      const key = this.toDayKeyInAppTimeZone(cursor);
+      const key = this.toDayKeyFromAppDayStart(cursor);
       if (!dayKeys.has(key)) break;
       streak += 1;
-      cursor.setDate(cursor.getDate() - 1);
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
     }
 
     return streak;
@@ -187,7 +219,7 @@ export class StreakService {
 
     const now = new Date();
     const todayStart = this.getDayStartInAppTimeZone(now);
-    const todayKey = this.toDayKeyInAppTimeZone(todayStart);
+    const todayKey = this.toDayKeyFromAppDayStart(todayStart);
 
     await sequelize.transaction(async (transaction) => {
       const user = await User.findByPk(userId, {
@@ -234,7 +266,7 @@ export class StreakService {
 
       const yesterdayDate = new Date(todayStart);
       yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
-      const yesterdayKey = this.toDayKeyInAppTimeZone(yesterdayDate);
+      const yesterdayKey = this.toDayKeyFromAppDayStart(yesterdayDate);
       const onlyYesterdayMissed =
         completedMissing.length === 1 && completedMissing[0] === yesterdayKey;
       if (!onlyYesterdayMissed) {
@@ -301,7 +333,7 @@ export class StreakService {
     cursor.setUTCDate(cursor.getUTCDate() + 1);
 
     while (cursor <= todayStart) {
-      const key = this.toDayKeyInAppTimeZone(cursor);
+      const key = this.toDayKeyFromAppDayStart(cursor);
       missingDayKeys.push(key);
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }

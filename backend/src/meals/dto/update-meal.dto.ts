@@ -1,4 +1,5 @@
-import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
+import { MealType } from '../models/meal.model';
 
 export class UpdateMealDto {
   @IsOptional()
@@ -28,6 +29,15 @@ export class UpdateMealDto {
   @IsOptional()
   @IsString()
   timeLabel?: string;
+
+  @IsOptional()
+  @IsIn([
+    MealType.Breakfast,
+    MealType.Lunch,
+    MealType.Dinner,
+    MealType.Free,
+  ])
+  mealType?: MealType;
 
   @IsOptional()
   @IsString()
