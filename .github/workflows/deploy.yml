@@ -118,11 +118,37 @@ jobs:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
+      - name: Gravar version.json do deploy
+        run: |
+          printf '%s\n' "{\"version\":\"${{ github.sha }}\",\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" \
+            > frontend/build/web/version.json
+
       - name: Sync para o S3
-        run: aws s3 sync frontend/build/web "s3://${{ vars.S3_BUCKET }}" --delete
+        run: |
+          BUCKET="${{ vars.S3_BUCKET }}"
+          WEB_DIR="frontend/build/web"
+
+          # Sync completo (com --delete). Cache longo por padrão nos assets com hash.
+          aws s3 sync "$WEB_DIR" "s3://$BUCKET" --delete \
+            --cache-control "public,max-age=31536000,immutable"
+
+          # Entrypoints + marcador de versão: sem cache (reenvio com header correto).
+          for f in index.html flutter_bootstrap.js flutter_service_worker.js flutter.js version.json manifest.json; do
+            if [ -f "$WEB_DIR/$f" ]; then
+              aws s3 cp "$WEB_DIR/$f" "s3://$BUCKET/$f" \
+                --cache-control "no-cache,no-store,must-revalidate"
+            fi
+          done
 
       - name: Invalidar cache do CloudFront
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/*" >/dev/null
+            --paths \
+              "/index.html" \
+              "/flutter_bootstrap.js" \
+              "/flutter_service_worker.js" \
+              "/flutter.js" \
+              "/version.json" \
+              "/manifest.json" \
+              "/*" >/dev/null

@@ -33,7 +33,8 @@ class FoodReviewPage extends StatefulWidget {
     this.initialMealType,
     this.recordedAt,
     this.showDetailsAfterSave = true,
-  });
+    MealService mealService = const MealService(),
+  }) : _mealService = mealService;
 
   final Uint8List? imageBytes;
   final String? imageAsset;
@@ -47,6 +48,7 @@ class FoodReviewPage extends StatefulWidget {
   final FoodMealType? initialMealType;
   final DateTime? recordedAt;
   final bool showDetailsAfterSave;
+  final MealService _mealService;
 
   @override
   State<FoodReviewPage> createState() => _FoodReviewPageState();
@@ -61,7 +63,6 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   late final DateTime _recordedAt;
   late final String _previewTime;
   late FoodMealType _mealType;
-  final _mealService = const MealService();
   bool _isBusy = false;
   String? _error;
   int _nextItemId = 0;
@@ -372,13 +373,13 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
           );
 
           if ((widget.existingMealId ?? '').trim().isNotEmpty) {
-            persistedMealRecord = await _mealService.updateMeal(
+            persistedMealRecord = await widget._mealService.updateMeal(
               mealId: widget.existingMealId!.trim(),
               record: mealRecordToSave,
               analysis: analysisToSave,
             );
           } else {
-            persistedMealRecord = await _mealService.saveMeal(
+            persistedMealRecord = await widget._mealService.saveMeal(
               record: mealRecordToSave,
               analysis: analysisToSave,
             );
@@ -419,7 +420,16 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
       timeLabelOverride: _previewTime,
       mealTypeOverride: _mealType,
     );
-    final mealRecord = persistedMealRecord ?? fallbackMealRecord;
+    // Preferir itens/macros do cálculo local; a API só garante id/imagem persistidos.
+    final mealRecord = persistedMealRecord == null
+        ? fallbackMealRecord
+        : fallbackMealRecord.copyWith(
+            id: persistedMealRecord!.id ?? fallbackMealRecord.id,
+            imageUrl: persistedMealRecord!.imageUrl ?? fallbackMealRecord.imageUrl,
+            imageAsset:
+                persistedMealRecord!.imageAsset ?? fallbackMealRecord.imageAsset,
+            status: persistedMealRecord!.status,
+          );
 
     if (!widget.showDetailsAfterSave) {
       if (mounted) {
