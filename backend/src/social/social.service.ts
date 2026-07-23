@@ -4,6 +4,7 @@ import { Op } from 'sequelize';
 import { randomBytes } from 'crypto';
 import { User } from '../auth/models/user.model';
 import { Meal, MealStatus } from '../meals/models/meal.model';
+import { UserCurrencyTransaction } from '../missions/models/user-currency-transaction.model';
 import { AddFriendByEmailDto } from './dto/add-friend-by-email.dto';
 import { AddGroupMembersDto } from './dto/add-group-members.dto';
 import { CreateSocialGroupDto } from './dto/create-social-group.dto';
@@ -43,6 +44,8 @@ export class SocialService {
     private readonly userModel: typeof User,
     @InjectModel(Meal)
     private readonly mealModel: typeof Meal,
+    @InjectModel(UserCurrencyTransaction)
+    private readonly userCurrencyTransactionModel: typeof UserCurrencyTransaction,
     private readonly streakService: StreakService,
     private readonly analyticsService: AnalyticsService,
   ) {}
@@ -347,7 +350,7 @@ export class SocialService {
 
     const favoriteDish = this.getFavoriteDish(meals);
     const preferredPeriod = this.getPreferredPeriod(meals);
-    const totalXp = await this.sumUserPoints(friend.id);
+    const totalXp = await this.getTotalXp(friend.id);
     const friendRequestStatus = isSelf || isFriend
       ? 'none'
       : await this.getFriendRequestStatusBetween(viewerId, friendId);
@@ -997,13 +1000,13 @@ export class SocialService {
     });
   }
 
-  private async sumUserPoints(userId: string) {
-    const rows = await this.socialGroupMemberModel.findAll({
-      where: { userId },
-      attributes: ['points'],
+  private async getTotalXp(userId: string) {
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where: { userId, currency: 'xp' },
+      attributes: ['amountSigned'],
     });
 
-    return rows.reduce((sum, row) => sum + parseNumber(row.points), 0);
+    return rows.reduce((sum, row) => sum + parseNumber(row.amountSigned), 0);
   }
 
   private async toGroupSummary(
@@ -1012,7 +1015,7 @@ export class SocialService {
     streakByUserId?: Map<string, number>,
     offensiveDayKeysByUserId?: Map<string, Set<string>>,
   ) {
-    const ranked = await this.buildRankedMembers(group, streakByUserId);
+    const ranked = await this.buildRankedMembers(group, streakByUserId, offensiveDayKeysByUserId);
     const currentUserEntry = ranked.find((entry) => entry.member.userId === userId);
     const topMember = ranked[0]?.member;
     const remainingDays = this.getRemainingDays(group.endsAt, group.competitionType);
@@ -1048,7 +1051,7 @@ export class SocialService {
     streakByUserId?: Map<string, number>,
     offensiveDayKeysByUserId?: Map<string, Set<string>>,
   ) {
-    const ranked = await this.buildRankedMembers(group, streakByUserId);
+    const ranked = await this.buildRankedMembers(group, streakByUserId, offensiveDayKeysByUserId);
     const topMember = ranked[0]?.member;
     const remainingDays = this.getRemainingDays(group.endsAt, group.competitionType);
     const groupStreakDefeated = this.isGroupStreakDefeated(
@@ -1203,8 +1206,19 @@ export class SocialService {
     return legacyMessage.replace(/^Você\b/i, actorName);
   }
 
-  private async buildRankedMembers(group: SocialGroup, streakByUserId?: Map<string, number>) {
-    let members = this.withComputedStreaks(group.members ?? [], streakByUserId);
+  private async buildRankedMembers(
+    group: SocialGroup,
+    streakByUserId?: Map<string, number>,
+    offensiveDayKeysByUserId?: Map<string, Set<string>>,
+  ) {
+    let members =
+      group.competitionType === 'group_streak'
+        ? this.withComputedGroupScopedStreaks(
+            group.members ?? [],
+            group.startsAt,
+            offensiveDayKeysByUserId,
+          )
+        : this.withComputedStreaks(group.members ?? [], streakByUserId);
     if (group.competitionType === 'daily_goal') {
       members = await this.withComputedDailyGoalPoints(members, group.startsAt, group.endsAt);
     } else if (group.competitionType === 'goal_average') {
@@ -1216,7 +1230,7 @@ export class SocialService {
 
   private getCompetitionRule(competitionType: string): string | null {
     if (competitionType === 'group_streak') {
-      return 'Todo dia, à meia-noite, a sequência continua só se todos os membros ativos daquele dia tiverem cumprido a ofensiva.';
+      return 'A sequência do grupo começa do zero e só conta os dias desde a criação. À meia-noite, continua só se todos os membros ativos daquele dia cumpriram a ofensiva.';
     }
     if (competitionType === 'goal_average') {
       return 'A média é o total de calorias ÷ dias decorridos do grupo (desde a criação; sobe após 00:00). Ganha quem ficar mais perto da própria meta.';
@@ -1302,6 +1316,31 @@ export class SocialService {
       ...(this.memberToPlain(member)),
       streakDays: streakByUserId.get(member.userId) ?? 0,
     })) as SocialGroupMember[];
+  }
+
+  /**
+   * Sequência dentro do grupo: zera na criação/entrada e ignora ofensivas anteriores.
+   * Janela = max(início do grupo, dia em que o membro entrou).
+   */
+  private withComputedGroupScopedStreaks(
+    members: SocialGroupMember[],
+    groupStartsAt: Date,
+    offensiveDayKeysByUserId?: Map<string, Set<string>>,
+  ) {
+    const groupStartDay = this.streakService.getDayStartInAppTimeZone(new Date(groupStartsAt));
+
+    return members.map((member) => {
+      const joinDay = this.streakService.getDayStartInAppTimeZone(new Date(member.createdAt));
+      const windowStart =
+        joinDay.getTime() > groupStartDay.getTime() ? joinDay : groupStartDay;
+      const dayKeys = offensiveDayKeysByUserId?.get(member.userId) ?? new Set<string>();
+      const streakDays = this.streakService.calculateScopedStreakFromDayKeys(dayKeys, windowStart);
+
+      return {
+        ...this.memberToPlain(member),
+        streakDays,
+      };
+    }) as SocialGroupMember[];
   }
 
   private async withComputedDailyGoalPoints(

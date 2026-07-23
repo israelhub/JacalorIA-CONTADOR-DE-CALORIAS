@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from '../auth/models/user.model';
 import { Meal } from '../meals/models/meal.model';
+import { UserCurrencyTransaction } from '../missions/models/user-currency-transaction.model';
 import { SocialController } from './social.controller';
 import { SocialFriendLink } from './models/social-friend-link.model';
 import { SocialFriendRequest } from './models/social-friend-request.model';
@@ -26,6 +27,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
       SocialFriendRequest,
       User,
       Meal,
+      UserCurrencyTransaction,
     ]),
   ],
   controllers: [SocialController],

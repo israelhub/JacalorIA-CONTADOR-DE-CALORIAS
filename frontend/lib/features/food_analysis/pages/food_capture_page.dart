@@ -83,45 +83,53 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       backgroundColor: AppColors.surface,
       appBar: const FoodAnalysisPageHeader(title: 'Nova refeição'),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(
-            left: AppSpacing.xl,
-            right: AppSpacing.xl,
-            top: AppSpacing.lg,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(flex: 9, child: _buildCameraArea(context)),
-              const SizedBox(height: AppSpacing.md),
-              Expanded(
-                flex: 3,
-                child: Column(
-                  children: [
-                    if (_error != null) ...[
-                      Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textError,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                    ],
-                    _CaptureActions(
-                      onTextEntry: _openTextEntry,
-                      onSavedMeals: _openSavedMeals,
-                      onCapture: _takePhoto,
-                      onGallery: () => _pickAndAnalyze(ImageSource.gallery),
-                      isCameraReady:
-                          _cameraController?.value.isInitialized ?? false,
-                      isBusy: _isBusy,
-                    ),
-                  ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.xs,
+                  AppSpacing.lg,
+                  AppSpacing.sm,
                 ),
+                child: _buildCameraArea(context),
               ),
-            ],
-          ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.lg,
+                AppSpacing.xl,
+                AppSpacing.xxl,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_error != null) ...[
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textError,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                  _CaptureActions(
+                    onTextEntry: _openTextEntry,
+                    onSavedMeals: _openSavedMeals,
+                    onCapture: _takePhoto,
+                    onGallery: () => _pickAndAnalyze(ImageSource.gallery),
+                    isCameraReady:
+                        _cameraController?.value.isInitialized ?? false,
+                    isBusy: _isBusy,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -132,10 +140,13 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       return _CameraShell(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            CircularProgressIndicator(color: AppColors.action500),
-            SizedBox(height: AppSpacing.lg),
-            Text('Preparando a câmera...'),
+          children: [
+            const CircularProgressIndicator(color: AppColors.action500),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Preparando a câmera...',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.surface),
+            ),
           ],
         ),
       );
@@ -143,39 +154,40 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
     if (_cameraError != null || _cameraController == null) {
       return _CameraShell(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.videocam_off_outlined,
-              size: 64,
-              color: AppColors.action500,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              _cameraError ?? 'Não foi possível abrir a câmera.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.brand900Variant,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.videocam_off_outlined,
+                size: 64,
+                color: AppColors.action500,
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextButton(
-              onPressed: _initializeCamera,
-              child: const Text('Tentar novamente'),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                _cameraError ?? 'Não foi possível abrir a câmera.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.surface,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextButton(
+                onPressed: _initializeCamera,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.action500,
+                ),
+                child: const Text('Tentar novamente'),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     final controller = _cameraController!;
-    return _CameraShell(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: CameraPreview(controller),
-      ),
-    );
+    return _CameraShell(child: CameraPreview(controller));
   }
 
   Future<void> _initializeCamera() async {
@@ -570,58 +582,90 @@ class _CaptureActions extends StatelessWidget {
   final bool isCameraReady;
   final bool isBusy;
 
+  static const double _sideButtonSize = 72;
+  static const double _shutterSize = 84;
+
   @override
   Widget build(BuildContext context) {
-    const shutterSize = 78.0;
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: isBusy ? null : onSavedMeals,
-            icon: const Icon(Icons.bookmark_outline, size: 18),
-            label: const Text('Usar refeição salva'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.brand900Variant,
-              side: const BorderSide(color: AppColors.borderLight),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 280),
+          child: SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: Material(
+              color: AppColors.surface,
+              elevation: 1,
+              shadowColor: Colors.black12,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: InkWell(
+                onTap: isBusy ? null : onSavedMeals,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.bookmark_border,
+                        size: 16,
+                        color: isBusy
+                            ? AppColors.textTertiary
+                            : const Color(0xFF4B5563),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Usar refeição salva',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isBusy
+                              ? AppColors.textTertiary
+                              : const Color(0xFF374151),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              textStyle: AppTextStyles.captionStrong,
             ),
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            SizedBox(
-              width: 75,
-              child: _CaptureActionButton(
+        const SizedBox(height: 20),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _CaptureActionButton(
                 icon: Icons.edit_outlined,
                 label: 'Digitar',
+                size: _sideButtonSize,
                 onTap: isBusy ? null : onTextEntry,
               ),
-            ),
-            SizedBox(
-              width: shutterSize,
-              height: shutterSize,
-              child: _CameraShutterButton(
-                onTap: isCameraReady && !isBusy ? onCapture : null,
-                isBusy: isBusy,
+              SizedBox(
+                width: _shutterSize,
+                height: _shutterSize,
+                child: _CameraShutterButton(
+                  onTap: isCameraReady && !isBusy ? onCapture : null,
+                  isBusy: isBusy,
+                ),
               ),
-            ),
-            SizedBox(
-              width: 75,
-              child: _CaptureActionButton(
-                icon: Icons.photo_library_outlined,
+              _CaptureActionButton(
+                icon: Icons.image_outlined,
                 label: 'Galeria',
+                size: _sideButtonSize,
                 onTap: isBusy ? null : onGallery,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -632,40 +676,50 @@ class _CaptureActionButton extends StatelessWidget {
   const _CaptureActionButton({
     required this.icon,
     required this.label,
+    required this.size,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final double size;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    final color = enabled ? const Color(0xFF374151) : AppColors.textTertiary;
+
     return Material(
       color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
+      elevation: 1,
+      shadowColor: Colors.black12,
+      shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        customBorder: const CircleBorder(),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.md,
-          ),
+          width: size,
+          height: size,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppColors.borderLight),
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFE5E7EB)),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: AppColors.brand900Variant),
-              const SizedBox(height: AppSpacing.xs),
+              Icon(icon, size: 24, color: color),
+              const SizedBox(height: 6),
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: AppTextStyles.captionStrong.copyWith(
-                  color: AppColors.brand900Variant,
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.1,
+                  fontWeight: FontWeight.w500,
+                  color: enabled
+                      ? const Color(0xFF4B5563)
+                      : AppColors.textTertiary,
                 ),
               ),
             ],
@@ -684,31 +738,46 @@ class _CameraShutterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    final ringColor = enabled ? AppColors.action500 : AppColors.textTertiary;
+
     return Material(
-      color: Colors.transparent,
+      color: AppColors.surface,
+      elevation: 2,
+      shadowColor: Colors.black26,
+      shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.action500, width: 4),
-            boxShadow: AppShadows.md,
+            color: AppColors.surface,
+            border: Border.all(color: ringColor, width: 5),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1A000000),
+                blurRadius: 4,
+                offset: Offset(0, 2),
+                spreadRadius: 0,
+              ),
+            ],
           ),
           child: Center(
-            child: Container(
-              width: 70,
-              height: 70,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.surface,
-              ),
-              child: Icon(
-                Icons.camera_alt,
-                color: AppColors.action500,
-                size: 32,
-              ),
-            ),
+            child: isBusy
+                ? SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: ringColor,
+                    ),
+                  )
+                : Icon(
+                    Icons.photo_camera,
+                    color: ringColor,
+                    size: 32,
+                  ),
           ),
         ),
       ),
@@ -721,17 +790,30 @@ class _CameraShell extends StatelessWidget {
 
   final Widget child;
 
+  static const double _radius = 32;
+
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.borderLight),
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(_radius),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: child,
+        borderRadius: BorderRadius.circular(_radius),
+        child: ColoredBox(
+          color: Colors.black,
+          child: DefaultTextStyle(
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.surface,
+            ),
+            child: IconTheme(
+              data: const IconThemeData(color: AppColors.action500),
+              child: child,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -44,10 +44,13 @@ class SocialProfileMetricCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
-          _OverflowTapTooltipText(
-            text: value,
-            style: AppTextStyles.bodyLarge.copyWith(
-              color: AppColors.brand900Variant,
+          SizedBox(
+            width: double.infinity,
+            child: _OverflowTapTooltipText(
+              text: value,
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: AppColors.brand900Variant,
+              ),
             ),
           ),
         ],
@@ -56,7 +59,7 @@ class SocialProfileMetricCard extends StatelessWidget {
   }
 }
 
-/// Truncates with ellipsis only when layout space is insufficient.
+/// Truncates to a single line with ellipsis when layout space is insufficient.
 /// On tap (when overflowing), shows the full text in a floating tooltip.
 class _OverflowTapTooltipText extends StatefulWidget {
   const _OverflowTapTooltipText({
@@ -66,8 +69,6 @@ class _OverflowTapTooltipText extends StatefulWidget {
 
   final String text;
   final TextStyle style;
-
-  static const int _maxLines = 2;
 
   @override
   State<_OverflowTapTooltipText> createState() =>
@@ -86,16 +87,15 @@ class _OverflowTapTooltipTextState extends State<_OverflowTapTooltipText> {
   }
 
   void _updateOverflow(double maxWidth) {
-    if (maxWidth <= 0) return;
+    if (!maxWidth.isFinite || maxWidth <= 0) return;
 
     final painter = TextPainter(
       text: TextSpan(text: widget.text, style: widget.style),
-      maxLines: _OverflowTapTooltipText._maxLines,
+      maxLines: 1,
       textDirection: TextDirection.ltr,
-      ellipsis: '…',
-    )..layout(maxWidth: maxWidth);
+    )..layout();
 
-    final overflowing = painter.didExceedMaxLines;
+    final overflowing = painter.width > maxWidth;
     painter.dispose();
 
     if (overflowing == _isOverflowing) return;
@@ -115,7 +115,8 @@ class _OverflowTapTooltipTextState extends State<_OverflowTapTooltipText> {
         final textWidget = Text(
           widget.text,
           style: widget.style,
-          maxLines: _OverflowTapTooltipText._maxLines,
+          maxLines: 1,
+          softWrap: false,
           overflow: TextOverflow.ellipsis,
         );
 

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/analytics/analytics_service.dart';
@@ -1285,82 +1287,88 @@ class _StoreItemPreview extends StatelessWidget {
     required this.name,
   });
 
+  static const double _preferredSize = 140;
+
   final StoreCatalogItem item;
   final String? avatarUrl;
   final String? name;
 
   @override
   Widget build(BuildContext context) {
-    switch (item.type) {
-      case StoreItemType.frame:
-        return FramedAvatar(
-          size: 140,
-          avatarUrl: avatarUrl,
-          frameId: item.id,
-          fallbackText: name,
-        );
-      case StoreItemType.background:
-        final assetPath = AvatarBackgroundCatalog.assetPathForId(item.id);
-        if (assetPath != null) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            child: Image.asset(
-              assetPath,
-              width: 140,
-              height: 140,
-              fit: BoxFit.cover,
-            ),
-          );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = _resolveSquareSize(constraints);
+        final iconSize = math.max(24.0, size * 0.37);
+
+        switch (item.type) {
+          case StoreItemType.frame:
+            return FramedAvatar(
+              size: size,
+              avatarUrl: avatarUrl,
+              frameId: item.id,
+              fallbackText: name,
+            );
+          case StoreItemType.background:
+            final assetPath = AvatarBackgroundCatalog.assetPathForId(item.id);
+            if (assetPath != null) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: Image.asset(
+                  assetPath,
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                ),
+              );
+            }
+            return Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                gradient: const LinearGradient(
+                  colors: [AppColors.missionsXpPill, AppColors.brand300],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(color: AppColors.performanceCardBorder),
+              ),
+              child: Icon(
+                Icons.landscape_rounded,
+                size: iconSize,
+                color: AppColors.brand900Variant,
+              ),
+            );
+          case StoreItemType.blocker:
+            return Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.surfaceAlt,
+                border: Border.all(color: AppColors.performanceCardBorder),
+              ),
+              child: Icon(
+                item.isStreakRestore
+                    ? Icons.history_rounded
+                    : Icons.shield_rounded,
+                size: iconSize,
+                color: AppColors.brand900Variant,
+              ),
+            );
         }
-        return Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            gradient: const LinearGradient(
-              colors: [AppColors.missionsXpPill, AppColors.brand300],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(color: AppColors.performanceCardBorder),
-          ),
-          child: const Icon(
-            Icons.landscape_rounded,
-            size: 52,
-            color: AppColors.brand900Variant,
-          ),
-        );
-      case StoreItemType.blocker:
-        if (item.isStreakRestore) {
-          return Container(
-            width: 140,
-            height: 140,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.surfaceAlt,
-              border: Border.all(color: AppColors.performanceCardBorder),
-            ),
-            child: const Icon(
-              Icons.history_rounded,
-              size: 52,
-              color: AppColors.brand900Variant,
-            ),
-          );
-        }
-        return Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.surfaceAlt,
-            border: Border.all(color: AppColors.performanceCardBorder),
-          ),
-          child: const Icon(
-            Icons.shield_rounded,
-            size: 52,
-            color: AppColors.brand900Variant,
-          ),
-        );
+      },
+    );
+  }
+
+  double _resolveSquareSize(BoxConstraints constraints) {
+    var resolved = _preferredSize;
+    if (constraints.maxWidth.isFinite) {
+      resolved = math.min(resolved, constraints.maxWidth);
     }
+    if (constraints.maxHeight.isFinite) {
+      resolved = math.min(resolved, constraints.maxHeight);
+    }
+    return math.max(0, resolved);
   }
 }

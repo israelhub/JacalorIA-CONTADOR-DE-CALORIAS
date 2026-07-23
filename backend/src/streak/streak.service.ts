@@ -38,6 +38,26 @@ export class StreakService {
   }
 
   /**
+   * Sequência contada só a partir de `windowStart` (ex.: criação do grupo / entrada do membro).
+   * Ignora ofensivas anteriores à janela — usada na competição "Sequência dos amigos".
+   */
+  calculateScopedStreakFromDayKeys(dayKeys: Set<string>, windowStart: Date): number {
+    const windowStartKey = this.toDayKeyInAppTimeZone(this.getDayStartInAppTimeZone(windowStart));
+    let streak = 0;
+    const cursor = this.getDayStartInAppTimeZone(new Date());
+
+    while (true) {
+      const key = this.toDayKeyInAppTimeZone(cursor);
+      if (key < windowStartKey) break;
+      if (!dayKeys.has(key)) break;
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return streak;
+  }
+
+  /**
    * Dias com ofensiva efetiva (refeição ativa ou bloqueador aplicado), por usuário.
    * Usado para streaks individuais e para fechar a sequência coletiva do grupo após 00:00.
    */
