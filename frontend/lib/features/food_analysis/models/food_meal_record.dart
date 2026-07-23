@@ -14,6 +14,7 @@ class FoodMealRecord {
     required this.description,
     required this.kcalLabel,
     required this.timeLabel,
+    this.mealType = FoodMealType.free,
     required this.calories,
     required this.protein,
     required this.carbs,
@@ -29,6 +30,8 @@ class FoodMealRecord {
     required FoodAnalysisResult analysis,
     required DateTime recordedAt,
     String? titleOverride,
+    String? timeLabelOverride,
+    FoodMealType? mealTypeOverride,
   }) {
     final foodNames = analysis.items
         .map((item) => item.name)
@@ -41,6 +44,14 @@ class FoodMealRecord {
         : foodNames.join(', ');
 
     final resolvedTitle = (titleOverride ?? '').trim();
+    final resolvedTimeLabel = (timeLabelOverride ?? '').trim();
+    final resolvedMealType =
+        mealTypeOverride ??
+        suggestMealType(
+          recordedAt: recordedAt,
+          foodNames: analysis.items.map((item) => item.name).toList(),
+          titleHint: resolvedTitle,
+        );
 
     return FoodMealRecord(
       id: id,
@@ -53,7 +64,10 @@ class FoodMealRecord {
           : (foodNames.isEmpty ? 'Refeição analisada' : foodNames.first),
       description: description,
       kcalLabel: '${analysis.totals.calories.round()} kcal',
-      timeLabel: formatFoodReviewTime(recordedAt),
+      timeLabel: resolvedTimeLabel.isNotEmpty
+          ? resolvedTimeLabel
+          : formatFoodReviewTime(recordedAt),
+      mealType: resolvedMealType,
       calories: analysis.totals.calories.round(),
       protein: analysis.totals.protein.round(),
       carbs: analysis.totals.carbs.round(),
@@ -72,6 +86,11 @@ class FoodMealRecord {
         .whereType<Map<String, dynamic>>()
         .map(FoodAnalysisItem.fromJson)
         .toList(growable: false);
+    final title = json['title'] as String? ?? 'Refeição';
+    final mealTypeRaw = json['mealType'] ?? json['meal_type'];
+    final mealType = mealTypeRaw != null
+        ? foodMealTypeFromApi(mealTypeRaw as String?)
+        : foodMealTypeFromTitle(title);
 
     return FoodMealRecord(
       id: json['id'] as String?,
@@ -79,10 +98,11 @@ class FoodMealRecord {
       imageAsset: isNetwork ? null : _asAssetPath(imageUrl),
       imageUrl: isNetwork ? imageUrl : null,
       createdAt: _parseDateTime(json['createdAt'] ?? json['created_at']),
-      title: json['title'] as String? ?? 'Refeição',
+      title: title,
       description: json['description'] as String? ?? '',
       kcalLabel: '${_asRoundedInt(json['calories'])} kcal',
       timeLabel: json['timeLabel'] as String? ?? '12:00',
+      mealType: mealType,
       calories: _asRoundedInt(json['calories']),
       protein: _asRoundedInt(json['protein']),
       carbs: _asRoundedInt(json['carbs']),
@@ -101,6 +121,7 @@ class FoodMealRecord {
   final String description;
   final String kcalLabel;
   final String timeLabel;
+  final FoodMealType mealType;
   final int calories;
   final int protein;
   final int carbs;
@@ -118,6 +139,7 @@ class FoodMealRecord {
     String? description,
     String? kcalLabel,
     String? timeLabel,
+    FoodMealType? mealType,
     int? calories,
     int? protein,
     int? carbs,
@@ -135,6 +157,7 @@ class FoodMealRecord {
       description: description ?? this.description,
       kcalLabel: kcalLabel ?? this.kcalLabel,
       timeLabel: timeLabel ?? this.timeLabel,
+      mealType: mealType ?? this.mealType,
       calories: calories ?? this.calories,
       protein: protein ?? this.protein,
       carbs: carbs ?? this.carbs,
@@ -171,11 +194,11 @@ String? _asAssetPath(String? value) {
 
 DateTime? _parseDateTime(Object? value) {
   if (value is DateTime) {
-    return value;
+    return value.toLocal();
   }
 
   if (value is String && value.isNotEmpty) {
-    return DateTime.tryParse(value);
+    return DateTime.tryParse(value)?.toLocal();
   }
 
   return null;

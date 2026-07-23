@@ -29,6 +29,8 @@ class FoodReviewPage extends StatefulWidget {
     required this.analysisService,
     this.existingMealId,
     this.initialMealTitle,
+    this.initialTimeLabel,
+    this.initialMealType,
     this.recordedAt,
     this.showDetailsAfterSave = true,
   });
@@ -40,6 +42,9 @@ class FoodReviewPage extends StatefulWidget {
   final FoodAnalysisService analysisService;
   final String? existingMealId;
   final String? initialMealTitle;
+  /// Horário original da refeição (ex.: ao editar). Não regenerar a partir de UTC.
+  final String? initialTimeLabel;
+  final FoodMealType? initialMealType;
   final DateTime? recordedAt;
   final bool showDetailsAfterSave;
 
@@ -55,6 +60,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   late final TextEditingController _mealTitleController;
   late final DateTime _recordedAt;
   late final String _previewTime;
+  late FoodMealType _mealType;
   final _mealService = const MealService();
   bool _isBusy = false;
   String? _error;
@@ -92,16 +98,27 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
     AnalyticsService.instance.trackScreen('food_review');
     _analysis = widget.analysis;
     _confirmedSignature = widget.analysis.itemsSignature();
-    _recordedAt = widget.recordedAt ?? DateTime.now();
-    _previewTime = formatFoodReviewTime(_recordedAt);
+    _recordedAt = widget.recordedAt?.toLocal() ?? DateTime.now();
+    final preservedTimeLabel = (widget.initialTimeLabel ?? '').trim();
+    // Preferir createdAt em horário local (corrige timeLabel salvo em UTC).
+    // Só reutilizar timeLabel quando não houver createdAt.
+    _previewTime = widget.recordedAt != null
+        ? formatFoodReviewTime(_recordedAt)
+        : (preservedTimeLabel.isNotEmpty
+              ? preservedTimeLabel
+              : formatFoodReviewTime(_recordedAt));
     final initialMealTitle = widget.initialMealTitle?.trim() ?? '';
+    _mealType =
+        widget.initialMealType ??
+        suggestMealType(
+          recordedAt: _recordedAt,
+          foodNames: widget.analysis.items.map((item) => item.name).toList(),
+          titleHint: initialMealTitle,
+        );
     _mealTitleController = TextEditingController(
       text: initialMealTitle.isNotEmpty
           ? initialMealTitle
-          : suggestMealTitle(
-              recordedAt: _recordedAt,
-              foodNames: widget.analysis.items.map((item) => item.name).toList(),
-            ),
+          : _mealType.defaultTitle,
     );
     _itemsListKey = GlobalKey<AnimatedListState>();
     _items = widget.analysis.items.map(_createEntry).toList(growable: true);
@@ -140,6 +157,8 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
                     imageUrl: widget.imageUrl,
                     titleController: _mealTitleController,
                     timeLabel: _previewTime,
+                    mealType: _mealType,
+                    onMealTypeChanged: _handleMealTypeChanged,
                     onTitleChanged: (_) {
                       if (_error != null) {
                         setState(() {
@@ -305,6 +324,19 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
     );
   }
 
+  void _handleMealTypeChanged(FoodMealType type) {
+    final currentTitle = _mealTitleController.text.trim();
+    final shouldSyncTitle = isDefaultMealTitle(currentTitle);
+
+    setState(() {
+      _mealType = type;
+      _error = null;
+      if (shouldSyncTitle) {
+        _mealTitleController.text = type.defaultTitle;
+      }
+    });
+  }
+
   Future<void> _saveAndOpenDetails(
   ) async {
     final currentItems = _currentItems;
@@ -335,6 +367,8 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
             analysis: analysisToSave,
             recordedAt: _recordedAt,
             titleOverride: mealTitle,
+            timeLabelOverride: _previewTime,
+            mealTypeOverride: _mealType,
           );
 
           if ((widget.existingMealId ?? '').trim().isNotEmpty) {
@@ -377,11 +411,13 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
 
     final fallbackMealRecord = FoodMealRecord.fromAnalysis(
       id: widget.existingMealId,
-            imageBytes: widget.imageBytes,
-            imageUrl: widget.imageUrl,
+      imageBytes: widget.imageBytes,
+      imageUrl: widget.imageUrl,
       analysis: savedAnalysis,
       recordedAt: _recordedAt,
       titleOverride: mealTitle,
+      timeLabelOverride: _previewTime,
+      mealTypeOverride: _mealType,
     );
     final mealRecord = persistedMealRecord ?? fallbackMealRecord;
 

@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Transaction } from 'sequelize';
 import { Op } from 'sequelize';
 import { User } from '../auth/models/user.model';
-import { Meal, MealStatus } from '../meals/models/meal.model';
+import { Meal, MealStatus, MealType } from '../meals/models/meal.model';
 import { StreakService } from '../streak/streak.service';
 import { parseNumber } from '../shared/utils/number-parser.util';
 import { hasReachedCalorieGoal } from '../shared/utils/calorie-goal.util';
@@ -13,6 +13,7 @@ import {
   OFFENSIVE_BLOCKER_DEFAULT_ID,
   STREAK_RESTORE_ITEM_ID,
 } from './constants/avatar-frame-store';
+import { DEFAULT_MISSIONS } from './constants/missions.seed';
 import { Mission, MissionType } from './models/mission.model';
 import {
   CurrencyCode,
@@ -27,11 +28,13 @@ type DailyTotals = {
   carbs: number;
   fat: number;
   meals: number;
+  completeMealTypes: Set<MealType>;
   foods: Set<string>;
 };
 
 type MissionProgress = {
   progressCurrent: number;
+  progressTarget?: number;
 };
 
 type MissionItemPayload = {
@@ -83,7 +86,7 @@ type BlockerRecoverySummary = {
 };
 
 @Injectable()
-export class MissionsService {
+export class MissionsService implements OnModuleInit {
   constructor(
     @InjectModel(Mission)
     private readonly missionModel: typeof Mission,
@@ -98,7 +101,49 @@ export class MissionsService {
     private readonly analyticsService: AnalyticsService,
   ) {}
 
+  async onModuleInit() {
+    await this.ensureMissionsSeeded();
+  }
+
+  async ensureMissionsSeeded(): Promise<void> {
+    for (const seed of DEFAULT_MISSIONS) {
+      const existing = await this.missionModel.findOne({
+        where: { key: seed.key },
+      });
+
+      if (existing) {
+        await existing.update({
+          type: seed.type,
+          title: seed.title,
+          description: seed.description,
+          targetValue: seed.targetValue,
+          rewardGold: seed.rewardGold,
+          rewardXp: seed.rewardXp,
+          sortOrder: seed.sortOrder,
+          accent: seed.accent,
+          isActive: true,
+        });
+        continue;
+      }
+
+      await this.missionModel.create({
+        key: seed.key,
+        type: seed.type,
+        title: seed.title,
+        description: seed.description,
+        targetValue: seed.targetValue,
+        rewardGold: seed.rewardGold,
+        rewardXp: seed.rewardXp,
+        sortOrder: seed.sortOrder,
+        accent: seed.accent,
+        isActive: true,
+      });
+    }
+  }
+
   async getMissions(userId: string) {
+    await this.ensureMissionsSeeded();
+
     const now = new Date();
     const todayStart = this.streakService.getDayStartInAppTimeZone(now);
     const weekStart = this.streakService.getWeekStartInAppTimeZone(now);
@@ -132,7 +177,15 @@ export class MissionsService {
             [Op.lt]: now,
           },
         },
-        attributes: ['createdAt', 'calories', 'protein', 'carbs', 'fat', 'analysisItems'],
+        attributes: [
+          'createdAt',
+          'calories',
+          'protein',
+          'carbs',
+          'fat',
+          'analysisItems',
+          'mealType',
+        ],
       }),
     ]);
 
@@ -152,6 +205,7 @@ export class MissionsService {
         carbs: 0,
         fat: 0,
         meals: 0,
+        completeMealTypes: new Set<MealType>(),
         foods: new Set<string>(),
       };
 
@@ -160,6 +214,14 @@ export class MissionsService {
       dayTotals.carbs += parseNumber(meal.carbs);
       dayTotals.fat += parseNumber(meal.fat);
       dayTotals.meals += 1;
+
+      if (
+        meal.mealType === MealType.Breakfast ||
+        meal.mealType === MealType.Lunch ||
+        meal.mealType === MealType.Dinner
+      ) {
+        dayTotals.completeMealTypes.add(meal.mealType);
+      }
 
       const items = Array.isArray(meal.analysisItems) ? meal.analysisItems : [];
       for (const item of items) {
@@ -172,7 +234,8 @@ export class MissionsService {
       totalsByDay.set(dayKey, dayTotals);
     }
 
-    const todayTotals = totalsByDay.get(this.streakService.toDayKeyInAppTimeZone(todayStart));
+    const todayKey = this.streakService.toDayKeyFromAppDayStart(todayStart);
+    const todayTotals = totalsByDay.get(todayKey);
     const weeklyEntries = this.collectDayTotalsInRange(totalsByDay, weekStart, now);
     const monthlyEntries = this.collectDayTotalsInRange(totalsByDay, monthStart, now);
 
@@ -226,12 +289,13 @@ export class MissionsService {
         'daily_protein_goal',
         {
           progressCurrent: Math.round(todayTotals?.protein ?? 0),
+          progressTarget: Math.max(1, Math.round(dailyProteinGoal)),
         },
       ],
       [
         'daily_three_meals',
         {
-          progressCurrent: todayTotals?.meals ?? 0,
+          progressCurrent: todayTotals?.completeMealTypes.size ?? 0,
         },
       ],
       [
@@ -276,7 +340,10 @@ export class MissionsService {
       const mapped = missionByKey.get(mission.key) ?? {
         progressCurrent: metGoalToday || metAllMacrosToday ? mission.targetValue : 0,
       };
-      const progressTarget = Math.max(1, mission.targetValue || 1);
+      const progressTarget = Math.max(
+        1,
+        mapped.progressTarget ?? mission.targetValue ?? 1,
+      );
       const progressCurrent = Math.max(0, Math.min(mapped.progressCurrent, progressTarget));
       const percent = Math.round((progressCurrent / progressTarget) * 100);
 
@@ -322,7 +389,7 @@ export class MissionsService {
       intro: {
         title: 'Bem-vindo às Missões!',
         description:
-          'Complete missões diárias, semanais e desafios mensais para ganhar ouro e XP. Suba de nível e desbloqueie recompensas com o Jaca!',
+          'Complete missões diárias, semanais e desafios mensais para ganhar ouro e XP. Troque na loja por molduras, fundos e proteção de sequência!',
       },
       sections,
     };
@@ -1042,7 +1109,7 @@ export class MissionsService {
     const cursor = new Date(start);
 
     while (cursor <= end) {
-      const value = totalsByDay.get(this.streakService.toDayKeyInAppTimeZone(cursor));
+      const value = totalsByDay.get(this.streakService.toDayKeyFromAppDayStart(cursor));
       if (value && value.meals > 0) {
         entries.push(value);
       }
@@ -1062,7 +1129,7 @@ export class MissionsService {
     const cursor = new Date(rangeEnd);
 
     while (cursor >= rangeStart) {
-      const totals = totalsByDay.get(this.streakService.toDayKeyInAppTimeZone(cursor));
+      const totals = totalsByDay.get(this.streakService.toDayKeyFromAppDayStart(cursor));
       if (!totals || totals.meals <= 0) {
         break;
       }
@@ -1185,7 +1252,7 @@ export class MissionsService {
 
     if (missionType === 'weekly') {
       const weekStart = this.streakService.getWeekStartInAppTimeZone(referenceDate);
-      return this.streakService.toDayKeyInAppTimeZone(weekStart);
+      return this.streakService.toDayKeyFromAppDayStart(weekStart);
     }
 
     const parts = this.streakService.getDatePartsInAppTimeZone(referenceDate);
@@ -1496,7 +1563,7 @@ export class MissionsService {
     const cursor = new Date(latestAnchorDate);
     cursor.setUTCDate(cursor.getUTCDate() + 1);
     while (cursor <= todayStart) {
-      missing.push(this.streakService.toDayKeyInAppTimeZone(cursor));
+      missing.push(this.streakService.toDayKeyFromAppDayStart(cursor));
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 

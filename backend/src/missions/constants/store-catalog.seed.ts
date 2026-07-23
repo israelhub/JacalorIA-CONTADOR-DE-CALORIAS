@@ -1,5 +1,17 @@
 import { StoreCatalogCategory } from '../models/store-catalog-item.model';
 
+/**
+ * Economia da loja (sink de ouro).
+ *
+ * Escada de preços vs rendimento (~40 ouro/dia engajado, ~20 casual):
+ * - Entry (1–2 dias): primeira compra rápida → retenção inicial
+ * - Mid (3–7 dias): progresso visível semana a semana
+ * - Rare (~2 semanas): status intermediário
+ * - Legendary (1–2 meses): meta aspiracional de longo prazo
+ * - Bloqueador (~2,5 dias): loss aversion útil, sem ser punitivo
+ *
+ * Total cosméticos ativos ≈ 3835 ouro → sink maior que 1 mês perfeito.
+ */
 export type StoreCatalogSeedItem = {
   itemKey: string;
   category: StoreCatalogCategory;
@@ -15,88 +27,80 @@ export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
     category: 'avatar_frame',
     name: 'Orelhas de Gato',
     description: 'Moldura suave com orelhinhas felinas.',
-    priceGold: 90,
-    sortOrder: 40,
+    priceGold: 45,
+    sortOrder: 10,
   },
   {
     itemKey: 'gator_tail_fin',
     category: 'avatar_frame',
     name: 'Cauda de Jacare',
     description: 'Moldura suave inspirada no estilo do Jaca.',
-    priceGold: 110,
-    sortOrder: 50,
-  },
-  {
-    itemKey: 'fox_autumn_tail',
-    category: 'avatar_frame',
-    name: 'Raposa de Outono',
-    description: 'Orelhas e cauda felpuda em tons de outono.',
-    priceGold: 140,
-    sortOrder: 60,
+    priceGold: 70,
+    sortOrder: 20,
   },
   {
     itemKey: 'panda_bamboo',
     category: 'avatar_frame',
     name: 'Panda Bamboo',
     description: 'Orelhas e patinhas de panda com bambu fresco.',
-    priceGold: 130,
-    sortOrder: 70,
+    priceGold: 100,
+    sortOrder: 30,
   },
   {
-    itemKey: 'fire_streak',
+    itemKey: 'fox_autumn_tail',
     category: 'avatar_frame',
-    name: 'Chama da Sequencia',
-    description: 'Anel em brasa com chamas da ofensiva.',
-    priceGold: 220,
-    sortOrder: 80,
+    name: 'Raposa de Outono',
+    description: 'Orelhas e cauda felpuda em tons de outono.',
+    priceGold: 150,
+    sortOrder: 40,
   },
   {
     itemKey: 'fruit_ring',
     category: 'avatar_frame',
     name: 'Coroa de Frutas',
     description: 'Frutas e vegetais frescos ao redor do perfil.',
-    priceGold: 160,
-    sortOrder: 90,
+    priceGold: 200,
+    sortOrder: 50,
+  },
+  {
+    itemKey: 'fire_streak',
+    category: 'avatar_frame',
+    name: 'Chama da Sequencia',
+    description: 'Anel em brasa com chamas da ofensiva.',
+    priceGold: 350,
+    sortOrder: 60,
   },
   {
     itemKey: 'royal_gold',
     category: 'avatar_frame',
     name: 'Ouro Real',
     description: 'Anel dourado com coroa, gemas e moedas.',
-    priceGold: 1000,
-    sortOrder: 100,
-  },
-  {
-    itemKey: 'sunset_orbit',
-    category: 'avatar_background',
-    name: 'Sunset Orbit',
-    description: 'Por do sol com orbitas suaves.',
-    priceGold: 130,
-    sortOrder: 10,
-  },
-  {
-    itemKey: 'jungle_neon',
-    category: 'avatar_background',
-    name: 'Jungle Neon',
-    description: 'Selva vibrante com brilho neon.',
-    priceGold: 190,
-    sortOrder: 20,
-  },
-  {
-    itemKey: 'aurora_grid',
-    category: 'avatar_background',
-    name: 'Aurora Grid',
-    description: 'Aurora boreal com grade futurista.',
-    priceGold: 250,
-    sortOrder: 30,
+    priceGold: 2000,
+    sortOrder: 70,
   },
   {
     itemKey: 'sky',
     category: 'avatar_background',
     name: 'Sky',
     description: 'Ceú aberto com tons azuis.',
-    priceGold: 150,
-    sortOrder: 40,
+    priceGold: 55,
+    sortOrder: 10,
+  },
+  {
+    itemKey: 'sunset_orbit',
+    category: 'avatar_background',
+    name: 'Sunset Orbit',
+    description: 'Por do sol com orbitas suaves.',
+    priceGold: 85,
+    sortOrder: 20,
+  },
+  {
+    itemKey: 'jungle_neon',
+    category: 'avatar_background',
+    name: 'Jungle Neon',
+    description: 'Selva vibrante com brilho neon.',
+    priceGold: 160,
+    sortOrder: 30,
   },
   {
     itemKey: 'pantano',
@@ -104,21 +108,29 @@ export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
     name: 'Pantano',
     description: 'Atmosfera verde e misteriosa.',
     priceGold: 220,
+    sortOrder: 40,
+  },
+  {
+    itemKey: 'aurora_grid',
+    category: 'avatar_background',
+    name: 'Aurora Grid',
+    description: 'Aurora boreal com grade futurista.',
+    priceGold: 400,
     sortOrder: 50,
   },
   {
     itemKey: 'offensive_guard',
     category: 'offensive_blocker',
     name: 'Bloqueador de sequência',
-    description: null,
-    priceGold: 80,
+    description: 'Protege sua ofensiva por 1 dia perdido.',
+    priceGold: 100,
     sortOrder: 10,
   },
   {
     itemKey: 'streak_restore',
     category: 'streak_restore',
     name: 'Restaurar sequências perdidas até então',
-    description: null,
+    description: 'Usa bloqueadores para recuperar dias perdidos.',
     priceGold: 0,
     sortOrder: 20,
   },

@@ -18,6 +18,19 @@ export enum MealStatus {
   Deleted = 'deleted',
 }
 
+export enum MealType {
+  Breakfast = 'breakfast',
+  Lunch = 'lunch',
+  Dinner = 'dinner',
+  Free = 'free',
+}
+
+export const COMPLETE_MEAL_TYPES: readonly MealType[] = [
+  MealType.Breakfast,
+  MealType.Lunch,
+  MealType.Dinner,
+] as const;
+
 @Table({ tableName: 'meals', underscored: true })
 export class Meal extends Model {
   @PrimaryKey
@@ -60,6 +73,11 @@ export class Meal extends Model {
   @AllowNull(true)
   @Column({ type: DataType.STRING, field: 'time_label' })
   timeLabel: string | null;
+
+  @AllowNull(false)
+  @Default(MealType.Free)
+  @Column({ type: DataType.STRING, field: 'meal_type' })
+  mealType: MealType;
 
   @AllowNull(true)
   @Column({ type: DataType.STRING, field: 'image_url' })
