@@ -47,14 +47,25 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
   @override
   void initState() {
     super.initState();
-    _load();
+    // Semente SWR: pinta o perfil do cache na hora (sem spinner) e, como a
+    // seção de refeições monta junto, o fetch dela roda em paralelo com a
+    // revalidação do perfil.
+    _profile = SocialService.cachedFriendProfile(
+      widget.friendId,
+      groupId: widget.groupId,
+      viaUserId: widget.viaUserId,
+    );
+    _isLoading = _profile == null;
+    _load(silent: _profile != null);
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  Future<void> _load({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
 
     try {
       final data = await widget.service.fetchFriendProfile(
@@ -69,6 +80,10 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
       });
     } catch (error) {
       if (!mounted) return;
+      if (silent) {
+        // Revalidação em segundo plano falhou; mantém o conteúdo atual.
+        return;
+      }
       setState(() {
         _error = error.toString().replaceFirst('Exception: ', '');
         _isLoading = false;
@@ -277,7 +292,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _infoCard(
-                  icon: Icons.calendar_today_rounded,
+                  icon: Icons.schedule_rounded,
                   iconColor: AppColors.socialInfoSex,
                   label: 'Idade da conta',
                   value: formatProfileAccountAge(profile.createdAt),

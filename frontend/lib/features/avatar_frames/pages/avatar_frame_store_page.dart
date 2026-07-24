@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -82,55 +83,71 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
       _profileSnapshot,
     );
     _goldBalance = widget.initialGoldBalance;
-    _loadCatalog();
+
+    // Stale-while-revalidate: pinta o catálogo do cache na hora e revalida
+    // em segundo plano, sem spinner de tela cheia a cada abertura.
+    final cached = MissionsService.cachedStoreCatalog;
+    if (cached != null) {
+      _applyCatalogResponse(cached);
+      _isLoadingCatalog = false;
+    }
+    _loadCatalog(silent: cached != null);
   }
 
-  Future<void> _loadCatalog() async {
+  void _applyCatalogResponse(Map<String, dynamic> response) {
+    final profile = response['profile'] is Map<String, dynamic>
+        ? response['profile'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final summary = response['summary'] is Map<String, dynamic>
+        ? response['summary'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+
+    if (profile.isNotEmpty) {
+      _profileSnapshot.addAll(profile);
+    }
+
+    _catalog = StoreCatalogData.fromJson(response);
+    _purchasedFrameIds = AvatarFrameCatalog.purchasedIdsFromProfile(
+      _profileSnapshot,
+    );
+    _equippedFrameId = AvatarFrameCatalog.equippedIdFromProfile(
+      _profileSnapshot,
+    );
+    _purchasedBackgroundIds =
+        AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(
+          _profileSnapshot,
+        );
+    _equippedBackgroundId =
+        AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
+          _profileSnapshot,
+        );
+    _blockerInventory = AvatarFrameCatalog.blockerInventoryFromProfile(
+      _profileSnapshot,
+    );
+    for (final blocker in _catalog.blockers) {
+      if (blocker.isInventoryBlocker && blocker.quantityOwned > 0) {
+        _blockerInventory[blocker.id] = blocker.quantityOwned;
+      }
+    }
+    _goldBalance = _toInt(summary['gold'], _goldBalance);
+  }
+
+  Future<void> _loadCatalog({bool silent = false}) async {
     try {
       final response = await _missionsService.fetchStoreCatalog();
       if (!mounted) {
         return;
       }
-      final profile = response['profile'] is Map<String, dynamic>
-          ? response['profile'] as Map<String, dynamic>
-          : const <String, dynamic>{};
-      final summary = response['summary'] is Map<String, dynamic>
-          ? response['summary'] as Map<String, dynamic>
-          : const <String, dynamic>{};
-
-      if (profile.isNotEmpty) {
-        _profileSnapshot.addAll(profile);
-      }
-
       setState(() {
-        _catalog = StoreCatalogData.fromJson(response);
-        _purchasedFrameIds = AvatarFrameCatalog.purchasedIdsFromProfile(
-          _profileSnapshot,
-        );
-        _equippedFrameId = AvatarFrameCatalog.equippedIdFromProfile(
-          _profileSnapshot,
-        );
-        _purchasedBackgroundIds =
-            AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(
-              _profileSnapshot,
-            );
-        _equippedBackgroundId =
-            AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
-              _profileSnapshot,
-            );
-        _blockerInventory = AvatarFrameCatalog.blockerInventoryFromProfile(
-          _profileSnapshot,
-        );
-        for (final blocker in _catalog.blockers) {
-          if (blocker.isInventoryBlocker && blocker.quantityOwned > 0) {
-            _blockerInventory[blocker.id] = blocker.quantityOwned;
-          }
-        }
-        _goldBalance = _toInt(summary['gold'], _goldBalance);
+        _applyCatalogResponse(response);
         _isLoadingCatalog = false;
       });
     } catch (error) {
       if (!mounted) {
+        return;
+      }
+      if (silent) {
+        // Revalidação em segundo plano falhou; mantém o conteúdo atual.
         return;
       }
       setState(() {
@@ -255,7 +272,10 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
       }
 
       _applyResponseState(response);
-      await _loadCatalog();
+      // A resposta da compra já traz perfil/saldo atualizados; o catálogo
+      // revalida em segundo plano sem travar o botão.
+      AuthService.invalidateProfileCache();
+      unawaited(_loadCatalog(silent: true));
       _hasChanges = true;
 
       if (!mounted) {
@@ -372,7 +392,13 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
           'equippedAvatarFrameId': AvatarFrameCatalog.noneId,
         });
         _profileSnapshot['equippedAvatarFrameId'] = AvatarFrameCatalog.noneId;
-        await _loadCatalog();
+        setState(() {
+          _equippedFrameId = AvatarFrameCatalog.equippedIdFromProfile(
+            _profileSnapshot,
+          );
+          _previewFrameId = _equippedFrameId;
+        });
+        unawaited(_loadCatalog(silent: true));
         _hasChanges = true;
         if (mounted) {
           _showToast('Moldura desequipada.');
@@ -405,7 +431,14 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         });
         _profileSnapshot['equippedAvatarBackgroundId'] =
             AvatarFrameCatalog.noneId;
-        await _loadCatalog();
+        setState(() {
+          _equippedBackgroundId =
+              AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
+                _profileSnapshot,
+              );
+          _previewBackgroundId = _equippedBackgroundId;
+        });
+        unawaited(_loadCatalog(silent: true));
         _hasChanges = true;
         if (mounted) {
           _showToast('Fundo desequipado.');
@@ -1222,14 +1255,19 @@ class _StoreItemPreview extends StatelessWidget {
             final height = width / AvatarProfilePreview.bannerAspectRatio;
             final assetPath = AvatarBackgroundCatalog.assetPathForId(item.id);
             if (assetPath != null) {
+              // Decodifica só no tamanho exibido; os PNGs de fundo são grandes.
+              final cacheWidth =
+                  (width * MediaQuery.devicePixelRatioOf(context)).round();
               return ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 child: Image.asset(
                   assetPath,
                   width: width,
                   height: height,
+                  cacheWidth: cacheWidth > 0 ? cacheWidth : null,
                   fit: BoxFit.cover,
                   alignment: Alignment.center,
+                  filterQuality: FilterQuality.medium,
                 ),
               );
             }

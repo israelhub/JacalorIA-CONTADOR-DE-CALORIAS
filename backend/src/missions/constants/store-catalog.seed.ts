@@ -175,7 +175,7 @@ export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
     sortOrder: 100,
   },
   {
-    itemKey: 'soft_pink',
+    itemKey: 'pink_blush',
     category: 'avatar_background',
     name: 'Rosa Suave',
     description: 'Tons rosa para combinar com a moldura Rosa Suave.',
@@ -183,7 +183,7 @@ export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
     sortOrder: 5,
   },
   {
-    itemKey: 'soft_blue',
+    itemKey: 'blue_mist',
     category: 'avatar_background',
     name: 'Azul Suave',
     description: 'Tons azuis para combinar com a moldura Azul Suave.',

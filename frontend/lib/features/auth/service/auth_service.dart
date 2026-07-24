@@ -456,7 +456,7 @@ class AuthService {
     _inflightProfileFetch = null;
   }
 
-  Future<void> updateProfile(Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
     final uri = Uri.parse('$_baseUrl/auth/profile');
     final headers = _getHeaders();
 
@@ -469,12 +469,25 @@ class AuthService {
       throw Exception('Sessao invalida. Faca login novamente.');
     }
 
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
     if (response.statusCode != 200) {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
       throw Exception(_extractMessage(body, 'Erro ao atualizar perfil'));
     }
 
-    invalidateProfileCache();
+    // O PATCH devolve o usuário atualizado, mas sem os campos computados
+    // (streak, xp, missões) que só o GET /profile agrega. Mescla no snapshot
+    // atual para manter o cache quente e evitar um GET redundante ao voltar.
+    final updated = body.containsKey('id')
+        ? body
+        : (body['user'] as Map<String, dynamic>? ?? body);
+    final base = _cachedProfile ?? globalUser ?? const <String, dynamic>{};
+    final merged = <String, dynamic>{...base, ...updated};
+    _cachedProfile = merged;
+    _cachedProfileAt = DateTime.now();
+    _inflightProfileFetch = null;
+    globalUser = merged;
+    return Map<String, dynamic>.from(merged);
   }
 
   Future<void> signOut() async {

@@ -77,13 +77,13 @@ class AvatarBackgroundCatalog {
       assetPath: 'assets/images/avatar_backgrounds/royal_court.png',
     ),
     AvatarBackgroundItem(
-      id: 'soft_pink',
+      id: 'pink_blush',
       name: 'Rosa Suave',
       description: 'Tons rosa para combinar com a moldura Rosa Suave.',
       assetPath: 'assets/images/avatar_backgrounds/soft_pink.png',
     ),
     AvatarBackgroundItem(
-      id: 'soft_blue',
+      id: 'blue_mist',
       name: 'Azul Suave',
       description: 'Tons azuis para combinar com a moldura Azul Suave.',
       assetPath: 'assets/images/avatar_backgrounds/soft_blue.png',

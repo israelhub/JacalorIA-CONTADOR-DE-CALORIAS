@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -67,7 +69,9 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
       'social_group_detail',
       properties: {'group_id': widget.groupId},
     );
-    _detail = widget.initialDetail;
+    // Semente SWR: usa o detail passado ou o último conhecido em cache para
+    // abrir a tela já preenchida, sem spinner de tela cheia.
+    _detail = widget.initialDetail ?? SocialService.cachedGroup(widget.groupId);
     _isLoading = _detail == null;
     _lastLoadedDayKey = _dayKey(DateTime.now());
     // Sempre busca o ranking atualizado (média/dias decorridos mudam após 00:00 e refeições).
@@ -616,7 +620,17 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
 
     setState(() => _isInvitingFriends = true);
     try {
-      final friendsData = await widget._service.fetchFriends();
+      // Abre o modal na hora com os amigos já em cache (a aba Social costuma
+      // tê-los carregados); só faz o GET bloqueante se não houver semente.
+      final cachedFriends = SocialService.cachedFriends;
+      final friendsData =
+          cachedFriends ?? await widget._service.fetchFriends();
+      if (cachedFriends != null) {
+        // Revalida em segundo plano para a próxima abertura.
+        unawaited(widget._service.fetchFriends().catchError(
+              (_) => friendsData,
+            ));
+      }
       if (!mounted || _detail == null) return;
 
       final groupUserIds = _detail!.ranking.map((entry) => entry.userId).toSet();
@@ -695,14 +709,21 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
 
   Future<void> _precacheRankingAvatars(SocialGroupDetail detail) async {
     if (!mounted) return;
+    // Prewarm em paralelo em vez de serial, para o JPG de resultado ficar
+    // pronto mais rápido.
+    final futures = <Future<void>>[];
     for (final entry in detail.ranking) {
       final url = entry.avatarUrl?.trim();
       if (url == null || url.isEmpty || !url.startsWith('http')) {
         continue;
       }
-      try {
-        await precacheImage(CachedNetworkImageProvider(url), context);
-      } catch (_) {}
+      futures.add(
+        precacheImage(CachedNetworkImageProvider(url), context)
+            .catchError((_) {}),
+      );
+    }
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
     }
   }
 
