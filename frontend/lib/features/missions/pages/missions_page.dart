@@ -433,10 +433,24 @@ class _CounterPill extends StatelessWidget {
   }
 }
 
-class _GoldStatementPage extends StatelessWidget {
+class _GoldStatementPage extends StatefulWidget {
   const _GoldStatementPage({required this.service});
 
   final MissionsService service;
+
+  @override
+  State<_GoldStatementPage> createState() => _GoldStatementPageState();
+}
+
+class _GoldStatementPageState extends State<_GoldStatementPage> {
+  late final Future<List<Map<String, dynamic>>> _statementFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Cria o future uma única vez; senão qualquer rebuild refaz o request.
+    _statementFuture = widget.service.fetchGoldStatement();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -453,7 +467,7 @@ class _GoldStatementPage extends StatelessWidget {
         ),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: service.fetchGoldStatement(),
+        future: _statementFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(

@@ -12,6 +12,28 @@ class MissionsService {
 
   static String get _baseUrl => ApiConfig.baseUrl;
 
+  // Stale-while-revalidate: a loja abre na hora com o último catálogo e
+  // revalida em segundo plano.
+  static Map<String, dynamic>? _storeCatalogCache;
+  static DateTime? _storeCatalogFetchedAt;
+  static const Duration _storeCatalogTtl = Duration(minutes: 10);
+
+  static Map<String, dynamic>? get cachedStoreCatalog {
+    final fetchedAt = _storeCatalogFetchedAt;
+    if (_storeCatalogCache == null || fetchedAt == null) {
+      return null;
+    }
+    if (DateTime.now().difference(fetchedAt) > _storeCatalogTtl) {
+      return null;
+    }
+    return _storeCatalogCache;
+  }
+
+  static void invalidateStoreCatalogCache() {
+    _storeCatalogCache = null;
+    _storeCatalogFetchedAt = null;
+  }
+
   Future<Map<String, dynamic>> fetchStoreCatalog() async {
     // Real route first: on jacaloria.online, CloudFront can turn unknown /api
     // 404s into HTML 200 (SPA fallback), which breaks path fallbacks.
@@ -20,6 +42,8 @@ class MissionsService {
       '/missions/store/catalog',
       '/missions/catalog',
     ], fallbackError: 'Erro ao carregar catálogo da loja.');
+    _storeCatalogCache = body;
+    _storeCatalogFetchedAt = DateTime.now();
     return body;
   }
 

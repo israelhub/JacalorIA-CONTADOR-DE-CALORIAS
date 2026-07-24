@@ -11,6 +11,40 @@ class SocialService {
 
   static String get _baseUrl => ApiConfig.baseUrl;
 
+  // Sementes de stale-while-revalidate: guardam a última resposta conhecida
+  // por chave para as telas pintarem na hora e revalidarem em segundo plano.
+  // Sem TTL — as telas sempre disparam a revalidação silenciosa.
+  static final Map<String, SocialGroupDetail> _groupSeed =
+      <String, SocialGroupDetail>{};
+  static final Map<String, SocialFriendProfile> _friendProfileSeed =
+      <String, SocialFriendProfile>{};
+  static SocialFriendsData? _friendsSeed;
+
+  static SocialGroupDetail? cachedGroup(String groupId) =>
+      _groupSeed[groupId.trim()];
+
+  static SocialFriendProfile? cachedFriendProfile(
+    String friendUserId, {
+    String? groupId,
+    String? viaUserId,
+  }) =>
+      _friendProfileSeed[_friendProfileKey(friendUserId, groupId, viaUserId)];
+
+  static SocialFriendsData? get cachedFriends => _friendsSeed;
+
+  static String _friendProfileKey(
+    String friendUserId,
+    String? groupId,
+    String? viaUserId,
+  ) =>
+      '${friendUserId.trim()}|${groupId?.trim() ?? ''}|${viaUserId?.trim() ?? ''}';
+
+  static void clearSeedCache() {
+    _groupSeed.clear();
+    _friendProfileSeed.clear();
+    _friendsSeed = null;
+  }
+
   Future<List<SocialGroupSummary>> fetchGroups() async {
     final response = await http.get(Uri.parse('$_baseUrl/social/groups'), headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -27,7 +61,9 @@ class SocialService {
     final response = await http.get(Uri.parse('$_baseUrl/social/friends'), headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
-      return _parseFriendsData(body);
+      final data = _parseFriendsData(body);
+      _friendsSeed = data;
+      return data;
     }
     throw Exception(_extractMessage(body, 'Erro ao carregar amigos.'));
   }
@@ -110,7 +146,13 @@ class SocialService {
     final response = await http.get(uri, headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
-      return SocialFriendProfile.fromJson(body);
+      final profile = SocialFriendProfile.fromJson(body);
+      _friendProfileSeed[_friendProfileKey(
+        friendUserId,
+        normalizedGroupId,
+        normalizedViaUserId,
+      )] = profile;
+      return profile;
     }
       throw Exception(_extractMessage(body, 'Erro ao carregar perfil.'));
   }
@@ -174,7 +216,9 @@ class SocialService {
     final response = await http.post(Uri.parse('$_baseUrl/social/groups/join/${inviteCode.trim()}'), headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return SocialGroupDetail.fromJson(body);
+      final detail = SocialGroupDetail.fromJson(body);
+      _seedGroup(detail);
+      return detail;
     }
     throw Exception(_extractMessage(body, 'Erro ao entrar no grupo.'));
   }
@@ -206,7 +250,9 @@ class SocialService {
     final response = await http.post(Uri.parse('$_baseUrl/social/groups/public/${groupId.trim()}/join'), headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return SocialGroupDetail.fromJson(body);
+      final detail = SocialGroupDetail.fromJson(body);
+      _seedGroup(detail);
+      return detail;
     }
     throw Exception(_extractMessage(body, 'Erro ao entrar no grupo público.'));
   }
@@ -215,7 +261,9 @@ class SocialService {
     final response = await http.get(Uri.parse('$_baseUrl/social/groups/$groupId'), headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
-      return SocialGroupDetail.fromJson(body);
+      final detail = SocialGroupDetail.fromJson(body);
+      _groupSeed[groupId.trim()] = detail;
+      return detail;
     }
     throw Exception(_extractMessage(body, 'Erro ao carregar o grupo.'));
   }
@@ -245,6 +293,7 @@ class SocialService {
     final response = await http.post(Uri.parse('$_baseUrl/social/groups/${groupId.trim()}/leave'), headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
+      _groupSeed.remove(groupId.trim());
       return;
     }
     throw Exception(_extractMessage(body, 'Erro ao sair do grupo.'));
@@ -254,6 +303,7 @@ class SocialService {
     final response = await http.delete(Uri.parse('$_baseUrl/social/groups/${groupId.trim()}'), headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
+      _groupSeed.remove(groupId.trim());
       return;
     }
     throw Exception(_extractMessage(body, 'Erro ao excluir o grupo.'));
@@ -270,7 +320,9 @@ class SocialService {
     );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return SocialGroupDetail.fromJson(body);
+      final detail = SocialGroupDetail.fromJson(body);
+      _seedGroup(detail);
+      return detail;
     }
     throw Exception(_extractMessage(body, 'Erro ao convidar amigos para o grupo.'));
   }
@@ -290,7 +342,9 @@ class SocialService {
       fallbackError: 'Erro ao excluir membro do grupo.',
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return SocialGroupDetail.fromJson(body);
+      final detail = SocialGroupDetail.fromJson(body);
+      _seedGroup(detail);
+      return detail;
     }
     throw Exception(_extractMessage(body, 'Erro ao excluir membro do grupo.'));
   }
@@ -320,7 +374,9 @@ class SocialService {
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 201 || response.statusCode == 200) {
-      return SocialGroupDetail.fromJson(body);
+      final detail = SocialGroupDetail.fromJson(body);
+      _seedGroup(detail);
+      return detail;
     }
     throw Exception(_extractMessage(body, 'Erro ao criar grupo.'));
   }
@@ -349,7 +405,9 @@ class SocialService {
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
-      return SocialGroupDetail.fromJson(body);
+      final detail = SocialGroupDetail.fromJson(body);
+      _seedGroup(detail);
+      return detail;
     }
     throw Exception(_extractMessage(body, 'Erro ao atualizar grupo.'));
   }
@@ -391,8 +449,15 @@ class SocialService {
     return fallback;
   }
 
+  void _seedGroup(SocialGroupDetail detail) {
+    final id = detail.group.id.trim();
+    if (id.isNotEmpty) {
+      _groupSeed[id] = detail;
+    }
+  }
+
   SocialFriendsData _parseFriendsData(Map<String, dynamic> body) {
-    return SocialFriendsData(
+    _friendsSeed = SocialFriendsData(
       friends: (body['friends'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(SocialFriend.fromJson)
@@ -403,5 +468,6 @@ class SocialService {
           .map(SocialFriendRequest.fromJson)
           .toList(growable: false),
     );
+    return _friendsSeed!;
   }
 }

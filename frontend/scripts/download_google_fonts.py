@@ -10,6 +10,7 @@ OUT = pathlib.Path(__file__).resolve().parents[1] / "assets" / "google_fonts"
 
 FILES = {
     "Baloo2-Regular.ttf": "https://cdn.jsdelivr.net/fontsource/fonts/baloo-2@5.2.5/latin-400-normal.ttf",
+    "Baloo2-SemiBold.ttf": "https://cdn.jsdelivr.net/fontsource/fonts/baloo-2@5.2.5/latin-600-normal.ttf",
     "Baloo2-Bold.ttf": "https://cdn.jsdelivr.net/fontsource/fonts/baloo-2@5.2.5/latin-700-normal.ttf",
     "Baloo2-ExtraBold.ttf": "https://cdn.jsdelivr.net/fontsource/fonts/baloo-2@5.2.5/latin-800-normal.ttf",
     "Nunito-Regular.ttf": "https://cdn.jsdelivr.net/fontsource/fonts/nunito@5.2.5/latin-400-normal.ttf",
