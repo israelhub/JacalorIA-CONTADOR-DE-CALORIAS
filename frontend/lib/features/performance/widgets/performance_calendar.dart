@@ -232,7 +232,7 @@ class _CalendarLegend extends StatelessWidget {
       spacing: AppSpacing.md,
       runSpacing: AppSpacing.xs,
       children: const <Widget>[
-        _LegendItem(label: 'Meta atingida', color: AppColors.action500),
+        _LegendItem(label: 'Objetivo batido', color: AppColors.action500),
         _LegendItem(
           label: 'Refeição registrada',
           color: AppColors.performanceLegendMeal,

@@ -141,7 +141,7 @@ void main() {
       expect(
         calorieGoalExplanationForObjective(HomeObjective.loseWeight),
         'Seu objetivo é atingir a meta diária de calorias ou ficar até '
-        '200 calorias abaixo dela, sem poder ultrapassá-la.',
+        '200 calorias abaixo dela. Sem poder ultrapassá-la.',
       );
       expect(
         calorieGoalExplanationForObjective(HomeObjective.gainMass),

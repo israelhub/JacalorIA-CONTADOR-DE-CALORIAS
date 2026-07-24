@@ -89,7 +89,9 @@ class _AppDashedActionButtonState extends State<AppDashedActionButton> {
               width: double.infinity,
               height: widget.height,
               child: CustomPaint(
-                painter: _DashedRoundedRectPainter(
+                // Paint dashes above the fill — `painter` draws behind the
+                // child and gets covered by the solid background.
+                foregroundPainter: _DashedRoundedRectPainter(
                   color: widget.borderColor,
                   strokeWidth: 1.5,
                   radius: widget.borderRadius,
@@ -154,11 +156,19 @@ class _DashedRoundedRectPainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
 
+    // Inset so the stroke stays inside the canvas (not half-clipped).
+    final inset = strokeWidth / 2;
     final rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(radius),
+      Rect.fromLTWH(
+        inset,
+        inset,
+        math.max(0, size.width - strokeWidth),
+        math.max(0, size.height - strokeWidth),
+      ),
+      Radius.circular(math.max(0, radius - inset)),
     );
     final path = Path()..addRRect(rrect);
     const dashWidth = 8.0;

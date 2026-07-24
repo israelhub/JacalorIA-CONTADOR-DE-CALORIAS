@@ -32,7 +32,7 @@ class PerformanceMacroBar extends StatelessWidget {
               ),
             ),
             Text(
-              '$clampedPercent% da meta',
+              '$clampedPercent% do objetivo',
               style: AppTextStyles.performanceMacroLabel.copyWith(
                 color: AppColors.textMuted,
               ),
