@@ -779,10 +779,7 @@ class _HomeBody extends StatelessWidget {
               child: Column(
                 children: [
                   const SizedBox(height: AppSpacing.xxl),
-                  _Header(
-                    userProfile: userProfile,
-                    onAvatarTap: onAvatarTap,
-                  ),
+                  _Header(userProfile: userProfile, onAvatarTap: onAvatarTap),
                   const SizedBox(height: AppSpacing.xxxl),
                   HomeDailyGoalWithMascot(
                     mascotAsset: HomePage._mealAsset,
@@ -800,8 +797,6 @@ class _HomeBody extends StatelessWidget {
                     onTap: onSelectedDateTap,
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  _AddMealAction(onTap: onAddMealPressed),
-                  const SizedBox(height: AppSpacing.lg),
                 ],
               ),
             ),
@@ -817,14 +812,19 @@ class _HomeBody extends StatelessWidget {
                     AppSpacing.lg,
                     AppSpacing.xxxl + bottomInset + 56,
                   ),
-                  itemCount: dayRecords.length,
+                  itemCount: dayRecords.length + 1,
                   separatorBuilder: (_, __) =>
                       const SizedBox(height: AppSpacing.lg),
                   itemBuilder: (context, index) {
-                    final record = dayRecords[index];
+                    if (index == 0) {
+                      return _AddMealAction(onTap: onAddMealPressed);
+                    }
+
+                    final recordIndex = index - 1;
+                    final record = dayRecords[recordIndex];
 
                     return HomeMealCard(
-                      cardKey: ValueKey('home-meal-card-$index'),
+                      cardKey: ValueKey('home-meal-card-$recordIndex'),
                       title: record.title,
                       description: record.description,
                       kcal: record.kcalLabel,
