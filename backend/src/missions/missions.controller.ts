@@ -78,16 +78,6 @@ export class MissionsController {
     );
   }
 
-  @Post('store/streak-restore/purchase')
-  async purchaseStreakRestore(@Req() req: any) {
-    const userId = req.user?.sub;
-    if (!userId) {
-      throw new UnauthorizedException('Usuário não autenticado');
-    }
-
-    return this.missionsService.purchaseStreakRestore(userId);
-  }
-
   @Get('wallet/gold-statement')
   async getGoldStatement(@Req() req: any) {
     const userId = req.user?.sub;

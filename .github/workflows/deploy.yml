@@ -108,6 +108,7 @@ jobs:
         working-directory: frontend
         run: |
           flutter build web --release \
+            --pwa-strategy=none \
             --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }} \
             --dart-define=SHARE_BASE_URL=${{ vars.SHARE_BASE_URL }} \
             --dart-define=GOOGLE_WEB_CLIENT_ID=${{ vars.GOOGLE_WEB_CLIENT_ID }}
@@ -128,32 +129,16 @@ jobs:
           BUCKET="${{ vars.S3_BUCKET }}"
           WEB_DIR="frontend/build/web"
 
-          # Sync completo (com --delete). Cache longo por padrão nos assets com hash.
+          # Default: revalidate always. Never mark app shell as immutable —
+          # main.dart.js keeps the same name across deploys.
           aws s3 sync "$WEB_DIR" "s3://$BUCKET" --delete \
-            --cache-control "public,max-age=31536000,immutable"
+            --cache-control "no-cache,must-revalidate"
 
-          # Entrypoints + app shell sem hash de conteúdo: sem cache.
-          # main.dart.js/wasm NÃO mudam de nome entre deploys — se ficarem
-          # immutable, Chrome mobile (e outros) continuam no JS antigo por até 1 ano.
-          for f in \
-            index.html \
-            flutter_bootstrap.js \
-            flutter_service_worker.js \
-            flutter.js \
-            version.json \
-            manifest.json \
-            main.dart.js \
-            main.dart.wasm \
-            AssetManifest.bin \
-            AssetManifest.bin.json \
-            AssetManifest.json \
-            FontManifest.json
-          do
-            if [ -f "$WEB_DIR/$f" ]; then
-              aws s3 cp "$WEB_DIR/$f" "s3://$BUCKET/$f" \
-                --cache-control "no-cache,no-store,must-revalidate"
-            fi
-          done
+          # CanvasKit engine binaries are content-addressed by Flutter channel path.
+          if [ -d "$WEB_DIR/canvaskit" ]; then
+            aws s3 sync "$WEB_DIR/canvaskit" "s3://$BUCKET/canvaskit" \
+              --cache-control "public,max-age=31536000,immutable"
+          fi
 
       - name: Invalidar cache do CloudFront
         run: |
@@ -168,4 +153,5 @@ jobs:
               "/manifest.json" \
               "/main.dart.js" \
               "/main.dart.wasm" \
+              "/main.dart.mjs" \
               "/*" >/dev/null

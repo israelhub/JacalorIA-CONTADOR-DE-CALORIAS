@@ -405,7 +405,7 @@ class _SocialPageState extends State<SocialPage> {
     if (mounted) await _controller.loadAll();
   }
 
-  bool _isGroupFinished(SocialGroupSummary group) => group.remainingDays <= 0;
+  bool _isGroupFinished(SocialGroupSummary group) => group.isFinished;
 
   Future<void> _openFriendProfile(SocialFriend friend) async {
     final removed = await context.pushSlidePage<bool>(

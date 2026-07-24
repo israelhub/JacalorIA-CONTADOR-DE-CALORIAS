@@ -11,9 +11,16 @@ class AvatarProfilePreview extends StatelessWidget {
     required this.frameId,
     required this.name,
     this.backgroundId,
-    this.height = 173,
+    this.height = defaultHeight,
     this.avatarSize,
   });
+
+  /// Altura padrao do banner no perfil / loja.
+  static const double defaultHeight = 173;
+
+  /// Proporcao tipica do banner (largura / [defaultHeight]), usada no catalogo.
+  /// Calibrada no layout real (~598x177).
+  static const double bannerAspectRatio = 598 / 177;
 
   final String? avatarUrl;
   final String? frameId;

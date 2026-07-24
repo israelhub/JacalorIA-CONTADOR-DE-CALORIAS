@@ -157,6 +157,8 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
         friendId: entry.userId,
         initialFriendName: entry.name,
         groupId: widget.groupId,
+        competitionType: _detail?.group.competitionType ??
+            widget.initialDetail?.group.competitionType,
         service: widget._service,
       ),
     );
@@ -201,7 +203,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
 
     final detail = _detail!;
     final group = detail.group;
-    final isFinished = group.remainingDays <= 0;
+    final isFinished = group.isFinished;
     SocialRankingEntry? currentUserEntry;
     for (final entry in detail.ranking) {
       if (entry.isCurrentUser) {
@@ -383,7 +385,9 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
-                      'Parabéns! Vocês concluiram o desafio, veja abaixo o ranking final e compartilhe ou baixe o resultado.',
+                      group.competitionType == 'group_streak'
+                          ? 'A sequência do grupo foi quebrada e o desafio chegou ao fim. Veja abaixo o ranking final e compartilhe ou baixe o resultado.'
+                          : 'Parabéns! Vocês concluiram o desafio, veja abaixo o ranking final e compartilhe ou baixe o resultado.',
                       style: AppTextStyles.captionStrong.copyWith(
                         color: AppColors.brand900Variant,
                         fontWeight: FontWeight.w700,
@@ -708,7 +712,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
   /// took seconds after the click, the browser would reject the share.
   void _prewarmResultJpgIfFinished() {
     final detail = _detail;
-    if (detail == null || detail.group.remainingDays > 0) return;
+    if (detail == null || !detail.group.isFinished) return;
     _resultJpgBytes().catchError((_) => Uint8List(0));
   }
 

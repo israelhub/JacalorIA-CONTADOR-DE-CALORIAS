@@ -46,6 +46,36 @@ class AvatarBackgroundCatalog {
       description: 'Atmosfera verde e misteriosa.',
       assetPath: 'assets/images/avatar_backgrounds/pantano.png',
     ),
+    AvatarBackgroundItem(
+      id: 'bamboo_grove',
+      name: 'Bosque de Bambu',
+      description: 'Bambuzal sereno para combinar com o Panda.',
+      assetPath: 'assets/images/avatar_backgrounds/bamboo_grove.png',
+    ),
+    AvatarBackgroundItem(
+      id: 'orchard_fresh',
+      name: 'Pomar Fresco',
+      description: 'Frutas frescas que combinam com a Coroa de Frutas.',
+      assetPath: 'assets/images/avatar_backgrounds/orchard_fresh.png',
+    ),
+    AvatarBackgroundItem(
+      id: 'autumn_woods',
+      name: 'Floresta de Outono',
+      description: 'Folhas douradas para acompanhar a Raposa de Outono.',
+      assetPath: 'assets/images/avatar_backgrounds/autumn_woods.png',
+    ),
+    AvatarBackgroundItem(
+      id: 'ember_blaze',
+      name: 'Brasas em Chamas',
+      description: 'Fogo intenso para combinar com a Chama da Sequencia.',
+      assetPath: 'assets/images/avatar_backgrounds/ember_blaze.png',
+    ),
+    AvatarBackgroundItem(
+      id: 'royal_court',
+      name: 'Corte Real',
+      description: 'Ouro e joias para combinar com o Ouro Real.',
+      assetPath: 'assets/images/avatar_backgrounds/royal_court.png',
+    ),
   ];
 
   static AvatarBackgroundItem? byId(String? id) {

@@ -5,8 +5,11 @@ import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/avatar_profile_preview.dart';
+import '../../profile/helpers/profile_date_helpers.dart';
+import '../../profile/widgets/profile_achievements_card.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
+import '../widgets/social_member_daily_meals_section.dart';
 import '../widgets/social_profile_info_card.dart';
 import '../widgets/social_profile_metric_card.dart';
 import 'social_user_friends_page.dart';
@@ -17,6 +20,7 @@ class SocialFriendProfilePage extends StatefulWidget {
     required this.friendId,
     this.initialFriendName,
     this.groupId,
+    this.competitionType,
     this.viaUserId,
     SocialService? service,
   }) : service = service ?? const SocialService();
@@ -24,6 +28,7 @@ class SocialFriendProfilePage extends StatefulWidget {
   final String friendId;
   final String? initialFriendName;
   final String? groupId;
+  final String? competitionType;
   final String? viaUserId;
   final SocialService service;
 
@@ -80,6 +85,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
         userId: profile.id,
         userName: profile.name,
         groupId: widget.groupId,
+        competitionType: widget.competitionType,
         viaUserId: widget.viaUserId,
       ),
     );
@@ -269,6 +275,29 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                   label: 'Objetivo',
                   value: objective,
                 ),
+                const SizedBox(height: AppSpacing.md),
+                _infoCard(
+                  icon: Icons.calendar_month_rounded,
+                  iconColor: AppColors.socialInfoSex,
+                  label: 'Idade da conta',
+                  value: formatProfileAccountAge(profile.createdAt),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                _sectionTitle('Conquistas'),
+                const SizedBox(height: AppSpacing.sm),
+                ProfileAchievementsCard(
+                  missionsCompleted: profile.missionsCompleted,
+                  longestStreakDays: profile.longestStreakDays,
+                  cosmeticsOwned: profile.cosmeticsOwned,
+                ),
+                if (widget.groupId != null &&
+                    widget.groupId!.trim().isNotEmpty)
+                  SocialMemberDailyMealsSection(
+                    groupId: widget.groupId!,
+                    memberUserId: profile.id,
+                    competitionType: widget.competitionType,
+                    service: widget.service,
+                  ),
               ],
             ),
           ),

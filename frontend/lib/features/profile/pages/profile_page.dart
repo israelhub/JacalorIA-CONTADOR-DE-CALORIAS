@@ -3,22 +3,25 @@ import 'package:flutter/material.dart';
 import '../../../../core/analytics/analytics_service.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_floating_circle_button.dart';
+import '../../../../shared/widgets/app_expandable_fab.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/framed_avatar.dart';
 import '../../../../shared/widgets/frame_silhouette_icon.dart';
 import '../../../../shared/widgets/app_page_route.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/avatar_profile_preview.dart';
+import '../../avatar_frames/models/avatar_background_catalog.dart';
 import '../../avatar_frames/models/avatar_frame_catalog.dart';
 import '../../avatar_frames/pages/avatar_frame_store_page.dart';
 import '../../auth/pages/enter_page.dart';
+import '../../reminders/pages/meal_reminders_page.dart';
 import '../../support/pages/support_page.dart';
 import '../../auth/service/auth_service.dart';
 import '../../missions/services/missions_service.dart';
 import '../../social/widgets/social_profile_info_card.dart';
 import '../../social/widgets/social_profile_metric_card.dart';
 import '../helpers/profile_date_helpers.dart';
+import '../widgets/profile_achievements_card.dart';
 import 'profile_edit_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -40,6 +43,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _avatarUrl;
   String _equippedAvatarFrameId = AvatarFrameCatalog.noneId;
   Set<String> _purchasedAvatarFrameIds = const <String>{};
+  Set<String> _purchasedAvatarBackgroundIds = const <String>{};
   String _equippedCoverId = _ProfileCustomizationState.noneId;
   String _equippedBackgroundId = _ProfileCustomizationState.noneId;
   String? _equippedBlockerId;
@@ -54,7 +58,6 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isSaving = false;
   bool _isSigningOut = false;
   bool _isContentReady = false;
-  bool _isActionsExpanded = false;
   bool _hasChanges = false;
 
   @override
@@ -83,6 +86,8 @@ class _ProfilePageState extends State<ProfilePage> {
     _purchasedAvatarFrameIds = AvatarFrameCatalog.purchasedIdsFromProfile(
       profile,
     );
+    _purchasedAvatarBackgroundIds =
+        AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(profile);
     final personalization = _ProfileCustomizationState.fromProfile(profile);
     _equippedCoverId = personalization.equippedCoverId;
     _equippedBackgroundId = personalization.equippedBackgroundId;
@@ -638,12 +643,21 @@ class _ProfilePageState extends State<ProfilePage> {
     return name.isEmpty ? 'Usuário' : name;
   }
 
+  int get _cosmeticsOwnedCount =>
+      _purchasedAvatarFrameIds.length + _purchasedAvatarBackgroundIds.length;
+
   String _formatBirthDate() {
     final raw = _stringFromKeys(const ['birthDate', 'birth_date']);
     if (raw.isEmpty) {
       return 'Não informado';
     }
     return formatProfileDisplayDate(raw);
+  }
+
+  String _formatAccountAge() {
+    return formatProfileAccountAge(
+      _stringFromKeys(const ['createdAt', 'created_at']),
+    );
   }
 
   String _formatMeasure({required Object? rawValue, required String unit}) {
@@ -925,23 +939,28 @@ class _ProfilePageState extends State<ProfilePage> {
                               ]),
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.xl),
-                          SizedBox(
-                            height: AppSpacing.huge + AppSpacing.xs,
-                            child: AppButton(
-                              label: 'Suporte',
-                              onPressed: (_isSaving || _isSigningOut)
-                                  ? null
-                                  : () {
-                                      context.pushSlidePage(
-                                        const SupportPage(),
-                                      );
-                                    },
-                              variant: AppButtonVariant.outline,
-                              trailingIcon: Icons.support_agent_rounded,
-                            ),
-                          ),
                           const SizedBox(height: AppSpacing.md),
+                          _infoCard(
+                            icon: Icons.calendar_month_rounded,
+                            iconColor: AppColors.socialInfoSex,
+                            label: 'Idade da conta',
+                            value: _formatAccountAge(),
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                          _sectionTitle('Conquistas'),
+                          const SizedBox(height: AppSpacing.sm),
+                          ProfileAchievementsCard(
+                            missionsCompleted: _intFromKeys(const [
+                              'missionsCompleted',
+                              'missions_completed',
+                            ]),
+                            longestStreakDays: _intFromKeys(const [
+                              'longestStreakDays',
+                              'longest_streak_days',
+                            ]),
+                            cosmeticsOwned: _cosmeticsOwnedCount,
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
                           SizedBox(
                             height: AppSpacing.huge + AppSpacing.xs,
                             child: AppButton(
@@ -962,49 +981,38 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
         ),
-        floatingActionButton: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            if (_isActionsExpanded) ...[
-              SizedBox(
-                width: 220,
-                child: AppButton(
-                  label: 'Editar dados pessoais',
-                  onPressed: () async {
-                    setState(() => _isActionsExpanded = false);
-                    await _openEditDataPage();
-                  },
-                  variant: AppButtonVariant.outline,
-                  leadingIcon: Icons.badge_rounded,
-                  textStyle: AppTextStyles.buttonSmall,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                width: 220,
-                child: AppButton(
-                  label: 'Personalizar perfil',
-                  onPressed: () async {
-                    setState(() => _isActionsExpanded = false);
-                    await _openStorePage();
-                  },
-                  variant: AppButtonVariant.outline,
-                  leadingIcon: Icons.storefront_rounded,
-                  textStyle: AppTextStyles.buttonSmall,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-            AppFloatingCircleButton(
-              icon: _isActionsExpanded ? Icons.close_rounded : Icons.edit_rounded,
-              semanticLabel: _isActionsExpanded
-                  ? 'Fechar ações do perfil'
-                  : 'Abrir ações do perfil',
+        floatingActionButton: AppExpandableFab(
+          closedIcon: Icons.edit_rounded,
+          openIcon: Icons.close_rounded,
+          closedSemanticLabel: 'Abrir ações do perfil',
+          openSemanticLabel: 'Fechar ações do perfil',
+          actions: [
+            AppExpandableFabAction(
+              label: 'Lembretes de refeição',
+              icon: Icons.notifications_active_outlined,
               onPressed: () {
-                setState(() {
-                  _isActionsExpanded = !_isActionsExpanded;
-                });
+                context.pushSlidePage(const MealRemindersPage());
+              },
+            ),
+            AppExpandableFabAction(
+              label: 'Suporte',
+              icon: Icons.support_agent_rounded,
+              onPressed: () {
+                context.pushSlidePage(const SupportPage());
+              },
+            ),
+            AppExpandableFabAction(
+              label: 'Editar dados pessoais',
+              icon: Icons.badge_rounded,
+              onPressed: () {
+                _openEditDataPage();
+              },
+            ),
+            AppExpandableFabAction(
+              label: 'Personalizar perfil',
+              icon: Icons.storefront_rounded,
+              onPressed: () {
+                _openStorePage();
               },
             ),
           ],

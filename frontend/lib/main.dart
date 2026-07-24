@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -6,6 +8,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import 'core/analytics/analytics_service.dart';
 import 'core/invite/invite_link_service.dart';
+import 'core/notifications/meal_reminder_service.dart';
 import 'core/safe_area/web_safe_area_media_query.dart';
 import 'features/auth/pages/enter_page.dart';
 import 'features/auth/service/auth_service.dart';
@@ -18,6 +21,7 @@ Future<void> main() async {
   await AuthService.initialize();
   _warmUpAvatarCache();
   await AnalyticsService.instance.initialize();
+  unawaited(_bootstrapMealReminders());
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.portraitUp,
   ]);
@@ -29,6 +33,19 @@ Future<void> main() async {
     ),
   );
   runApp(const MyApp());
+}
+
+Future<void> _bootstrapMealReminders() async {
+  if (AuthService.globalToken == null) {
+    return;
+  }
+  try {
+    await MealReminderService.instance.initialize();
+    // Na web não pedir permissão no boot (browser exige gesto do usuário).
+    await MealReminderService.instance.syncScheduledReminders(
+      requestPermission: false,
+    );
+  } catch (_) {}
 }
 
 /// Começa a baixar a foto de perfil para o cache em disco assim que o app

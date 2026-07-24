@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/analytics/analytics_service.dart';
 import '../../../core/invite/invite_link_service.dart';
+import '../../../core/notifications/meal_reminder_service.dart';
+import '../../../core/notifications/in_app_message_store.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_main_bottom_navigation.dart';
 import '../../../shared/widgets/app_page_route.dart';
@@ -79,6 +81,8 @@ class _HomeShellPageState extends State<HomeShellPage>
     _lastTabRefreshAt[_currentIndex] = DateTime.now();
     AnalyticsService.instance.trackAppOpen();
     _trackTabOpened(_currentIndex);
+    unawaited(MealReminderService.instance.syncScheduledReminders());
+    unawaited(InAppMessageStore.instance.syncDueMealReminders());
   }
 
   @override
@@ -93,6 +97,8 @@ class _HomeShellPageState extends State<HomeShellPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       AnalyticsService.instance.trackAppOpen(properties: {'from': 'resume'});
+      unawaited(MealReminderService.instance.syncScheduledReminders());
+      unawaited(InAppMessageStore.instance.syncDueMealReminders());
       // Soft-refresh the visible tab after returning to the app
       // (inclui virada de dia para média calórica no social).
       _forceSoftRefreshForIndex(_currentIndex);

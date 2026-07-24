@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/profile/pages/profile_page.dart';
+import 'package:jacaloria/features/profile/widgets/profile_achievements_card.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
 
@@ -78,5 +79,30 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Ganhar massa'), findsOneWidget);
+  });
+
+  testWidgets('exibe conquistas com missoes, recorde e visuais', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        const ProfilePage(
+          initialProfile: {
+            'missionsCompleted': 31,
+            'longestStreakDays': 12,
+            'purchasedAvatarFrameIds': ['none', 'panda_bamboo'],
+            'purchasedAvatarBackgroundIds': ['sky', 'pantano'],
+          },
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Conquistas'), findsOneWidget);
+    expect(find.byType(ProfileAchievementMedal), findsNWidgets(3));
+    expect(find.text('31'), findsOneWidget);
+    expect(find.text('12'), findsOneWidget);
+    expect(find.text('3'), findsOneWidget);
   });
 }

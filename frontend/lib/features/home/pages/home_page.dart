@@ -18,10 +18,10 @@ import '../../../shared/widgets/app_dashed_action_button.dart';
 import '../services/meal_service.dart';
 import '../widgets/home_daily_goal_with_mascot.dart';
 import '../../../shared/widgets/app_date_picker.dart';
-import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/framed_avatar.dart';
 import '../widgets/home_meal_card.dart';
+import '../widgets/home_actions_fab.dart';
 import '../widgets/home_weight_quick_edit_button.dart';
 import '../../auth/service/auth_service.dart';
 import '../../profile/pages/profile_page.dart';
@@ -748,6 +748,16 @@ class _HomeBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = homeShellFabBottomInset(context);
+    final dayRecords = records
+        .where((record) {
+          final createdAt = record.createdAt;
+          if (createdAt == null) {
+            return true;
+          }
+
+          return isSameHomeDate(createdAt, selectedDate);
+        })
+        .toList(growable: false);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -756,85 +766,80 @@ class _HomeBody extends StatelessWidget {
           ? null
           : Padding(
               padding: EdgeInsets.only(bottom: bottomInset),
-              child: HomeWeightQuickEditButton(
+              child: HomeActionsFab(
                 userProfile: userProfile,
-                onWeightUpdated: onWeightUpdated,
+                onWeightUpdated: onWeightUpdated!,
               ),
             ),
       body: SafeArea(
-        child: AppRefreshScrollView(
-          onRefresh: onRefresh,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                ),
-                child: Column(
-                  children: [
-                    const SizedBox(height: AppSpacing.xxl),
-                    _Header(
-                      userProfile: userProfile,
-                      onAvatarTap: onAvatarTap,
-                    ),
-                    const SizedBox(height: AppSpacing.xxxl),
-                    HomeDailyGoalWithMascot(
-                      mascotAsset: HomePage._mealAsset,
-                      idleMascotVideoAsset: idleMascotVideoAsset,
-                      mascotVideoAsset: mascotCelebrationVideoAsset,
-                      playMascotVideo: playMascotCelebration,
-                      onMascotVideoCompleted: onMascotCelebrationCompleted,
-                      records: records,
-                      selectedDate: selectedDate,
-                      userProfile: goalUserProfile ?? userProfile,
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    _MealsHeader(
-                      selectedDate: selectedDate,
-                      onTap: onSelectedDateTap,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _AddMealAction(onTap: onAddMealPressed),
-                    const SizedBox(height: AppSpacing.lg),
-                    ...records
-                        .where((record) {
-                          final createdAt = record.createdAt;
-                          if (createdAt == null) {
-                            return true;
-                          }
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Column(
+                children: [
+                  const SizedBox(height: AppSpacing.xxl),
+                  _Header(
+                    userProfile: userProfile,
+                    onAvatarTap: onAvatarTap,
+                  ),
+                  const SizedBox(height: AppSpacing.xxxl),
+                  HomeDailyGoalWithMascot(
+                    mascotAsset: HomePage._mealAsset,
+                    idleMascotVideoAsset: idleMascotVideoAsset,
+                    mascotVideoAsset: mascotCelebrationVideoAsset,
+                    playMascotVideo: playMascotCelebration,
+                    onMascotVideoCompleted: onMascotCelebrationCompleted,
+                    records: records,
+                    selectedDate: selectedDate,
+                    userProfile: goalUserProfile ?? userProfile,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  _MealsHeader(
+                    selectedDate: selectedDate,
+                    onTap: onSelectedDateTap,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _AddMealAction(onTap: onAddMealPressed),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+              ),
+            ),
+            Expanded(
+              child: RefreshIndicator(
+                color: AppColors.action500,
+                onRefresh: onRefresh,
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.xxxl + bottomInset + 56,
+                  ),
+                  itemCount: dayRecords.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: AppSpacing.lg),
+                  itemBuilder: (context, index) {
+                    final record = dayRecords[index];
 
-                          return isSameHomeDate(createdAt, selectedDate);
-                        })
-                        .toList(growable: false)
-                        .asMap()
-                        .entries
-                        .expand((entry) {
-                          final index = entry.key;
-                          final record = entry.value;
-
-                          return <Widget>[
-                            HomeMealCard(
-                              cardKey: ValueKey('home-meal-card-$index'),
-                              title: record.title,
-                              description: record.description,
-                              kcal: record.kcalLabel,
-                              time: record.timeLabel,
-                              imageAsset: record.imageAsset,
-                              imageBytes: record.imageBytes,
-                              imageUrl: record.imageUrl,
-                              height: HomePage._mealCardHeight,
-                              onTap: () => onMealTap(record),
-                            ),
-                            if (index != records.length - 1)
-                              const SizedBox(height: AppSpacing.lg),
-                          ];
-                        }),
-                    SizedBox(height: AppSpacing.xxxl + bottomInset + 56),
-                  ],
+                    return HomeMealCard(
+                      cardKey: ValueKey('home-meal-card-$index'),
+                      title: record.title,
+                      description: record.description,
+                      kcal: record.kcalLabel,
+                      time: record.timeLabel,
+                      imageAsset: record.imageAsset,
+                      imageBytes: record.imageBytes,
+                      imageUrl: record.imageUrl,
+                      height: HomePage._mealCardHeight,
+                      onTap: () => onMealTap(record),
+                    );
+                  },
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

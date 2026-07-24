@@ -137,17 +137,17 @@ HomeMascotEmotion resolveHomeMascotEmotionForProfile({
   );
 }
 
-/// Texto curto no card da home explicando como bater a meta do dia.
+/// Texto curto no card da home explicando como bater o objetivo do dia.
 String calorieGoalExplanationForObjective(HomeObjective objective) {
   switch (objective) {
     case HomeObjective.loseWeight:
-      return 'Sua meta é atingir o limite ou ficar até '
-          '$loseWeightBelowToleranceKcal calorias abaixo, '
+      return 'Seu objetivo é atingir a meta diária de calorias ou ficar até '
+          '$loseWeightBelowToleranceKcal calorias abaixo dela, '
           'sem poder ultrapassá-la.';
     case HomeObjective.gainMass:
-      return 'Sua meta é registrar acima da sua meta diária de calorias.';
+      return 'Seu objetivo é registrar acima da sua meta diária de calorias.';
     case HomeObjective.maintainWeight:
-      return 'Sua meta é ficar até $maintainWeightToleranceKcal calorias '
+      return 'Seu objetivo é ficar até $maintainWeightToleranceKcal calorias '
           'acima ou abaixo da meta.';
   }
 }

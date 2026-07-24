@@ -18,8 +18,6 @@ enum StoreCategory { blockers, frames, backgrounds }
 
 enum StoreItemType { blocker, frame, background }
 
-enum StoreBlockerAction { inventory, restore }
-
 class StoreCatalogItem {
   const StoreCatalogItem({
     required this.id,
@@ -28,9 +26,6 @@ class StoreCatalogItem {
     required this.description,
     required this.priceGold,
     this.quantityOwned = 0,
-    this.blockerAction = StoreBlockerAction.inventory,
-    this.restoreAvailable = false,
-    this.missingDaysUntilToday = 0,
   });
 
   final String id;
@@ -39,14 +34,9 @@ class StoreCatalogItem {
   final String description;
   final int priceGold;
   final int quantityOwned;
-  final StoreBlockerAction blockerAction;
-  final bool restoreAvailable;
-  final int missingDaysUntilToday;
 
   bool get isConsumable => type == StoreItemType.blocker;
-  bool get isStreakRestore =>
-      blockerAction == StoreBlockerAction.restore || id == 'streak_restore';
-  bool get isInventoryBlocker => isConsumable && !isStreakRestore;
+  bool get isInventoryBlocker => isConsumable;
 }
 
 class StoreCatalogData {
@@ -54,13 +44,11 @@ class StoreCatalogData {
     required this.frames,
     required this.backgrounds,
     required this.blockers,
-    this.blockerRecovery = const BlockerRecoveryInfo(),
   });
 
   final List<StoreCatalogItem> frames;
   final List<StoreCatalogItem> backgrounds;
   final List<StoreCatalogItem> blockers;
-  final BlockerRecoveryInfo blockerRecovery;
 
   static StoreCatalogData fromJson(Map<String, dynamic> json) {
     final store =
@@ -112,52 +100,6 @@ class StoreCatalogData {
       frames: frames,
       backgrounds: backgrounds,
       blockers: blockers,
-      blockerRecovery: BlockerRecoveryInfo.fromJson(
-        (json['blockerRecovery'] as Map<String, dynamic>?) ??
-            (store['blockerRecovery'] as Map<String, dynamic>?) ??
-            const <String, dynamic>{},
-      ),
-    );
-  }
-}
-
-class BlockerRecoveryInfo {
-  const BlockerRecoveryInfo({
-    this.missingDaysUntilToday = 0,
-    this.requiredBlockersTotal = 0,
-    this.inventoryAvailable = 0,
-    this.requiredPurchaseQuantity = 0,
-    this.requiredPurchaseCostGold = 0,
-    this.canAffordRecoveryPurchase = true,
-  });
-
-  final int missingDaysUntilToday;
-  final int requiredBlockersTotal;
-  final int inventoryAvailable;
-  final int requiredPurchaseQuantity;
-  final int requiredPurchaseCostGold;
-  final bool canAffordRecoveryPurchase;
-
-  factory BlockerRecoveryInfo.fromJson(Map<String, dynamic> json) {
-    return BlockerRecoveryInfo(
-      missingDaysUntilToday: AvatarFrameCatalog._asInt(
-        json['missingDaysUntilToday'] ?? json['missing_days_until_today'],
-      ),
-      requiredBlockersTotal: AvatarFrameCatalog._asInt(
-        json['requiredBlockersTotal'] ?? json['required_blockers_total'],
-      ),
-      inventoryAvailable: AvatarFrameCatalog._asInt(
-        json['inventoryAvailable'] ?? json['inventory_available'],
-      ),
-      requiredPurchaseQuantity: AvatarFrameCatalog._asInt(
-        json['requiredPurchaseQuantity'] ?? json['required_purchase_quantity'],
-      ),
-      requiredPurchaseCostGold: AvatarFrameCatalog._asInt(
-        json['requiredPurchaseCostGold'] ?? json['required_purchase_cost_gold'],
-      ),
-      canAffordRecoveryPurchase:
-          json['canAffordRecoveryPurchase'] == true ||
-          json['can_afford_recovery_purchase'] == true,
     );
   }
 }
@@ -362,13 +304,15 @@ List<StoreCatalogItem> _parseStoreItems(
         final price = AvatarFrameCatalog._asInt(
           map['priceGold'] ?? map['price'] ?? map['goldCost'],
         );
-        final storeAction = map['storeAction']?.toString().trim().toLowerCase() ??
+        final storeAction =
+            map['storeAction']?.toString().trim().toLowerCase() ??
             map['store_action']?.toString().trim().toLowerCase();
         final idTrimmed = id.trim();
-        final blockerAction = storeAction == 'streak_restore' ||
-                idTrimmed == 'streak_restore'
-            ? StoreBlockerAction.restore
-            : StoreBlockerAction.inventory;
+
+        // Legacy streak_restore items are ignored if an old API still returns them.
+        if (storeAction == 'streak_restore' || idTrimmed == 'streak_restore') {
+          return null;
+        }
 
         return StoreCatalogItem(
           id: idTrimmed,
@@ -379,17 +323,9 @@ List<StoreCatalogItem> _parseStoreItems(
           quantityOwned: AvatarFrameCatalog._asInt(
             map['quantityOwned'] ?? map['quantity'] ?? map['count'],
           ),
-          blockerAction: type == StoreItemType.blocker
-              ? blockerAction
-              : StoreBlockerAction.inventory,
-          restoreAvailable:
-              map['restoreAvailable'] == true ||
-              map['restore_available'] == true,
-          missingDaysUntilToday: AvatarFrameCatalog._asInt(
-            map['missingDaysUntilToday'] ?? map['missing_days_until_today'],
-          ),
         );
       })
+      .whereType<StoreCatalogItem>()
       .where((item) => item.id.isNotEmpty)
       .toList(growable: false);
 }

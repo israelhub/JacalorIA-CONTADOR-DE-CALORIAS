@@ -149,4 +149,19 @@ export class SocialController {
   getGroupDetail(@Req() req: any, @Param('groupId') groupId: string) {
     return this.socialService.getGroupDetail(groupId, req.user.sub);
   }
+
+  @Get('groups/:groupId/members/:memberUserId/daily-meals')
+  getGroupMemberDailyMeals(
+    @Req() req: any,
+    @Param('groupId') groupId: string,
+    @Param('memberUserId') memberUserId: string,
+    @Query('date') date?: string,
+  ) {
+    return this.socialService.getGroupMemberDailyMeals(
+      req.user.sub,
+      groupId,
+      memberUserId,
+      date,
+    );
+  }
 }
