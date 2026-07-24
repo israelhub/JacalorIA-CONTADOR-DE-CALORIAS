@@ -132,8 +132,23 @@ jobs:
           aws s3 sync "$WEB_DIR" "s3://$BUCKET" --delete \
             --cache-control "public,max-age=31536000,immutable"
 
-          # Entrypoints + marcador de versão: sem cache (reenvio com header correto).
-          for f in index.html flutter_bootstrap.js flutter_service_worker.js flutter.js version.json manifest.json; do
+          # Entrypoints + app shell sem hash de conteúdo: sem cache.
+          # main.dart.js/wasm NÃO mudam de nome entre deploys — se ficarem
+          # immutable, Chrome mobile (e outros) continuam no JS antigo por até 1 ano.
+          for f in \
+            index.html \
+            flutter_bootstrap.js \
+            flutter_service_worker.js \
+            flutter.js \
+            version.json \
+            manifest.json \
+            main.dart.js \
+            main.dart.wasm \
+            AssetManifest.bin \
+            AssetManifest.bin.json \
+            AssetManifest.json \
+            FontManifest.json
+          do
             if [ -f "$WEB_DIR/$f" ]; then
               aws s3 cp "$WEB_DIR/$f" "s3://$BUCKET/$f" \
                 --cache-control "no-cache,no-store,must-revalidate"
@@ -151,4 +166,6 @@ jobs:
               "/flutter.js" \
               "/version.json" \
               "/manifest.json" \
+              "/main.dart.js" \
+              "/main.dart.wasm" \
               "/*" >/dev/null

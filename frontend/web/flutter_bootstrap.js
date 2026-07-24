@@ -46,10 +46,33 @@
     } catch (_) {}
   }
 
+  async function clearServiceWorkers() {
+    if (!('serviceWorker' in navigator)) {
+      return;
+    }
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(
+        regs.map(function (reg) {
+          return reg.unregister();
+        }),
+      );
+    } catch (_) {}
+  }
+
   async function applyUpdateAndReload(latest) {
     writeStoredVersion(latest);
     await clearWebCaches();
-    window.location.reload();
+    await clearServiceWorkers();
+    // Bust HTTP disk cache: mobile Chrome ignores Cache Storage clears for
+    // main.dart.js when it was served with max-age=immutable.
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('_jacaloria_v', latest.slice(0, 12));
+      window.location.replace(url.toString());
+    } catch (_) {
+      window.location.reload();
+    }
   }
 
   /**
