@@ -36,9 +36,9 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
   ];
 
   static const _competitionTypes = <_CompetitionTypeOption>[
+    _CompetitionTypeOption('goal_average', 'Média de meta'),
     _CompetitionTypeOption('offensive', 'Sequência'),
     _CompetitionTypeOption('daily_goal', 'Meta diária'),
-    _CompetitionTypeOption('goal_average', 'Média de meta'),
     _CompetitionTypeOption('xp', 'XP'),
     _CompetitionTypeOption('group_streak', 'Sequência dos amigos'),
   ];
@@ -46,7 +46,7 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   String _selectedIconKey = 'salad';
-  String _selectedCompetitionType = 'offensive';
+  String _selectedCompetitionType = 'goal_average';
   int _selectedDurationDays = 7;
   bool _isPublicGroup = false;
   bool _isSaving = false;

@@ -196,6 +196,15 @@ class HomeDailyGoalCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            calorieGoalExplanationForObjective(objective),
+            key: const ValueKey('home-daily-goal-explanation'),
+            style: AppTextStyles.micro.copyWith(
+              color: AppColors.textSecondary.withValues(alpha: 0.55),
+              height: 1.35,
+            ),
+          ),
         ],
       ),
     );

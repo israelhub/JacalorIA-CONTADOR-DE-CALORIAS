@@ -22,5 +22,9 @@ void main() {
     expect(find.byKey(const ValueKey('home-daily-goal-card')), findsOneWidget);
     expect(find.byKey(const ValueKey('home-mascot-overlay')), findsOneWidget);
     expect(find.byKey(const ValueKey('home-calorie-ring-value')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('home-daily-goal-explanation')),
+      findsOneWidget,
+    );
   });
 }

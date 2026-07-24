@@ -1,5 +1,14 @@
 enum HomeObjective { loseWeight, gainMass, maintainWeight }
 
+/// Emoção do mascote conforme a situação atual da meta do dia.
+enum HomeMascotEmotion { idle, sad, scared, happy }
+
+/// Emagrecer: meta bate entre (meta - 200) e a meta.
+const int loseWeightBelowToleranceKcal = 200;
+
+/// Manter peso: faixa de ±100 kcal em torno da meta.
+const int maintainWeightToleranceKcal = 100;
+
 HomeObjective readHomeObjective(Map<String, dynamic>? profile) {
   final objectiveValue =
       profile?['objective'] as String? ?? profile?['objective_type'] as String?;
@@ -23,12 +32,17 @@ bool hasReachedCalorieGoalForObjective({
     return false;
   }
 
-  if (objective == HomeObjective.loseWeight) {
-    return consumedCalories >= (goalCalories * 0.8) &&
-        consumedCalories <= goalCalories;
+  switch (objective) {
+    case HomeObjective.loseWeight:
+      final minCalories = goalCalories - loseWeightBelowToleranceKcal;
+      return consumedCalories >= minCalories &&
+          consumedCalories <= goalCalories;
+    case HomeObjective.gainMass:
+      return consumedCalories > goalCalories;
+    case HomeObjective.maintainWeight:
+      return consumedCalories >= goalCalories - maintainWeightToleranceKcal &&
+          consumedCalories <= goalCalories + maintainWeightToleranceKcal;
   }
-
-  return consumedCalories >= goalCalories;
 }
 
 bool hasReachedCalorieGoalForProfile({
@@ -48,11 +62,15 @@ bool isCalorieGoalExceededForObjective({
   required int goalCalories,
   required HomeObjective objective,
 }) {
-  if (objective != HomeObjective.loseWeight) {
-    return false;
+  switch (objective) {
+    case HomeObjective.gainMass:
+      // Ultrapassar a meta é o objetivo — nunca é "excesso ruim".
+      return false;
+    case HomeObjective.maintainWeight:
+      return consumedCalories > goalCalories + maintainWeightToleranceKcal;
+    case HomeObjective.loseWeight:
+      return consumedCalories > goalCalories;
   }
-
-  return consumedCalories > goalCalories;
 }
 
 bool isCalorieGoalExceededForProfile({
@@ -65,4 +83,75 @@ bool isCalorieGoalExceededForProfile({
     goalCalories: goalCalories,
     objective: readHomeObjective(userProfile),
   );
+}
+
+/// Resolve a emoção do Jaca com base na situação atual da meta.
+///
+/// - Sem refeições: triste
+/// - Fora da meta para cima de forma ruim (emagrecer / manter): assustado
+/// - Meta batida (inclui ganhar massa acima da meta): feliz
+/// - Ainda no caminho: padrão
+HomeMascotEmotion resolveHomeMascotEmotion({
+  required int consumedCalories,
+  required int goalCalories,
+  required HomeObjective objective,
+  required bool hasMeals,
+  bool isFirstHomeAccess = false,
+}) {
+  if (!hasMeals && !isFirstHomeAccess) {
+    return HomeMascotEmotion.sad;
+  }
+
+  if (isCalorieGoalExceededForObjective(
+    consumedCalories: consumedCalories,
+    goalCalories: goalCalories,
+    objective: objective,
+  )) {
+    return HomeMascotEmotion.scared;
+  }
+
+  if (hasReachedCalorieGoalForObjective(
+    consumedCalories: consumedCalories,
+    goalCalories: goalCalories,
+    objective: objective,
+  )) {
+    return HomeMascotEmotion.happy;
+  }
+
+  return HomeMascotEmotion.idle;
+}
+
+HomeMascotEmotion resolveHomeMascotEmotionForProfile({
+  required int consumedCalories,
+  required int goalCalories,
+  required Map<String, dynamic>? userProfile,
+  required bool hasMeals,
+  bool isFirstHomeAccess = false,
+}) {
+  return resolveHomeMascotEmotion(
+    consumedCalories: consumedCalories,
+    goalCalories: goalCalories,
+    objective: readHomeObjective(userProfile),
+    hasMeals: hasMeals,
+    isFirstHomeAccess: isFirstHomeAccess,
+  );
+}
+
+/// Texto curto no card da home explicando como bater a meta do dia.
+String calorieGoalExplanationForObjective(HomeObjective objective) {
+  switch (objective) {
+    case HomeObjective.loseWeight:
+      return 'Sua meta é atingir o limite ou ficar até '
+          '$loseWeightBelowToleranceKcal calorias abaixo, '
+          'sem poder ultrapassá-la.';
+    case HomeObjective.gainMass:
+      return 'Sua meta é registrar acima da sua meta diária de calorias.';
+    case HomeObjective.maintainWeight:
+      return 'Sua meta é ficar até $maintainWeightToleranceKcal calorias '
+          'acima ou abaixo da meta.';
+  }
+}
+
+String calorieGoalExplanationForProfile(Map<String, dynamic>? userProfile) {
+  return calorieGoalExplanationForObjective(readHomeObjective(userProfile));
 }

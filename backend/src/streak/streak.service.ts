@@ -53,6 +53,13 @@ export class StreakService {
     let streak = 0;
     let cursorKey = this.toDayKeyInAppTimeZone(new Date());
 
+    // Dia atual ainda está em aberto: sem registro hoje, conta a partir de ontem.
+    if (!dayKeys.has(cursorKey)) {
+      const previous = this.shiftDayKey(cursorKey, -1);
+      if (!previous) return 0;
+      cursorKey = previous;
+    }
+
     while (cursorKey >= windowStartKey) {
       if (!dayKeys.has(cursorKey)) break;
       streak += 1;
@@ -200,6 +207,13 @@ export class StreakService {
   private calculateStreakFromDayKeys(dayKeys: Set<string>): number {
     let streak = 0;
     const cursor = this.getDayStartInAppTimeZone(new Date());
+    const todayKey = this.toDayKeyFromAppDayStart(cursor);
+
+    // Dia atual ainda está em aberto: se não houver registro hoje,
+    // a sequência segue a partir de ontem (ainda não foi quebrada).
+    if (!dayKeys.has(todayKey)) {
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
+    }
 
     while (true) {
       const key = this.toDayKeyFromAppDayStart(cursor);
