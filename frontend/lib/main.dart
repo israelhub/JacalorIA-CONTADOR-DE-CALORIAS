@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'core/analytics/analytics_service.dart';
 import 'core/invite/invite_link_service.dart';
@@ -18,27 +17,6 @@ import 'shared/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Bundle fonts under assets/google_fonts and never swap mid-frame (FOUT).
-  GoogleFonts.config.allowRuntimeFetching = false;
-  try {
-    await GoogleFonts.pendingFonts(<TextStyle>[
-      GoogleFonts.baloo2(),
-      GoogleFonts.baloo2(fontWeight: FontWeight.w600),
-      GoogleFonts.baloo2(fontWeight: FontWeight.w700),
-      GoogleFonts.baloo2(fontWeight: FontWeight.w800),
-      GoogleFonts.nunito(),
-      GoogleFonts.nunito(fontWeight: FontWeight.w500),
-      GoogleFonts.nunito(fontWeight: FontWeight.w600),
-      GoogleFonts.nunito(fontWeight: FontWeight.w700),
-      GoogleFonts.nunito(fontWeight: FontWeight.w800),
-      GoogleFonts.inter(),
-      GoogleFonts.inter(fontWeight: FontWeight.w500),
-      GoogleFonts.inter(fontWeight: FontWeight.w600),
-    ]);
-  } catch (error) {
-    // Missing/corrupt font asset must never block boot; system font is used.
-    debugPrint('[fonts] preload falhou: $error');
-  }
   InviteLinkService.captureFromUri(Uri.base);
   await AuthService.initialize();
   _warmUpAvatarCache();

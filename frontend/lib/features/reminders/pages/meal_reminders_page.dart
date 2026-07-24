@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_dashed_action_button.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_time_picker.dart';
 import '../../../shared/widgets/app_toast.dart';
+import 'meal_reminder_create_page.dart';
 import 'meal_reminder_name_page.dart';
 
 class MealRemindersPage extends StatefulWidget {
@@ -137,19 +138,13 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
       return;
     }
 
-    final picked = await showAppTimePicker(
-      context: context,
-      initialTime: const TimeOfDay(hour: 15, minute: 30),
-      helpText: 'Horário do novo lembrete',
+    final created = await context.pushSlidePage<MealReminderConfig>(
+      const MealReminderCreatePage(),
     );
-    if (picked == null || !mounted) {
+    if (created == null || !mounted) {
       return;
     }
 
-    final created = MealReminderConfig.custom(
-      hour: picked.hour,
-      minute: picked.minute,
-    );
     final next = _settings.tryAdd(created);
     if (next == null) {
       AppToast.show(
