@@ -21,8 +21,7 @@ class MissionsPage extends StatefulWidget {
     MissionsService? service,
     this.authService,
     this.refreshVersion = 0,
-  })
-    : _service = service ?? const MissionsService();
+  }) : _service = service ?? const MissionsService();
 
   final MissionsService _service;
   final AuthService? authService;
@@ -32,13 +31,17 @@ class MissionsPage extends StatefulWidget {
   State<MissionsPage> createState() => _MissionsPageState();
 }
 
-class _MissionsPageState extends State<MissionsPage> {
+class _MissionsPageState extends State<MissionsPage>
+    with AutomaticKeepAliveClientMixin {
   static const String _hideIntroLocalKey = 'missions_hide_intro_local';
   MissionsOverview? _overview;
   Map<String, dynamic>? _profile;
   bool _isLoading = true;
   bool _showIntro = true;
   String? _errorMessage;
+
+  @override
+  bool get wantKeepAlive => true;
 
   bool _asBool(dynamic value) {
     if (value is bool) {
@@ -91,11 +94,14 @@ class _MissionsPageState extends State<MissionsPage> {
   Future<void> _loadMissions({bool silent = false}) async {
     final hadData = _overview != null;
     if (!silent || !hadData) {
-      setState(() {
-        // Only show the blocking loader when there is no cached content yet.
-        _isLoading = !hadData;
-        _errorMessage = null;
-      });
+      final nextLoading = !hadData;
+      if (_isLoading != nextLoading || _errorMessage != null) {
+        setState(() {
+          // Only show the blocking loader when there is no cached content yet.
+          _isLoading = nextLoading;
+          _errorMessage = null;
+        });
+      }
     } else {
       _errorMessage = null;
     }
@@ -151,6 +157,7 @@ class _MissionsPageState extends State<MissionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(child: _buildContent()),

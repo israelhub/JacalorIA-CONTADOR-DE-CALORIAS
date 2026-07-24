@@ -45,6 +45,8 @@ class FramedAvatar extends StatelessWidget {
           fallbackText: fallbackText,
           backgroundColor: backgroundColor,
         );
+        final frameCacheDimension =
+            (resolvedSize * MediaQuery.devicePixelRatioOf(context)).round();
 
         final content = SizedBox.square(
           dimension: resolvedSize,
@@ -56,7 +58,13 @@ class FramedAvatar extends StatelessWidget {
               if (hasFrame)
                 Positioned.fill(
                   child: IgnorePointer(
-                    child: Image.asset(frame!.assetPath!, fit: BoxFit.contain),
+                    child: Image.asset(
+                      frame!.assetPath!,
+                      fit: BoxFit.contain,
+                      cacheWidth: frameCacheDimension,
+                      cacheHeight: frameCacheDimension,
+                      filterQuality: FilterQuality.medium,
+                    ),
                   ),
                 ),
             ],
@@ -96,6 +104,8 @@ class FramedAvatar extends StatelessWidget {
         return 0.86;
       case 'fire_streak':
       case 'royal_gold':
+      case 'soft_pink':
+      case 'soft_blue':
         return 0.8;
       default:
         return framedAvatarScale;

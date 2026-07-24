@@ -736,12 +736,10 @@ class _StoreCategorySwitcher extends StatelessWidget {
           Expanded(
             child: _CategoryButton(
               label: 'Bloqueadores',
-              icon: Icon(
+              iconBuilder: (color) => Icon(
                 Icons.shield_rounded,
                 size: 26,
-                color: selected == StoreCategory.blockers
-                    ? AppColors.action500
-                    : AppColors.textSecondary,
+                color: color,
               ),
               isSelected: selected == StoreCategory.blockers,
               onTap: () => onSelected(StoreCategory.blockers),
@@ -750,11 +748,9 @@ class _StoreCategorySwitcher extends StatelessWidget {
           Expanded(
             child: _CategoryButton(
               label: 'Molduras',
-              icon: FrameSilhouetteIcon(
+              iconBuilder: (color) => FrameSilhouetteIcon(
                 size: 26,
-                color: selected == StoreCategory.frames
-                    ? AppColors.action500
-                    : AppColors.textSecondary,
+                color: color,
               ),
               isSelected: selected == StoreCategory.frames,
               onTap: () => onSelected(StoreCategory.frames),
@@ -763,12 +759,10 @@ class _StoreCategorySwitcher extends StatelessWidget {
           Expanded(
             child: _CategoryButton(
               label: 'Fundos',
-              icon: Icon(
+              iconBuilder: (color) => Icon(
                 Icons.landscape_rounded,
                 size: 26,
-                color: selected == StoreCategory.backgrounds
-                    ? AppColors.action500
-                    : AppColors.textSecondary,
+                color: color,
               ),
               isSelected: selected == StoreCategory.backgrounds,
               onTap: () => onSelected(StoreCategory.backgrounds),
@@ -783,69 +777,63 @@ class _StoreCategorySwitcher extends StatelessWidget {
 class _CategoryButton extends StatelessWidget {
   const _CategoryButton({
     required this.label,
-    required this.icon,
+    required this.iconBuilder,
     required this.isSelected,
     required this.onTap,
   });
 
   final String label;
-  final Widget icon;
+  final Widget Function(Color color) iconBuilder;
   final bool isSelected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return _PressableCategoryButton(
-      isSelected: isSelected,
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isSelected
-                    ? AppColors.action500.withValues(alpha: 0.14)
-                    : Colors.transparent,
-              ),
-              child: AnimatedScale(
-                scale: isSelected ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutBack,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: ScaleTransition(scale: animation, child: child),
-                    );
-                  },
-                  child: KeyedSubtree(
-                    key: ValueKey<bool>(isSelected),
-                    child: icon,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: isSelected ? 1 : 0),
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOutCubic,
+          builder: (context, t, _) {
+            final iconColor = Color.lerp(
+              AppColors.textSecondary,
+              AppColors.action500,
+              t,
+            )!;
+            final labelColor = Color.lerp(
+              AppColors.textSecondary,
+              AppColors.brand900Variant,
+              t,
+            )!;
+            // Overshoot leve pra dar um "pop" na hora que vira selecionado.
+            final pop = 1 + (math.sin(t * math.pi) * 0.1) + (t * 0.06);
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Transform.scale(
+                  scale: pop,
+                  child: iconBuilder(iconColor),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.captionStrong.copyWith(
+                    color: labelColor,
+                    fontWeight: FontWeight.lerp(
+                      FontWeight.w600,
+                      FontWeight.w700,
+                      t,
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              style: AppTextStyles.captionStrong.copyWith(
-                color: isSelected
-                    ? AppColors.brand900Variant
-                    : AppColors.textSecondary,
-              ),
-              child: Text(label, textAlign: TextAlign.center),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
@@ -854,12 +842,10 @@ class _CategoryButton extends StatelessWidget {
 
 class _PressableCategoryButton extends StatefulWidget {
   const _PressableCategoryButton({
-    required this.isSelected,
     required this.onTap,
     required this.child,
   });
 
-  final bool isSelected;
   final VoidCallback onTap;
   final Widget child;
 
@@ -882,19 +868,20 @@ class _PressableCategoryButtonState extends State<_PressableCategoryButton> {
 
   @override
   Widget build(BuildContext context) {
-    final scale = _isPressed ? 0.96 : (widget.isSelected ? 1.02 : 1.0);
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        splashColor: AppColors.action500.withValues(alpha: 0.12),
+        highlightColor: AppColors.action500.withValues(alpha: 0.06),
         onTap: widget.onTap,
         onTapDown: (_) => _setPressed(true),
         onTapCancel: () => _setPressed(false),
         onTapUp: (_) => _setPressed(false),
         child: AnimatedScale(
-          scale: scale,
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
+          scale: _isPressed ? 0.92 : 1.0,
+          duration: Duration(milliseconds: _isPressed ? 90 : 260),
+          curve: _isPressed ? Curves.easeOut : Curves.easeOutBack,
           child: widget.child,
         ),
       ),

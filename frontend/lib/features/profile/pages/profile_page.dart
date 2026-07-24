@@ -941,7 +941,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           const SizedBox(height: AppSpacing.md),
                           _infoCard(
-                            icon: Icons.calendar_month_rounded,
+                            icon: Icons.calendar_today_rounded,
                             iconColor: AppColors.socialInfoSex,
                             label: 'Idade da conta',
                             value: _formatAccountAge(),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'core/analytics/analytics_service.dart';
 import 'core/invite/invite_link_service.dart';
@@ -17,14 +18,32 @@ import 'shared/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Bundle fonts under assets/google_fonts and never swap mid-frame (FOUT).
+  GoogleFonts.config.allowRuntimeFetching = false;
+  await GoogleFonts.pendingFonts(<TextStyle>[
+    GoogleFonts.baloo2(),
+    GoogleFonts.baloo2(fontWeight: FontWeight.w600),
+    GoogleFonts.baloo2(fontWeight: FontWeight.w700),
+    GoogleFonts.baloo2(fontWeight: FontWeight.w800),
+    GoogleFonts.nunito(),
+    GoogleFonts.nunito(fontWeight: FontWeight.w500),
+    GoogleFonts.nunito(fontWeight: FontWeight.w600),
+    GoogleFonts.nunito(fontWeight: FontWeight.w700),
+    GoogleFonts.nunito(fontWeight: FontWeight.w800),
+    GoogleFonts.inter(),
+    GoogleFonts.inter(fontWeight: FontWeight.w500),
+    GoogleFonts.inter(fontWeight: FontWeight.w600),
+  ]);
   InviteLinkService.captureFromUri(Uri.base);
   await AuthService.initialize();
   _warmUpAvatarCache();
-  await AnalyticsService.instance.initialize();
+  unawaited(AnalyticsService.instance.initialize());
   unawaited(_bootstrapMealReminders());
-  await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
-    DeviceOrientation.portraitUp,
-  ]);
+  if (!kIsWeb) {
+    await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
+      DeviceOrientation.portraitUp,
+    ]);
+  }
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       systemNavigationBarColor: AppColors.surface,
@@ -57,8 +76,9 @@ void _warmUpAvatarCache() {
   }
 
   final user = AuthService.globalUser;
-  final avatarUrl =
-      (user?['avatarUrl'] ?? user?['avatar_url'])?.toString().trim();
+  final avatarUrl = (user?['avatarUrl'] ?? user?['avatar_url'])
+      ?.toString()
+      .trim();
   if (avatarUrl == null || !avatarUrl.startsWith('http')) {
     return;
   }
@@ -95,9 +115,7 @@ class MyApp extends StatelessWidget {
         ],
         supportedLocales: const <Locale>[_appLocale],
         builder: (context, child) {
-          return WebSafeAreaMediaQuery(
-            child: child ?? const SizedBox.shrink(),
-          );
+          return WebSafeAreaMediaQuery(child: child ?? const SizedBox.shrink());
         },
         home: AuthService.globalToken != null
             ? HomeShellPage.fromLaunch()

@@ -18,8 +18,9 @@ class AvatarProfilePreview extends StatelessWidget {
   /// Altura padrao do banner no perfil / loja.
   static const double defaultHeight = 173;
 
-  /// Proporcao tipica do banner (largura / [defaultHeight]), usada no catalogo.
-  /// Calibrada no layout real (~598x177).
+  /// Proporcao do banner exibido (largura / altura). Assets de fundo sao
+  /// tipicamente quadrados (como sky/pantano) e o [BoxFit.cover] recorta
+  /// para esta faixa — o que importa e o centro + anel perto da moldura.
   static const double bannerAspectRatio = 598 / 177;
 
   final String? avatarUrl;

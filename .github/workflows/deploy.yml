@@ -129,10 +129,30 @@ jobs:
           BUCKET="${{ vars.S3_BUCKET }}"
           WEB_DIR="frontend/build/web"
 
-          # Default: revalidate always. Never mark app shell as immutable —
-          # main.dart.js keeps the same name across deploys.
+          # Entrypoints / JS shell: revalidate always. main.dart.js keeps the
+          # same filename across deploys, so it must never be immutable.
           aws s3 sync "$WEB_DIR" "s3://$BUCKET" --delete \
+            --exclude "assets/*" \
+            --exclude "canvaskit/*" \
             --cache-control "no-cache,must-revalidate"
+
+          # Flutter asset bundle (images/videos). Long browser cache with
+          # CloudFront invalidation of /assets/* on every deploy.
+          #
+          # Fonts are excluded: MaterialIcons-Regular.otf is tree-shaken and
+          # keeps the same filename when new IconData refs are added. A long
+          # browser cache would keep an old glyph subset and blank out new
+          # icons on web while desktop/APK still look fine.
+          if [ -d "$WEB_DIR/assets" ]; then
+            aws s3 sync "$WEB_DIR/assets" "s3://$BUCKET/assets" --delete \
+              --exclude "fonts/*" \
+              --cache-control "public,max-age=604800"
+          fi
+
+          if [ -d "$WEB_DIR/assets/fonts" ]; then
+            aws s3 sync "$WEB_DIR/assets/fonts" "s3://$BUCKET/assets/fonts" --delete \
+              --cache-control "no-cache,must-revalidate"
+          fi
 
           # CanvasKit engine binaries are content-addressed by Flutter channel path.
           if [ -d "$WEB_DIR/canvaskit" ]; then
@@ -154,4 +174,5 @@ jobs:
               "/main.dart.js" \
               "/main.dart.wasm" \
               "/main.dart.mjs" \
+              "/assets/*" \
               "/*" >/dev/null

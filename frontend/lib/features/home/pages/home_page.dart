@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -65,7 +67,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with AutomaticKeepAliveClientMixin {
   final List<FoodMealRecord> _records = <FoodMealRecord>[];
   final Set<String> _loadedDateKeys = <String>{};
   Map<String, dynamic>? _userProfile;
@@ -74,6 +77,9 @@ class _HomePageState extends State<HomePage> {
   bool _playMascotCelebration = false;
   bool _isFirstHomeAccess = false;
   late DateTime _selectedDate;
+
+  @override
+  bool get wantKeepAlive => true;
 
   /// Meta/objetivo do dia (congelados na virada) quando a data selecionada é hoje.
   Map<String, dynamic>? get _goalUserProfile => applyHomeDailyGoalDaySnapshot(
@@ -88,6 +94,11 @@ class _HomePageState extends State<HomePage> {
     _selectedDate = normalizeHomeDate(
       widget.initialSelectedDate ?? DateTime.now(),
     );
+    // Paint header immediately from session cache; meals still load below.
+    final cachedUser = AuthService.globalUser;
+    if (cachedUser != null && cachedUser.isNotEmpty) {
+      _userProfile = Map<String, dynamic>.from(cachedUser);
+    }
     _loadInitialData();
   }
 
@@ -188,11 +199,7 @@ class _HomePageState extends State<HomePage> {
           _applySavedMeal(widget.pendingSavedMeal!);
         }
 
-        Future<void>(() async {
-          try {
-            await _precacheHomeImages(meals, profile);
-          } catch (_) {}
-        });
+        _scheduleHomeImagePrecache(meals, profile);
       }
     } catch (e) {
       if (e.toString().contains('Sessão inválida')) {
@@ -213,9 +220,12 @@ class _HomePageState extends State<HomePage> {
     }
 
     _loadedDateKeys.remove(_dateKey(_selectedDate));
+    final mealsFuture = _loadMealsForDate(_selectedDate);
 
     try {
-      final profile = await widget._authService.fetchProfile();
+      final profile = await widget._authService.fetchProfile(
+        forceRefresh: true,
+      );
       HomeDailyGoalDaySnapshot? dayGoalSnapshot;
       try {
         dayGoalSnapshot = await resolveHomeDailyGoalDaySnapshot(
@@ -232,7 +242,7 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (_) {}
 
-    await _loadMealsForDate(_selectedDate);
+    await mealsFuture;
   }
 
   Future<void> _loadMealsForDate(DateTime date) async {
@@ -275,12 +285,20 @@ class _HomePageState extends State<HomePage> {
         _loadedDateKeys.add(dateKey);
       });
 
-      Future<void>(() async {
-        try {
-          await _precacheHomeImages(meals, _userProfile);
-        } catch (_) {}
-      });
+      _scheduleHomeImagePrecache(meals, _userProfile);
     } catch (_) {}
+  }
+
+  void _scheduleHomeImagePrecache(
+    List<FoodMealRecord> meals,
+    Map<String, dynamic>? profile,
+  ) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_precacheHomeImages(meals, profile));
+    });
   }
 
   Future<void> _precacheHomeImages(
@@ -295,11 +313,11 @@ class _HomePageState extends State<HomePage> {
       const AssetImage(HomePage._mealAsset),
     ];
 
-    for (final frame in AvatarFrameCatalog.items) {
-      final assetPath = frame.assetPath;
-      if (assetPath != null && assetPath.isNotEmpty) {
-        providers.add(AssetImage(assetPath));
-      }
+    final equippedFrameAsset = AvatarFrameCatalog.byId(
+      AvatarFrameCatalog.equippedIdFromProfile(profile),
+    )?.assetPath;
+    if (equippedFrameAsset != null && equippedFrameAsset.isNotEmpty) {
+      providers.add(AssetImage(equippedFrameAsset));
     }
 
     final backgroundAsset = AvatarBackgroundCatalog.assetPathForId(
@@ -317,7 +335,9 @@ class _HomePageState extends State<HomePage> {
       providers.add(CachedNetworkImageProvider(avatarUrl));
     }
 
-    for (final meal in meals) {
+    // Decode only images likely to be visible above the fold. Preloading every
+    // meal and every store frame competes with navigation animations on web.
+    for (final meal in meals.take(4)) {
       if (meal.imageBytes != null) {
         providers.add(MemoryImage(meal.imageBytes!));
         continue;
@@ -444,6 +464,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     if (_isDataLoading) {
       return const _HomeBodySkeleton();
     }

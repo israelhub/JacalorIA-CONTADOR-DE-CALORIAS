@@ -27,6 +27,8 @@ class SupabaseStorageService {
           'Authorization': 'Bearer $_anonKey',
           'apikey': _anonKey,
           'Content-Type': _contentTypeForExtension(ext),
+          // File names are unique, so uploaded media can be cached permanently.
+          'Cache-Control': 'public, max-age=31536000, immutable',
         },
         body: bytes,
       );

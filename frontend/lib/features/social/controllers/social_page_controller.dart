@@ -16,9 +16,11 @@ class SocialPageController extends ChangeNotifier {
 
   final List<SocialGroupSummary> _groups = <SocialGroupSummary>[];
   final List<SocialFriend> _friends = <SocialFriend>[];
-  final List<SocialFriendRequest> _pendingFriendRequests = <SocialFriendRequest>[];
+  final List<SocialFriendRequest> _pendingFriendRequests =
+      <SocialFriendRequest>[];
 
-  List<SocialGroupSummary> get groups => List<SocialGroupSummary>.unmodifiable(_groups);
+  List<SocialGroupSummary> get groups =>
+      List<SocialGroupSummary>.unmodifiable(_groups);
   List<SocialFriend> get friends => List<SocialFriend>.unmodifiable(_friends);
   List<SocialFriendRequest> get pendingFriendRequests =>
       List<SocialFriendRequest>.unmodifiable(_pendingFriendRequests);
@@ -58,7 +60,8 @@ class SocialPageController extends ChangeNotifier {
 
   int _previousTabIndex = 0;
   int get previousTabIndex => _previousTabIndex;
-  static const String _viewedFinishedGroupsKey = 'social_viewed_finished_groups';
+  static const String _viewedFinishedGroupsKey =
+      'social_viewed_finished_groups';
   static const String _hideIntroLocalKeyPrefix = 'social_hide_intro_local';
   final Set<String> _viewedFinishedGroupIds = <String>{};
 
@@ -112,15 +115,25 @@ class SocialPageController extends ChangeNotifier {
     } catch (_) {}
 
     // Keep showing cached content while refreshing in the background.
-    _isLoading = silent ? false : !hadData;
+    final nextLoading = silent ? false : !hadData;
+    final shouldAnnounceLoading =
+        !silent ||
+        !hadData ||
+        _isLoading != nextLoading ||
+        _errorMessage != null;
+    _isLoading = nextLoading;
     _errorMessage = null;
-    notifyListeners();
+    if (shouldAnnounceLoading) {
+      notifyListeners();
+    }
 
     try {
       final prefs = await SharedPreferences.getInstance();
       _viewedFinishedGroupIds
         ..clear()
-        ..addAll(prefs.getStringList(_viewedFinishedGroupsKey) ?? const <String>[]);
+        ..addAll(
+          prefs.getStringList(_viewedFinishedGroupsKey) ?? const <String>[],
+        );
 
       final results = await Future.wait<dynamic>([
         _service.fetchGroups(),
@@ -246,7 +259,9 @@ class SocialPageController extends ChangeNotifier {
     final looksLikeUuid = RegExp(
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
     ).hasMatch(trimmed);
-    final looksLikeInviteCode = RegExp(r'^[A-Za-z0-9]{4,12}$').hasMatch(trimmed);
+    final looksLikeInviteCode = RegExp(
+      r'^[A-Za-z0-9]{4,12}$',
+    ).hasMatch(trimmed);
     final looksLikeInviteLink =
         trimmed.toLowerCase().contains('friend') ||
         trimmed.toLowerCase().contains('code=') ||
@@ -256,9 +271,7 @@ class SocialPageController extends ChangeNotifier {
         !looksLikeUuid &&
         (looksLikeInviteCode || looksLikeInviteLink)) {
       final normalized = extractInviteCode(trimmed);
-      return _service.searchUsers(
-        normalized.isNotEmpty ? normalized : trimmed,
-      );
+      return _service.searchUsers(normalized.isNotEmpty ? normalized : trimmed);
     }
 
     return _service.searchUsers(trimmed);
@@ -290,14 +303,19 @@ class SocialPageController extends ChangeNotifier {
     return raw.replaceAll('JACALORIA-FRIEND-', '').trim().toUpperCase();
   }
 
-  bool isFinalResultViewed(String groupId) => _viewedFinishedGroupIds.contains(groupId);
+  bool isFinalResultViewed(String groupId) =>
+      _viewedFinishedGroupIds.contains(groupId);
 
   Future<void> markFinalResultViewed(String groupId) async {
-    if (groupId.trim().isEmpty || _viewedFinishedGroupIds.contains(groupId)) return;
+    if (groupId.trim().isEmpty || _viewedFinishedGroupIds.contains(groupId))
+      return;
     _viewedFinishedGroupIds.add(groupId);
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_viewedFinishedGroupsKey, _viewedFinishedGroupIds.toList(growable: false));
+    await prefs.setStringList(
+      _viewedFinishedGroupsKey,
+      _viewedFinishedGroupIds.toList(growable: false),
+    );
   }
 
   void _applyFriendsData(SocialFriendsData data) {

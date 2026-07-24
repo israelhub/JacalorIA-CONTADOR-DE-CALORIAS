@@ -34,6 +34,10 @@ class HomeMealCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final thumbnailSize = AppSpacing.huge + AppSpacing.xs;
+    final cacheDimension =
+        (thumbnailSize * MediaQuery.devicePixelRatioOf(context)).round();
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -56,16 +60,25 @@ class HomeMealCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: AppSpacing.huge + AppSpacing.xs,
-                height: AppSpacing.huge + AppSpacing.xs,
+                width: thumbnailSize,
+                height: thumbnailSize,
                 decoration: BoxDecoration(
                   border: Border.all(color: AppColors.brand300),
                 ),
                 child: imageBytes != null
-                    ? Image.memory(imageBytes!, fit: BoxFit.cover)
+                    ? Image.memory(
+                        imageBytes!,
+                        fit: BoxFit.cover,
+                        cacheWidth: cacheDimension,
+                        cacheHeight: cacheDimension,
+                      )
                     : imageUrl != null
                     ? Image(
-                        image: CachedNetworkImageProvider(imageUrl!),
+                        image: CachedNetworkImageProvider(
+                          imageUrl!,
+                          maxWidth: cacheDimension,
+                          maxHeight: cacheDimension,
+                        ),
                         fit: BoxFit.cover,
                         gaplessPlayback: true,
                         frameBuilder: (_, child, frame, wasSyncLoaded) {
@@ -89,7 +102,12 @@ class HomeMealCard extends StatelessWidget {
                         builder: (context) {
                           final asset = imageAsset;
                           if (asset != null) {
-                            return Image.asset(asset, fit: BoxFit.cover);
+                            return Image.asset(
+                              asset,
+                              fit: BoxFit.cover,
+                              cacheWidth: cacheDimension,
+                              cacheHeight: cacheDimension,
+                            );
                           }
 
                           return const ColoredBox(

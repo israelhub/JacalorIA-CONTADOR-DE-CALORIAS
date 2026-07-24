@@ -55,9 +55,9 @@ class _HomeShellPageState extends State<HomeShellPage>
   static const int _missionsIndex = 2;
   static const int _socialIndex = 3;
 
-  /// Avoid refetching every tab switch; keep in-memory data and soft-refresh
-  /// only when content is considered stale.
-  static const Duration _tabStaleAfter = Duration(seconds: 60);
+  /// Soft-refresh only on resume / after writes — never on every tab switch.
+  /// Switching tabs should reuse in-memory UI (stale-while-revalidate).
+  static const Duration _resumeStaleAfter = Duration(minutes: 5);
 
   late int _currentIndex;
   late DateTime _selectedHomeDate;
@@ -69,6 +69,10 @@ class _HomeShellPageState extends State<HomeShellPage>
   FoodMealRecord? _pendingSavedMeal;
   final Set<int> _visitedTabs = <int>{};
   final Map<int, DateTime> _lastTabRefreshAt = <int, DateTime>{};
+  final GlobalKey _performancePageKey = GlobalKey();
+  final GlobalKey _homePageKey = GlobalKey();
+  final GlobalKey _missionsPageKey = GlobalKey();
+  final GlobalKey _socialPageKey = GlobalKey();
 
   @override
   void initState() {
@@ -106,9 +110,7 @@ class _HomeShellPageState extends State<HomeShellPage>
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden ||
         state == AppLifecycleState.detached) {
-      unawaited(
-        AnalyticsService.instance.leaveForeground(reason: state.name),
-      );
+      unawaited(AnalyticsService.instance.leaveForeground(reason: state.name));
     }
   }
 
@@ -167,17 +169,19 @@ class _HomeShellPageState extends State<HomeShellPage>
     final isFirstVisit = !_visitedTabs.contains(index);
     _visitedTabs.add(index);
 
-    // First visit: the page loads itself in initState — avoid a double fetch
-    // that delays things like the social notification FAB.
+    // First visit: page loads itself in initState — avoid a double fetch.
     if (isFirstVisit && !force) {
       _lastTabRefreshAt[index] = now;
       return;
     }
 
+    // Tab switches never refetch. Only resume / meal writes force soft refresh.
+    if (!force) {
+      return;
+    }
+
     final last = _lastTabRefreshAt[index];
-    if (!force &&
-        last != null &&
-        now.difference(last) < _tabStaleAfter) {
+    if (last != null && now.difference(last) < _resumeStaleAfter) {
       return;
     }
 
@@ -212,7 +216,9 @@ class _HomeShellPageState extends State<HomeShellPage>
 
     setState(() {
       _currentIndex = nextIndex;
-      _bumpRefreshForIndex(nextIndex);
+      // Mark visited so the page mounts once; do not network-refresh.
+      _visitedTabs.add(nextIndex);
+      _lastTabRefreshAt.putIfAbsent(nextIndex, DateTime.now);
     });
     _trackTabOpened(nextIndex);
 
@@ -260,6 +266,47 @@ class _HomeShellPageState extends State<HomeShellPage>
     await _goToTab(AppMainBottomTab.home);
   }
 
+  Widget _buildTabPage(int index) {
+    if (!_visitedTabs.contains(index)) {
+      return const ColoredBox(color: AppColors.surface);
+    }
+
+    return switch (index) {
+      _performanceIndex =>
+        widget.performancePage ??
+            PerformancePage(
+              key: _performancePageKey,
+              onDateSelected: _goToHomeDate,
+              refreshVersion: _performanceRefreshVersion,
+            ),
+      _homeIndex =>
+        widget.homePage ??
+            HomePage(
+              key: _homePageKey,
+              initialSelectedDate: _selectedHomeDate,
+              mealSyncVersion: _homeMealSyncVersion,
+              pendingSavedMeal: _pendingSavedMeal,
+              onSelectedDateChanged: (date) {
+                setState(() {
+                  _selectedHomeDate = normalizeHomeDate(date);
+                });
+              },
+            ),
+      _missionsIndex =>
+        widget.missionsPage ??
+            MissionsPage(
+              key: _missionsPageKey,
+              refreshVersion: _missionsRefreshVersion,
+            ),
+      _ =>
+        widget.socialPage ??
+            SocialPage(
+              key: _socialPageKey,
+              refreshVersion: _socialRefreshVersion,
+            ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -274,31 +321,12 @@ class _HomeShellPageState extends State<HomeShellPage>
 
           setState(() {
             _currentIndex = index;
-            _bumpRefreshForIndex(index);
+            _visitedTabs.add(index);
+            _lastTabRefreshAt.putIfAbsent(index, DateTime.now);
           });
           _trackTabOpened(index);
         },
-        children: [
-          widget.performancePage ??
-              PerformancePage(
-                onDateSelected: _goToHomeDate,
-                refreshVersion: _performanceRefreshVersion,
-              ),
-          widget.homePage ??
-              HomePage(
-                initialSelectedDate: _selectedHomeDate,
-                mealSyncVersion: _homeMealSyncVersion,
-                pendingSavedMeal: _pendingSavedMeal,
-                onSelectedDateChanged: (date) {
-                  setState(() {
-                    _selectedHomeDate = normalizeHomeDate(date);
-                  });
-                },
-              ),
-          widget.missionsPage ??
-              MissionsPage(refreshVersion: _missionsRefreshVersion),
-          widget.socialPage ?? SocialPage(refreshVersion: _socialRefreshVersion),
-        ],
+        children: List<Widget>.generate(4, _buildTabPage),
       ),
       bottomNavigationBar: AppMainBottomNavigation(
         activeTab: _activeTab,
