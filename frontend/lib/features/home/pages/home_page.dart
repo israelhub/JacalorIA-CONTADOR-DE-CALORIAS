@@ -615,7 +615,7 @@ class _HomeBodySkeleton extends StatelessWidget {
               children: [
                 const SizedBox(height: AppSpacing.xxl),
                 const _HomeHeaderSkeleton(),
-                const SizedBox(height: AppSpacing.xxxl + 100),
+                const SizedBox(height: AppSpacing.xxxl),
                 const _HomeGoalSkeleton(),
                 const SizedBox(height: AppSpacing.xl),
                 const _MealsHeaderSkeleton(),
@@ -777,7 +777,7 @@ class _HomeBody extends StatelessWidget {
                       userProfile: userProfile,
                       onAvatarTap: onAvatarTap,
                     ),
-                    const SizedBox(height: AppSpacing.xxxl + 100),
+                    const SizedBox(height: AppSpacing.xxxl),
                     HomeDailyGoalWithMascot(
                       mascotAsset: HomePage._mealAsset,
                       idleMascotVideoAsset: idleMascotVideoAsset,
