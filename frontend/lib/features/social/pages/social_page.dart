@@ -48,10 +48,14 @@ class SocialPage extends StatefulWidget {
   State<SocialPage> createState() => _SocialPageState();
 }
 
-class _SocialPageState extends State<SocialPage> {
+class _SocialPageState extends State<SocialPage>
+    with AutomaticKeepAliveClientMixin {
   static const Duration _tabTransitionDuration = Duration(milliseconds: 320);
   late final SocialPageController _controller;
   bool _processingPendingInvite = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -133,6 +137,7 @@ class _SocialPageState extends State<SocialPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {

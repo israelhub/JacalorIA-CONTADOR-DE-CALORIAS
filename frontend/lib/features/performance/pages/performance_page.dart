@@ -31,7 +31,8 @@ class PerformancePage extends StatefulWidget {
   State<PerformancePage> createState() => _PerformancePageState();
 }
 
-class _PerformancePageState extends State<PerformancePage> {
+class _PerformancePageState extends State<PerformancePage>
+    with AutomaticKeepAliveClientMixin {
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   MonthlyPerformance? _performance;
   bool _isLoading = true;
@@ -41,6 +42,9 @@ class _PerformancePageState extends State<PerformancePage> {
   String _selectedWeightPeriod = '30';
   DateTimeRange? _customWeightRange;
   WeightHistory? _weightHistory;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -58,18 +62,27 @@ class _PerformancePageState extends State<PerformancePage> {
   }
 
   Future<void> _refreshOnEnter() async {
-    await _loadPerformance(_selectedMonth, silent: true);
-    await _loadWeightHistory(silent: true);
+    await Future.wait<void>([
+      _loadPerformance(_selectedMonth, silent: true),
+      _loadWeightHistory(silent: true),
+    ]);
   }
 
   Future<void> _loadPerformance(DateTime month, {bool silent = false}) async {
     final hasPerformance = _performance != null;
-    setState(() {
-      _isLoading = !hasPerformance;
-      // Avoid flashing overlays when soft-refreshing cached content.
-      _isMonthLoading = hasPerformance && !silent;
-      _errorMessage = null;
-    });
+    final nextLoading = !hasPerformance;
+    final nextMonthLoading = hasPerformance && !silent;
+    if (!silent ||
+        _isLoading != nextLoading ||
+        _isMonthLoading != nextMonthLoading ||
+        _errorMessage != null) {
+      setState(() {
+        _isLoading = nextLoading;
+        // Avoid flashing overlays when soft-refreshing cached content.
+        _isMonthLoading = nextMonthLoading;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final result = await widget._service.fetchMonthlyPerformance(month);
@@ -99,7 +112,7 @@ class _PerformancePageState extends State<PerformancePage> {
   }
 
   Future<void> _loadWeightHistory({bool silent = false}) async {
-    if (!silent) {
+    if (!silent && !_isWeightHistoryLoading) {
       setState(() {
         _isWeightHistoryLoading = true;
       });
@@ -140,8 +153,12 @@ class _PerformancePageState extends State<PerformancePage> {
 
     if (period == 'custom') {
       final now = DateTime.now();
-      final initialRange = _customWeightRange ??
-          DateTimeRange(start: now.subtract(const Duration(days: 29)), end: now);
+      final initialRange =
+          _customWeightRange ??
+          DateTimeRange(
+            start: now.subtract(const Duration(days: 29)),
+            end: now,
+          );
       final selectedRange = await showDateRangePicker(
         context: context,
         firstDate: DateTime(2000),
@@ -167,8 +184,9 @@ class _PerformancePageState extends State<PerformancePage> {
                 backgroundColor: AppColors.surface,
                 headerBackgroundColor: AppColors.surface,
                 headerForegroundColor: AppColors.brand900Variant,
-                rangeSelectionBackgroundColor:
-                    AppColors.action500.withValues(alpha: 0.18),
+                rangeSelectionBackgroundColor: AppColors.action500.withValues(
+                  alpha: 0.18,
+                ),
                 dayForegroundColor: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
                     return AppColors.surface;
@@ -247,6 +265,7 @@ class _PerformancePageState extends State<PerformancePage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(child: _buildContent()),
@@ -528,7 +547,9 @@ class _WeightHistoryCard extends StatelessWidget {
               ),
             )
           else
-            WeightHistoryChart(points: history?.points ?? const <WeightHistoryPoint>[]),
+            WeightHistoryChart(
+              points: history?.points ?? const <WeightHistoryPoint>[],
+            ),
           const SizedBox(height: AppSpacing.md),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -548,39 +569,44 @@ class _WeightHistoryCard extends StatelessWidget {
                   Wrap(
                     spacing: spacing,
                     runSpacing: spacing,
-                    children: standardPeriods.map((entry) {
-                      final isSelected = selectedPeriod == entry.key;
-                      return SizedBox(
-                        width: itemWidth,
-                        child: ChoiceChip(
-                          selected: isSelected,
-                          showCheckmark: false,
-                          label: SizedBox(
-                            width: double.infinity,
-                            child: Text(
-                              entry.value,
-                              textAlign: TextAlign.center,
+                    children: standardPeriods
+                        .map((entry) {
+                          final isSelected = selectedPeriod == entry.key;
+                          return SizedBox(
+                            width: itemWidth,
+                            child: ChoiceChip(
+                              selected: isSelected,
+                              showCheckmark: false,
+                              label: SizedBox(
+                                width: double.infinity,
+                                child: Text(
+                                  entry.value,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              backgroundColor: AppColors.surfaceAlt,
+                              selectedColor: AppColors.action500.withValues(
+                                alpha: 0.2,
+                              ),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppColors.action500
+                                    : AppColors.borderAlt,
+                              ),
+                              labelStyle: AppTextStyles.performanceCardMicro
+                                  .copyWith(
+                                    color: isSelected
+                                        ? AppColors.action500
+                                        : AppColors.textSecondary,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
+                              onSelected: (_) => onPeriodSelected(entry.key),
                             ),
-                          ),
-                          backgroundColor: AppColors.surfaceAlt,
-                          selectedColor:
-                              AppColors.action500.withValues(alpha: 0.2),
-                          side: BorderSide(
-                            color: isSelected
-                                ? AppColors.action500
-                                : AppColors.borderAlt,
-                          ),
-                          labelStyle: AppTextStyles.performanceCardMicro.copyWith(
-                            color: isSelected
-                                ? AppColors.action500
-                                : AppColors.textSecondary,
-                            fontWeight:
-                                isSelected ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                          onSelected: (_) => onPeriodSelected(entry.key),
-                        ),
-                      );
-                    }).toList(growable: false),
+                          );
+                        })
+                        .toList(growable: false),
                   ),
                   const SizedBox(height: spacing),
                   SizedBox(

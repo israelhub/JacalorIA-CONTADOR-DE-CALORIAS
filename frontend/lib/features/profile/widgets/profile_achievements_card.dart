@@ -224,7 +224,9 @@ class ProfileAchievementsCard extends StatelessWidget {
         value: longestStreakDays,
       ),
       ProfileAchievementMedal(
-        icon: Icons.palette_rounded,
+        // Prefer icons already present in older tree-shaken MaterialIcons
+        // subsets so web clients with a cached font still render the glyph.
+        icon: Icons.storefront_rounded,
         color: AppColors.missionsChallenge,
         label: 'Visuais adquiridos',
         value: cosmeticsOwned,

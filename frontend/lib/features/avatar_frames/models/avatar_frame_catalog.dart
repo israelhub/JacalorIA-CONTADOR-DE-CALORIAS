@@ -158,6 +158,18 @@ class AvatarFrameCatalog {
       description: 'Anel dourado com coroa, gemas e moedas.',
       assetPath: 'assets/images/avatar_frames/royal_gold.png',
     ),
+    AvatarFrameItem(
+      id: 'soft_pink',
+      name: 'Rosa Suave',
+      description: 'Anel rosa simples com brilhos e coracoes.',
+      assetPath: 'assets/images/avatar_frames/soft_pink.png',
+    ),
+    AvatarFrameItem(
+      id: 'soft_blue',
+      name: 'Azul Suave',
+      description: 'Anel azul simples com brilhos e bolhas.',
+      assetPath: 'assets/images/avatar_frames/soft_blue.png',
+    ),
   ];
 
   static List<AvatarFrameItem> get purchasableItems =>

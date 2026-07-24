@@ -11,6 +11,11 @@ import '../../../core/config/api_config.dart';
 class AuthService {
   static const Duration _apiTimeout = Duration(seconds: 90);
   static const int _maxAttempts = 3;
+  static const Duration _profileCacheTtl = Duration(seconds: 45);
+
+  static Map<String, dynamic>? _cachedProfile;
+  static DateTime? _cachedProfileAt;
+  static Future<Map<String, dynamic>>? _inflightProfileFetch;
 
   static String get _baseUrl => ApiConfig.baseUrl;
   static const String _googleWebClientId = String.fromEnvironment(
@@ -158,11 +163,7 @@ class AuthService {
       () => http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': name,
-          'email': email,
-          'password': password,
-        }),
+        body: jsonEncode({'name': name, 'email': email, 'password': password}),
       ),
       timeoutMessage: 'Timeout ao criar conta',
     );
@@ -394,7 +395,38 @@ class AuthService {
     return token;
   }
 
-  Future<Map<String, dynamic>> fetchProfile() async {
+  Future<Map<String, dynamic>> fetchProfile({bool forceRefresh = false}) async {
+    if (!forceRefresh) {
+      final cached = _cachedProfile;
+      final cachedAt = _cachedProfileAt;
+      if (cached != null &&
+          cachedAt != null &&
+          DateTime.now().difference(cachedAt) < _profileCacheTtl) {
+        return Map<String, dynamic>.from(cached);
+      }
+
+      final inflight = _inflightProfileFetch;
+      if (inflight != null) {
+        return Map<String, dynamic>.from(await inflight);
+      }
+    }
+
+    final request = _fetchProfileFromNetwork();
+    _inflightProfileFetch = request;
+    try {
+      final profile = await request;
+      _cachedProfile = profile;
+      _cachedProfileAt = DateTime.now();
+      globalUser = profile;
+      return Map<String, dynamic>.from(profile);
+    } finally {
+      if (identical(_inflightProfileFetch, request)) {
+        _inflightProfileFetch = null;
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> _fetchProfileFromNetwork() async {
     final token = _requireToken();
     final uri = Uri.parse('$_baseUrl/auth/profile');
     final headers = <String, String>{'Authorization': 'Bearer $token'};
@@ -407,12 +439,21 @@ class AuthService {
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
     if (response.statusCode == 200) {
-      return body.containsKey('id') ? body : (body['user'] ?? body);
+      final profile = body.containsKey('id')
+          ? body
+          : (body['user'] as Map<String, dynamic>? ?? body);
+      return Map<String, dynamic>.from(profile);
     } else if (response.statusCode == 401 || response.statusCode == 403) {
       throw Exception('Sessao invalida. Faca login novamente.');
     } else {
       throw Exception(_extractMessage(body, 'Erro ao buscar perfil'));
     }
+  }
+
+  static void invalidateProfileCache() {
+    _cachedProfile = null;
+    _cachedProfileAt = null;
+    _inflightProfileFetch = null;
   }
 
   Future<void> updateProfile(Map<String, dynamic> data) async {
@@ -432,11 +473,14 @@ class AuthService {
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       throw Exception(_extractMessage(body, 'Erro ao atualizar perfil'));
     }
+
+    invalidateProfileCache();
   }
 
   Future<void> signOut() async {
     globalToken = null;
     globalUser = null;
+    invalidateProfileCache();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     await prefs.remove('auth_user');

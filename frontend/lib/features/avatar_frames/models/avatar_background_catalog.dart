@@ -76,6 +76,18 @@ class AvatarBackgroundCatalog {
       description: 'Ouro e joias para combinar com o Ouro Real.',
       assetPath: 'assets/images/avatar_backgrounds/royal_court.png',
     ),
+    AvatarBackgroundItem(
+      id: 'soft_pink',
+      name: 'Rosa Suave',
+      description: 'Tons rosa para combinar com a moldura Rosa Suave.',
+      assetPath: 'assets/images/avatar_backgrounds/soft_pink.png',
+    ),
+    AvatarBackgroundItem(
+      id: 'soft_blue',
+      name: 'Azul Suave',
+      description: 'Tons azuis para combinar com a moldura Azul Suave.',
+      assetPath: 'assets/images/avatar_backgrounds/soft_blue.png',
+    ),
   ];
 
   static AvatarBackgroundItem? byId(String? id) {
