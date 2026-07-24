@@ -142,8 +142,8 @@ String calorieGoalExplanationForObjective(HomeObjective objective) {
   switch (objective) {
     case HomeObjective.loseWeight:
       return 'Seu objetivo é atingir a meta diária de calorias ou ficar até '
-          '$loseWeightBelowToleranceKcal calorias abaixo dela, '
-          'sem poder ultrapassá-la.';
+          '$loseWeightBelowToleranceKcal calorias abaixo dela. '
+          'Sem poder ultrapassá-la.';
     case HomeObjective.gainMass:
       return 'Seu objetivo é registrar acima da sua meta diária de calorias.';
     case HomeObjective.maintainWeight:

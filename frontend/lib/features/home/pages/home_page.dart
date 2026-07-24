@@ -826,12 +826,16 @@ class _HomeBody extends StatelessWidget {
                 color: AppColors.action500,
                 onRefresh: onRefresh,
                 child: ListView.separated(
-                  physics: const AlwaysScrollableScrollPhysics(),
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
                   padding: EdgeInsets.fromLTRB(
                     AppSpacing.lg,
                     0,
                     AppSpacing.lg,
-                    AppSpacing.xxxl + bottomInset + 56,
+                    // SafeArea already clears the bottom nav; only reserve
+                    // space so the last meal isn't hidden under the FAB.
+                    56 + homeShellFabNavGap,
                   ),
                   itemCount: dayRecords.length + 1,
                   separatorBuilder: (_, __) =>
