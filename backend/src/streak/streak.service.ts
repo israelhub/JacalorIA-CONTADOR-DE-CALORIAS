@@ -9,6 +9,8 @@ const FALLBACK_TIME_ZONE = 'America/Sao_Paulo';
 
 type CoveragePlan = { missingDayKeys: string[] };
 
+export type StreakSummary = { currentDays: number; longestDays: number };
+
 @Injectable()
 export class StreakService {
   private readonly appTimeZone = this.resolveAppTimeZone();
@@ -22,6 +24,41 @@ export class StreakService {
     await this.applyStreakBlockersIfNeeded(userId);
     const map = await this.buildStreakByUserIds([userId]);
     return map.get(userId) ?? 0;
+  }
+
+  /** Sequência atual e a maior já atingida, com uma única leitura dos dias efetivos. */
+  async getUserStreakSummary(userId: string): Promise<StreakSummary> {
+    await this.applyStreakBlockersIfNeeded(userId);
+    const dayKeysByUser = await this.buildEffectiveDayKeysByUserIds([userId]);
+    const dayKeys = dayKeysByUser.get(userId) ?? new Set<string>();
+
+    return {
+      currentDays: this.calculateStreakFromDayKeys(dayKeys),
+      longestDays: this.calculateLongestStreakFromDayKeys(dayKeys),
+    };
+  }
+
+  /** Maior sequência de dias consecutivos em todo o histórico. */
+  calculateLongestStreakFromDayKeys(dayKeys: Set<string>): number {
+    const sortedKeys = [...dayKeys]
+      .filter((key) => /^\d{4}-\d{2}-\d{2}$/.test(key))
+      .sort();
+
+    let longest = 0;
+    let current = 0;
+    let previousKey: string | null = null;
+
+    for (const key of sortedKeys) {
+      const isConsecutive =
+        previousKey !== null && this.shiftDayKey(previousKey, 1) === key;
+      current = isConsecutive ? current + 1 : 1;
+      previousKey = key;
+      if (current > longest) {
+        longest = current;
+      }
+    }
+
+    return longest;
   }
 
   async buildStreakByUserIds(userIds: string[]): Promise<Map<string, number>> {
@@ -272,7 +309,6 @@ export class StreakService {
       const plan = this.buildCoveragePlan(mealDayKeys, existingApplied, todayStart);
       // Never auto-consume blockers for "today" (day still in progress).
       // Only protect the single most recent completed miss (yesterday).
-      // Multi-day historical gaps are recovered via the store "Restaurar" item.
       const completedMissing = plan.missingDayKeys.filter((key) => key < todayKey);
       if (completedMissing.length === 0) {
         return;

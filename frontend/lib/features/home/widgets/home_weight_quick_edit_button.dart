@@ -28,17 +28,38 @@ double homeShellFabBottomInset(BuildContext context) {
   return shellOverlap + homeShellFabNavGap;
 }
 
+/// Opens [HomeWeightQuickEditButton] from an external trigger (e.g. expandable FAB).
+class HomeWeightQuickEditController {
+  VoidCallback? _open;
+
+  void open() => _open?.call();
+
+  void _attach(VoidCallback open) => _open = open;
+
+  void _detach(VoidCallback open) {
+    if (identical(_open, open)) {
+      _open = null;
+    }
+  }
+}
+
 class HomeWeightQuickEditButton extends StatefulWidget {
   const HomeWeightQuickEditButton({
     super.key,
     required this.userProfile,
     this.authService,
     this.onWeightUpdated,
+    this.controller,
+    this.showTrigger = true,
   });
 
   final Map<String, dynamic>? userProfile;
   final AuthService? authService;
   final ValueChanged<Map<String, dynamic>>? onWeightUpdated;
+  final HomeWeightQuickEditController? controller;
+
+  /// When false, only the overlay host is mounted (trigger via [controller]).
+  final bool showTrigger;
 
   @override
   State<HomeWeightQuickEditButton> createState() =>
@@ -61,6 +82,21 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
   var _isHandlingClose = false;
 
   AuthService get _authService => widget.authService ?? AuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller?._attach(_openEditor);
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeWeightQuickEditButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?._detach(_openEditor);
+      widget.controller?._attach(_openEditor);
+    }
+  }
 
   double get _currentWeight {
     final rawWeight = widget.userProfile?['weight'];
@@ -100,6 +136,7 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
 
   @override
   void dispose() {
+    widget.controller?._detach(_openEditor);
     _focusNode.dispose();
     _controller.dispose();
     _hostFocusNode.dispose();
@@ -411,16 +448,17 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
               ),
             ),
           ),
-          Listener(
-            behavior: HitTestBehavior.translucent,
-            onPointerDown: (_) => _primeKeyboard(),
-            child: AppFloatingCircleButton(
-              key: const ValueKey('home-weight-quick-edit-button'),
-              icon: Icons.monitor_weight_outlined,
-              semanticLabel: 'Atualizar peso',
-              onPressed: _openEditor,
+          if (widget.showTrigger)
+            Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (_) => _primeKeyboard(),
+              child: AppFloatingCircleButton(
+                key: const ValueKey('home-weight-quick-edit-button'),
+                icon: Icons.monitor_weight_outlined,
+                semanticLabel: 'Atualizar peso',
+                onPressed: _openEditor,
+              ),
             ),
-          ),
         ],
       ),
     );

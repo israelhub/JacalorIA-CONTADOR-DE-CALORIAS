@@ -1,8 +1,9 @@
 {{flutter_js}}
 {{flutter_build_config}}
 
-// Auto-update: after each deploy, the next open (or a tab already open)
-// picks up version.json and reloads onto the fresh build.
+// Keep web clients on the latest deploy without requiring a manual cache clear.
+// Root cause of stale builds: main.dart.js keeps the same filename, so a long-lived
+// (or previously immutable) HTTP cache can hide new deploys forever.
 (function () {
   const VERSION_URL = 'version.json';
   const STORAGE_KEY = 'jacaloria_web_version';
@@ -60,19 +61,31 @@
     } catch (_) {}
   }
 
+  /**
+   * Force the browser to treat entrypoint files as a new URL after each deploy.
+   * CloudFront may ignore query strings in its cache key; the browser does not.
+   */
+  function applyEntrypointCacheBust(version) {
+    const cfg = _flutter.buildConfig;
+    if (!cfg || !Array.isArray(cfg.builds)) {
+      return;
+    }
+    const suffix = '?v=' + encodeURIComponent(version);
+    cfg.builds.forEach(function (build) {
+      ['mainJsPath', 'mainWasmPath', 'mainMjPath'].forEach(function (key) {
+        const path = build[key];
+        if (typeof path === 'string' && path.length > 0 && path.indexOf('?') === -1) {
+          build[key] = path + suffix;
+        }
+      });
+    });
+  }
+
   async function applyUpdateAndReload(latest) {
     writeStoredVersion(latest);
     await clearWebCaches();
     await clearServiceWorkers();
-    // Bust HTTP disk cache: mobile Chrome ignores Cache Storage clears for
-    // main.dart.js when it was served with max-age=immutable.
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.set('_jacaloria_v', latest.slice(0, 12));
-      window.location.replace(url.toString());
-    } catch (_) {
-      window.location.reload();
-    }
+    window.location.reload();
   }
 
   /**
@@ -137,13 +150,27 @@
     }
   }
 
-  window.addEventListener('load', function () {
-    checkForUpdate({ reloadIfChanged: true }).then(function (reloading) {
-      if (reloading) {
-        return;
+  async function startApp() {
+    var version = 'dev';
+    try {
+      const latest = await fetchDeployVersion();
+      if (latest) {
+        version = latest;
+        const current = readStoredVersion();
+        if (current && current !== latest) {
+          await applyUpdateAndReload(latest);
+          return;
+        }
+        writeStoredVersion(latest);
       }
-      _flutter.loader.load();
-      startUpdateWatcher();
-    });
-  });
+    } catch (_) {
+      // Dev / missing version.json
+    }
+
+    applyEntrypointCacheBust(version);
+    _flutter.loader.load();
+    startUpdateWatcher();
+  }
+
+  startApp();
 })();

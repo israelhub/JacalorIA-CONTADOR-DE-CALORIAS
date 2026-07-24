@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/home/widgets/home_weight_quick_edit_button.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
+import 'package:jacaloria/shared/widgets/app_floating_circle_button.dart';
 import 'package:jacaloria/shared/widgets/app_main_bottom_navigation.dart';
 
 void main() {
@@ -61,5 +62,30 @@ void main() {
       lessThanOrEqualTo(nav.top - homeShellFabNavGap + 0.5),
       reason: 'FAB should clear the nav with a gap. fab=$fab nav=$nav',
     );
+  });
+
+  testWidgets('controller abre editor sem botão visível', (tester) async {
+    final controller = HomeWeightQuickEditController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: HomeWeightQuickEditButton(
+            userProfile: const {'weight': 70, 'weightUnit': 'kg'},
+            onWeightUpdated: (_) {},
+            controller: controller,
+            showTrigger: false,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppFloatingCircleButton), findsNothing);
+
+    controller.open();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Atualizar peso'), findsOneWidget);
   });
 }

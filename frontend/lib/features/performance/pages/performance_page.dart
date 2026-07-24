@@ -336,7 +336,7 @@ class _PerformancePageState extends State<PerformancePage> {
               Expanded(
                 child: PerformanceStatCard(
                   icon: Icons.gpp_good_outlined,
-                  title: 'Meta batida',
+                  title: 'Objetivos batidos',
                   value: '${performance.metGoalDays} dias',
                   subtitle: 'de ${performance.elapsedDays} dias',
                   iconColor: AppColors.action500,

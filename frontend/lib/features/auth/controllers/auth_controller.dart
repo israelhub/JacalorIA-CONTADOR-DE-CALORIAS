@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/analytics/analytics_service.dart';
+import '../../../core/notifications/meal_reminder_service.dart';
 import '../service/auth_service.dart';
 
 class AuthController extends ChangeNotifier {
@@ -253,6 +254,12 @@ class AuthController extends ChangeNotifier {
     await AnalyticsService.instance.startSession();
     AnalyticsService.instance.trackAppOpen(properties: {'from': 'auth'});
     unawaited(AnalyticsService.instance.flush());
+    unawaited(
+      MealReminderService.instance.syncScheduledReminders(
+        // Web: permissão só após gesto (tela de lembretes).
+        requestPermission: !kIsWeb,
+      ),
+    );
   }
 
   void _setLoading(bool value) {

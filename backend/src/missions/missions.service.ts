@@ -11,7 +11,6 @@ import {
   AVATAR_BACKGROUND_NONE_ID,
   AVATAR_FRAME_NONE_ID,
   OFFENSIVE_BLOCKER_DEFAULT_ID,
-  STREAK_RESTORE_ITEM_ID,
 } from './constants/avatar-frame-store';
 import { DEFAULT_MISSIONS } from './constants/missions.seed';
 import { Mission, MissionType } from './models/mission.model';
@@ -70,19 +69,7 @@ type StoreItem = {
   equipped: boolean;
   quantityOwned?: number;
   quantityPerPurchase?: number;
-  storeAction?: 'inventory_blocker' | 'streak_restore';
-  restoreAvailable?: boolean;
-  missingDaysUntilToday?: number;
-  requiredBlockersTotal?: number;
-};
-
-type BlockerRecoverySummary = {
-  missingDaysUntilToday: number;
-  requiredBlockersTotal: number;
-  inventoryAvailable: number;
-  requiredPurchaseQuantity: number;
-  requiredPurchaseCostGold: number;
-  canAffordRecoveryPurchase: boolean;
+  storeAction?: 'inventory_blocker';
 };
 
 @Injectable()
@@ -426,19 +413,12 @@ export class MissionsService implements OnModuleInit {
     const equippedBlockerId =
       this.normalizeOptionalId(user.equippedOffensiveBlockerId) ?? OFFENSIVE_BLOCKER_DEFAULT_ID;
     const blockerInventoryCount = Math.max(0, parseNumber(user.offensiveBlockerInventoryCount));
-    const currentGold = wallet.gold;
-    const blockerRecovery = await this.buildBlockerRecoverySummary({
-      userId,
-      inventoryCount: blockerInventoryCount,
-      currentGold,
-    });
 
-    const [frameCatalog, backgroundCatalog, blockerCatalog, restoreCatalog] =
+    const [frameCatalog, backgroundCatalog, blockerCatalog] =
       await Promise.all([
         this.storeCatalogService.listActiveByCategory('avatar_frame'),
         this.storeCatalogService.listActiveByCategory('avatar_background'),
         this.storeCatalogService.listActiveByCategory('offensive_blocker'),
-        this.storeCatalogService.listActiveByCategory('streak_restore'),
       ]);
 
     const frameItems: StoreItem[] = frameCatalog.map((entry) => ({
@@ -462,9 +442,6 @@ export class MissionsService implements OnModuleInit {
     const defaultBlocker = blockerCatalog.find(
       (entry) => entry.itemKey === OFFENSIVE_BLOCKER_DEFAULT_ID,
     );
-    const restoreCatalogItem =
-      restoreCatalog.find((entry) => entry.itemKey === STREAK_RESTORE_ITEM_ID) ??
-      null;
     const blockerPriceGold = defaultBlocker?.priceGold ?? 0;
     const blockerItems: StoreItem[] = [];
 
@@ -481,20 +458,6 @@ export class MissionsService implements OnModuleInit {
         storeAction: 'inventory_blocker',
       });
     }
-
-    blockerItems.push({
-      id: STREAK_RESTORE_ITEM_ID,
-      name:
-        restoreCatalogItem?.name ?? 'Restaurar sequências perdidas até então',
-      description: restoreCatalogItem?.description ?? '',
-      priceGold: blockerRecovery.requiredPurchaseCostGold,
-      owned: false,
-      equipped: false,
-      storeAction: 'streak_restore',
-      restoreAvailable: blockerRecovery.missingDaysUntilToday > 0,
-      missingDaysUntilToday: blockerRecovery.missingDaysUntilToday,
-      requiredBlockersTotal: blockerRecovery.requiredBlockersTotal,
-    });
 
     return {
       summary: {
@@ -530,7 +493,6 @@ export class MissionsService implements OnModuleInit {
         equippedOffensiveBlockerId: equippedBlockerId,
         offensiveBlockerInventoryCount: blockerInventoryCount,
       },
-      blockerRecovery,
     };
   }
 
@@ -862,162 +824,6 @@ export class MissionsService implements OnModuleInit {
         message: `Bloqueador${normalizedQuantity > 1 ? 'es' : ''} comprado${
           normalizedQuantity > 1 ? 's' : ''
         } com sucesso.`,
-        profile: {
-          equippedOffensiveBlockerId:
-            this.normalizeOptionalId(user.equippedOffensiveBlockerId) ??
-            OFFENSIVE_BLOCKER_DEFAULT_ID,
-          offensiveBlockerInventoryCount: nextInventory,
-        },
-        summary: {
-          gold: wallet.gold,
-          xp: wallet.xp,
-          goldLifetimeEarned: wallet.goldLifetimeEarned,
-          goldLifetimeSpent: wallet.goldLifetimeSpent,
-          xpLifetimeEarned: wallet.xpLifetimeEarned,
-          xpLifetimeSpent: wallet.xpLifetimeSpent,
-        },
-      };
-    });
-
-    if (storePurchaseAnalytics) {
-      await this.analyticsService.trackSafe(userId, {
-        eventName: 'store_purchase',
-        properties: storePurchaseAnalytics,
-      });
-    }
-
-    return response;
-  }
-
-  async purchaseStreakRestore(userId: string) {
-    const restoreCatalogItem = await this.storeCatalogService.findActiveByKey(
-      STREAK_RESTORE_ITEM_ID,
-    );
-    if (!restoreCatalogItem || restoreCatalogItem.category !== 'streak_restore') {
-      throw new BadRequestException('Restauração de sequência indisponível.');
-    }
-
-    const blockerPriceGold =
-      (await this.storeCatalogService.getActivePriceGold(OFFENSIVE_BLOCKER_DEFAULT_ID)) ?? 0;
-
-    const sequelize = this.userModel.sequelize;
-    if (!sequelize) {
-      throw new BadRequestException('Serviço indisponível no momento.');
-    }
-
-    let storePurchaseAnalytics: Record<string, unknown> | null = null;
-
-    const response = await sequelize.transaction(async (transaction) => {
-      const user = await this.userModel.findByPk(userId, {
-        attributes: [
-          'id',
-          'equippedOffensiveBlockerId',
-          'offensiveBlockerInventoryCount',
-          'streakBlockerAppliedDayKeys',
-        ],
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      });
-
-      if (!user) {
-        throw new BadRequestException('Usuário não encontrado.');
-      }
-
-      const currentInventory = Math.max(0, parseNumber(user.offensiveBlockerInventoryCount));
-      const currentGold = await this.getBalanceByCurrency(userId, 'gold', transaction);
-      const blockerRecovery = await this.buildBlockerRecoverySummary({
-        userId,
-        inventoryCount: currentInventory,
-        currentGold,
-        transaction,
-      });
-
-      if (blockerRecovery.missingDaysUntilToday <= 0) {
-        throw new BadRequestException('Não há sequência perdida para restaurar.');
-      }
-
-      const blockersToBuy = blockerRecovery.requiredPurchaseQuantity;
-      const totalPriceGold = blockerRecovery.requiredPurchaseCostGold;
-
-      if (currentGold < totalPriceGold) {
-        throw new BadRequestException(
-          `Ouro insuficiente para restaurar a sequência (custo: ${totalPriceGold} ouro).`,
-        );
-      }
-
-      if (blockersToBuy > 0) {
-        await this.userCurrencyTransactionModel.create(
-          {
-            userId,
-            currency: 'gold',
-            amountSigned: -totalPriceGold,
-            type: 'debit',
-            sourceType: 'streak_restore_purchase',
-            sourceId: STREAK_RESTORE_ITEM_ID,
-            referenceKey: null,
-            metadata: {
-              restoreItemId: STREAK_RESTORE_ITEM_ID,
-              blockersPurchased: blockersToBuy,
-              blockersRequiredTotal: blockerRecovery.requiredBlockersTotal,
-              missingDaysUntilToday: blockerRecovery.missingDaysUntilToday,
-              priceGoldPerBlocker: blockerPriceGold,
-              totalPriceGold,
-            },
-          },
-          { transaction },
-        );
-      }
-
-      const now = new Date();
-      const todayStart = this.streakService.getDayStartInAppTimeZone(now);
-      const appliedKeys = new Set(
-        this.normalizeIdList(user.streakBlockerAppliedDayKeys).filter((key) =>
-          /^\d{4}-\d{2}-\d{2}$/.test(key),
-        ),
-      );
-      const mealDayKeys = await this.getMealDayKeysUntilNow(userId, now, transaction);
-      const missingDayKeys = this.buildTrailingMissingDayKeys(
-        mealDayKeys,
-        appliedKeys,
-        todayStart,
-      );
-
-      const nextInventoryRaw = currentInventory + blockersToBuy;
-      if (missingDayKeys.length === 0 || nextInventoryRaw < missingDayKeys.length) {
-        throw new BadRequestException(
-          'Não foi possível restaurar a sequência. Tente novamente.',
-        );
-      }
-
-      for (const key of missingDayKeys) {
-        appliedKeys.add(key);
-      }
-
-      const nextInventory = nextInventoryRaw - missingDayKeys.length;
-
-      await user.update(
-        {
-          offensiveBlockerInventoryCount: nextInventory,
-          equippedOffensiveBlockerId:
-            this.normalizeOptionalId(user.equippedOffensiveBlockerId) ??
-            OFFENSIVE_BLOCKER_DEFAULT_ID,
-          streakBlockerAppliedDayKeys: Array.from(appliedKeys).sort(),
-        },
-        { transaction },
-      );
-
-      const wallet = await this.getWalletSnapshot(userId, transaction);
-      storePurchaseAnalytics = {
-        item_type: 'streak_restore',
-        item_id: STREAK_RESTORE_ITEM_ID,
-        blockers_purchased: blockersToBuy,
-        blockers_consumed: missingDayKeys.length,
-        missing_days: blockerRecovery.missingDaysUntilToday,
-        price_gold: totalPriceGold,
-      };
-
-      return {
-        message: 'Sequência restaurada com sucesso.',
         profile: {
           equippedOffensiveBlockerId:
             this.normalizeOptionalId(user.equippedOffensiveBlockerId) ??
@@ -1458,132 +1264,6 @@ export class MissionsService implements OnModuleInit {
 
     const normalized = value.trim();
     return normalized.length > 0 ? normalized : null;
-  }
-
-  private async buildBlockerRecoverySummary({
-    userId,
-    inventoryCount,
-    currentGold,
-    transaction,
-  }: {
-    userId: string;
-    inventoryCount: number;
-    currentGold: number;
-    transaction?: Transaction;
-  }): Promise<BlockerRecoverySummary> {
-    const now = new Date();
-    const todayStart = this.streakService.getDayStartInAppTimeZone(now);
-    const user = await this.userModel.findByPk(userId, {
-      attributes: ['streakBlockerAppliedDayKeys'],
-      transaction,
-    });
-    const appliedKeys = new Set(
-      this.normalizeIdList(user?.streakBlockerAppliedDayKeys).filter((key) =>
-        /^\d{4}-\d{2}-\d{2}$/.test(key),
-      ),
-    );
-    const mealDayKeys = await this.getMealDayKeysUntilNow(userId, now, transaction);
-    const missingDayKeys = this.buildTrailingMissingDayKeys(
-      mealDayKeys,
-      appliedKeys,
-      todayStart,
-    );
-
-    const missingDays = missingDayKeys.length;
-    const requiredPurchaseQuantity = Math.max(0, missingDays - inventoryCount);
-    const blockerPriceGold =
-      (await this.storeCatalogService.getActivePriceGold(OFFENSIVE_BLOCKER_DEFAULT_ID)) ??
-      0;
-    const requiredPurchaseCostGold = requiredPurchaseQuantity * blockerPriceGold;
-
-    return {
-      missingDaysUntilToday: missingDays,
-      requiredBlockersTotal: missingDays,
-      inventoryAvailable: inventoryCount,
-      requiredPurchaseQuantity,
-      requiredPurchaseCostGold,
-      canAffordRecoveryPurchase: currentGold >= requiredPurchaseCostGold,
-    };
-  }
-
-  private async getMealDayKeysUntilNow(
-    userId: string,
-    now: Date,
-    transaction?: Transaction,
-  ): Promise<Set<string>> {
-    const meals = await this.mealModel.findAll({
-      where: {
-        userId,
-        status: MealStatus.Active,
-        createdAt: { [Op.lte]: now },
-      },
-      attributes: ['createdAt'],
-      transaction,
-    });
-
-    const mealDayKeys = new Set<string>();
-    for (const meal of meals) {
-      mealDayKeys.add(this.streakService.toDayKeyInAppTimeZone(new Date(meal.createdAt)));
-    }
-
-    return mealDayKeys;
-  }
-
-  private buildTrailingMissingDayKeys(
-    mealDayKeys: Set<string>,
-    appliedDayKeys: Set<string>,
-    todayStart: Date,
-  ): string[] {
-    const anchors = new Set<string>(mealDayKeys);
-    for (const key of appliedDayKeys) {
-      anchors.add(key);
-    }
-
-    if (anchors.size === 0) {
-      return [];
-    }
-
-    let latestAnchorDate: Date | null = null;
-    for (const key of anchors) {
-      const parsed = this.dayKeyToDate(key);
-      if (!parsed || parsed > todayStart) {
-        continue;
-      }
-
-      if (!latestAnchorDate || parsed > latestAnchorDate) {
-        latestAnchorDate = parsed;
-      }
-    }
-
-    if (!latestAnchorDate || latestAnchorDate >= todayStart) {
-      return [];
-    }
-
-    const missing: string[] = [];
-    const cursor = new Date(latestAnchorDate);
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-    while (cursor <= todayStart) {
-      missing.push(this.streakService.toDayKeyFromAppDayStart(cursor));
-      cursor.setUTCDate(cursor.getUTCDate() + 1);
-    }
-
-    return missing;
-  }
-
-  private dayKeyToDate(dayKey: string): Date | null {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) {
-      return null;
-    }
-
-    const [yearText, monthText, dayText] = dayKey.split('-');
-    const year = Number(yearText);
-    const month = Number(monthText);
-    const day = Number(dayText);
-    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-      return null;
-    }
-
-    return new Date(Date.UTC(year, month - 1, day));
   }
 
   private async getWalletSnapshot(userId: string, transaction?: Transaction): Promise<WalletSnapshot> {

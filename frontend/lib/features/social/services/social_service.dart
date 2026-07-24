@@ -220,6 +220,27 @@ class SocialService {
     throw Exception(_extractMessage(body, 'Erro ao carregar o grupo.'));
   }
 
+  Future<SocialMemberDailyMeals> fetchGroupMemberDailyMeals({
+    required String groupId,
+    required String memberUserId,
+    String? date,
+  }) async {
+    final queryParameters = <String, String>{};
+    final normalizedDate = date?.trim();
+    if (normalizedDate != null && normalizedDate.isNotEmpty) {
+      queryParameters['date'] = normalizedDate;
+    }
+    final uri = Uri.parse(
+      '$_baseUrl/social/groups/${groupId.trim()}/members/${memberUserId.trim()}/daily-meals',
+    ).replace(queryParameters: queryParameters.isEmpty ? null : queryParameters);
+    final response = await http.get(uri, headers: _headers());
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200) {
+      return SocialMemberDailyMeals.fromJson(body);
+    }
+    throw Exception(_extractMessage(body, 'Erro ao carregar refeições do membro.'));
+  }
+
   Future<void> leaveGroup(String groupId) async {
     final response = await http.post(Uri.parse('$_baseUrl/social/groups/${groupId.trim()}/leave'), headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;

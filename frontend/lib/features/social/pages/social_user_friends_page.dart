@@ -14,6 +14,7 @@ class SocialUserFriendsPage extends StatefulWidget {
     required this.userId,
     this.userName,
     this.groupId,
+    this.competitionType,
     this.viaUserId,
     SocialService? service,
   }) : service = service ?? const SocialService();
@@ -21,6 +22,7 @@ class SocialUserFriendsPage extends StatefulWidget {
   final String userId;
   final String? userName;
   final String? groupId;
+  final String? competitionType;
   final String? viaUserId;
   final SocialService service;
 
@@ -71,6 +73,7 @@ class _SocialUserFriendsPageState extends State<SocialUserFriendsPage> {
         friendId: friend.id,
         initialFriendName: friend.name,
         groupId: widget.groupId,
+        competitionType: widget.competitionType,
         viaUserId: widget.userId,
       ),
     );

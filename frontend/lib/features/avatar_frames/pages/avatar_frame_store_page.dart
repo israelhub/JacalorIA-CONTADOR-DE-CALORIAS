@@ -50,7 +50,6 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     backgrounds: <StoreCatalogItem>[],
     blockers: <StoreCatalogItem>[],
   );
-  BlockerRecoveryInfo _blockerRecovery = const BlockerRecoveryInfo();
   StoreCategory _selectedCategory = StoreCategory.blockers;
   bool _showOwnedOnly = false;
   bool _isLoadingCatalog = true;
@@ -105,7 +104,6 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
 
       setState(() {
         _catalog = StoreCatalogData.fromJson(response);
-        _blockerRecovery = _catalog.blockerRecovery;
         _purchasedFrameIds = AvatarFrameCatalog.purchasedIdsFromProfile(
           _profileSnapshot,
         );
@@ -137,7 +135,6 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
       }
       setState(() {
         _catalog = StoreCatalogData.fromJson(const <String, dynamic>{});
-        _blockerRecovery = const BlockerRecoveryInfo();
         _isLoadingCatalog = false;
       });
       _showToast(
@@ -170,10 +167,6 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
   }
 
   bool _isOwned(StoreCatalogItem item) {
-    if (item.isStreakRestore) {
-      return false;
-    }
-
     switch (item.type) {
       case StoreItemType.frame:
         return _purchasedFrameIds.contains(item.id);
@@ -196,9 +189,6 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
   }
 
   bool _canPurchase(StoreCatalogItem item) {
-    if (item.isStreakRestore) {
-      return item.restoreAvailable && _goldBalance >= item.priceGold;
-    }
     if (item.isInventoryBlocker) {
       return _goldBalance >= item.priceGold;
     }
@@ -226,28 +216,8 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     }
 
     final isOwned = _isOwned(item);
-    final needsPurchase = item.isInventoryBlocker || (!isOwned && !item.isStreakRestore);
-    if (item.isStreakRestore) {
-      if (!item.restoreAvailable) {
-        _showToast('Não há sequência perdida para restaurar.');
-        return;
-      }
-      if (_goldBalance < item.priceGold) {
-        await _showInsufficientFundsDialog(item.priceGold);
-        return;
-      }
-      final blockersNeeded = _blockerRecovery.requiredBlockersTotal;
-      final blockersToBuy = _blockerRecovery.requiredPurchaseQuantity;
-      final confirmed = await _confirmStreakRestorePurchase(
-        missingDays: item.missingDaysUntilToday,
-        blockersNeeded: blockersNeeded,
-        blockersToBuy: blockersToBuy,
-        totalCost: item.priceGold,
-      );
-      if (!confirmed) {
-        return;
-      }
-    } else if (needsPurchase) {
+    final needsPurchase = item.isInventoryBlocker || !isOwned;
+    if (needsPurchase) {
       if (_goldBalance < item.priceGold) {
         await _showInsufficientFundsDialog(item.priceGold);
         return;
@@ -276,16 +246,11 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
               : 'Fundo comprado e equipado.';
           break;
         case StoreItemType.blocker:
-          if (item.isStreakRestore) {
-            response = await _missionsService.purchaseStreakRestore();
-            successMessage = 'Sequência restaurada.';
-          } else {
-            response = await _missionsService.purchaseBlocker(
-              blockerId: item.id,
-              quantity: 1,
-            );
-            successMessage = 'Bloqueador comprado.';
-          }
+          response = await _missionsService.purchaseBlocker(
+            blockerId: item.id,
+            quantity: 1,
+          );
+          successMessage = 'Bloqueador comprado.';
           break;
       }
 
@@ -515,52 +480,6 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     });
   }
 
-  Future<bool> _confirmStreakRestorePurchase({
-    required int missingDays,
-    required int blockersNeeded,
-    required int blockersToBuy,
-    required int totalCost,
-  }) async {
-    final inventoryUsed = blockersNeeded - blockersToBuy;
-    final buffer = StringBuffer(
-      'Restaurar $missingDays dia${missingDays > 1 ? 's' : ''} de sequência',
-    );
-    if (inventoryUsed > 0) {
-      buffer.write(
-        ' usando $inventoryUsed bloqueador${inventoryUsed > 1 ? 'es' : ''} do inventário',
-      );
-    }
-    if (blockersToBuy > 0) {
-      buffer.write(
-        '${inventoryUsed > 0 ? ' e comprando' : ' comprando'} '
-        '$blockersToBuy bloqueador${blockersToBuy > 1 ? 'es' : ''}',
-      );
-    }
-    buffer.write('.\nCusto em ouro: $totalCost.\n\nDeseja continuar?');
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Confirmar restauração'),
-          content: Text(buffer.toString()),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Confirmar'),
-            ),
-          ],
-        );
-      },
-    );
-
-    return result == true;
-  }
-
   void _previewItem(StoreCatalogItem item) {
     switch (item.type) {
       case StoreItemType.frame:
@@ -738,6 +657,12 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                             builder: (context, constraints) {
                               final crossAxisCount =
                                   constraints.maxWidth >= 720 ? 3 : 2;
+                              // Fundos: tile mais largo pra caber o banner
+                              // na mesma proporcao do perfil (nao quadrado).
+                              final childAspectRatio =
+                                  _selectedCategory == StoreCategory.backgrounds
+                                  ? 0.78
+                                  : 1.0;
                               return GridView.builder(
                                 physics:
                                     const AlwaysScrollableScrollPhysics(),
@@ -750,7 +675,7 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                                   crossAxisCount: crossAxisCount,
                                   crossAxisSpacing: AppSpacing.md,
                                   mainAxisSpacing: AppSpacing.md,
-                                  childAspectRatio: 1,
+                                  childAspectRatio: childAspectRatio,
                                 ),
                                 itemBuilder: (context, index) {
                                   final item = items[index];
@@ -1125,22 +1050,16 @@ class _StoreTile extends StatelessWidget {
     final effectiveBlockerQuantity = blockerQuantity > 0
         ? blockerQuantity
         : blockerQuantityFallback;
-    final label = item.isStreakRestore
-        ? (item.restoreAvailable ? 'Restaurar' : 'Indisponível')
-        : item.isInventoryBlocker
+    final label = item.isInventoryBlocker
         ? 'Comprar'
         : isEquipped
         ? 'Desequipar'
         : isOwned
         ? 'Equipar'
         : 'Comprar';
-    final buttonEnabled = !isSaving && (item.isStreakRestore ? item.restoreAvailable : true);
+    final buttonEnabled = !isSaving;
     final metaLabel = item.isInventoryBlocker
         ? (effectiveBlockerQuantity > 0 ? 'x$effectiveBlockerQuantity' : ' ')
-        : item.isStreakRestore
-        ? (item.missingDaysUntilToday > 0
-            ? '${item.missingDaysUntilToday} dia${item.missingDaysUntilToday > 1 ? 's' : ''}'
-            : ' ')
         : isOwned
         ? 'Comprado'
         : ' ';
@@ -1170,14 +1089,23 @@ class _StoreTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: Align(
-                  alignment: const Alignment(0, -0.15),
-                  child: _StoreItemPreview(
-                    item: item,
-                    avatarUrl: avatarUrl,
-                    name: name,
-                  ),
-                ),
+                child: item.type == StoreItemType.background
+                    ? Align(
+                        alignment: Alignment.center,
+                        child: _StoreItemPreview(
+                          item: item,
+                          avatarUrl: avatarUrl,
+                          name: name,
+                        ),
+                      )
+                    : Align(
+                        alignment: const Alignment(0, -0.15),
+                        child: _StoreItemPreview(
+                          item: item,
+                          avatarUrl: avatarUrl,
+                          name: name,
+                        ),
+                      ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
@@ -1226,9 +1154,7 @@ class _StoreTile extends StatelessWidget {
               AppButton(
                 label: label,
                 onPressed: buttonEnabled ? onPressed : null,
-                variant: isOwned &&
-                        !item.isInventoryBlocker &&
-                        !item.isStreakRestore
+                variant: isOwned && !item.isInventoryBlocker
                     ? AppButtonVariant.outline
                     : AppButtonVariant.primary,
                 textStyle: AppTextStyles.buttonSmall,
@@ -1294,11 +1220,9 @@ class _StoreItemPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final size = _resolveSquareSize(constraints);
-        final iconSize = math.max(24.0, size * 0.37);
-
         switch (item.type) {
           case StoreItemType.frame:
+            final size = _resolveSquareSize(constraints);
             return FramedAvatar(
               size: size,
               avatarUrl: avatarUrl,
@@ -1306,21 +1230,25 @@ class _StoreItemPreview extends StatelessWidget {
               fallbackText: name,
             );
           case StoreItemType.background:
+            // Mesma proporcao do banner do perfil (nao quadrado).
+            final width = _resolveBannerWidth(constraints);
+            final height = width / AvatarProfilePreview.bannerAspectRatio;
             final assetPath = AvatarBackgroundCatalog.assetPathForId(item.id);
             if (assetPath != null) {
               return ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 child: Image.asset(
                   assetPath,
-                  width: size,
-                  height: size,
+                  width: width,
+                  height: height,
                   fit: BoxFit.cover,
+                  alignment: Alignment.center,
                 ),
               );
             }
             return Container(
-              width: size,
-              height: size,
+              width: width,
+              height: height,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 gradient: const LinearGradient(
@@ -1332,11 +1260,13 @@ class _StoreItemPreview extends StatelessWidget {
               ),
               child: Icon(
                 Icons.landscape_rounded,
-                size: iconSize,
+                size: math.max(24.0, height * 0.45),
                 color: AppColors.brand900Variant,
               ),
             );
           case StoreItemType.blocker:
+            final size = _resolveSquareSize(constraints);
+            final iconSize = math.max(24.0, size * 0.37);
             return Container(
               width: size,
               height: size,
@@ -1346,9 +1276,7 @@ class _StoreItemPreview extends StatelessWidget {
                 border: Border.all(color: AppColors.performanceCardBorder),
               ),
               child: Icon(
-                item.isStreakRestore
-                    ? Icons.history_rounded
-                    : Icons.shield_rounded,
+                Icons.shield_rounded,
                 size: iconSize,
                 color: AppColors.brand900Variant,
               ),
@@ -1367,5 +1295,12 @@ class _StoreItemPreview extends StatelessWidget {
       resolved = math.min(resolved, constraints.maxHeight);
     }
     return math.max(0.0, resolved);
+  }
+
+  double _resolveBannerWidth(BoxConstraints constraints) {
+    if (constraints.maxWidth.isFinite && constraints.maxWidth > 0) {
+      return constraints.maxWidth;
+    }
+    return _preferredSize;
   }
 }

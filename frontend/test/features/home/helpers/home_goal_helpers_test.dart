@@ -140,15 +140,16 @@ void main() {
     test('retorna texto conforme o objetivo', () {
       expect(
         calorieGoalExplanationForObjective(HomeObjective.loseWeight),
-        contains('200'),
+        'Seu objetivo é atingir a meta diária de calorias ou ficar até '
+        '200 calorias abaixo dela, sem poder ultrapassá-la.',
       );
       expect(
         calorieGoalExplanationForObjective(HomeObjective.gainMass),
-        contains('acima'),
+        'Seu objetivo é registrar acima da sua meta diária de calorias.',
       );
       expect(
         calorieGoalExplanationForObjective(HomeObjective.maintainWeight),
-        contains('100'),
+        'Seu objetivo é ficar até 100 calorias acima ou abaixo da meta.',
       );
     });
   });

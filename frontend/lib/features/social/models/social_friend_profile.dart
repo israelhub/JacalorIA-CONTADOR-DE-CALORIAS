@@ -8,6 +8,9 @@ class SocialFriendProfile {
     required this.avatarFrameId,
     required this.avatarBackgroundId,
     required this.streakDays,
+    required this.longestStreakDays,
+    required this.missionsCompleted,
+    required this.cosmeticsOwned,
     required this.friendCount,
     required this.totalXp,
     required this.favoriteDish,
@@ -15,6 +18,7 @@ class SocialFriendProfile {
     required this.birthDate,
     required this.objective,
     required this.sex,
+    required this.createdAt,
     this.isFriend = false,
     this.isSelf = false,
     this.friendRequestStatus = 'none',
@@ -26,6 +30,9 @@ class SocialFriendProfile {
   final String? avatarFrameId;
   final String? avatarBackgroundId;
   final int streakDays;
+  final int longestStreakDays;
+  final int missionsCompleted;
+  final int cosmeticsOwned;
   final int friendCount;
   final int totalXp;
   final String? favoriteDish;
@@ -33,6 +40,7 @@ class SocialFriendProfile {
   final String? birthDate;
   final String? objective;
   final String? sex;
+  final DateTime? createdAt;
   final bool isFriend;
   final bool isSelf;
   final String friendRequestStatus;
@@ -54,6 +62,15 @@ class SocialFriendProfile {
           json['equippedAvatarBackgroundId']?.toString() ??
           json['equipped_avatar_background_id']?.toString(),
       streakDays: socialToInt(json['streakDays']),
+      longestStreakDays: socialToInt(
+        json['longestStreakDays'] ?? json['longest_streak_days'],
+      ),
+      missionsCompleted: socialToInt(
+        json['missionsCompleted'] ?? json['missions_completed'],
+      ),
+      cosmeticsOwned: socialToInt(
+        json['cosmeticsOwned'] ?? json['cosmetics_owned'],
+      ),
       friendCount: socialToInt(json['friendCount']),
       totalXp: socialToInt(json['totalXp']),
       favoriteDish: json['favoriteDish']?.toString(),
@@ -61,6 +78,9 @@ class SocialFriendProfile {
       birthDate: json['birthDate']?.toString(),
       objective: json['objective']?.toString(),
       sex: json['sex']?.toString(),
+      createdAt: DateTime.tryParse(
+        (json['createdAt'] ?? json['created_at'])?.toString() ?? '',
+      ),
       isFriend: json['isFriend'] == true,
       isSelf: json['isSelf'] == true,
       friendRequestStatus:
@@ -79,6 +99,9 @@ class SocialFriendProfile {
       avatarFrameId: avatarFrameId,
       avatarBackgroundId: avatarBackgroundId,
       streakDays: streakDays,
+      longestStreakDays: longestStreakDays,
+      missionsCompleted: missionsCompleted,
+      cosmeticsOwned: cosmeticsOwned,
       friendCount: friendCount,
       totalXp: totalXp,
       favoriteDish: favoriteDish,
@@ -86,6 +109,7 @@ class SocialFriendProfile {
       birthDate: birthDate,
       objective: objective,
       sex: sex,
+      createdAt: createdAt,
       isFriend: isFriend ?? this.isFriend,
       isSelf: isSelf,
       friendRequestStatus: friendRequestStatus ?? this.friendRequestStatus,

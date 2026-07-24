@@ -51,6 +51,46 @@
   </style>
 </head>
 <body>
+  <script>
+    // One-shot escape from older deploys that marked shell files as immutable
+    // and/or left a Flutter service worker controlling the page.
+    (function () {
+      var FLAG = 'jacaloria_force_uncache_v1';
+      try {
+        if (localStorage.getItem(FLAG)) {
+          return;
+        }
+        localStorage.setItem(FLAG, '1');
+      } catch (_) {
+        return;
+      }
+
+      var tasks = [];
+      if ('serviceWorker' in navigator) {
+        tasks.push(
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all(regs.map(function (reg) { return reg.unregister(); }));
+          }),
+        );
+      }
+      if ('caches' in window) {
+        tasks.push(
+          caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+          }),
+        );
+      }
+      Promise.all(tasks).then(function () {
+        try {
+          if (sessionStorage.getItem(FLAG + '_reloaded')) {
+            return;
+          }
+          sessionStorage.setItem(FLAG + '_reloaded', '1');
+        } catch (_) {}
+        window.location.reload();
+      });
+    })();
+  </script>
   <!-- Probe for CSS safe-area insets (Flutter Web often reports MediaQuery padding as 0). -->
   <div id="flt-safe-area-probe" aria-hidden="true" style="
     position: absolute;
@@ -65,6 +105,27 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
   "></div>
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Load bootstrap with a deploy version query so browsers that still hold an
+    // old immutable copy of flutter_bootstrap.js fetch a fresh URL.
+    (function () {
+      function injectBootstrap(version) {
+        var script = document.createElement('script');
+        script.src = 'flutter_bootstrap.js?v=' + encodeURIComponent(version);
+        script.async = true;
+        document.body.appendChild(script);
+      }
+
+      fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) {
+          var version = (data && (data.version || data.build_number)) || String(Date.now());
+          injectBootstrap(version);
+        })
+        .catch(function () {
+          injectBootstrap(String(Date.now()));
+        });
+    })();
+  </script>
 </body>
 </html>

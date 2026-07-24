@@ -137,7 +137,9 @@ class SocialGroupCard extends StatelessWidget {
                   const Spacer(),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
-                    isFinished ? 'Grupo finalizado' : group.remainingDaysLabel,
+                    isFinished && group.competitionType != 'group_streak'
+                        ? 'Grupo finalizado'
+                        : group.remainingDaysLabel,
                     style: AppTextStyles.captionStrong.copyWith(
                       color: isFinished ? AppColors.textError : AppColors.missionsRewardGold,
                       fontWeight: FontWeight.w700,

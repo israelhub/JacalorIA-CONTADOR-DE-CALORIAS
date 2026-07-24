@@ -331,16 +331,19 @@ export class SocialService {
         'avatarUrl',
         'equippedAvatarFrameId',
         'equippedAvatarBackgroundId',
+        'purchasedAvatarFrameIds',
+        'purchasedAvatarBackgroundIds',
         'birthDate',
         'objective',
         'sex',
+        'createdAt',
       ],
     });
     if (!friend) {
       throw new NotFoundException('Perfil não encontrado');
     }
 
-    const streakDays = await this.streakService.getUserStreak(friendId);
+    const streak = await this.streakService.getUserStreakSummary(friendId);
 
     const meals = await this.mealModel.findAll({
       where: { userId: friendId, status: MealStatus.Active },
@@ -351,6 +354,8 @@ export class SocialService {
     const favoriteDish = this.getFavoriteDish(meals);
     const preferredPeriod = this.getPreferredPeriod(meals);
     const totalXp = await this.getTotalXp(friend.id);
+    const missionsCompleted = await this.countCompletedMissions(friend.id);
+    const cosmeticsOwned = this.countOwnedCosmetics(friend);
     const friendRequestStatus = isSelf || isFriend
       ? 'none'
       : await this.getFriendRequestStatusBetween(viewerId, friendId);
@@ -361,7 +366,10 @@ export class SocialService {
       avatarUrl: friend.avatarUrl ?? null,
       avatarFrameId: friend.equippedAvatarFrameId ?? null,
       avatarBackgroundId: friend.equippedAvatarBackgroundId ?? null,
-      streakDays,
+      streakDays: streak.currentDays,
+      longestStreakDays: streak.longestDays,
+      missionsCompleted,
+      cosmeticsOwned,
       friendCount: await this.countFriends(friend.id),
       totalXp,
       favoriteDish,
@@ -369,6 +377,7 @@ export class SocialService {
       birthDate: friend.birthDate ?? null,
       objective: friend.objective ?? null,
       sex: friend.sex ?? null,
+      createdAt: friend.createdAt ?? null,
       isFriend,
       isSelf,
       friendRequestStatus,
@@ -760,6 +769,118 @@ export class SocialService {
     return await this.toGroupDetail(group, userId, streakByUserId, offensiveDayKeysByUserId);
   }
 
+  /**
+   * Refeições diárias de um membro no modo Média de meta (goal_average).
+   * Só inclui registros a partir do dia de início do grupo até o fim efetivo.
+   */
+  async getGroupMemberDailyMeals(
+    viewerId: string,
+    groupId: string,
+    memberUserId: string,
+    date?: string,
+  ) {
+    const group = await this.findGroupForMember(groupId, viewerId);
+    const targetUserId = memberUserId.trim();
+    if (!this.isCurrentUserMember(group.members, targetUserId)) {
+      throw new NotFoundException('Membro não encontrado');
+    }
+
+    if (group.competitionType !== 'goal_average') {
+      return {
+        enabled: false,
+        competitionType: group.competitionType,
+        date: null,
+        startsAt: null,
+        endsAt: null,
+        totalCalories: 0,
+        meals: [],
+      };
+    }
+
+    const startDayKey = this.streakService.toDayKeyInAppTimeZone(new Date(group.startsAt));
+    const effectiveEndMs = Math.min(Date.now(), new Date(group.endsAt).getTime());
+    const endDayKey = this.streakService.toDayKeyInAppTimeZone(new Date(effectiveEndMs));
+
+    let selectedDayKey = (date ?? '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDayKey)) {
+      selectedDayKey = endDayKey;
+    }
+    if (selectedDayKey < startDayKey) {
+      selectedDayKey = startDayKey;
+    }
+    if (selectedDayKey > endDayKey) {
+      selectedDayKey = endDayKey;
+    }
+
+    const meals = await this.findMemberMealsForDayKey(targetUserId, selectedDayKey);
+    const totalCalories = meals.reduce((sum, meal) => sum + parseNumber(meal.calories), 0);
+
+    return {
+      enabled: true,
+      competitionType: group.competitionType,
+      date: selectedDayKey,
+      startsAt: startDayKey,
+      endsAt: endDayKey,
+      totalCalories,
+      meals: meals.map((meal) => ({
+        id: meal.id,
+        title: meal.title,
+        description: meal.description,
+        calories: parseNumber(meal.calories),
+        protein: parseNumber(meal.protein),
+        carbs: parseNumber(meal.carbs),
+        fat: parseNumber(meal.fat),
+        timeLabel: meal.timeLabel,
+        mealType: meal.mealType,
+        imageUrl: meal.imageUrl,
+        createdAt: meal.createdAt,
+      })),
+    };
+  }
+
+  private async findMemberMealsForDayKey(userId: string, dayKey: string) {
+    const [yearText, monthText, dayText] = dayKey.split('-');
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const day = Number(dayText);
+    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+      return [];
+    }
+
+    // Folga de 1 dia em UTC para não perder refeições nas bordas de fuso.
+    const dayToken = new Date(Date.UTC(year, month - 1, day));
+    const queryStart = new Date(dayToken);
+    queryStart.setUTCDate(queryStart.getUTCDate() - 1);
+    const queryEnd = new Date(dayToken);
+    queryEnd.setUTCDate(queryEnd.getUTCDate() + 2);
+
+    const meals = await this.mealModel.findAll({
+      where: {
+        userId,
+        status: MealStatus.Active,
+        createdAt: { [Op.between]: [queryStart, queryEnd] },
+      },
+      attributes: [
+        'id',
+        'title',
+        'description',
+        'calories',
+        'protein',
+        'carbs',
+        'fat',
+        'timeLabel',
+        'mealType',
+        'imageUrl',
+        'createdAt',
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    return meals.filter(
+      (meal) => this.streakService.toDayKeyInAppTimeZone(new Date(meal.createdAt)) === dayKey,
+    );
+  }
+
   private async findGroupForMember(groupId: string, userId: string) {
     const group = await this.socialGroupModel.findByPk(groupId, {
       include: [
@@ -1009,6 +1130,37 @@ export class SocialService {
     return rows.reduce((sum, row) => sum + parseNumber(row.amountSigned), 0);
   }
 
+  /**
+   * Cada missão concluída gera até duas transações (ouro e XP) com a mesma
+   * reference_key, então o total vem da contagem de chaves distintas.
+   */
+  private async countCompletedMissions(userId: string) {
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where: { userId, sourceType: 'mission_reward' },
+      attributes: ['referenceKey'],
+    });
+
+    const referenceKeys = new Set(
+      rows
+        .map((row) => row.referenceKey?.trim() ?? '')
+        .filter((key) => key.length > 0),
+    );
+
+    return referenceKeys.size;
+  }
+
+  private countOwnedCosmetics(
+    user: Pick<User, 'purchasedAvatarFrameIds' | 'purchasedAvatarBackgroundIds'>,
+  ) {
+    const frames = Array.isArray(user.purchasedAvatarFrameIds)
+      ? user.purchasedAvatarFrameIds
+      : [];
+    const backgrounds = Array.isArray(user.purchasedAvatarBackgroundIds)
+      ? user.purchasedAvatarBackgroundIds
+      : [];
+    return frames.length + backgrounds.length;
+  }
+
   private async toGroupSummary(
     group: SocialGroup,
     userId: string,
@@ -1224,6 +1376,8 @@ export class SocialService {
       members = await this.withComputedDailyGoalPoints(members, group.startsAt, group.endsAt);
     } else if (group.competitionType === 'goal_average') {
       members = await this.withComputedGoalAveragePoints(members, group.startsAt, group.endsAt);
+    } else if (group.competitionType === 'xp') {
+      members = await this.withComputedXpPoints(members, group.startsAt, group.endsAt);
     }
     const sorted = this.sortMembers(members, group.competitionType);
     return this.assignSharedPositions(sorted, group.competitionType);
@@ -1238,6 +1392,9 @@ export class SocialService {
     }
     if (competitionType === 'goal_average') {
       return 'A média é o total de calorias ÷ dias decorridos do grupo (desde a criação; sobe após 00:00). Ganha quem ficar mais perto da própria meta.';
+    }
+    if (competitionType === 'xp') {
+      return 'Soma o XP ganho nas missões desde a criação do grupo. Ganha quem acumular mais XP no período.';
     }
     return null;
   }
@@ -1367,6 +1524,59 @@ export class SocialService {
       ...this.memberToPlain(member),
       points: pointsByUserId.get(member.userId) ?? 0,
     })) as SocialGroupMember[];
+  }
+
+  private async withComputedXpPoints(
+    members: SocialGroupMember[],
+    startsAt: Date,
+    endsAt: Date,
+  ) {
+    const userIds = [...new Set(members.map((member) => member.userId).filter(Boolean))];
+    if (userIds.length === 0) {
+      return members;
+    }
+
+    const pointsByUserId = await this.buildXpPointsByUserIds(userIds, startsAt, endsAt);
+    return members.map((member) => ({
+      ...this.memberToPlain(member),
+      points: pointsByUserId.get(member.userId) ?? 0,
+    })) as SocialGroupMember[];
+  }
+
+  private async buildXpPointsByUserIds(
+    userIds: string[],
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<Map<string, number>> {
+    const pointsByUserId = new Map<string, number>(userIds.map((userId) => [userId, 0]));
+    const rangeStart = new Date(startsAt);
+    const rangeEnd = new Date(endsAt);
+    if (
+      userIds.length === 0 ||
+      !Number.isFinite(rangeStart.getTime()) ||
+      !Number.isFinite(rangeEnd.getTime())
+    ) {
+      return pointsByUserId;
+    }
+
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where: {
+        userId: { [Op.in]: userIds },
+        currency: 'xp',
+        createdAt: { [Op.between]: [rangeStart, rangeEnd] },
+      },
+      attributes: ['userId', 'amountSigned'],
+    });
+
+    for (const row of rows) {
+      if (!row.userId) continue;
+      pointsByUserId.set(
+        row.userId,
+        (pointsByUserId.get(row.userId) ?? 0) + parseNumber(row.amountSigned),
+      );
+    }
+
+    return pointsByUserId;
   }
 
   private async withComputedGoalAveragePoints(

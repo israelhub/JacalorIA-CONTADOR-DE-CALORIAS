@@ -95,8 +95,9 @@ class FramedAvatar extends StatelessWidget {
       case 'fruit_ring':
         return 0.86;
       case 'fire_streak':
+        return 0.65;
       case 'royal_gold':
-        return 0.82;
+        return 0.66;
       default:
         return framedAvatarScale;
     }

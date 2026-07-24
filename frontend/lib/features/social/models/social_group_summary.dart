@@ -47,10 +47,18 @@ class SocialGroupSummary {
   final String? inviteCode;
   final List<SocialActivityItem> activities;
 
+  /// Sequência dos amigos não tem prazo: só termina quando alguém quebra a
+  /// sequência (`isDefeated`). Os demais modos terminam por prazo.
+  bool get isFinished =>
+      competitionType == 'group_streak' ? isDefeated : remainingDays <= 0;
+
   factory SocialGroupSummary.fromJson(Map<String, dynamic> json) {
-    final durationDays = socialToInt(json['durationDays']) > 0 ? socialToInt(json['durationDays']) : 7;
-    final remainingDays = socialToInt(json['remainingDays']);
     final competitionType = json['competitionType']?.toString() ?? 'offensive';
+    final rawDurationDays = socialToInt(json['durationDays']);
+    final durationDays = competitionType == 'group_streak'
+        ? 0
+        : (rawDurationDays > 0 ? rawDurationDays : 7);
+    final remainingDays = socialToInt(json['remainingDays']);
     final isDefeated = json['isDefeated'] == true;
 
     return SocialGroupSummary(

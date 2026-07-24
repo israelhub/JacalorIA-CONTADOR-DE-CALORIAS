@@ -381,7 +381,8 @@ export class AuthService {
     }
 
     const totalXp = await this.getTotalXp(userId);
-    const streakDays = await this.streakService.getUserStreak(userId);
+    const streak = await this.streakService.getUserStreakSummary(userId);
+    const missionsCompleted = await this.countCompletedMissions(userId);
     const meals = await this.mealModel.findAll({
       where: { userId, status: MealStatus.Active },
       attributes: ['title', 'description', 'createdAt'],
@@ -392,7 +393,9 @@ export class AuthService {
 
     return {
       ...user.toJSON(),
-      streakDays,
+      streakDays: streak.currentDays,
+      longestStreakDays: streak.longestDays,
+      missionsCompleted,
       friendCount: await this.countFriends(userId),
       totalXp,
       xp: totalXp,
@@ -578,6 +581,25 @@ export class AuthService {
     });
 
     return rows.reduce((sum, row) => sum + parseNumber(row.amountSigned), 0);
+  }
+
+  /**
+   * Cada missão concluída gera até duas transações (ouro e XP) com a mesma
+   * reference_key, então o total vem da contagem de chaves distintas.
+   */
+  private async countCompletedMissions(userId: string) {
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where: { userId, sourceType: 'mission_reward' },
+      attributes: ['referenceKey'],
+    });
+
+    const referenceKeys = new Set(
+      rows
+        .map((row) => row.referenceKey?.trim() ?? '')
+        .filter((key) => key.length > 0),
+    );
+
+    return referenceKeys.size;
   }
 
   private getFavoriteDish(meals: Array<Pick<Meal, 'title' | 'description'>>) {
