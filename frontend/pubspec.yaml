@@ -81,7 +81,6 @@ flutter:
     - assets/images/avatar_frames/
     - assets/images/avatar_backgrounds/
     - assets/icons/
-    - assets/google_fonts/
     - assets/videos/jaca_video_padrao_mobile_fast.webp
     - assets/videos/jaca_triste_mobile_fast.webp
     - assets/videos/jaca_assustado_mobile_fast.webp
