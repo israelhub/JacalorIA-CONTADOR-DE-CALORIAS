@@ -88,41 +88,75 @@ class _HomeDailyGoalWithMascotState extends State<HomeDailyGoalWithMascot> {
         ? _resolveAnimationAsset(widget.mascotVideoAsset)
         : null;
     final idleAsset = _resolveAnimationAsset(widget.idleMascotVideoAsset);
+    final objective = readHomeObjective(widget.userProfile);
 
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
-      children: [
-        HomeDailyGoalCard(
-          key: const ValueKey('home-daily-goal-card'),
-          records: widget.records,
-          selectedDate: widget.selectedDate,
-          userProfile: widget.userProfile,
-        ),
-        Positioned(
-          top: HomeDailyGoalWithMascot._mascotOffsetY,
-          child: SizedBox(
-            key: const ValueKey('home-mascot-overlay'),
-            width: HomeDailyGoalWithMascot._mascotSize,
-            height: HomeDailyGoalWithMascot._mascotSize,
-            child:
-                (celebrationAsset != null
-                    ? Image.asset(
-                        celebrationAsset,
-                        fit: BoxFit.contain,
-                        gaplessPlayback: true,
-                      )
-                    : idleAsset != null
-                    ? Image.asset(
-                        idleAsset,
-                        fit: BoxFit.contain,
-                        gaplessPlayback: true,
-                      )
-                    : null) ??
-                Image.asset(widget.mascotAsset, fit: BoxFit.contain),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.homeMetaCardSurface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.homeMetaCardBorder, width: 1.5),
+        boxShadow: AppShadows.homeMetaCard,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
+            children: [
+              HomeDailyGoalCard(
+                key: const ValueKey('home-daily-goal-card'),
+                records: widget.records,
+                selectedDate: widget.selectedDate,
+                userProfile: widget.userProfile,
+              ),
+              Positioned(
+                top: HomeDailyGoalWithMascot._mascotOffsetY,
+                child: IgnorePointer(
+                  child: SizedBox(
+                    key: const ValueKey('home-mascot-overlay'),
+                    width: HomeDailyGoalWithMascot._mascotSize,
+                    height: HomeDailyGoalWithMascot._mascotSize,
+                    child:
+                        (celebrationAsset != null
+                            ? Image.asset(
+                                celebrationAsset,
+                                fit: BoxFit.contain,
+                                gaplessPlayback: true,
+                              )
+                            : idleAsset != null
+                            ? Image.asset(
+                                idleAsset,
+                                fit: BoxFit.contain,
+                                gaplessPlayback: true,
+                              )
+                            : null) ??
+                        Image.asset(widget.mascotAsset, fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            child: Text(
+              calorieGoalExplanationForObjective(objective),
+              key: const ValueKey('home-daily-goal-explanation'),
+              softWrap: true,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textMuted.withValues(alpha: 0.72),
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -157,14 +191,12 @@ class HomeDailyGoalCard extends StatelessWidget {
     final consumedCalories = todayRecords.fold(0, (sum, r) => sum + r.calories);
     final objective = readHomeObjective(userProfile);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.homeMetaCardSurface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.homeMetaCardBorder, width: 1.5),
-        boxShadow: AppShadows.homeMetaCard,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.md,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,15 +227,6 @@ class HomeDailyGoalCard extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            calorieGoalExplanationForObjective(objective),
-            key: const ValueKey('home-daily-goal-explanation'),
-            style: AppTextStyles.micro.copyWith(
-              color: AppColors.textSecondary.withValues(alpha: 0.55),
-              height: 1.35,
-            ),
           ),
         ],
       ),
