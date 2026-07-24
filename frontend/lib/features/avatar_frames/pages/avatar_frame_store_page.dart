@@ -1153,12 +1153,7 @@ class _StoreTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: onPreview,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.sm,
-            AppSpacing.xs,
-            AppSpacing.sm,
-            AppSpacing.xl,
-          ),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           clipBehavior: Clip.none,
           decoration: BoxDecoration(
             color: AppColors.surface,
@@ -1231,7 +1226,9 @@ class _StoreTile extends StatelessWidget {
               AppButton(
                 label: label,
                 onPressed: buttonEnabled ? onPressed : null,
-                variant: isOwned && !item.isInventoryBlocker && !item.isStreakRestore
+                variant: isOwned &&
+                        !item.isInventoryBlocker &&
+                        !item.isStreakRestore
                     ? AppButtonVariant.outline
                     : AppButtonVariant.primary,
                 textStyle: AppTextStyles.buttonSmall,
@@ -1369,6 +1366,6 @@ class _StoreItemPreview extends StatelessWidget {
     if (constraints.maxHeight.isFinite) {
       resolved = math.min(resolved, constraints.maxHeight);
     }
-    return math.max(0, resolved);
+    return math.max(0.0, resolved);
   }
 }

@@ -136,9 +136,7 @@ class _SocialPageState extends State<SocialPage> {
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
-        final bottomInset =
-            homeShellFabBottomClearance +
-            MediaQuery.viewPaddingOf(context).bottom;
+        final bottomInset = homeShellFabBottomInset(context);
         final showRequestsFab =
             !_controller.isLoading &&
             _controller.errorMessage == null &&

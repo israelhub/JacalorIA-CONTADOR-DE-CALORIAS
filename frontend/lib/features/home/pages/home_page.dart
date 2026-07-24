@@ -9,6 +9,7 @@ import '../../food_analysis/models/food_meal_record.dart';
 import '../../food_analysis/pages/food_capture_page.dart';
 import '../../food_analysis/pages/food_meal_details_page.dart';
 import '../../auth/pages/login_page.dart';
+import '../helpers/home_daily_goal_day_lock.dart';
 import '../helpers/home_date_helpers.dart';
 import '../helpers/home_goal_helpers.dart';
 import '../helpers/home_greeting_helpers.dart';
@@ -68,10 +69,18 @@ class _HomePageState extends State<HomePage> {
   final List<FoodMealRecord> _records = <FoodMealRecord>[];
   final Set<String> _loadedDateKeys = <String>{};
   Map<String, dynamic>? _userProfile;
+  HomeDailyGoalDaySnapshot? _dayGoalSnapshot;
   bool _isDataLoading = true;
   bool _playMascotCelebration = false;
   bool _isFirstHomeAccess = false;
   late DateTime _selectedDate;
+
+  /// Meta/objetivo do dia (congelados na virada) quando a data selecionada é hoje.
+  Map<String, dynamic>? get _goalUserProfile => applyHomeDailyGoalDaySnapshot(
+    profile: _userProfile,
+    snapshot: _dayGoalSnapshot,
+    selectedDate: _selectedDate,
+  );
 
   @override
   void initState() {
@@ -155,12 +164,22 @@ class _HomePageState extends State<HomePage> {
         isFirstHomeAccess = false;
       }
 
+      HomeDailyGoalDaySnapshot? dayGoalSnapshot;
+      try {
+        dayGoalSnapshot = await resolveHomeDailyGoalDaySnapshot(
+          profile: profile.isNotEmpty ? profile : null,
+        );
+      } catch (_) {
+        dayGoalSnapshot = null;
+      }
+
       if (mounted) {
         setState(() {
           _records.clear();
           _records.addAll(meals);
           _loadedDateKeys.add(_dateKey(_selectedDate));
           _userProfile = profile.isNotEmpty ? profile : null;
+          _dayGoalSnapshot = dayGoalSnapshot;
           _isFirstHomeAccess = isFirstHomeAccess;
           _isDataLoading = false;
         });
@@ -197,9 +216,18 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final profile = await widget._authService.fetchProfile();
+      HomeDailyGoalDaySnapshot? dayGoalSnapshot;
+      try {
+        dayGoalSnapshot = await resolveHomeDailyGoalDaySnapshot(
+          profile: profile.isNotEmpty ? profile : null,
+        );
+      } catch (_) {
+        dayGoalSnapshot = null;
+      }
       if (mounted) {
         setState(() {
           _userProfile = profile.isNotEmpty ? profile : null;
+          _dayGoalSnapshot = dayGoalSnapshot;
         });
       }
     } catch (_) {}
@@ -342,12 +370,12 @@ class _HomePageState extends State<HomePage> {
         })
         .toList(growable: false);
 
-    final hasNoMealsForSelectedDate = selectedDateRecords.isEmpty;
-    if (hasNoMealsForSelectedDate && !_isFirstHomeAccess) {
-      return HomePage._mascotSadVideoAsset;
-    }
-
-    final goalCalories = readHomeProfileInt(_userProfile, const [
+    final goalProfile = applyHomeDailyGoalDaySnapshot(
+      profile: _userProfile,
+      snapshot: _dayGoalSnapshot,
+      selectedDate: normalizedDate,
+    );
+    final goalCalories = readHomeProfileInt(goalProfile, const [
       'daily_calorie_goal',
       'dailyCalorieGoal',
     ], fallback: 2000);
@@ -356,25 +384,24 @@ class _HomePageState extends State<HomePage> {
       (sum, record) => sum + record.calories,
     );
 
-    if (_isCalorieGoalExceededForObjective(
+    final emotion = resolveHomeMascotEmotionForProfile(
       consumedCalories: consumedCalories,
       goalCalories: goalCalories,
-    )) {
-      return HomePage._mascotScaredVideoAsset;
-    }
-
-    return HomePage._mascotIdleVideoAsset;
-  }
-
-  bool _isCalorieGoalExceededForObjective({
-    required int consumedCalories,
-    required int goalCalories,
-  }) {
-    return isCalorieGoalExceededForProfile(
-      consumedCalories: consumedCalories,
-      goalCalories: goalCalories,
-      userProfile: _userProfile,
+      userProfile: goalProfile,
+      hasMeals: selectedDateRecords.isNotEmpty,
+      isFirstHomeAccess: _isFirstHomeAccess,
     );
+
+    switch (emotion) {
+      case HomeMascotEmotion.sad:
+        return HomePage._mascotSadVideoAsset;
+      case HomeMascotEmotion.scared:
+        return HomePage._mascotScaredVideoAsset;
+      case HomeMascotEmotion.happy:
+        return HomePage._mascotCelebrationVideoAsset;
+      case HomeMascotEmotion.idle:
+        return HomePage._mascotIdleVideoAsset;
+    }
   }
 
   bool _hasCalorieGoalReachedForDate({
@@ -398,7 +425,12 @@ class _HomePageState extends State<HomePage> {
       consumedCalories += extraRecord.calories;
     }
 
-    final goalCalories = readHomeProfileInt(_userProfile, const [
+    final goalProfile = applyHomeDailyGoalDaySnapshot(
+      profile: _userProfile,
+      snapshot: _dayGoalSnapshot,
+      selectedDate: normalizedDate,
+    );
+    final goalCalories = readHomeProfileInt(goalProfile, const [
       'daily_calorie_goal',
       'dailyCalorieGoal',
     ], fallback: 2000);
@@ -406,7 +438,7 @@ class _HomePageState extends State<HomePage> {
     return hasReachedCalorieGoalForProfile(
       consumedCalories: consumedCalories,
       goalCalories: goalCalories,
-      userProfile: _userProfile,
+      userProfile: goalProfile,
     );
   }
 
@@ -419,6 +451,7 @@ class _HomePageState extends State<HomePage> {
     return _HomeBody(
       records: _records,
       userProfile: _userProfile,
+      goalUserProfile: _goalUserProfile,
       onAddMealPressed: _openFoodCapture,
       onAvatarTap: _openProfile,
       onWeightUpdated: _onWeightUpdated,
@@ -692,6 +725,7 @@ class _HomeBody extends StatelessWidget {
     required this.mascotCelebrationVideoAsset,
     required this.onMascotCelebrationCompleted,
     this.userProfile,
+    this.goalUserProfile,
     this.onAvatarTap,
     this.onWeightUpdated,
   });
@@ -707,13 +741,13 @@ class _HomeBody extends StatelessWidget {
   final String mascotCelebrationVideoAsset;
   final VoidCallback onMascotCelebrationCompleted;
   final Map<String, dynamic>? userProfile;
+  final Map<String, dynamic>? goalUserProfile;
   final VoidCallback? onAvatarTap;
   final ValueChanged<Map<String, dynamic>>? onWeightUpdated;
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset =
-        homeShellFabBottomClearance + MediaQuery.viewPaddingOf(context).bottom;
+    final bottomInset = homeShellFabBottomInset(context);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -752,7 +786,7 @@ class _HomeBody extends StatelessWidget {
                       onMascotVideoCompleted: onMascotCelebrationCompleted,
                       records: records,
                       selectedDate: selectedDate,
-                      userProfile: userProfile,
+                      userProfile: goalUserProfile ?? userProfile,
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     _MealsHeader(
