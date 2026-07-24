@@ -58,6 +58,7 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
 
   var _isSaving = false;
   var _isOpen = false;
+  var _isHandlingClose = false;
 
   AuthService get _authService => widget.authService ?? AuthService();
 
@@ -172,6 +173,63 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
     return sameWeight && currentUnit == unit;
   }
 
+  bool get _hasUnsavedChanges {
+    final weight = _parsedWeight;
+    if (weight == null) {
+      final initial = _formatWeight(_currentWeight);
+      return _controller.text.trim() != initial.trim();
+    }
+    return !_isUnchanged(weight, _currentUnit);
+  }
+
+  Future<void> _requestClose() async {
+    if (!_isOpen || _isHandlingClose || _isSaving) {
+      return;
+    }
+
+    if (!_hasUnsavedChanges) {
+      _closeEditor();
+      return;
+    }
+
+    _isHandlingClose = true;
+    try {
+      _focusNode.unfocus();
+      _hostFocusNode.unfocus();
+      SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
+
+      final shouldSave = await AppConfirmModal.show(
+        context,
+        title: 'Deseja salvar as alterações?',
+        message:
+            'Você alterou o peso. Escolha se deseja salvar antes de sair.',
+        confirmLabel: 'Salvar',
+        cancelLabel: 'Não salvar',
+        barrierDismissible: false,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      if (shouldSave) {
+        final weight = _parsedWeight;
+        if (weight == null) {
+          _closeEditor();
+          return;
+        }
+        final unit = _currentUnit;
+        _closeEditor();
+        await _persistWeight(weight, unit);
+        return;
+      }
+
+      _closeEditor();
+    } finally {
+      _isHandlingClose = false;
+    }
+  }
+
   Future<void> _submit() async {
     final weight = _parsedWeight;
     if (weight == null) {
@@ -179,23 +237,6 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
     }
     final unit = _currentUnit;
     _closeEditor();
-
-    if (_isUnchanged(weight, unit)) {
-      return;
-    }
-
-    final formattedWeight = _formatWeight(weight);
-    final shouldSave = await AppConfirmModal.show(
-      context,
-      title: 'Confirmar peso?',
-      message: 'Salvar $formattedWeight $unit no seu perfil?',
-      confirmLabel: 'Salvar',
-      cancelLabel: 'Cancelar',
-    );
-    if (!shouldSave || !mounted) {
-      return;
-    }
-
     await _persistWeight(weight, unit);
   }
 
@@ -238,7 +279,7 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: _closeEditor,
+              onTap: _requestClose,
               child: const ColoredBox(color: Color(0x8A000000)),
             ),
           ),
