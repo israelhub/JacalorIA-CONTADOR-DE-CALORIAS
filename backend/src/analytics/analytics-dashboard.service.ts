@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
+import { InfraMetricsService } from './infra-metrics.service';
 
 export type DashboardQuery = {
   betaStart?: string;
@@ -13,6 +14,7 @@ export class AnalyticsDashboardService {
   constructor(
     @InjectConnection()
     private readonly sequelize: Sequelize,
+    private readonly infraMetrics: InfraMetricsService,
   ) {}
 
   async getDashboard(query: DashboardQuery = {}) {
@@ -57,6 +59,613 @@ export class AnalyticsDashboardService {
       eventCounts,
       platforms,
     };
+  }
+
+  async getPerformance(query: DashboardQuery = {}) {
+    const days = Math.min(Math.max(Number(query.days) || 30, 7), 90);
+    const betaStart =
+      query.betaStart?.trim() ||
+      new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const betaEnd = query.betaEnd?.trim() || new Date().toISOString();
+
+    const [
+      aiOverview,
+      aiSeries,
+      models,
+      errors,
+      supportOverview,
+      recentSupport,
+      infraLive,
+      infraOverview,
+      infraSeries,
+      concurrentSeries,
+    ] = await Promise.all([
+      this.getAiOverview(betaStart, betaEnd),
+      this.getAiSeries(betaStart, betaEnd),
+      this.getAiModels(betaStart, betaEnd),
+      this.getAiErrors(betaStart, betaEnd),
+        this.getSupportOverview(betaStart, betaEnd).catch(() => ({
+          total: 0,
+          bugs: 0,
+          suggestions: 0,
+        })),
+        this.getRecentSupport(betaStart, betaEnd).catch(() => []),
+      this.getInfraLive(),
+      this.getInfraOverview(betaStart, betaEnd),
+      this.getInfraSeries(betaStart, betaEnd),
+      this.getConcurrentSeries(betaStart, betaEnd),
+    ]);
+
+    return {
+      generatedAt: new Date().toISOString(),
+      range: { betaStart, betaEnd, days },
+      infra: {
+        live: infraLive,
+        overview: infraOverview,
+        series: infraSeries,
+        concurrentSeries,
+      },
+      ai: {
+        overview: aiOverview,
+        series: aiSeries,
+        models,
+        errors,
+      },
+      support: {
+        overview: supportOverview,
+        recent: recentSupport,
+      },
+    };
+  }
+
+  private async getInfraLive() {
+    // Prefere a última amostra persistida pela AWS (source=aws).
+    // Assim, mesmo que alguém consulte via backend local, o live não mostra a máquina do dev.
+    const rows = await this.sequelize.query<{
+      occurred_at: Date;
+      properties: Record<string, unknown> | null;
+    }>(
+      `
+      SELECT occurred_at, properties
+      FROM analytics_events
+      WHERE event_name = 'infra_sample'
+        AND COALESCE(properties->>'source', '') = 'aws'
+      ORDER BY occurred_at DESC
+      LIMIT 1
+      `,
+      { type: QueryTypes.SELECT },
+    );
+
+    const row = rows[0];
+    if (row?.properties) {
+      const p = row.properties;
+      return {
+        sampledAt: new Date(row.occurred_at).toISOString(),
+        hostname: String(p.hostname ?? '—'),
+        instanceTypeHint:
+          p.instance_type != null ? String(p.instance_type) : null,
+        processUptimeSec: Number(p.process_uptime_sec || 0),
+        hostUptimeSec: Number(p.host_uptime_sec || 0),
+        cpuPct: p.cpu_pct != null ? Number(p.cpu_pct) : null,
+        loadAvg1m: Number(p.load_1m || 0),
+        memUsedPct: Number(p.mem_used_pct || 0),
+        memUsedMb: Number(p.mem_used_mb || 0),
+        memTotalMb: Number(p.mem_total_mb || 0),
+        processRssMb: Number(p.process_rss_mb || 0),
+        processHeapMb: Number(p.process_heap_mb || 0),
+        concurrentSessions: Number(p.concurrent_sessions || 0),
+        concurrentUsers: Number(p.concurrent_users || 0),
+      };
+    }
+
+    // Só cai no snapshot do processo atual em produção (antes da 1ª persistência).
+    if (process.env.NODE_ENV === 'production') {
+      return (
+        this.infraMetrics.getLastSnapshot() ??
+        (await this.infraMetrics.captureSnapshot())
+      );
+    }
+
+    return null;
+  }
+
+  private async getInfraOverview(betaStart: string, betaEnd: string) {
+    const rows = await this.sequelize.query<{
+      samples: string;
+      avg_cpu: string | null;
+      max_cpu: string | null;
+      avg_mem: string | null;
+      max_mem: string | null;
+      avg_concurrent: string | null;
+      max_concurrent: string | null;
+      hours_with_sample: string;
+    }>(
+      `
+      WITH samples AS (
+        SELECT
+          occurred_at,
+          CASE
+            WHEN (properties->>'cpu_pct') ~ '^[0-9]+(\\.[0-9]+)?$'
+            THEN (properties->>'cpu_pct')::numeric
+            ELSE NULL
+          END AS cpu_pct,
+          CASE
+            WHEN (properties->>'mem_used_pct') ~ '^[0-9]+(\\.[0-9]+)?$'
+            THEN (properties->>'mem_used_pct')::numeric
+            ELSE NULL
+          END AS mem_used_pct,
+          CASE
+            WHEN (properties->>'concurrent_users') ~ '^[0-9]+(\\.[0-9]+)?$'
+            THEN (properties->>'concurrent_users')::numeric
+            ELSE NULL
+          END AS concurrent_users
+        FROM analytics_events
+        WHERE event_name = 'infra_sample'
+          AND COALESCE(properties->>'source', '') = 'aws'
+          AND occurred_at >= :betaStart
+          AND occurred_at < :betaEnd
+      ),
+      hours AS (
+        SELECT DISTINCT date_trunc('hour', occurred_at) AS hour
+        FROM analytics_events
+        WHERE event_name = 'infra_sample'
+          AND COALESCE(properties->>'source', '') = 'aws'
+          AND occurred_at >= :betaStart
+          AND occurred_at < :betaEnd
+      )
+      SELECT
+        (SELECT COUNT(*)::text FROM samples) AS samples,
+        (SELECT ROUND(AVG(cpu_pct), 1)::text FROM samples) AS avg_cpu,
+        (SELECT ROUND(MAX(cpu_pct), 1)::text FROM samples) AS max_cpu,
+        (SELECT ROUND(AVG(mem_used_pct), 1)::text FROM samples) AS avg_mem,
+        (SELECT ROUND(MAX(mem_used_pct), 1)::text FROM samples) AS max_mem,
+        (SELECT ROUND(AVG(concurrent_users), 1)::text FROM samples) AS avg_concurrent,
+        (SELECT ROUND(MAX(concurrent_users), 0)::text FROM samples) AS max_concurrent,
+        (SELECT COUNT(*)::text FROM hours) AS hours_with_sample
+      `,
+      {
+        replacements: { betaStart, betaEnd },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    const row = rows[0];
+    const startMs = new Date(betaStart).getTime();
+    const endMs = new Date(betaEnd).getTime();
+    const expectedHours = Math.max(
+      1,
+      Math.round((endMs - startMs) / (60 * 60 * 1000)),
+    );
+    const hoursWithSample = Number(row?.hours_with_sample || 0);
+    const availabilityPct =
+      Math.round(
+        Math.min(100, (1000 * hoursWithSample) / expectedHours),
+      ) / 10;
+
+    return {
+      samples: Number(row?.samples || 0),
+      avgCpuPct: Number(row?.avg_cpu || 0),
+      maxCpuPct: Number(row?.max_cpu || 0),
+      avgMemPct: Number(row?.avg_mem || 0),
+      maxMemPct: Number(row?.max_mem || 0),
+      avgConcurrentUsers: Number(row?.avg_concurrent || 0),
+      maxConcurrentUsers: Number(row?.max_concurrent || 0),
+      hoursWithSample,
+      expectedHours,
+      availabilityPct,
+      note:
+        'Disponibilidade estimada pela cobertura de amostras do processo (gaps = restart/deploy/queda). CPU/RAM = host visto de dentro do container EB.',
+    };
+  }
+
+  private async getInfraSeries(betaStart: string, betaEnd: string) {
+    const rows = await this.sequelize.query<{
+      bucket: string;
+      cpu_pct: string | null;
+      mem_used_pct: string | null;
+      concurrent_users: string | null;
+      process_rss_mb: string | null;
+    }>(
+      `
+      SELECT
+        to_char(
+          date_trunc('hour', occurred_at AT TIME ZONE 'America/Sao_Paulo'),
+          'YYYY-MM-DD HH24:00'
+        ) AS bucket,
+        ROUND(AVG(
+          CASE
+            WHEN (properties->>'cpu_pct') ~ '^[0-9]+(\\.[0-9]+)?$'
+            THEN (properties->>'cpu_pct')::numeric
+            ELSE NULL
+          END
+        ), 1)::text AS cpu_pct,
+        ROUND(AVG(
+          CASE
+            WHEN (properties->>'mem_used_pct') ~ '^[0-9]+(\\.[0-9]+)?$'
+            THEN (properties->>'mem_used_pct')::numeric
+            ELSE NULL
+          END
+        ), 1)::text AS mem_used_pct,
+        ROUND(AVG(
+          CASE
+            WHEN (properties->>'concurrent_users') ~ '^[0-9]+(\\.[0-9]+)?$'
+            THEN (properties->>'concurrent_users')::numeric
+            ELSE NULL
+          END
+        ), 1)::text AS concurrent_users,
+        ROUND(AVG(
+          CASE
+            WHEN (properties->>'process_rss_mb') ~ '^[0-9]+(\\.[0-9]+)?$'
+            THEN (properties->>'process_rss_mb')::numeric
+            ELSE NULL
+          END
+        ), 0)::text AS process_rss_mb
+      FROM analytics_events
+      WHERE event_name = 'infra_sample'
+        AND COALESCE(properties->>'source', '') = 'aws'
+        AND occurred_at >= :betaStart
+        AND occurred_at < :betaEnd
+      GROUP BY 1
+      ORDER BY 1
+      `,
+      {
+        replacements: { betaStart, betaEnd },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    return rows.map((row) => ({
+      bucket: row.bucket,
+      cpuPct: Number(row.cpu_pct || 0),
+      memUsedPct: Number(row.mem_used_pct || 0),
+      concurrentUsers: Number(row.concurrent_users || 0),
+      processRssMb: Number(row.process_rss_mb || 0),
+    }));
+  }
+
+  private async getConcurrentSeries(betaStart: string, betaEnd: string) {
+    const rows = await this.sequelize.query<{
+      bucket: string;
+      peak: string;
+    }>(
+      `
+      WITH minute_buckets AS (
+        SELECT
+          date_trunc('minute', occurred_at AT TIME ZONE 'America/Sao_Paulo') AS minute,
+          COUNT(DISTINCT session_id) AS concurrent
+        FROM analytics_events
+        WHERE event_name = 'session_heartbeat'
+          AND occurred_at >= :betaStart
+          AND occurred_at < :betaEnd
+          AND session_id IS NOT NULL
+        GROUP BY 1
+      )
+      SELECT
+        to_char(date_trunc('hour', minute), 'YYYY-MM-DD HH24:00') AS bucket,
+        MAX(concurrent)::text AS peak
+      FROM minute_buckets
+      GROUP BY 1
+      ORDER BY 1
+      `,
+      {
+        replacements: { betaStart, betaEnd },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    return rows.map((row) => ({
+      bucket: row.bucket,
+      peak: Number(row.peak || 0),
+    }));
+  }
+
+  private async getAiOverview(betaStart: string, betaEnd: string) {
+    const rows = await this.sequelize.query<{
+      requested: string;
+      succeeded: string;
+      failed: string;
+      cache_hits: string;
+      avg_latency_ms: string | null;
+      p50_latency_ms: string | null;
+      p95_latency_ms: string | null;
+      total_tokens: string | null;
+      unique_users: string;
+    }>(
+      `
+      WITH scoped AS (
+        SELECT
+          event_name,
+          user_id,
+          properties
+        FROM analytics_events
+        WHERE occurred_at >= :betaStart
+          AND occurred_at < :betaEnd
+          AND event_name IN (
+            'ai_analyze_requested',
+            'ai_analyze_succeeded',
+            'ai_analyze_failed'
+          )
+      ),
+      latencies AS (
+        SELECT (properties->>'latency_ms')::numeric AS latency_ms
+        FROM scoped
+        WHERE event_name IN ('ai_analyze_succeeded', 'ai_analyze_failed')
+          AND (properties->>'latency_ms') ~ '^[0-9]+(\\.[0-9]+)?$'
+      )
+      SELECT
+        (SELECT COUNT(*)::text FROM scoped WHERE event_name = 'ai_analyze_requested') AS requested,
+        (SELECT COUNT(*)::text FROM scoped WHERE event_name = 'ai_analyze_succeeded') AS succeeded,
+        (SELECT COUNT(*)::text FROM scoped WHERE event_name = 'ai_analyze_failed') AS failed,
+        (
+          SELECT COUNT(*)::text
+          FROM scoped
+          WHERE event_name = 'ai_analyze_succeeded'
+            AND COALESCE((properties->>'cache_hit')::boolean, false)
+        ) AS cache_hits,
+        (SELECT ROUND(AVG(latency_ms))::text FROM latencies) AS avg_latency_ms,
+        (
+          SELECT ROUND(percentile_cont(0.5) WITHIN GROUP (ORDER BY latency_ms))::text
+          FROM latencies
+        ) AS p50_latency_ms,
+        (
+          SELECT ROUND(percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms))::text
+          FROM latencies
+        ) AS p95_latency_ms,
+        (
+          SELECT COALESCE(
+            SUM(
+              CASE
+                WHEN (properties->>'total_tokens') ~ '^[0-9]+(\\.[0-9]+)?$'
+                THEN (properties->>'total_tokens')::numeric
+                ELSE 0
+              END
+            )::text,
+            '0'
+          )
+          FROM scoped
+          WHERE event_name = 'ai_analyze_succeeded'
+        ) AS total_tokens,
+        (SELECT COUNT(DISTINCT user_id)::text FROM scoped) AS unique_users
+      `,
+      {
+        replacements: { betaStart, betaEnd },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    const row = rows[0];
+    const requested = Number(row?.requested || 0);
+    const succeeded = Number(row?.succeeded || 0);
+    const failed = Number(row?.failed || 0);
+    const decided = succeeded + failed;
+    const cacheHits = Number(row?.cache_hits || 0);
+
+    return {
+      requested,
+      succeeded,
+      failed,
+      errorRatePct:
+        decided > 0 ? Math.round((1000 * failed) / decided) / 10 : 0,
+      cacheHits,
+      cacheHitRatePct:
+        succeeded > 0 ? Math.round((1000 * cacheHits) / succeeded) / 10 : 0,
+      avgLatencyMs: Number(row?.avg_latency_ms || 0),
+      p50LatencyMs: Number(row?.p50_latency_ms || 0),
+      p95LatencyMs: Number(row?.p95_latency_ms || 0),
+      totalTokens: Number(row?.total_tokens || 0),
+      uniqueUsers: Number(row?.unique_users || 0),
+    };
+  }
+
+  private async getAiSeries(betaStart: string, betaEnd: string) {
+    const rows = await this.sequelize.query<{
+      day: string;
+      requested: string;
+      succeeded: string;
+      failed: string;
+    }>(
+      `
+      SELECT
+        to_char(
+          (occurred_at AT TIME ZONE 'America/Sao_Paulo')::date,
+          'YYYY-MM-DD'
+        ) AS day,
+        COUNT(*) FILTER (WHERE event_name = 'ai_analyze_requested')::text AS requested,
+        COUNT(*) FILTER (WHERE event_name = 'ai_analyze_succeeded')::text AS succeeded,
+        COUNT(*) FILTER (WHERE event_name = 'ai_analyze_failed')::text AS failed
+      FROM analytics_events
+      WHERE occurred_at >= :betaStart
+        AND occurred_at < :betaEnd
+        AND event_name IN (
+          'ai_analyze_requested',
+          'ai_analyze_succeeded',
+          'ai_analyze_failed'
+        )
+      GROUP BY 1
+      ORDER BY 1
+      `,
+      {
+        replacements: { betaStart, betaEnd },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    return rows.map((row) => ({
+      day: row.day,
+      requested: Number(row.requested),
+      succeeded: Number(row.succeeded),
+      failed: Number(row.failed),
+    }));
+  }
+
+  private async getAiModels(betaStart: string, betaEnd: string) {
+    const rows = await this.sequelize.query<{
+      model: string;
+      calls: string;
+      succeeded: string;
+      failed: string;
+      avg_latency_ms: string | null;
+      total_tokens: string | null;
+    }>(
+      `
+      SELECT
+        CASE
+          WHEN NULLIF(TRIM(properties->>'model'), '') IS NOT NULL
+            THEN TRIM(properties->>'model')
+          WHEN COALESCE((properties->>'cache_hit')::boolean, false)
+            THEN 'cache'
+          ELSE 'legado'
+        END AS model,
+        COUNT(*)::text AS calls,
+        COUNT(*) FILTER (WHERE event_name = 'ai_analyze_succeeded')::text AS succeeded,
+        COUNT(*) FILTER (WHERE event_name = 'ai_analyze_failed')::text AS failed,
+        ROUND(
+          AVG(
+            CASE
+              WHEN (properties->>'latency_ms') ~ '^[0-9]+(\\.[0-9]+)?$'
+              THEN (properties->>'latency_ms')::numeric
+              ELSE NULL
+            END
+          )
+        )::text AS avg_latency_ms,
+        COALESCE(
+          SUM(
+            CASE
+              WHEN event_name = 'ai_analyze_succeeded'
+                AND (properties->>'total_tokens') ~ '^[0-9]+(\\.[0-9]+)?$'
+              THEN (properties->>'total_tokens')::numeric
+              ELSE 0
+            END
+          )::text,
+          '0'
+        ) AS total_tokens
+      FROM analytics_events
+      WHERE occurred_at >= :betaStart
+        AND occurred_at < :betaEnd
+        AND event_name IN ('ai_analyze_succeeded', 'ai_analyze_failed')
+        AND COALESCE(properties->>'source', 'server') = 'server'
+      GROUP BY 1
+      ORDER BY COUNT(*) DESC
+      LIMIT 12
+      `,
+      {
+        replacements: { betaStart, betaEnd },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    return rows.map((row) => {
+      const calls = Number(row.calls);
+      const succeeded = Number(row.succeeded);
+      const failed = Number(row.failed);
+      return {
+        model: row.model,
+        calls,
+        succeeded,
+        failed,
+        errorRatePct:
+          calls > 0 ? Math.round((1000 * failed) / calls) / 10 : 0,
+        avgLatencyMs: Number(row.avg_latency_ms || 0),
+        totalTokens: Number(row.total_tokens || 0),
+      };
+    });
+  }
+
+  private async getAiErrors(betaStart: string, betaEnd: string) {
+    const rows = await this.sequelize.query<{
+      error_code: string;
+      count: string;
+    }>(
+      `
+      SELECT
+        COALESCE(NULLIF(properties->>'error_code', ''), 'error') AS error_code,
+        COUNT(*)::text AS count
+      FROM analytics_events
+      WHERE occurred_at >= :betaStart
+        AND occurred_at < :betaEnd
+        AND event_name = 'ai_analyze_failed'
+      GROUP BY 1
+      ORDER BY COUNT(*) DESC
+      LIMIT 10
+      `,
+      {
+        replacements: { betaStart, betaEnd },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    return rows.map((row) => ({
+      errorCode: row.error_code,
+      count: Number(row.count),
+    }));
+  }
+
+  private async getSupportOverview(betaStart: string, betaEnd: string) {
+    const rows = await this.sequelize.query<{
+      total: string;
+      bugs: string;
+      suggestions: string;
+    }>(
+      `
+      SELECT
+        COUNT(*)::text AS total,
+        COUNT(*) FILTER (WHERE subject_type = 'bug')::text AS bugs,
+        COUNT(*) FILTER (WHERE subject_type = 'suggestion')::text AS suggestions
+      FROM support_messages
+      WHERE created_at >= :betaStart
+        AND created_at < :betaEnd
+      `,
+      {
+        replacements: { betaStart, betaEnd },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    const row = rows[0];
+    return {
+      total: Number(row?.total || 0),
+      bugs: Number(row?.bugs || 0),
+      suggestions: Number(row?.suggestions || 0),
+    };
+  }
+
+  private async getRecentSupport(betaStart: string, betaEnd: string) {
+    const rows = await this.sequelize.query<{
+      id: string;
+      subject_type: string;
+      description: string;
+      user_name: string | null;
+      contact_email: string | null;
+      created_at: Date;
+    }>(
+      `
+      SELECT
+        id,
+        subject_type,
+        description,
+        user_name,
+        contact_email,
+        created_at
+      FROM support_messages
+      WHERE created_at >= :betaStart
+        AND created_at < :betaEnd
+      ORDER BY created_at DESC
+      LIMIT 20
+      `,
+      {
+        replacements: { betaStart, betaEnd },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    return rows.map((row) => ({
+      id: row.id,
+      subjectType: row.subject_type,
+      description: row.description,
+      userName: row.user_name,
+      contactEmail: row.contact_email,
+      createdAt: new Date(row.created_at).toISOString(),
+    }));
   }
 
   private async getOverview(betaStart: string, betaEnd: string) {

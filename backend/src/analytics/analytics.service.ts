@@ -24,7 +24,7 @@ export class AnalyticsService {
   ) {}
 
   async trackMany(
-    userId: string,
+    userId: string | null,
     events: AnalyticsEventItemDto[] | TrackEventInput[],
   ): Promise<{ accepted: number }> {
     if (!events.length) {
@@ -44,31 +44,33 @@ export class AnalyticsService {
 
     await this.analyticsEventModel.bulkCreate(rows);
 
-    const shouldTouchActive = events.some(
-      (event) =>
-        event.eventName === 'app_open' || event.eventName === 'meal_saved',
-    );
-    if (shouldTouchActive) {
-      await this.userModel.update(
-        { lastActiveAt: new Date() },
-        { where: { id: userId } },
+    if (userId) {
+      const shouldTouchActive = events.some(
+        (event) =>
+          event.eventName === 'app_open' || event.eventName === 'meal_saved',
       );
+      if (shouldTouchActive) {
+        await this.userModel.update(
+          { lastActiveAt: new Date() },
+          { where: { id: userId } },
+        );
+      }
     }
 
     return { accepted: rows.length };
   }
 
-  async trackOne(userId: string, event: TrackEventInput): Promise<void> {
+  async trackOne(userId: string | null, event: TrackEventInput): Promise<void> {
     await this.trackMany(userId, [event]);
   }
 
   /** Never throws — domain flows must not fail because of analytics. */
-  async trackSafe(userId: string, event: TrackEventInput): Promise<void> {
+  async trackSafe(userId: string | null, event: TrackEventInput): Promise<void> {
     try {
       await this.trackOne(userId, event);
     } catch (error) {
       this.logger.warn(
-        `Failed to track ${event.eventName} for ${userId}: ${
+        `Failed to track ${event.eventName} for ${userId ?? 'anonymous'}: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );

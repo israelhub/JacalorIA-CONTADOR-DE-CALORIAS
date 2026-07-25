@@ -31,7 +31,20 @@ export class AiService {
   async analyzeFood(
     analyzeFoodDto: AnalyzeFoodDto,
     userId: string,
-  ): Promise<FoodAnalysisResponse> {
+  ): Promise<
+    FoodAnalysisResponse & {
+      meta: {
+        model: string;
+        cacheHit: boolean;
+        attempts: number;
+        failedModels: string[];
+        promptTokens: number | null;
+        outputTokens: number | null;
+        totalTokens: number | null;
+        latencyMs: number;
+      };
+    }
+  > {
     const hasImage = Boolean(analyzeFoodDto.imageBase64?.trim());
     const hasManualText = Boolean(analyzeFoodDto.manualText?.trim());
     const itemCount = Array.isArray(analyzeFoodDto.items)
@@ -121,7 +134,7 @@ export class AiService {
           cache_hit: cacheHit,
           latency_ms: Date.now() - stopwatchStarted,
           source: 'server',
-          model: meta?.model ?? null,
+          model: meta?.model ?? (cacheHit ? 'cache' : 'unknown'),
           attempts: meta?.attempts ?? null,
           failed_models: meta?.failedModels ?? [],
           prompt_tokens: meta?.promptTokens ?? null,
@@ -130,12 +143,27 @@ export class AiService {
         },
       });
 
-      return result;
+      return {
+        ...result,
+        meta: {
+          model: meta?.model ?? (cacheHit ? 'cache' : 'unknown'),
+          cacheHit,
+          attempts: meta?.attempts ?? 0,
+          failedModels: meta?.failedModels ?? [],
+          promptTokens: meta?.promptTokens ?? null,
+          outputTokens: meta?.outputTokens ?? null,
+          totalTokens: meta?.totalTokens ?? null,
+          latencyMs: Date.now() - stopwatchStarted,
+        },
+      };
     } catch (error) {
       const failedModels =
         error && typeof error === 'object' && 'failedModels' in error
           ? (error as { failedModels?: string[] }).failedModels
           : undefined;
+      const lastModel = failedModels?.length
+        ? failedModels[failedModels.length - 1]
+        : 'unknown';
       await this.analyticsService.trackSafe(userId, {
         eventName: 'ai_analyze_failed',
         properties: {
@@ -148,7 +176,7 @@ export class AiService {
               ? error.message.slice(0, 240)
               : String(error).slice(0, 240),
           source: 'server',
-          model: failedModels?.at(-1) ?? null,
+          model: lastModel,
           failed_models: failedModels ?? [],
         },
       });

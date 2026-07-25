@@ -107,12 +107,31 @@ class FoodAnalysisService {
       stopwatch.stop();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        final meta = decoded['meta'];
+        final model = meta is Map<String, dynamic>
+            ? (meta['model'] as String?)?.trim()
+            : null;
+        final cacheHit = meta is Map<String, dynamic>
+            ? meta['cacheHit'] == true
+            : false;
         AnalyticsService.instance.track(
           'ai_analyze_succeeded',
           properties: <String, dynamic>{
             'latency_ms': stopwatch.elapsedMilliseconds,
             'has_image': hasImage,
             'source': 'client',
+            'model': (model != null && model.isNotEmpty)
+                ? model
+                : (cacheHit ? 'cache' : 'unknown'),
+            if (meta is Map<String, dynamic>) ...<String, dynamic>{
+              'cache_hit': cacheHit,
+              if (meta['promptTokens'] != null)
+                'prompt_tokens': meta['promptTokens'],
+              if (meta['outputTokens'] != null)
+                'output_tokens': meta['outputTokens'],
+              if (meta['totalTokens'] != null)
+                'total_tokens': meta['totalTokens'],
+            },
           },
         );
         unawaited(AnalyticsService.instance.flush());

@@ -145,6 +145,9 @@ Resources:
           OptionName: PORT
           Value: '3000'
         - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: INSTANCE_TYPE
+          Value: !Ref InstanceType
+        - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: BODY_LIMIT
           Value: 10mb
 
