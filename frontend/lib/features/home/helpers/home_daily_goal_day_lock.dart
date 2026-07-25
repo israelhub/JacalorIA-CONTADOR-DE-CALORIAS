@@ -6,7 +6,8 @@ import 'home_greeting_helpers.dart';
 /// Snapshot da meta calórica / objetivo válido para o dia civil local.
 ///
 /// Na virada do dia, a meta do perfil é congelada e permanece estável até
-/// o próximo dia — mesmo se o usuário alterar o perfil no meio do dia.
+/// o próximo dia. Quando o usuário edita campos nutricionais (objetivo, peso,
+/// altura etc.), use [forceRefresh] para regravar o snapshot com a meta nova.
 class HomeDailyGoalDaySnapshot {
   const HomeDailyGoalDaySnapshot({
     required this.dateKey,
@@ -39,6 +40,7 @@ Future<HomeDailyGoalDaySnapshot> resolveHomeDailyGoalDaySnapshot({
   required Map<String, dynamic>? profile,
   DateTime? now,
   SharedPreferences? preferences,
+  bool forceRefresh = false,
 }) async {
   final todayKey = homeDailyGoalDayKey(now ?? DateTime.now());
   final userId = resolveHomeDailyGoalUserId(profile);
@@ -55,7 +57,7 @@ Future<HomeDailyGoalDaySnapshot> resolveHomeDailyGoalDaySnapshot({
       'maintainWeight';
 
   final storedDate = prefs.getString('${prefix}_date');
-  if (storedDate != todayKey) {
+  if (forceRefresh || storedDate != todayKey) {
     await prefs.setString('${prefix}_date', todayKey);
     await prefs.setInt('${prefix}_goal', liveGoal);
     await prefs.setString('${prefix}_objective', liveObjective);

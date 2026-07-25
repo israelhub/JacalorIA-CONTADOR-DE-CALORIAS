@@ -77,4 +77,72 @@ void main() {
       }),
     );
   });
+
+  test('delete + syncDueMealReminders não recria mensagem descartada', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'meal_reminders_master_enabled': true,
+      'meal_reminders_list_v2':
+          '[{"id":"lunch","title":"Almoço","enabled":true,"hour":12,"minute":0}]',
+    });
+    await store.resetForTest();
+
+    final now = DateTime(2026, 7, 24, 12, 30);
+    await store.syncDueMealReminders(now: now);
+    expect(store.messages.length, 1);
+
+    await store.markRead(store.messages.single.id);
+    expect(store.unreadCount, 0);
+
+    await store.delete(store.messages.single.id);
+    expect(store.messages, isEmpty);
+
+    await store.syncDueMealReminders(now: now);
+    await store.addMealReminderMessage(
+      MealReminderConfig.defaultsForBuiltIn(MealReminderDefaults.lunchId),
+      now: now,
+    );
+
+    expect(store.messages, isEmpty);
+    expect(store.unreadCount, 0);
+  });
+
+  test('markRead sobrevive a reload', () async {
+    await store.addMessage(
+      title: 'Aviso',
+      body: 'Corpo',
+      source: InAppMessageSources.catalog,
+      id: 'm1',
+    );
+    await store.markRead('m1');
+    expect(store.unreadCount, 0);
+
+    await store.reloadFromDiskForTest();
+
+    expect(store.messages.single.isUnread, isFalse);
+    expect(store.unreadCount, 0);
+  });
+
+  test('markRead e dismiss sobrevivem a reload', () async {
+    await store.addMessage(
+      title: 'Aviso',
+      body: 'Corpo',
+      source: InAppMessageSources.catalog,
+      id: 'm1',
+      sourceKey: 'catalog:m1',
+    );
+    await store.markRead('m1');
+    await store.delete('m1');
+
+    await store.reloadFromDiskForTest();
+
+    expect(store.messages, isEmpty);
+    final again = await store.addMessage(
+      title: 'Aviso',
+      body: 'Corpo',
+      source: InAppMessageSources.catalog,
+      id: 'm1-again',
+      sourceKey: 'catalog:m1',
+    );
+    expect(again, isNull);
+  });
 }

@@ -284,11 +284,12 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
 
     setState(() => _isSaving = true);
     try {
-      await _authService.updateProfile(<String, dynamic>{
+      final updated = await _authService.updateProfile(<String, dynamic>{
         'weight': weight,
         'weightUnit': unit,
       });
       widget.onWeightUpdated?.call(<String, dynamic>{
+        ...updated,
         'weight': weight,
         'weightUnit': unit,
       });
