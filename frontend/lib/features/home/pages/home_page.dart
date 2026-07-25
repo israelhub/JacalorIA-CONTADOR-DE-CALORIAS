@@ -17,6 +17,7 @@ import '../helpers/home_goal_helpers.dart';
 import '../helpers/home_greeting_helpers.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_dashed_action_button.dart';
+import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../services/meal_service.dart';
 import '../widgets/home_daily_goal_with_mascot.dart';
 import '../../../shared/widgets/app_date_picker.dart';
@@ -793,78 +794,54 @@ class _HomeBody extends StatelessWidget {
               ),
             ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Column(
-                children: [
-                  const SizedBox(height: AppSpacing.xxl),
-                  _Header(userProfile: userProfile, onAvatarTap: onAvatarTap),
-                  const SizedBox(height: AppSpacing.xxxl),
-                  HomeDailyGoalWithMascot(
-                    mascotAsset: HomePage._mealAsset,
-                    idleMascotVideoAsset: idleMascotVideoAsset,
-                    mascotVideoAsset: mascotCelebrationVideoAsset,
-                    playMascotVideo: playMascotCelebration,
-                    onMascotVideoCompleted: onMascotCelebrationCompleted,
-                    records: records,
-                    selectedDate: selectedDate,
-                    userProfile: goalUserProfile ?? userProfile,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  _MealsHeader(
-                    selectedDate: selectedDate,
-                    onTap: onSelectedDateTap,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                ],
+        child: AppRefreshScrollView(
+          onRefresh: onRefresh,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.xxl,
+            AppSpacing.lg,
+            // SafeArea already clears the bottom nav; only reserve
+            // space so the last meal isn't hidden under the FAB.
+            56 + homeShellFabNavGap,
+          ),
+          child: Column(
+            children: [
+              _Header(userProfile: userProfile, onAvatarTap: onAvatarTap),
+              const SizedBox(height: AppSpacing.xxxl),
+              HomeDailyGoalWithMascot(
+                mascotAsset: HomePage._mealAsset,
+                idleMascotVideoAsset: idleMascotVideoAsset,
+                mascotVideoAsset: mascotCelebrationVideoAsset,
+                playMascotVideo: playMascotCelebration,
+                onMascotVideoCompleted: onMascotCelebrationCompleted,
+                records: records,
+                selectedDate: selectedDate,
+                userProfile: goalUserProfile ?? userProfile,
               ),
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                color: AppColors.action500,
-                onRefresh: onRefresh,
-                child: ListView.separated(
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
-                  padding: EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    0,
-                    AppSpacing.lg,
-                    // SafeArea already clears the bottom nav; only reserve
-                    // space so the last meal isn't hidden under the FAB.
-                    56 + homeShellFabNavGap,
-                  ),
-                  itemCount: dayRecords.length + 1,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: AppSpacing.lg),
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return _AddMealAction(onTap: onAddMealPressed);
-                    }
-
-                    final recordIndex = index - 1;
-                    final record = dayRecords[recordIndex];
-
-                    return HomeMealCard(
-                      cardKey: ValueKey('home-meal-card-$recordIndex'),
-                      title: record.title,
-                      description: record.description,
-                      kcal: record.kcalLabel,
-                      time: record.timeLabel,
-                      imageAsset: record.imageAsset,
-                      imageBytes: record.imageBytes,
-                      imageUrl: record.imageUrl,
-                      height: HomePage._mealCardHeight,
-                      onTap: () => onMealTap(record),
-                    );
-                  },
+              const SizedBox(height: AppSpacing.xl),
+              _MealsHeader(
+                selectedDate: selectedDate,
+                onTap: onSelectedDateTap,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _AddMealAction(onTap: onAddMealPressed),
+              for (final (index, record) in dayRecords.indexed) ...[
+                const SizedBox(height: AppSpacing.lg),
+                HomeMealCard(
+                  cardKey: ValueKey('home-meal-card-$index'),
+                  title: record.title,
+                  description: record.description,
+                  kcal: record.kcalLabel,
+                  time: record.timeLabel,
+                  imageAsset: record.imageAsset,
+                  imageBytes: record.imageBytes,
+                  imageUrl: record.imageUrl,
+                  height: HomePage._mealCardHeight,
+                  onTap: () => onMealTap(record),
                 ),
-              ),
-            ),
-          ],
+              ],
+            ],
+          ),
         ),
       ),
     );

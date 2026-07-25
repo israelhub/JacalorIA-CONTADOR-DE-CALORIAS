@@ -55,39 +55,125 @@
     charts = {};
   }
 
-  function kpi(label, value) {
-    return `<div class="kpi"><p class="label">${label}</p><p class="value">${value}</p></div>`;
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function tipBadge(text, tip) {
+    return `<span class="tip" tabindex="0" data-tip="${escapeHtml(tip)}">${escapeHtml(text)}</span>`;
+  }
+
+  function kpi(label, value, tip, acronym) {
+    const badge = acronym
+      ? ` ${tipBadge(acronym, tip)}`
+      : tip
+        ? ` ${tipBadge("?", tip)}`
+        : "";
+    return `<div class="kpi"><p class="label">${escapeHtml(label)}${badge}</p><p class="value">${escapeHtml(value)}</p></div>`;
   }
 
   function renderOverview(data) {
     const o = data.overview;
     const s = data.sessions;
     document.getElementById("kpis").innerHTML = [
-      kpi("Signups", o.signups),
-      kpi("Onboarding", o.onboardingComplete),
-      kpi("Ativados", o.activated),
-      kpi("DAU hoje", o.dauToday),
-      kpi("WAU", o.wau),
-      kpi("Ativos 7d", o.active7d),
-      kpi("Sessão méd.", formatDuration(s.avgSec)),
+      kpi(
+        "Cadastros",
+        o.signups,
+        "Quantas pessoas criaram conta no período selecionado.",
+      ),
+      kpi(
+        "Completaram o perfil",
+        o.onboardingComplete,
+        "Preencheram dados do onboarding (peso, altura, objetivo, etc.).",
+      ),
+      kpi(
+        "Já usaram de verdade",
+        o.activated,
+        "Salvaram pelo menos 1 refeição. É o sinal de que começaram a usar o produto.",
+      ),
+      kpi(
+        "Ativos hoje",
+        o.dauToday,
+        "DAU = Daily Active Users. Pessoas distintas que abriram o app hoje (horário de Brasília).",
+        "DAU",
+      ),
+      kpi(
+        "Ativos na semana",
+        o.wau,
+        "WAU = Weekly Active Users. Pessoas distintas que abriram o app nos últimos 7 dias.",
+        "WAU",
+      ),
+      kpi(
+        "Ativos nos últimos 7 dias",
+        o.active7d,
+        "Pessoas com atividade recente (abriu o app ou last_active nos últimos 7 dias).",
+      ),
+      kpi(
+        "Tempo médio por visita",
+        formatDuration(s.avgSec),
+        "Média de tempo com o app aberto em cada visita.",
+      ),
     ].join("");
   }
 
   function renderRetention(data) {
     const r = data.retention;
     document.getElementById("retentionCards").innerHTML = `
-      <div class="ret-card"><span>D1</span><strong>${r.d1.pct}%</strong><small>${r.d1.users}/${r.cohortSize}</small></div>
-      <div class="ret-card"><span>D7</span><strong>${r.d7.pct}%</strong><small>${r.d7.users}/${r.cohortSize}</small></div>
-      <div class="ret-card"><span>D14</span><strong>${r.d14.pct}%</strong><small>${r.d14.users}/${r.cohortSize}</small></div>
+      <div class="ret-card">
+        <span class="ret-label">
+          Dia seguinte
+          ${tipBadge("D1", "D1 = Day 1. Percentual que voltou no dia seguinte ao cadastro.")}
+        </span>
+        <strong>${r.d1.pct}%</strong>
+        <small>${r.d1.users} de ${r.cohortSize} pessoas</small>
+      </div>
+      <div class="ret-card">
+        <span class="ret-label">
+          Após 7 dias
+          ${tipBadge("D7", "D7 = Day 7. Percentual que voltou 7 dias depois do cadastro.")}
+        </span>
+        <strong>${r.d7.pct}%</strong>
+        <small>${r.d7.users} de ${r.cohortSize} pessoas</small>
+      </div>
+      <div class="ret-card">
+        <span class="ret-label">
+          Após 14 dias
+          ${tipBadge("D14", "D14 = Day 14. Percentual que voltou 14 dias depois do cadastro.")}
+        </span>
+        <strong>${r.d14.pct}%</strong>
+        <small>${r.d14.users} de ${r.cohortSize} pessoas</small>
+      </div>
     `;
   }
 
   function renderSessions(data) {
     const s = data.sessions;
     document.getElementById("sessionStats").innerHTML = `
-      <div><span>Visitas</span><strong>${s.visits}</strong></div>
-      <div><span>Média</span><strong>${formatDuration(s.avgSec)}</strong></div>
-      <div><span>Mediana</span><strong>${formatDuration(s.medianSec)}</strong></div>
+      <div>
+        <span>
+          Visitas
+          ${tipBadge("?", "Quantas vezes o app foi aberto (sessões) no período.")}
+        </span>
+        <strong>${s.visits}</strong>
+      </div>
+      <div>
+        <span>
+          Média
+          ${tipBadge("?", "Tempo médio com o app aberto por visita.")}
+        </span>
+        <strong>${formatDuration(s.avgSec)}</strong>
+      </div>
+      <div>
+        <span>
+          Mediana
+          ${tipBadge("?", "Valor do meio: metade das visitas durou menos, metade durou mais. Menos distorcido por outliers.")}
+        </span>
+        <strong>${formatDuration(s.medianSec)}</strong>
+      </div>
     `;
   }
 
@@ -97,7 +183,7 @@
       .map(
         (row) => `
       <tr>
-        <td>${row.feature}</td>
+        <td>${escapeHtml(row.feature)}</td>
         <td>${row.usedFeature ? "Sim" : "Não"}</td>
         <td>${row.users}</td>
         <td>${row.retainedD7}</td>
@@ -107,13 +193,32 @@
       .join("");
   }
 
+  const EVENT_LABELS = {
+    app_open: "Abriu o app",
+    meal_saved: "Salvou refeição",
+    meal_capture_started: "Começou a fotografar",
+    ai_analyze_succeeded: "IA analisou a comida",
+    ai_analyze_failed: "IA falhou na análise",
+    screen_view: "Viu uma tela",
+    onboarding_complete: "Concluiu o perfil",
+    session_end: "Encerrou sessão",
+    session_start: "Iniciou sessão",
+  };
+
+  function friendlyEventName(name) {
+    return EVENT_LABELS[name] || name;
+  }
+
   function renderEventsTable(data) {
     const tbody = document.querySelector("#eventsTable tbody");
     tbody.innerHTML = data.eventCounts
       .map(
         (row) => `
       <tr>
-        <td><code>${row.eventName}</code></td>
+        <td>
+          ${escapeHtml(friendlyEventName(row.eventName))}
+          <code class="event-code" title="Nome técnico do evento">${escapeHtml(row.eventName)}</code>
+        </td>
         <td>${row.count}</td>
       </tr>`,
       )
@@ -190,6 +295,18 @@
     });
   }
 
+  const FUNNEL_LABELS = {
+    Signups: "Cadastrou",
+    "Onboarding completo": "Completou o perfil",
+    "Iniciou captura": "Começou a fotografar",
+    "IA analisou": "IA analisou a comida",
+    "Salvou refeição": "Salvou a refeição",
+  };
+
+  function friendlyFunnelStep(step) {
+    return FUNNEL_LABELS[step] || step;
+  }
+
   function renderCharts(data) {
     destroyCharts();
     lineChart(
@@ -200,7 +317,7 @@
     );
     barChart(
       "funnelChart",
-      data.funnel.map((d) => d.step),
+      data.funnel.map((d) => friendlyFunnelStep(d.step)),
       data.funnel.map((d) => d.users),
       "#7CBF4D",
     );
@@ -246,7 +363,7 @@
       }
       const data = await res.json();
       showApp();
-      meta.textContent = `Gerado em ${new Date(data.generatedAt).toLocaleString("pt-BR")} · cohort ${new Date(data.range.betaStart).toLocaleDateString("pt-BR")} → ${new Date(data.range.betaEnd).toLocaleDateString("pt-BR")}`;
+      meta.textContent = `Atualizado em ${new Date(data.generatedAt).toLocaleString("pt-BR")} · período ${new Date(data.range.betaStart).toLocaleDateString("pt-BR")} → ${new Date(data.range.betaEnd).toLocaleDateString("pt-BR")}`;
       renderOverview(data);
       renderRetention(data);
       renderSessions(data);

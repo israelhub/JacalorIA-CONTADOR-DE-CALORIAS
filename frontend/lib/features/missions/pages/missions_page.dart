@@ -346,7 +346,7 @@ class _AvatarFrameStoreBanner extends StatelessWidget {
               color: AppColors.missionsGoldPill,
             ),
             child: const Icon(
-              Icons.auto_awesome_rounded,
+              Icons.storefront_rounded,
               color: AppColors.missionsRewardGold,
             ),
           ),

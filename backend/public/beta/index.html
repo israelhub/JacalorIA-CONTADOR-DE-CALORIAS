@@ -36,10 +36,13 @@
         <div>
           <p class="eyebrow">Jacaloria</p>
           <h1>Dashboard Beta</h1>
+          <p class="lede top-lede">
+            Visão simples de quem entrou, usou e voltou no período do beta.
+          </p>
         </div>
         <div class="top-actions">
           <label class="range">
-            Janela
+            Período
             <select id="daysSelect">
               <option value="7">7 dias</option>
               <option value="14">14 dias</option>
@@ -60,25 +63,60 @@
 
       <section class="grid two">
         <article class="panel">
-          <h2>DAU (últimos dias)</h2>
+          <h2>
+            Pessoas ativas por dia
+            <span
+              class="tip"
+              tabindex="0"
+              data-tip="DAU = Daily Active Users. Quantas pessoas distintas abriram o app em cada dia."
+              >DAU</span
+            >
+          </h2>
+          <p class="hint">Quantas pessoas abriram o app a cada dia.</p>
           <canvas id="dauChart" height="140"></canvas>
         </article>
         <article class="panel">
-          <h2>Retenção</h2>
+          <h2>
+            Quem voltou a usar
+            <span
+              class="tip"
+              tabindex="0"
+              data-tip="Retenção: percentual de quem se cadastrou no período e voltou a abrir o app ou registrar refeição no dia 1, 7 ou 14."
+              >?</span
+            >
+          </h2>
           <div id="retentionCards" class="retention"></div>
           <p class="hint">
-            % do cohort que voltou no dia n (app_open ou meal). Não é tempo na sessão.
+            Das pessoas que entraram no período, quantas voltaram depois (abriram o app ou
+            registraram refeição).
           </p>
         </article>
       </section>
 
       <section class="grid two">
         <article class="panel">
-          <h2>Funil do beta</h2>
+          <h2>
+            Jornada no app
+            <span
+              class="tip"
+              tabindex="0"
+              data-tip="Funil: quantas pessoas passaram por cada etapa, do cadastro até usar de verdade."
+              >?</span
+            >
+          </h2>
+          <p class="hint">Do cadastro até começar a registrar refeições.</p>
           <canvas id="funnelChart" height="160"></canvas>
         </article>
         <article class="panel">
-          <h2>Tempo de sessão</h2>
+          <h2>
+            Tempo com o app aberto
+            <span
+              class="tip"
+              tabindex="0"
+              data-tip="Quanto tempo, em média, cada visita ficou com o app aberto. Mediana é o valor do meio (menos distorcido por visitas muito longas)."
+              >?</span
+            >
+          </h2>
           <div id="sessionStats" class="session"></div>
           <p class="hint">Quanto tempo ficaram com o app aberto por visita.</p>
         </article>
@@ -86,17 +124,52 @@
 
       <section class="grid two">
         <article class="panel">
-          <h2>Feature × retenção D7</h2>
-          <p class="hint">Só usuários ativados (salvaram ≥1 meal). Correlação, não A/B.</p>
+          <h2>
+            Funcionalidades e retorno em 7 dias
+            <span
+              class="tip"
+              tabindex="0"
+              data-tip="Compara quem usou ou não cada funcionalidade e quantos voltaram após 7 dias. Só entram pessoas que já salvaram pelo menos 1 refeição. É correlação, não prova de causa."
+              >?</span
+            >
+          </h2>
+          <p class="hint">
+            Só quem já salvou pelo menos 1 refeição. Mostra associação, não causa e efeito.
+          </p>
           <div class="table-wrap">
             <table id="featureTable">
               <thead>
                 <tr>
-                  <th>Feature</th>
-                  <th>Usou?</th>
-                  <th>Users</th>
-                  <th>D7</th>
-                  <th>% D7</th>
+                  <th>
+                    Funcionalidade
+                    <span class="tip" tabindex="0" data-tip="Recurso do app (ex.: foto, chat, metas).">?</span>
+                  </th>
+                  <th>
+                    Usou?
+                    <span class="tip" tabindex="0" data-tip="Se a pessoa usou essa funcionalidade no período.">?</span>
+                  </th>
+                  <th>
+                    Pessoas
+                    <span class="tip" tabindex="0" data-tip="Quantidade de usuários nesse grupo.">?</span>
+                  </th>
+                  <th>
+                    Voltaram (D7)
+                    <span
+                      class="tip"
+                      tabindex="0"
+                      data-tip="D7 = Day 7. Quantas pessoas desse grupo voltaram a usar o app 7 dias depois."
+                      >?</span
+                    >
+                  </th>
+                  <th>
+                    % que voltaram
+                    <span
+                      class="tip"
+                      tabindex="0"
+                      data-tip="Percentual que voltou no 7º dia. Quanto maior, melhor a retenção desse grupo."
+                      >?</span
+                    >
+                  </th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -104,20 +177,41 @@
           </div>
         </article>
         <article class="panel">
-          <h2>Telas mais vistas</h2>
+          <h2>
+            Telas mais vistas
+            <span
+              class="tip"
+              tabindex="0"
+              data-tip="Quais telas do app foram abertas com mais frequência no período."
+              >?</span
+            >
+          </h2>
+          <p class="hint">Onde as pessoas passam mais tempo navegando.</p>
           <canvas id="screensChart" height="160"></canvas>
         </article>
       </section>
 
       <section class="grid two">
         <article class="panel">
-          <h2>Eventos</h2>
+          <h2>
+            Ações registradas
+            <span
+              class="tip"
+              tabindex="0"
+              data-tip="Contagem de eventos enviados pelo app (abrir app, salvar refeição, etc.)."
+              >?</span
+            >
+          </h2>
+          <p class="hint">O que as pessoas fizeram no app, e com que frequência.</p>
           <div class="table-wrap">
             <table id="eventsTable">
               <thead>
                 <tr>
-                  <th>Evento</th>
-                  <th>Count</th>
+                  <th>Ação</th>
+                  <th>
+                    Quantidade
+                    <span class="tip" tabindex="0" data-tip="Quantas vezes essa ação aconteceu no período.">?</span>
+                  </th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -125,7 +219,16 @@
           </div>
         </article>
         <article class="panel">
-          <h2>Plataformas (app_open)</h2>
+          <h2>
+            De onde abrem o app
+            <span
+              class="tip"
+              tabindex="0"
+              data-tip="Distribuição de plataformas (Android, iOS, Web) entre quem abriu o app."
+              >?</span
+            >
+          </h2>
+          <p class="hint">Android, iOS ou web — baseado em aberturas do app.</p>
           <canvas id="platformChart" height="160"></canvas>
         </article>
       </section>

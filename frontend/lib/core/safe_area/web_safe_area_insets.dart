@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 
 import 'web_safe_area_insets_stub.dart'
@@ -7,3 +9,9 @@ import 'web_safe_area_insets_stub.dart'
 ///
 /// On non-web platforms this always returns [EdgeInsets.zero].
 EdgeInsets readWebCssSafeAreaInsets() => impl.readWebCssSafeAreaInsets();
+
+/// Notifies when the HTML shell re-applies `viewport-fit=cover` / safe-area CSS.
+///
+/// On non-web platforms this returns an empty never-closing stream.
+StreamSubscription<void> listenWebSafeAreaChanges(void Function() onChanged) =>
+    impl.listenWebSafeAreaChanges(onChanged);

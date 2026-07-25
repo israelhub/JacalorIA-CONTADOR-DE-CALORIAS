@@ -84,6 +84,115 @@ body {
   line-height: 1.5;
 }
 
+.top-lede {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 14px;
+}
+
+.tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #f3faec;
+  color: var(--brand);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: help;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.tip:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+
+.tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%) translateY(4px);
+  width: max-content;
+  max-width: min(260px, 70vw);
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--brand-deep);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(25, 54, 41, 0.28);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  z-index: 20;
+}
+
+.tip::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 2px);
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--brand-deep);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s;
+  z-index: 20;
+}
+
+.tip:hover::after,
+.tip:hover::before,
+.tip:focus-visible::after,
+.tip:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tip:hover::after,
+.tip:focus-visible::after {
+  transform: translateX(-50%) translateY(0);
+}
+
+.panel h2 .tip,
+.ret-label .tip,
+.session span .tip,
+th .tip {
+  margin-left: 6px;
+}
+
+.ret-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.event-code {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  background: transparent;
+  padding: 0;
+}
+
 label {
   display: block;
   font-size: 13px;
@@ -163,7 +272,7 @@ button.ghost {
 
 .kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
   margin: 20px 0 24px;
 }
@@ -177,9 +286,15 @@ button.ghost {
 }
 
 .kpi .label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
   font-size: 12px;
   color: var(--muted);
   margin: 0 0 8px;
+  line-height: 1.35;
+  min-height: 2.6em;
 }
 
 .kpi .value {
@@ -215,9 +330,18 @@ button.ghost {
 }
 
 .panel h2 {
-  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 0 0 6px;
   font-size: 16px;
   color: var(--brand-deep);
+}
+
+.panel .hint {
+  margin: 0 0 12px;
+  font-size: 13px;
 }
 
 .retention {
@@ -253,6 +377,14 @@ button.ghost {
   border-radius: 14px;
   padding: 14px;
   text-align: center;
+}
+
+.session span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-wrap: wrap;
 }
 
 .session strong {

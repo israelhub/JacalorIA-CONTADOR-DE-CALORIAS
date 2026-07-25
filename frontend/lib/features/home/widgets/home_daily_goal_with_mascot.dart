@@ -170,7 +170,7 @@ class HomeDailyGoalCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Objetivo diario de calorias',
+            'Meta diária de calorias',
             style: AppTextStyles.label.copyWith(
               color: AppColors.brand900Variant,
               fontWeight: FontWeight.w700,
