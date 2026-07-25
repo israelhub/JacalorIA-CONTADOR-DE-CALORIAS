@@ -3,6 +3,7 @@ import { AnalyzeFoodDto } from './dto/analyze-food.dto';
 import {
   FOOD_ANALYSIS_PROVIDER,
   FoodAnalysisProvider,
+  FoodAnalysisProviderMeta,
   FoodAnalysisResponse,
 } from './providers/food-analysis.provider';
 import { FoodNutritionRagService } from './services/food-nutrition-rag.service';
@@ -52,6 +53,7 @@ export class AiService {
     try {
       let cacheHit = false;
       let result: FoodAnalysisResponse;
+      let meta: FoodAnalysisProviderMeta | null = null;
 
       if (isImageAnalysis) {
         const contentHash = this.hashImage(analyzeFoodDto.imageBase64!);
@@ -64,28 +66,51 @@ export class AiService {
         if (cachedAnalysis) {
           cacheHit = true;
           result = cachedAnalysis.result;
+          meta = {
+            model: 'cache',
+            attempts: 0,
+            failedModels: [],
+            promptTokens: null,
+            outputTokens: null,
+            totalTokens: null,
+          };
         } else {
           const runningAnalysis = this.analysesInProgress.get(cacheKey);
           if (runningAnalysis) {
             cacheHit = true;
             result = await runningAnalysis;
+            meta = {
+              model: 'cache',
+              attempts: 0,
+              failedModels: [],
+              promptTokens: null,
+              outputTokens: null,
+              totalTokens: null,
+            };
           } else {
+            let resolvedMeta: FoodAnalysisProviderMeta | null = null;
             const analysisPromise = this.analyzeAndCacheImage(
               analyzeFoodDto,
               userId,
               contentHash,
-            );
+            ).then((outcome) => {
+              resolvedMeta = outcome.meta;
+              return outcome.analysis;
+            });
             this.analysesInProgress.set(cacheKey, analysisPromise);
 
             try {
               result = await analysisPromise;
+              meta = resolvedMeta;
             } finally {
               this.analysesInProgress.delete(cacheKey);
             }
           }
         }
       } else {
-        result = await this.runAnalysis(analyzeFoodDto);
+        const outcome = await this.runAnalysis(analyzeFoodDto);
+        result = outcome.analysis;
+        meta = outcome.meta;
       }
 
       await this.analyticsService.trackSafe(userId, {
@@ -96,11 +121,21 @@ export class AiService {
           cache_hit: cacheHit,
           latency_ms: Date.now() - stopwatchStarted,
           source: 'server',
+          model: meta?.model ?? null,
+          attempts: meta?.attempts ?? null,
+          failed_models: meta?.failedModels ?? [],
+          prompt_tokens: meta?.promptTokens ?? null,
+          output_tokens: meta?.outputTokens ?? null,
+          total_tokens: meta?.totalTokens ?? null,
         },
       });
 
       return result;
     } catch (error) {
+      const failedModels =
+        error && typeof error === 'object' && 'failedModels' in error
+          ? (error as { failedModels?: string[] }).failedModels
+          : undefined;
       await this.analyticsService.trackSafe(userId, {
         eventName: 'ai_analyze_failed',
         properties: {
@@ -108,7 +143,13 @@ export class AiService {
           latency_ms: Date.now() - stopwatchStarted,
           error_code:
             error instanceof Error ? error.name || 'error' : 'error',
+          error_message:
+            error instanceof Error
+              ? error.message.slice(0, 240)
+              : String(error).slice(0, 240),
           source: 'server',
+          model: failedModels?.at(-1) ?? null,
+          failed_models: failedModels ?? [],
         },
       });
       throw error;
@@ -121,27 +162,33 @@ export class AiService {
     return createHash('sha256').update(imageBytes).digest('hex');
   }
 
-  private async runAnalysis(
-    analyzeFoodDto: AnalyzeFoodDto,
-  ): Promise<FoodAnalysisResponse> {
+  private async runAnalysis(analyzeFoodDto: AnalyzeFoodDto): Promise<{
+    analysis: FoodAnalysisResponse;
+    meta: FoodAnalysisProviderMeta;
+  }> {
     const providerResponse =
       await this.foodAnalysisProvider.analyzeFood(analyzeFoodDto);
-    return this.foodNutritionRagService.enrichAnalysis(providerResponse);
+    return {
+      analysis: await this.foodNutritionRagService.enrichAnalysis(
+        providerResponse.analysis,
+      ),
+      meta: providerResponse.meta,
+    };
   }
 
   private async analyzeAndCacheImage(
     analyzeFoodDto: AnalyzeFoodDto,
     userId: string,
     contentHash: string,
-  ): Promise<FoodAnalysisResponse> {
-    const result = await this.runAnalysis(analyzeFoodDto);
+  ): Promise<{ analysis: FoodAnalysisResponse; meta: FoodAnalysisProviderMeta }> {
+    const outcome = await this.runAnalysis(analyzeFoodDto);
 
     await this.foodImageAnalysisModel.upsert({
       userId,
       contentHash,
-      result,
+      result: outcome.analysis,
     });
 
-    return result;
+    return outcome;
   }
 }

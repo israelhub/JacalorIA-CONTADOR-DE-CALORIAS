@@ -11,6 +11,7 @@ import { FOOD_VISION_SYSTEM_PROMPT } from '../prompts/food-vision-system-prompt'
 import {
   FoodAnalysisItem,
   FoodAnalysisProvider,
+  FoodAnalysisProviderResult,
   FoodAnalysisResponse,
   FoodAnalysisTotals,
   FoodNutritionLabel,
@@ -29,7 +30,9 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
 
   constructor(private readonly configService: ConfigService) {}
 
-  async analyzeFood(analyzeFoodDto: AnalyzeFoodDto): Promise<FoodAnalysisResponse> {
+  async analyzeFood(
+    analyzeFoodDto: AnalyzeFoodDto,
+  ): Promise<FoodAnalysisProviderResult> {
     const apiKey = this.configService.get<string>('API_KEY');
     if (!apiKey) {
       throw new InternalServerErrorException('API_KEY não configurada');
@@ -39,6 +42,7 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
     const { contents } = this.buildRequestContents(analyzeFoodDto);
     const deadlineAt = Date.now() + TOTAL_TIMEOUT_MS;
     let lastErrorMessage = 'nenhuma tentativa concluída';
+    const failedModels: string[] = [];
 
     for (let index = 0; index < models.length; index += 1) {
       const model = models[index];
@@ -48,14 +52,26 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
       }
 
       try {
-        return await this.callGeminiModel({
+        const { analysis, usage } = await this.callGeminiModel({
           apiKey,
           model,
           contents,
           timeoutMs: remainingMs,
         });
+        return {
+          analysis,
+          meta: {
+            model,
+            attempts: index + 1,
+            failedModels,
+            promptTokens: usage.promptTokens,
+            outputTokens: usage.outputTokens,
+            totalTokens: usage.totalTokens,
+          },
+        };
       } catch (error) {
         lastErrorMessage = this.describeError(error);
+        failedModels.push(model);
         this.logger.warn(
           `Falha no modelo ${model} (tentativa ${index + 1}/${models.length}): ${lastErrorMessage}`,
         );
@@ -65,7 +81,9 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
     this.logger.error(
       `Todos os modelos falharam ou o timeout de ${TOTAL_TIMEOUT_MS}ms foi atingido. Último erro: ${lastErrorMessage}`,
     );
-    throw new ServiceUnavailableException(AI_OVERLOAD_MESSAGE);
+    const overload = new ServiceUnavailableException(AI_OVERLOAD_MESSAGE);
+    (overload as Error & { failedModels?: string[] }).failedModels = failedModels;
+    throw overload;
   }
 
   private resolveModels(): string[] {
@@ -150,7 +168,14 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
     model: string;
     contents: Array<Record<string, unknown>>;
     timeoutMs: number;
-  }): Promise<FoodAnalysisResponse> {
+  }): Promise<{
+    analysis: FoodAnalysisResponse;
+    usage: {
+      promptTokens: number | null;
+      outputTokens: number | null;
+      totalTokens: number | null;
+    };
+  }> {
     const { apiKey, model, contents, timeoutMs } = params;
     const fetchFn = globalThis.fetch as unknown as (
       input: string,
@@ -193,6 +218,11 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
         candidates?: Array<{
           content?: { parts?: Array<{ text?: string }> };
         }>;
+        usageMetadata?: {
+          promptTokenCount?: number;
+          candidatesTokenCount?: number;
+          totalTokenCount?: number;
+        };
       };
 
       const text = responseBody.candidates?.[0]?.content?.parts
@@ -207,9 +237,22 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
       const normalizedText = this.extractJsonText(text);
 
       try {
-        return this.normalizeAnalysisResponse(
-          JSON.parse(normalizedText) as Record<string, unknown>,
-        );
+        return {
+          analysis: this.normalizeAnalysisResponse(
+            JSON.parse(normalizedText) as Record<string, unknown>,
+          ),
+          usage: {
+            promptTokens: this.nullableNumber(
+              responseBody.usageMetadata?.promptTokenCount,
+            ),
+            outputTokens: this.nullableNumber(
+              responseBody.usageMetadata?.candidatesTokenCount,
+            ),
+            totalTokens: this.nullableNumber(
+              responseBody.usageMetadata?.totalTokenCount,
+            ),
+          },
+        };
       } catch {
         throw new Error('Resposta inválida (JSON) do provedor de IA');
       }
@@ -221,6 +264,11 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
     } finally {
       clearTimeout(timeoutHandle);
     }
+  }
+
+  private nullableNumber(value: unknown): number | null {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
   }
 
   private isAbortError(error: unknown): boolean {

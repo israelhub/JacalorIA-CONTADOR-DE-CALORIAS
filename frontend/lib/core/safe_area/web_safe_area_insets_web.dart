@@ -1,8 +1,16 @@
 import 'dart:async';
 import 'dart:js_interop';
+import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 import 'package:web/web.dart' as web;
+
+/// Max CSS px for the home indicator / gesture inset on web.
+///
+/// iOS "Add to Home Screen" PWAs have been seen reporting
+/// `safe-area-inset-bottom` far above the real home indicator (~34), which
+/// lifts the bottom nav and leaves a tall empty band under the icons.
+const double kMaxWebBottomSafeAreaInset = 34;
 
 EdgeInsets readWebCssSafeAreaInsets() {
   final probe = web.document.getElementById('flt-safe-area-probe');
@@ -19,11 +27,13 @@ EdgeInsets readWebCssSafeAreaInsets() {
     return double.tryParse(value.replaceAll('px', '').trim()) ?? 0;
   }
 
+  final bottom = math.min(px(style.paddingBottom), kMaxWebBottomSafeAreaInset);
+
   return EdgeInsets.fromLTRB(
     px(style.paddingLeft),
     px(style.paddingTop),
     px(style.paddingRight),
-    px(style.paddingBottom),
+    bottom,
   );
 }
 
