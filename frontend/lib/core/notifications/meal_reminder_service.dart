@@ -10,6 +10,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'meal_reminder_models.dart';
 import 'meal_reminder_prefs.dart';
 import 'in_app_message_store.dart';
+import 'notifications_remote_service.dart';
 
 /// Agenda lembretes locais diários (até [MealReminderSettings.maxReminders]).
 ///
@@ -42,6 +43,8 @@ class MealReminderService {
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+
+  final NotificationsRemoteService _remote = const NotificationsRemoteService();
 
   bool _initialized = false;
   bool _timezoneReady = false;
@@ -93,24 +96,75 @@ class MealReminderService {
     bool requestPermission = true,
   }) async {
     await MealReminderPrefs.save(settings);
+    await MealReminderPrefs.setDirty(true);
     // Propaga falha de init/agendamento para a UI (ex.: ícone Android inválido).
     await _syncScheduledReminders(
       requestPermission: requestPermission,
       swallowErrors: false,
+      pullRemote: false,
     );
+    // Envia ao backend em segundo plano (best-effort).
+    unawaited(_pushSettingsToRemote());
   }
 
-  /// Garante que os lembretes ativos estejam agendados (boot / login / resume).
+  /// Garante que os lembretes ativos estejam agendados (boot / login / resume),
+  /// sincronizando antes com o backend para refletir edições de outros
+  /// dispositivos.
   Future<void> syncScheduledReminders({bool requestPermission = false}) async {
     await _syncScheduledReminders(
       requestPermission: requestPermission,
       swallowErrors: true,
+      pullRemote: true,
     );
+  }
+
+  /// Envia as configurações locais ao backend; em sucesso, limpa o flag de
+  /// pendência e guarda o `updatedAt` do servidor.
+  Future<void> _pushSettingsToRemote() async {
+    try {
+      final settings = await MealReminderPrefs.load();
+      final updatedAt = await _remote.saveReminderSettings(settings);
+      if (updatedAt != null) {
+        await MealReminderPrefs.saveRemoteUpdatedAt(updatedAt);
+        await MealReminderPrefs.setDirty(false);
+      }
+    } catch (_) {
+      // Sem rede/sessão: mantém dirty e tenta na próxima sincronização.
+    }
+  }
+
+  /// Puxa do backend e adota se houver versão mais nova que a conhecida.
+  /// Se houver edição local pendente, envia em vez de puxar (last-write-wins).
+  Future<void> _pullSettingsFromRemote() async {
+    try {
+      if (await MealReminderPrefs.isDirty()) {
+        await _pushSettingsToRemote();
+        return;
+      }
+
+      final remote = await _remote.fetchReminderSettings();
+      if (remote == null) {
+        // Usuário nunca salvou no backend: publica o estado local para que
+        // outros dispositivos herdem esses horários.
+        await _pushSettingsToRemote();
+        return;
+      }
+
+      final knownUpdatedAt = await MealReminderPrefs.loadRemoteUpdatedAt();
+      if (knownUpdatedAt != remote.updatedAt) {
+        await MealReminderPrefs.save(remote.settings);
+        await MealReminderPrefs.saveRemoteUpdatedAt(remote.updatedAt);
+        await MealReminderPrefs.setDirty(false);
+      }
+    } catch (_) {
+      // Best-effort: sem rede continua com o estado local.
+    }
   }
 
   Future<void> _syncScheduledReminders({
     required bool requestPermission,
     required bool swallowErrors,
+    required bool pullRemote,
   }) async {
     if (!isSupported) {
       return;
@@ -118,6 +172,9 @@ class MealReminderService {
 
     try {
       await initialize();
+      if (pullRemote) {
+        await _pullSettingsFromRemote();
+      }
       final settings = await MealReminderPrefs.load();
 
       if (!settings.masterEnabled) {

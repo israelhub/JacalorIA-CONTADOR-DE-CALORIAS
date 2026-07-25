@@ -33,6 +33,8 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
   }
 
   Future<void> _load() async {
+    // Puxa edições feitas em outros dispositivos antes de exibir.
+    await MealReminderService.instance.syncScheduledReminders();
     final settings = await MealReminderPrefs.load();
     if (!mounted) {
       return;
