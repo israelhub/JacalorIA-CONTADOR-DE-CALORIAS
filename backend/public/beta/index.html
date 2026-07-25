@@ -3,23 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Jacaloria · Dashboard Beta</title>
+    <title>Jacaloria · Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="bg"></div>
-
     <div id="gate" class="gate">
       <div class="gate-card">
-        <p class="eyebrow">Jacaloria · interno</p>
-        <h1>Dashboard Beta</h1>
+        <div class="brand gate-brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2c3.5 2 6 5 6 9a6 6 0 1 1-12 0c0-1.6.6-3 1.5-4.2C8 8.7 9 9.5 9.6 10.5 10 8 11 4.5 12 2Z"
+                fill="currentColor"
+              />
+            </svg>
+          </span>
+          <span class="brand-name">Jacaloria</span>
+        </div>
+        <h1>Dashboard</h1>
         <p class="lede">
           Entre com o token configurado em
           <code>BETA_DASHBOARD_TOKEN</code> no backend.
@@ -31,207 +39,356 @@
       </div>
     </div>
 
-    <div id="app" class="app" hidden>
-      <header class="top">
-        <div>
-          <p class="eyebrow">Jacaloria</p>
-          <h1>Dashboard Beta</h1>
-          <p class="lede top-lede">
-            Visão simples de quem entrou, usou e voltou no período do beta.
-          </p>
-        </div>
-        <div class="top-actions">
-          <label class="range">
-            Período
-            <select id="daysSelect">
-              <option value="7">7 dias</option>
-              <option value="14">14 dias</option>
-              <option value="30" selected>30 dias</option>
-              <option value="60">60 dias</option>
-              <option value="90">90 dias</option>
-            </select>
-          </label>
-          <button id="refreshBtn" type="button" class="ghost">Atualizar</button>
-          <button id="logoutBtn" type="button" class="ghost">Sair</button>
-        </div>
-      </header>
+    <div id="app" class="shell" hidden>
+      <div class="shell-inner">
+        <!-- ==================== SIDEBAR ==================== -->
+        <aside class="sidebar" id="sidebar">
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 2c3.5 2 6 5 6 9a6 6 0 1 1-12 0c0-1.6.6-3 1.5-4.2C8 8.7 9 9.5 9.6 10.5 10 8 11 4.5 12 2Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </span>
+            <span class="brand-name">Jacaloria</span>
+          </div>
 
-      <p id="meta" class="meta"></p>
-      <p id="loadError" class="error" hidden></p>
+          <nav class="nav">
+            <p class="nav-section">Menu</p>
+            <!-- Para adicionar um novo dashboard, duplique um .nav-item e aponte o data-view. -->
+            <a class="nav-item active" href="#" data-view="overview">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="9" rx="1.5" fill="currentColor" />
+                <rect x="14" y="3" width="7" height="5" rx="1.5" fill="currentColor" opacity="0.45" />
+                <rect x="14" y="12" width="7" height="9" rx="1.5" fill="currentColor" />
+                <rect x="3" y="16" width="7" height="5" rx="1.5" fill="currentColor" opacity="0.45" />
+              </svg>
+              <span>Dashboard</span>
+            </a>
+            <a class="nav-item disabled" aria-disabled="true">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 20V10m5 10V4m5 16v-7m5 7V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              <span>Engajamento</span>
+              <em class="badge">em breve</em>
+            </a>
+            <a class="nav-item disabled" aria-disabled="true">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8" />
+                <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              <span>Retenção</span>
+            </a>
+            <a class="nav-item disabled" aria-disabled="true">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 19V9l8-5 8 5v10H4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path d="M9 19v-6h6v6" stroke="currentColor" stroke-width="1.8" />
+              </svg>
+              <span>Funil</span>
+            </a>
 
-      <section class="kpis" id="kpis"></section>
+            <p class="nav-section">Geral</p>
+            <a class="nav-item disabled" aria-disabled="true">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
+                <path
+                  d="M12 2.5v2.2m0 14.6v2.2M2.5 12h2.2m14.6 0h2.2M5.1 5.1l1.6 1.6m10.6 10.6 1.6 1.6M18.9 5.1l-1.6 1.6M5.1 18.9l1.6-1.6"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+              </svg>
+              <span>Configurações</span>
+            </a>
+            <button id="logoutBtn" type="button" class="nav-item logout">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M10 8l-4 4 4 4M6 12h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>Sair</span>
+            </button>
+          </nav>
 
-      <section class="grid two">
-        <article class="panel">
-          <h2>
-            Pessoas ativas por dia
-            <span
-              class="tip"
-              tabindex="0"
-              data-tip="DAU = Daily Active Users. Quantas pessoas distintas abriram o app em cada dia."
-              >DAU</span
-            >
-          </h2>
-          <p class="hint">Quantas pessoas abriram o app a cada dia.</p>
-          <canvas id="dauChart" height="140"></canvas>
-        </article>
-        <article class="panel">
-          <h2>
-            Quem voltou a usar
-            <span
-              class="tip"
-              tabindex="0"
-              data-tip="Retenção: percentual de quem se cadastrou no período e voltou a abrir o app ou registrar refeição no dia 1, 7 ou 14."
-              >?</span
-            >
-          </h2>
-          <div id="retentionCards" class="retention"></div>
-          <p class="hint">
-            Das pessoas que entraram no período, quantas voltaram depois (abriram o app ou
-            registraram refeição).
-          </p>
-        </article>
-      </section>
+          <div class="side-promo">
+            <p class="promo-title">App Jacaloria</p>
+            <p class="promo-text">Acompanhe métricas do produto com o mesmo look do app.</p>
+            <a class="promo-btn" href="https://jacaloria.com" target="_blank" rel="noopener">Abrir site</a>
+          </div>
+        </aside>
 
-      <section class="grid two">
-        <article class="panel">
-          <h2>
-            Jornada no app
-            <span
-              class="tip"
-              tabindex="0"
-              data-tip="Funil: quantas pessoas passaram por cada etapa, do cadastro até usar de verdade."
-              >?</span
-            >
-          </h2>
-          <p class="hint">Do cadastro até começar a registrar refeições.</p>
-          <canvas id="funnelChart" height="160"></canvas>
-        </article>
-        <article class="panel">
-          <h2>
-            Tempo com o app aberto
-            <span
-              class="tip"
-              tabindex="0"
-              data-tip="Quanto tempo, em média, cada visita ficou com o app aberto. Mediana é o valor do meio (menos distorcido por visitas muito longas)."
-              >?</span
-            >
-          </h2>
-          <div id="sessionStats" class="session"></div>
-          <p class="hint">Quanto tempo ficaram com o app aberto por visita.</p>
-        </article>
-      </section>
+        <!-- ==================== MAIN ==================== -->
+        <div class="content">
+          <header class="topbar">
+            <button id="menuBtn" class="icon-btn menu-btn" type="button" aria-label="Abrir menu">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
 
-      <section class="grid two">
-        <article class="panel">
-          <h2>
-            Funcionalidades e retorno em 7 dias
-            <span
-              class="tip"
-              tabindex="0"
-              data-tip="Compara quem usou ou não cada funcionalidade e quantos voltaram após 7 dias. Só entram pessoas que já salvaram pelo menos 1 refeição. É correlação, não prova de causa."
-              >?</span
-            >
-          </h2>
-          <p class="hint">
-            Só quem já salvou pelo menos 1 refeição. Mostra associação, não causa e efeito.
-          </p>
-          <div class="table-wrap">
-            <table id="featureTable">
-              <thead>
-                <tr>
-                  <th>
-                    Funcionalidade
-                    <span class="tip" tabindex="0" data-tip="Recurso do app (ex.: foto, chat, metas).">?</span>
-                  </th>
-                  <th>
-                    Usou?
-                    <span class="tip" tabindex="0" data-tip="Se a pessoa usou essa funcionalidade no período.">?</span>
-                  </th>
-                  <th>
-                    Pessoas
-                    <span class="tip" tabindex="0" data-tip="Quantidade de usuários nesse grupo.">?</span>
-                  </th>
-                  <th>
-                    Voltaram (D7)
+            <label class="search" for="searchInput">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8" />
+                <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              <input id="searchInput" type="search" placeholder="Buscar métrica" autocomplete="off" />
+              <kbd>⌘ F</kbd>
+            </label>
+
+            <div class="topbar-right">
+              <button id="refreshBtn" type="button" class="icon-btn" aria-label="Atualizar" title="Atualizar">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M20 11a8 8 0 1 0-.9 4.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <path d="M20 4v6h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+              <div class="user-chip">
+                <span class="avatar" aria-hidden="true">J</span>
+                <div>
+                  <strong>Jacaloria</strong>
+                  <small>interno</small>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div class="page-head">
+            <div>
+              <h1>Dashboard</h1>
+              <p class="lede">Quem entrou, usou e voltou no período selecionado.</p>
+            </div>
+            <div class="page-actions">
+              <div class="daterange" id="dateRange">
+                <label class="date-field">
+                  <span>De</span>
+                  <input id="startDate" type="date" />
+                </label>
+                <span class="date-sep">→</span>
+                <label class="date-field">
+                  <span>Até</span>
+                  <input id="endDate" type="date" />
+                </label>
+              </div>
+              <button id="applyRangeBtn" type="button" class="btn-primary">Aplicar período</button>
+            </div>
+          </div>
+
+          <div class="presets" id="presets">
+            <button type="button" class="chip" data-days="7">7 dias</button>
+            <button type="button" class="chip" data-days="14">14 dias</button>
+            <button type="button" class="chip active" data-days="30">30 dias</button>
+            <button type="button" class="chip" data-days="60">60 dias</button>
+            <button type="button" class="chip" data-days="90">90 dias</button>
+          </div>
+
+          <p id="meta" class="meta"></p>
+          <p id="loadError" class="error" hidden></p>
+
+          <section class="kpis" id="kpis"></section>
+
+          <section class="grid two">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>
+                    Pessoas ativas por dia
                     <span
                       class="tip"
                       tabindex="0"
-                      data-tip="D7 = Day 7. Quantas pessoas desse grupo voltaram a usar o app 7 dias depois."
-                      >?</span
+                      data-tip="DAU = Daily Active Users. Quantas pessoas distintas abriram o app em cada dia."
+                      >DAU</span
                     >
-                  </th>
-                  <th>
-                    % que voltaram
+                  </h2>
+                  <p class="hint">Quantas pessoas abriram o app a cada dia.</p>
+                </div>
+              </div>
+              <canvas id="dauChart" height="140"></canvas>
+            </article>
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>
+                    Quem voltou a usar
                     <span
                       class="tip"
                       tabindex="0"
-                      data-tip="Percentual que voltou no 7º dia. Quanto maior, melhor a retenção desse grupo."
+                      data-tip="Retenção: percentual de quem se cadastrou no período e voltou a abrir o app ou registrar refeição no dia 1, 7 ou 14."
                       >?</span
                     >
-                  </th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </article>
-        <article class="panel">
-          <h2>
-            Telas mais vistas
-            <span
-              class="tip"
-              tabindex="0"
-              data-tip="Quais telas do app foram abertas com mais frequência no período."
-              >?</span
-            >
-          </h2>
-          <p class="hint">Onde as pessoas passam mais tempo navegando.</p>
-          <canvas id="screensChart" height="160"></canvas>
-        </article>
-      </section>
+                  </h2>
+                  <p class="hint">Das pessoas que entraram no período, quantas voltaram depois.</p>
+                </div>
+              </div>
+              <div id="retentionCards" class="retention"></div>
+            </article>
+          </section>
 
-      <section class="grid two">
-        <article class="panel">
-          <h2>
-            Ações registradas
-            <span
-              class="tip"
-              tabindex="0"
-              data-tip="Contagem de eventos enviados pelo app (abrir app, salvar refeição, etc.)."
-              >?</span
-            >
-          </h2>
-          <p class="hint">O que as pessoas fizeram no app, e com que frequência.</p>
-          <div class="table-wrap">
-            <table id="eventsTable">
-              <thead>
-                <tr>
-                  <th>Ação</th>
-                  <th>
-                    Quantidade
-                    <span class="tip" tabindex="0" data-tip="Quantas vezes essa ação aconteceu no período.">?</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </article>
-        <article class="panel">
-          <h2>
-            De onde abrem o app
-            <span
-              class="tip"
-              tabindex="0"
-              data-tip="Distribuição de plataformas (Android, iOS, Web) entre quem abriu o app."
-              >?</span
-            >
-          </h2>
-          <p class="hint">Android, iOS ou web — baseado em aberturas do app.</p>
-          <canvas id="platformChart" height="160"></canvas>
-        </article>
-      </section>
+          <section class="grid two">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>
+                    Jornada no app
+                    <span
+                      class="tip"
+                      tabindex="0"
+                      data-tip="Funil: quantas pessoas passaram por cada etapa, do cadastro até usar de verdade."
+                      >?</span
+                    >
+                  </h2>
+                  <p class="hint">Do cadastro até começar a registrar refeições.</p>
+                </div>
+              </div>
+              <canvas id="funnelChart" height="160"></canvas>
+            </article>
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>
+                    Tempo com o app aberto
+                    <span
+                      class="tip"
+                      tabindex="0"
+                      data-tip="Quanto tempo, em média, cada visita ficou com o app aberto. Mediana é o valor do meio (menos distorcido por visitas muito longas)."
+                      >?</span
+                    >
+                  </h2>
+                  <p class="hint">Quanto tempo ficaram com o app aberto por visita.</p>
+                </div>
+              </div>
+              <div id="sessionStats" class="session"></div>
+            </article>
+          </section>
+
+          <section class="grid two">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>
+                    Funcionalidades e retorno em 7 dias
+                    <span
+                      class="tip"
+                      tabindex="0"
+                      data-tip="Compara quem usou ou não cada funcionalidade e quantos voltaram após 7 dias. Só entram pessoas que já salvaram pelo menos 1 refeição. É correlação, não prova de causa."
+                      >?</span
+                    >
+                  </h2>
+                  <p class="hint">Só quem já salvou pelo menos 1 refeição. Mostra associação, não causa.</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table id="featureTable">
+                  <thead>
+                    <tr>
+                      <th>
+                        Funcionalidade
+                        <span class="tip" tabindex="0" data-tip="Recurso do app (ex.: foto, chat, metas).">?</span>
+                      </th>
+                      <th>
+                        Usou?
+                        <span class="tip" tabindex="0" data-tip="Se a pessoa usou essa funcionalidade no período.">?</span>
+                      </th>
+                      <th>
+                        Pessoas
+                        <span class="tip" tabindex="0" data-tip="Quantidade de usuários nesse grupo.">?</span>
+                      </th>
+                      <th>
+                        Voltaram (D7)
+                        <span
+                          class="tip"
+                          tabindex="0"
+                          data-tip="D7 = Day 7. Quantas pessoas desse grupo voltaram a usar o app 7 dias depois."
+                          >?</span
+                        >
+                      </th>
+                      <th>
+                        % que voltaram
+                        <span
+                          class="tip"
+                          tabindex="0"
+                          data-tip="Percentual que voltou no 7º dia. Quanto maior, melhor a retenção desse grupo."
+                          >?</span
+                        >
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>
+                    Telas mais vistas
+                    <span
+                      class="tip"
+                      tabindex="0"
+                      data-tip="Quais telas do app foram abertas com mais frequência no período."
+                      >?</span
+                    >
+                  </h2>
+                  <p class="hint">Onde as pessoas passam mais tempo navegando.</p>
+                </div>
+              </div>
+              <canvas id="screensChart" height="160"></canvas>
+            </article>
+          </section>
+
+          <section class="grid two">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>
+                    Ações registradas
+                    <span
+                      class="tip"
+                      tabindex="0"
+                      data-tip="Contagem de eventos enviados pelo app (abrir app, salvar refeição, etc.)."
+                      >?</span
+                    >
+                  </h2>
+                  <p class="hint">O que as pessoas fizeram no app, e com que frequência.</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table id="eventsTable">
+                  <thead>
+                    <tr>
+                      <th>Ação</th>
+                      <th>
+                        Quantidade
+                        <span class="tip" tabindex="0" data-tip="Quantas vezes essa ação aconteceu no período.">?</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>
+                    De onde abrem o app
+                    <span
+                      class="tip"
+                      tabindex="0"
+                      data-tip="Distribuição de plataformas (Android, iOS, Web) entre quem abriu o app."
+                      >?</span
+                    >
+                  </h2>
+                  <p class="hint">Android, iOS ou web — baseado em aberturas do app.</p>
+                </div>
+              </div>
+              <canvas id="platformChart" height="160"></canvas>
+            </article>
+          </section>
+        </div>
+      </div>
+
+      <div class="scrim" id="scrim" hidden></div>
     </div>
 
     <script src="./app.js"></script>

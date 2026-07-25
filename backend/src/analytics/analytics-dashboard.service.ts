@@ -34,7 +34,7 @@ export class AnalyticsDashboardService {
       platforms,
     ] = await Promise.all([
       this.getOverview(betaStart, betaEnd),
-      this.getDauSeries(days),
+      this.getDauSeries(betaStart, betaEnd),
       this.getFunnel(betaStart, betaEnd),
       this.getRetention(betaStart, betaEnd),
       this.getFeatureRetention(betaStart, betaEnd),
@@ -151,21 +151,33 @@ export class AnalyticsDashboardService {
     };
   }
 
-  private async getDauSeries(days: number) {
+  private async getDauSeries(betaStart: string, betaEnd: string) {
+    // Uma linha por dia do período (Brasília), preenchendo com 0 os dias sem
+    // atividade. betaEnd é exclusivo, então o último dia é (betaEnd - 1 dia).
     const rows = await this.sequelize.query<{ day: string; dau: string }>(
       `
       SELECT
-        (occurred_at AT TIME ZONE 'America/Sao_Paulo')::date::text AS day,
-        COUNT(DISTINCT user_id)::text AS dau
-      FROM analytics_events
-      WHERE event_name = 'app_open'
-        AND occurred_at >= (now() AT TIME ZONE 'America/Sao_Paulo')::date
-            - (:days::int - 1)
-      GROUP BY 1
-      ORDER BY 1
+        gs::date::text AS day,
+        COALESCE(s.dau, 0)::text AS dau
+      FROM generate_series(
+        (:betaStart::timestamptz AT TIME ZONE 'America/Sao_Paulo')::date,
+        ((:betaEnd::timestamptz AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 day')::date,
+        INTERVAL '1 day'
+      ) AS gs
+      LEFT JOIN (
+        SELECT
+          (occurred_at AT TIME ZONE 'America/Sao_Paulo')::date AS day,
+          COUNT(DISTINCT user_id) AS dau
+        FROM analytics_events
+        WHERE event_name = 'app_open'
+          AND occurred_at >= :betaStart
+          AND occurred_at < :betaEnd
+        GROUP BY 1
+      ) s ON s.day = gs::date
+      ORDER BY gs
       `,
       {
-        replacements: { days },
+        replacements: { betaStart, betaEnd },
         type: QueryTypes.SELECT,
       },
     );

@@ -369,7 +369,7 @@ class _GoalStats extends StatelessWidget {
           children: [
             Expanded(
               child: _StatColumn(
-                label: 'Objetivo',
+                label: 'Meta',
                 value: totalCalories.toString(),
               ),
             ),

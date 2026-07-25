@@ -48,6 +48,30 @@ void main() {
       expect(snapshot.objective, 'loseWeight');
     });
 
+    test('atualiza snapshot quando forceRefresh e true', () async {
+      await resolveHomeDailyGoalDaySnapshot(
+        profile: {
+          'id': 'user-1',
+          'dailyCalorieGoal': 2100,
+          'objective': 'loseWeight',
+        },
+        now: DateTime(2026, 7, 24, 10),
+      );
+
+      final snapshot = await resolveHomeDailyGoalDaySnapshot(
+        profile: {
+          'id': 'user-1',
+          'dailyCalorieGoal': 2800,
+          'objective': 'gainMass',
+        },
+        now: DateTime(2026, 7, 24, 18),
+        forceRefresh: true,
+      );
+
+      expect(snapshot.dailyCalorieGoal, 2800);
+      expect(snapshot.objective, 'gainMass');
+    });
+
     test('renova snapshot quando o dia vira', () async {
       await resolveHomeDailyGoalDaySnapshot(
         profile: {

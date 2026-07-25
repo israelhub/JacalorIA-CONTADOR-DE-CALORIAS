@@ -151,7 +151,7 @@ class _HomePageState extends State<HomePage>
     return DateTime(normalized.year, normalized.month, normalized.day + 1);
   }
 
-  Future<void> _loadInitialData() async {
+  Future<void> _loadInitialData({bool forceRefreshDayGoal = false}) async {
     if (AuthService.globalToken == null || AuthService.globalToken!.isEmpty) {
       await _redirectToLoginPage(
         errorMessage: 'Sessão inválida. Faça login novamente.',
@@ -165,7 +165,9 @@ class _HomePageState extends State<HomePage>
           startDate: _selectedDate,
           endDate: _startOfNextDay(_selectedDate),
         ),
-        widget._authService.fetchProfile(),
+        widget._authService.fetchProfile(
+          forceRefresh: forceRefreshDayGoal,
+        ),
       ]);
       final meals = results[0] as List<FoodMealRecord>;
       final profile = results[1] as Map<String, dynamic>;
@@ -180,6 +182,7 @@ class _HomePageState extends State<HomePage>
       try {
         dayGoalSnapshot = await resolveHomeDailyGoalDaySnapshot(
           profile: profile.isNotEmpty ? profile : null,
+          forceRefresh: forceRefreshDayGoal,
         );
       } catch (_) {
         dayGoalSnapshot = null;
@@ -533,21 +536,39 @@ class _HomePageState extends State<HomePage>
     );
 
     if (hasUpdatedProfile == true && mounted) {
-      await _loadInitialData();
+      await _loadInitialData(forceRefreshDayGoal: true);
     }
   }
 
-  void _onWeightUpdated(Map<String, dynamic> updatedWeight) {
+  Future<void> _onWeightUpdated(Map<String, dynamic> updatedProfile) async {
     if (!mounted) {
       return;
     }
+
+    final mergedProfile = <String, dynamic>{
+      ...?_userProfile,
+      ...updatedProfile,
+      if (updatedProfile['weightUnit'] != null)
+        'weight_unit': updatedProfile['weightUnit'],
+    };
+
+    HomeDailyGoalDaySnapshot? dayGoalSnapshot;
+    try {
+      dayGoalSnapshot = await resolveHomeDailyGoalDaySnapshot(
+        profile: mergedProfile,
+        forceRefresh: true,
+      );
+    } catch (_) {
+      dayGoalSnapshot = _dayGoalSnapshot;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
-      _userProfile = <String, dynamic>{
-        ...?_userProfile,
-        'weight': updatedWeight['weight'],
-        'weightUnit': updatedWeight['weightUnit'],
-        'weight_unit': updatedWeight['weightUnit'],
-      };
+      _userProfile = mergedProfile;
+      _dayGoalSnapshot = dayGoalSnapshot;
     });
   }
 
