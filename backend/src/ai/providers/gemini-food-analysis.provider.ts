@@ -19,10 +19,19 @@ import {
 
 const AI_OVERLOAD_MESSAGE =
   'Estamos enfrentando uma sobrecarga na IA. Tente novamente em alguns instantes.';
-const TOTAL_TIMEOUT_MS = 120_000;
-const MAX_MODELS = 3;
-const DEFAULT_PRIMARY_MODEL = 'gemini-3.1-flash-lite';
-const DEFAULT_FALLBACK_MODELS = 'gemini-2.5-flash,gemini-2.5-flash-lite';
+const TOTAL_TIMEOUT_MS = 180_000;
+const MAX_MODELS = 8;
+const DEFAULT_PRIMARY_MODEL = 'gemini-3.5-flash-lite';
+// Cada modelo tem cota RPM/RPD separada no AI Studio — a cadeia espalha a carga
+// quando o primário toma 429 por minuto.
+const DEFAULT_FALLBACK_MODELS = [
+  'gemini-3.1-flash-lite',
+  'gemini-2.5-flash-lite',
+  'gemini-3-flash',
+  'gemini-3.5-flash',
+  'gemini-3.6-flash',
+  'gemini-2.5-flash',
+].join(',');
 
 @Injectable()
 export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
