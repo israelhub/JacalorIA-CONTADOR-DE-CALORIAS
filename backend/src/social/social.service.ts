@@ -439,8 +439,19 @@ export class SocialService {
 
   async joinGroupByInviteCode(userId: string, inviteCode: string) {
     const code = inviteCode.trim().toUpperCase();
-    const group = await this.socialGroupModel.findOne({ where: { inviteCode: code }, attributes: ['id', 'name'] });
+    const group = await this.socialGroupModel.findOne({
+      where: { inviteCode: code },
+      attributes: [
+        'id',
+        'name',
+        'startsAt',
+        'endsAt',
+        'competitionType',
+      ],
+      include: [{ model: SocialGroupMember, as: 'members' }],
+    });
     if (!group) throw new NotFoundException('Código de grupo inválido');
+    await this.assertGroupOpenForJoining(group);
 
     const exists = await this.socialGroupMemberModel.findOne({ where: { groupId: group.id, userId } });
     if (!exists) {
@@ -466,7 +477,13 @@ export class SocialService {
     userId: string,
     filters: { query?: string; durationDays?: number; competitionType?: string },
   ) {
-    const where: any = { isPublic: true };
+    const where: any = {
+      isPublic: true,
+      [Op.or]: [
+        { competitionType: 'group_streak' },
+        { endsAt: { [Op.gt]: new Date() } },
+      ],
+    };
     if (filters.query?.trim()) {
       where.name = { [Op.iLike]: `%${filters.query.trim()}%` };
     }
@@ -495,11 +512,23 @@ export class SocialService {
       limit: 100,
     });
 
-    const publicGroups = groups.filter((group) => !this.isCurrentUserMember(group.members, userId));
-    const memberUserIds = publicGroups.flatMap((group) => (group.members ?? []).map((member) => member.userId));
+    const candidateGroups = groups.filter(
+      (group) => !this.isCurrentUserMember(group.members, userId),
+    );
+    const memberUserIds = candidateGroups.flatMap((group) =>
+      (group.members ?? []).map((member) => member.userId),
+    );
     const { streakByUserId, offensiveDayKeysByUserId } = await this.loadGroupStreakContext(
-      publicGroups,
+      candidateGroups,
       memberUserIds,
+    );
+    const publicGroups = candidateGroups.filter(
+      (group) =>
+        !this.isGroupFinished(
+          group,
+          group.members ?? [],
+          offensiveDayKeysByUserId,
+        ),
     );
 
     return {
@@ -512,8 +541,19 @@ export class SocialService {
   }
 
   async joinPublicGroup(userId: string, groupId: string) {
-    const group = await this.socialGroupModel.findByPk(groupId, { attributes: ['id', 'name', 'isPublic'] });
+    const group = await this.socialGroupModel.findByPk(groupId, {
+      attributes: [
+        'id',
+        'name',
+        'isPublic',
+        'startsAt',
+        'endsAt',
+        'competitionType',
+      ],
+      include: [{ model: SocialGroupMember, as: 'members' }],
+    });
     if (!group || !group.isPublic) throw new NotFoundException('Grupo público não encontrado');
+    await this.assertGroupOpenForJoining(group);
 
     const exists = await this.socialGroupMemberModel.findOne({ where: { groupId: group.id, userId } });
     if (!exists) {
@@ -539,6 +579,10 @@ export class SocialService {
     const group = await this.findGroupForMember(groupId, userId);
     const currentUser = this.findCurrentUserMember(group.members, userId);
     if (!currentUser?.isLeader && group.ownerId !== userId) throw new BadRequestException('Apenas o líder pode editar o grupo');
+    await this.assertGroupIsActive(
+      group,
+      'Grupos finalizados não podem ser alterados',
+    );
 
     const nextName = dto.name?.trim() ?? group.name;
     const nextDescription = dto.description?.trim() ?? group.description;
@@ -591,6 +635,10 @@ export class SocialService {
     if (!currentUser?.isLeader && group.ownerId !== userId) {
       throw new BadRequestException('Apenas o líder pode convidar amigos para o grupo');
     }
+    await this.assertGroupIsActive(
+      group,
+      'Não é possível adicionar pessoas a um grupo finalizado',
+    );
 
     const invitedIds = [...new Set((dto.memberUserIds ?? []).map((id) => id.trim()).filter(Boolean))];
     if (!invitedIds.length) {
@@ -1363,6 +1411,11 @@ export class SocialService {
     streakByUserId?: Map<string, number>,
     offensiveDayKeysByUserId?: Map<string, Set<string>>,
   ) {
+    const rankingEndKey = this.getRankingEndDayKey(
+      group,
+      group.members ?? [],
+      offensiveDayKeysByUserId,
+    );
     const usesGroupScopedStreak =
       group.competitionType === 'group_streak' || group.competitionType === 'offensive';
     let members = usesGroupScopedStreak
@@ -1370,8 +1423,14 @@ export class SocialService {
           group.members ?? [],
           group.startsAt,
           offensiveDayKeysByUserId,
+          rankingEndKey,
         )
-      : this.withComputedStreaks(group.members ?? [], streakByUserId);
+      : this.withComputedStreaks(
+          group.members ?? [],
+          streakByUserId,
+          offensiveDayKeysByUserId,
+          rankingEndKey,
+        );
     if (group.competitionType === 'daily_goal') {
       members = await this.withComputedDailyGoalPoints(members, group.startsAt, group.endsAt);
     } else if (group.competitionType === 'goal_average') {
@@ -1400,27 +1459,19 @@ export class SocialService {
   }
 
   private async loadGroupStreakContext(
-    groups: SocialGroup[],
+    _groups: SocialGroup[],
     memberUserIds: string[],
   ): Promise<{
     streakByUserId: Map<string, number>;
     offensiveDayKeysByUserId?: Map<string, Set<string>>;
   }> {
-    const needsScopedStreak = groups.some(
-      (group) =>
-        group.competitionType === 'group_streak' || group.competitionType === 'offensive',
-    );
-    if (needsScopedStreak) {
-      const offensiveDayKeysByUserId =
-        await this.streakService.buildEffectiveDayKeysByUserIds(memberUserIds);
-      return {
-        streakByUserId: this.streakService.buildStreakMapFromDayKeys(offensiveDayKeysByUserId),
-        offensiveDayKeysByUserId,
-      };
-    }
-
+    const offensiveDayKeysByUserId =
+      await this.streakService.buildEffectiveDayKeysByUserIds(memberUserIds);
     return {
-      streakByUserId: await this.streakService.buildStreakByUserIds(memberUserIds),
+      streakByUserId: this.streakService.buildStreakMapFromDayKeys(
+        offensiveDayKeysByUserId,
+      ),
+      offensiveDayKeysByUserId,
     };
   }
 
@@ -1434,23 +1485,35 @@ export class SocialService {
     members: SocialGroupMember[],
     offensiveDayKeysByUserId?: Map<string, Set<string>>,
   ): boolean {
+    return this.getGroupStreakDefeatedDayKey(
+      group,
+      members,
+      offensiveDayKeysByUserId,
+    ) !== null;
+  }
+
+  private getGroupStreakDefeatedDayKey(
+    group: SocialGroup,
+    members: SocialGroupMember[],
+    offensiveDayKeysByUserId?: Map<string, Set<string>>,
+  ): string | null {
     if (group.competitionType !== 'group_streak') {
-      return false;
+      return null;
     }
     if (!offensiveDayKeysByUserId || members.length === 0) {
-      return false;
+      return null;
     }
 
     const todayKey = this.streakService.toDayKeyInAppTimeZone(new Date());
     const yesterdayKey = this.streakService.shiftDayKey(todayKey, -1);
     if (!yesterdayKey) {
-      return false;
+      return null;
     }
 
     const groupStartKey = this.streakService.toDayKeyInAppTimeZone(new Date(group.startsAt));
     // Ainda não fechou nenhum dia do grupo (criado hoje).
     if (groupStartKey > yesterdayKey) {
-      return false;
+      return null;
     }
 
     let cursorKey: string | null = groupStartKey;
@@ -1464,24 +1527,54 @@ export class SocialService {
       for (const member of activeMembers) {
         const dayKeys = offensiveDayKeysByUserId.get(member.userId) ?? new Set<string>();
         if (!dayKeys.has(dayKey)) {
-          return true;
+          return dayKey;
         }
       }
 
       cursorKey = this.streakService.shiftDayKey(cursorKey, 1);
     }
 
-    return false;
+    return null;
   }
 
-  private withComputedStreaks(members: SocialGroupMember[], streakByUserId?: Map<string, number>) {
+  private getRankingEndDayKey(
+    group: SocialGroup,
+    members: SocialGroupMember[],
+    offensiveDayKeysByUserId?: Map<string, Set<string>>,
+  ): string | undefined {
+    if (group.competitionType === 'group_streak') {
+      return (
+        this.getGroupStreakDefeatedDayKey(
+          group,
+          members,
+          offensiveDayKeysByUserId,
+        ) ?? undefined
+      );
+    }
+    if (new Date(group.endsAt).getTime() > Date.now()) {
+      return undefined;
+    }
+    return this.streakService.toDayKeyInAppTimeZone(new Date(group.endsAt));
+  }
+
+  private withComputedStreaks(
+    members: SocialGroupMember[],
+    streakByUserId?: Map<string, number>,
+    offensiveDayKeysByUserId?: Map<string, Set<string>>,
+    rankingEndKey?: string,
+  ) {
     if (!streakByUserId || streakByUserId.size === 0) {
       return members;
     }
 
     return members.map((member) => ({
       ...(this.memberToPlain(member)),
-      streakDays: streakByUserId.get(member.userId) ?? 0,
+      streakDays: rankingEndKey && offensiveDayKeysByUserId
+        ? this.streakService.calculateStreakFromDayKeysAsOf(
+            offensiveDayKeysByUserId.get(member.userId) ?? new Set<string>(),
+            rankingEndKey,
+          )
+        : streakByUserId.get(member.userId) ?? 0,
     })) as SocialGroupMember[];
   }
 
@@ -1493,6 +1586,7 @@ export class SocialService {
     members: SocialGroupMember[],
     groupStartsAt: Date,
     offensiveDayKeysByUserId?: Map<string, Set<string>>,
+    rankingEndKey?: string,
   ) {
     const groupStartKey = this.streakService.toDayKeyInAppTimeZone(new Date(groupStartsAt));
 
@@ -1500,7 +1594,11 @@ export class SocialService {
       const joinKey = this.streakService.toDayKeyInAppTimeZone(new Date(member.createdAt));
       const windowStartKey = joinKey > groupStartKey ? joinKey : groupStartKey;
       const dayKeys = offensiveDayKeysByUserId?.get(member.userId) ?? new Set<string>();
-      const streakDays = this.streakService.calculateScopedStreakFromDayKey(dayKeys, windowStartKey);
+      const streakDays = this.streakService.calculateScopedStreakFromDayKey(
+        dayKeys,
+        windowStartKey,
+        rankingEndKey,
+      );
 
       return {
         ...this.memberToPlain(member),
@@ -1838,6 +1936,45 @@ export class SocialService {
 
   private isCurrentUserMember(members: SocialGroupMember[] | undefined, userId: string) {
     return Boolean(members?.some((member) => member.userId === userId));
+  }
+
+  private async assertGroupOpenForJoining(group: SocialGroup): Promise<void> {
+    await this.assertGroupIsActive(
+      group,
+      'Este grupo já foi finalizado',
+    );
+  }
+
+  private async assertGroupIsActive(
+    group: SocialGroup,
+    message: string,
+  ): Promise<void> {
+    const members = group.members ?? [];
+    let dayKeysByUserId: Map<string, Set<string>> | undefined;
+    if (group.competitionType === 'group_streak') {
+      dayKeysByUserId = await this.streakService.buildEffectiveDayKeysByUserIds(
+        members.map((member) => member.userId),
+      );
+    }
+
+    if (this.isGroupFinished(group, members, dayKeysByUserId)) {
+      throw new BadRequestException(message);
+    }
+  }
+
+  private isGroupFinished(
+    group: SocialGroup,
+    members: SocialGroupMember[],
+    offensiveDayKeysByUserId?: Map<string, Set<string>>,
+  ): boolean {
+    if (group.competitionType === 'group_streak') {
+      return this.isGroupStreakDefeated(
+        group,
+        members,
+        offensiveDayKeysByUserId,
+      );
+    }
+    return new Date(group.endsAt).getTime() <= Date.now();
   }
 
   private getRemainingDays(endsAt: Date, competitionType: string) {

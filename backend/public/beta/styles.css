@@ -392,7 +392,7 @@ code {
   font-weight: 500;
   color: var(--text);
   background: transparent;
-  max-width: 122px;
+  max-width: 170px;
   padding: 2px 0;
   color-scheme: light;
 }
@@ -614,7 +614,11 @@ code {
 }
 
 .bento-perf {
-  grid-template-rows: 280px 320px auto auto;
+  grid-template-rows: auto 320px auto auto;
+}
+
+.bento-perf > .panel:has(#aiQuotaGrid) {
+  height: auto;
 }
 
 .bento-infra {
@@ -1220,6 +1224,7 @@ th .tip {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 14px;
   padding: 4px 2px 8px;
+  min-width: 0;
 }
 
 .quota-card {
@@ -1230,6 +1235,7 @@ th .tip {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
 }
 
 .quota-card header {
@@ -1250,6 +1256,8 @@ th .tip {
   color: #6b7280;
   background: transparent;
   padding: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .quota-meter {
@@ -1264,12 +1272,15 @@ th .tip {
   gap: 8px;
   font-size: 12px;
   color: #4b5563;
+  min-width: 0;
 }
 
 .quota-meter-top strong {
   font-size: 12px;
   color: #111827;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .quota-track {

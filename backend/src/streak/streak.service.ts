@@ -86,9 +86,15 @@ export class StreakService {
     );
   }
 
-  calculateScopedStreakFromDayKey(dayKeys: Set<string>, windowStartKey: string): number {
+  calculateScopedStreakFromDayKey(
+    dayKeys: Set<string>,
+    windowStartKey: string,
+    windowEndKey?: string,
+  ): number {
     let streak = 0;
-    let cursorKey = this.toDayKeyInAppTimeZone(new Date());
+    const todayKey = this.toDayKeyInAppTimeZone(new Date());
+    let cursorKey =
+      windowEndKey && windowEndKey < todayKey ? windowEndKey : todayKey;
 
     // Dia atual ainda está em aberto: sem registro hoje, conta a partir de ontem.
     if (!dayKeys.has(cursorKey)) {
@@ -99,6 +105,31 @@ export class StreakService {
 
     while (cursorKey >= windowStartKey) {
       if (!dayKeys.has(cursorKey)) break;
+      streak += 1;
+      const previous = this.shiftDayKey(cursorKey, -1);
+      if (!previous) break;
+      cursorKey = previous;
+    }
+
+    return streak;
+  }
+
+  /** Sequência calculada como ela estava em uma data passada. */
+  calculateStreakFromDayKeysAsOf(
+    dayKeys: Set<string>,
+    windowEndKey: string,
+  ): number {
+    let streak = 0;
+    const todayKey = this.toDayKeyInAppTimeZone(new Date());
+    let cursorKey = windowEndKey < todayKey ? windowEndKey : todayKey;
+
+    if (!dayKeys.has(cursorKey)) {
+      const previous = this.shiftDayKey(cursorKey, -1);
+      if (!previous) return 0;
+      cursorKey = previous;
+    }
+
+    while (dayKeys.has(cursorKey)) {
       streak += 1;
       const previous = this.shiftDayKey(cursorKey, -1);
       if (!previous) break;
