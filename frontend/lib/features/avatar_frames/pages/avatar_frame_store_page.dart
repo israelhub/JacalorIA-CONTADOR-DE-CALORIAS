@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/analytics/analytics_service.dart';
@@ -52,6 +53,9 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     blockers: <StoreCatalogItem>[],
   );
   StoreCategory _selectedCategory = StoreCategory.blockers;
+  final Set<StoreCategory> _visitedCategories = <StoreCategory>{
+    StoreCategory.blockers,
+  };
   bool _showOwnedOnly = false;
   bool _isLoadingCatalog = true;
   bool _isSaving = false;
@@ -90,6 +94,9 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     if (cached != null) {
       _applyCatalogResponse(cached);
       _isLoadingCatalog = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _precacheCatalogAssets();
+      });
     }
     _loadCatalog(silent: cached != null);
   }
@@ -142,6 +149,7 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         _applyCatalogResponse(response);
         _isLoadingCatalog = false;
       });
+      _precacheCatalogAssets();
     } catch (error) {
       if (!mounted) {
         return;
@@ -161,10 +169,51 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     }
   }
 
-  List<StoreCatalogItem> _selectedItems() {
+  /// Mantém molduras/fundos decodificados no ImageCache do Flutter (crítico no
+  /// web, onde trocar de categoria remonta o grid e redecodifica PNGs grandes).
+  void _precacheCatalogAssets() {
+    if (!mounted) {
+      return;
+    }
+
+    final providers = <ImageProvider<Object>>[];
+
+    for (final item in _catalog.frames) {
+      final path = AvatarFrameCatalog.byId(item.id)?.assetPath;
+      if (path != null && path.isNotEmpty) {
+        providers.add(AssetImage(path));
+      }
+    }
+
+    for (final item in _catalog.backgrounds) {
+      final path = AvatarBackgroundCatalog.assetPathForId(item.id);
+      if (path != null && path.isNotEmpty) {
+        providers.add(AssetImage(path));
+      }
+    }
+
+    final avatarUrl =
+        _profileSnapshot['avatarUrl'] as String? ??
+        _profileSnapshot['avatar_url'] as String?;
+    if (avatarUrl != null &&
+        avatarUrl.isNotEmpty &&
+        avatarUrl.startsWith('http')) {
+      providers.add(CachedNetworkImageProvider(avatarUrl));
+    }
+
+    for (final provider in providers) {
+      unawaited(() async {
+        try {
+          await precacheImage(provider, context);
+        } catch (_) {}
+      }());
+    }
+  }
+
+  List<StoreCatalogItem> _itemsFor(StoreCategory category) {
     late final List<StoreCatalogItem> items;
 
-    switch (_selectedCategory) {
+    switch (category) {
       case StoreCategory.blockers:
         items = _catalog.blockers;
         break;
@@ -557,7 +606,6 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         _profileSnapshot['avatarUrl'] as String? ??
         _profileSnapshot['avatar_url'] as String?;
     final name = _profileSnapshot['name']?.toString();
-    final items = _selectedItems();
 
     return PopScope<bool>(
       canPop: false,
@@ -614,6 +662,7 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                   onSelected: (category) {
                     setState(() {
                       _selectedCategory = category;
+                      _visitedCategories.add(category);
                     });
                   },
                 ),
@@ -668,72 +717,32 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                               ),
                             ],
                           )
-                        : items.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
+                        // IndexedStack mantém catálogos já visitados montados:
+                        // trocar de aba não descarta tiles nem reanima/redecodifica.
+                        : IndexedStack(
+                            index: _selectedCategory.index,
+                            sizing: StackFit.expand,
                             children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: AppSpacing.xl,
-                                ),
-                                child: Text(
-                                  'Sem itens disponíveis nesta categoria.',
-                                  textAlign: TextAlign.center,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ),
+                              for (final category in StoreCategory.values)
+                                _visitedCategories.contains(category)
+                                    ? _StoreCategoryGrid(
+                                        key: ValueKey(
+                                          'store-grid-$category',
+                                        ),
+                                        category: category,
+                                        items: _itemsFor(category),
+                                        avatarUrl: avatarUrl,
+                                        name: name,
+                                        blockerInventory: _blockerInventory,
+                                        isOwned: _isOwned,
+                                        isEquipped: _isEquipped,
+                                        canPurchase: _canPurchase,
+                                        isSaving: _isSaving,
+                                        onPreview: _previewItem,
+                                        onPressed: _toggleOwnedItem,
+                                      )
+                                    : const SizedBox.expand(),
                             ],
-                          )
-                        : LayoutBuilder(
-                            builder: (context, constraints) {
-                              final crossAxisCount =
-                                  constraints.maxWidth >= 720 ? 3 : 2;
-                              // Fundos: tile mais largo pra caber o banner
-                              // na mesma proporcao do perfil (nao quadrado).
-                              final childAspectRatio =
-                                  _selectedCategory == StoreCategory.backgrounds
-                                  ? 0.78
-                                  : 1.0;
-                              return GridView.builder(
-                                physics:
-                                    const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.only(
-                                  bottom: AppSpacing.xxxl,
-                                ),
-                                itemCount: items.length,
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  crossAxisSpacing: AppSpacing.md,
-                                  mainAxisSpacing: AppSpacing.md,
-                                  childAspectRatio: childAspectRatio,
-                                ),
-                                itemBuilder: (context, index) {
-                                  final item = items[index];
-                                  return _StoreTileEntrance(
-                                    index: index,
-                                    child: _StoreTile(
-                                      item: item,
-                                      avatarUrl: avatarUrl,
-                                      name: name,
-                                      blockerQuantity:
-                                          _blockerInventory[item.id] ?? 0,
-                                      blockerQuantityFallback:
-                                          item.quantityOwned,
-                                      isOwned: _isOwned(item),
-                                      isEquipped: _isEquipped(item),
-                                      canPurchase: _canPurchase(item),
-                                      isSaving: _isSaving,
-                                      onPreview: () => _previewItem(item),
-                                      onPressed: () =>
-                                          _toggleOwnedItem(item),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
                           ),
                   ),
                 ),
@@ -742,6 +751,100 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _StoreCategoryGrid extends StatelessWidget {
+  const _StoreCategoryGrid({
+    super.key,
+    required this.category,
+    required this.items,
+    required this.avatarUrl,
+    required this.name,
+    required this.blockerInventory,
+    required this.isOwned,
+    required this.isEquipped,
+    required this.canPurchase,
+    required this.isSaving,
+    required this.onPreview,
+    required this.onPressed,
+  });
+
+  final StoreCategory category;
+  final List<StoreCatalogItem> items;
+  final String? avatarUrl;
+  final String? name;
+  final Map<String, int> blockerInventory;
+  final bool Function(StoreCatalogItem item) isOwned;
+  final bool Function(StoreCatalogItem item) isEquipped;
+  final bool Function(StoreCatalogItem item) canPurchase;
+  final bool isSaving;
+  final ValueChanged<StoreCatalogItem> onPreview;
+  final ValueChanged<StoreCatalogItem> onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+            child: Text(
+              'Sem itens disponíveis nesta categoria.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth >= 720 ? 3 : 2;
+        // Sem o nome do item, o rodape (meta + botao) e mais curto. Fundos
+        // (banner largo) ficam mais compactos; molduras/bloqueadores ganham
+        // altura pra o preview nao esmagar o botao em telas estreitas.
+        final childAspectRatio =
+            category == StoreCategory.backgrounds ? 1.05 : 0.82;
+        return GridView.builder(
+          // Evita reconstruir tiles fora da viewport ao voltar pra categoria.
+          addAutomaticKeepAlives: true,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
+          itemCount: items.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: AppSpacing.md,
+            mainAxisSpacing: AppSpacing.md,
+            childAspectRatio: childAspectRatio,
+          ),
+          itemBuilder: (context, index) {
+            final item = items[index];
+            return _StoreTileEntrance(
+              key: ValueKey('store-tile-${category.name}-${item.id}'),
+              index: index,
+              child: _StoreTile(
+                item: item,
+                avatarUrl: avatarUrl,
+                name: name,
+                blockerQuantity: blockerInventory[item.id] ?? 0,
+                blockerQuantityFallback: item.quantityOwned,
+                isOwned: isOwned(item),
+                isEquipped: isEquipped(item),
+                canPurchase: canPurchase(item),
+                isSaving: isSaving,
+                onPreview: () => onPreview(item),
+                onPressed: () => onPressed(item),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -1092,7 +1195,7 @@ class _StoreTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: onPreview,
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.xl),
+          padding: const EdgeInsets.all(AppSpacing.md),
           clipBehavior: Clip.none,
           decoration: BoxDecoration(
             color: AppColors.surface,
@@ -1109,35 +1212,16 @@ class _StoreTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: item.type == StoreItemType.background
-                    ? Align(
-                        alignment: Alignment.center,
-                        child: _StoreItemPreview(
-                          item: item,
-                          avatarUrl: avatarUrl,
-                          name: name,
-                        ),
-                      )
-                    : Align(
-                        alignment: const Alignment(0, -0.15),
-                        child: _StoreItemPreview(
-                          item: item,
-                          avatarUrl: avatarUrl,
-                          name: name,
-                        ),
-                      ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                item.name,
-                style: AppTextStyles.homeMealTitle.copyWith(
-                  color: AppColors.brand900Variant,
-                  height: 1.1,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: _StoreItemPreview(
+                    item: item,
+                    avatarUrl: avatarUrl,
+                    name: name,
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: AppSpacing.sm),
               SizedBox(
                 height: 16,
                 child: Row(
@@ -1170,7 +1254,7 @@ class _StoreTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.sm),
               AppButton(
                 label: label,
                 onPressed: buttonEnabled ? onPressed : null,
@@ -1188,17 +1272,18 @@ class _StoreTile extends StatelessWidget {
 }
 
 class _StoreTileEntrance extends StatelessWidget {
-  const _StoreTileEntrance({required this.index, required this.child});
+  const _StoreTileEntrance({
+    super.key,
+    required this.index,
+    required this.child,
+  });
 
   final int index;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final delay = Duration(milliseconds: 40 * index);
-
     return TweenAnimationBuilder<double>(
-      key: ValueKey('store-tile-$index'),
       tween: Tween<double>(begin: 0, end: 1),
       duration: Duration(milliseconds: 260 + (index * 20)),
       curve: Curves.easeOutCubic,
@@ -1213,13 +1298,7 @@ class _StoreTileEntrance extends StatelessWidget {
         );
       },
       child: child,
-    ).paddingOnly(delay: delay);
-  }
-}
-
-extension on Widget {
-  Widget paddingOnly({Duration? delay}) {
-    return this;
+    );
   }
 }
 

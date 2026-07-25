@@ -40,22 +40,98 @@
   <title>JacalorIA</title>
   <link rel="manifest" href="manifest.json">
   <style>
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sar: env(safe-area-inset-right, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+    }
     html, body {
-      height: 100%;
       width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
       margin: 0;
       padding: 0;
       overscroll-behavior: none;
       background-color: #FFFFFF;
     }
   </style>
+  <script>
+    // Flutter Web replaces our viewport meta and drops viewport-fit=cover.
+    // Without it, iOS home-screen PWAs with black-translucent status bar report
+    // wrong document clientHeight vs the visual fullscreen size, which stretches
+    // the Flutter canvas and misaligns taps (hit targets sit above the UI).
+    (function () {
+      function isIos() {
+        var ua = navigator.userAgent || '';
+        return /iPad|iPhone|iPod/.test(ua) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      }
+
+      function isStandaloneDisplay() {
+        return navigator.standalone === true ||
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.matchMedia('(display-mode: fullscreen)').matches;
+      }
+
+      function ensureViewportFitCover() {
+        var meta = document.querySelector('meta[name="viewport"]');
+        if (!meta) {
+          return false;
+        }
+        var content = meta.getAttribute('content') || '';
+        if (content.indexOf('viewport-fit=cover') !== -1) {
+          return false;
+        }
+        meta.setAttribute(
+          'content',
+          content.replace(/\s*$/, '') + ', viewport-fit=cover',
+        );
+        try {
+          window.dispatchEvent(new Event('jacaloria-safe-area'));
+        } catch (_) {}
+        return true;
+      }
+
+      function patchIosStandaloneViewportMetrics() {
+        if (!isIos() || !isStandaloneDisplay()) {
+          return;
+        }
+        try {
+          Object.defineProperty(document.documentElement, 'clientHeight', {
+            configurable: true,
+            get: function () { return window.innerHeight; },
+          });
+          Object.defineProperty(document.documentElement, 'clientWidth', {
+            configurable: true,
+            get: function () { return window.innerWidth; },
+          });
+        } catch (_) {}
+      }
+
+      patchIosStandaloneViewportMetrics();
+      ensureViewportFitCover();
+
+      if (document.head) {
+        new MutationObserver(function () {
+          ensureViewportFitCover();
+        }).observe(document.head, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['content'],
+        });
+      }
+    })();
+  </script>
 </head>
 <body>
   <script>
     // One-shot escape from older deploys that marked shell files as immutable
     // and/or left a Flutter service worker controlling the page.
     (function () {
-      var FLAG = 'jacaloria_force_uncache_v1';
+      var FLAG = 'jacaloria_force_uncache_v2';
       try {
         if (localStorage.getItem(FLAG)) {
           return;
@@ -100,10 +176,10 @@
     height: 0;
     visibility: hidden;
     pointer-events: none;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    padding-left: env(safe-area-inset-left, 0px);
+    padding-top: var(--sat);
+    padding-right: var(--sar);
+    padding-bottom: var(--sab);
+    padding-left: var(--sal);
   "></div>
   <script>
     // Load bootstrap with a deploy version query so browsers that still hold an
