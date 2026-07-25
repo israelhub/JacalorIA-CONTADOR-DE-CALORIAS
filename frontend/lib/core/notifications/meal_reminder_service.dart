@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Color;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -24,6 +25,19 @@ class MealReminderService {
   static const _channelName = 'Lembretes de refeição';
   static const _channelDescription =
       'Avisos para registrar refeições no JacalorIA.';
+
+  /// Silhueta monocromática do mascote (small icon exige só canal alpha).
+  static const _androidSmallIcon = '@drawable/ic_notification';
+
+  /// Verde da marca (AppTheme.action500) aplicado ao small icon.
+  static const _androidAccentColor = Color(0xFF7CBF4D);
+
+  /// Logo colorido exibido no corpo da notificação Android.
+  static const _androidLargeIcon =
+      DrawableResourceAndroidBitmap('@mipmap/ic_launcher');
+
+  /// Ícone do app nas notificações web (resolvido contra a base do site).
+  static final Uri _webIconUrl = Uri.parse('icons/Icon-192.webp');
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -55,7 +69,7 @@ class MealReminderService {
 
     await _ensureTimezone();
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const android = AndroidInitializationSettings(_androidSmallIcon);
     const ios = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -311,16 +325,19 @@ class MealReminderService {
       title: copy.title,
       body: copy.body,
       payload: 'meal_reminder:${config.id}',
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
+      notificationDetails: NotificationDetails(
+        android: const AndroidNotificationDetails(
           _channelId,
           _channelName,
           channelDescription: _channelDescription,
           importance: Importance.high,
           priority: Priority.high,
           category: AndroidNotificationCategory.reminder,
+          icon: _androidSmallIcon,
+          color: _androidAccentColor,
+          largeIcon: _androidLargeIcon,
         ),
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
@@ -328,6 +345,7 @@ class MealReminderService {
         web: WebNotificationDetails(
           requireInteraction: false,
           lang: 'pt-BR',
+          iconUrl: _webIconUrl,
         ),
       ),
     );
@@ -348,6 +366,9 @@ class MealReminderService {
       importance: Importance.high,
       priority: Priority.high,
       category: AndroidNotificationCategory.reminder,
+      icon: _androidSmallIcon,
+      color: _androidAccentColor,
+      largeIcon: _androidLargeIcon,
     );
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
