@@ -29,8 +29,9 @@ class AppBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Sit flush above the system home indicator / gesture bar: extend the
-    // surface into the inset, keep icons in the safe band above it.
+    // viewPadding.bottom comes from the OS on native, and from CSS safe-area
+    // (via WebSafeAreaMediaQuery) on web — just enough to clear the home
+    // indicator / gesture bar. Surface fills that band; icons sit above it.
     final bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
     final centerSlotWidth = cameraButtonSize;
 

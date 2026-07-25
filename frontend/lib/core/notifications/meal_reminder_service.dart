@@ -26,15 +26,16 @@ class MealReminderService {
   static const _channelDescription =
       'Avisos para registrar refeições no JacalorIA.';
 
-  /// Silhueta monocromática do mascote (small icon exige só canal alpha).
-  static const _androidSmallIcon = '@drawable/ic_notification';
+  /// Silhueta monocromática do mascote (só o nome do drawable — sem @drawable/).
+  /// O plugin valida com Resources.getIdentifier(..., "drawable", ...).
+  static const _androidSmallIcon = 'ic_notification';
 
   /// Verde da marca (AppTheme.action500) aplicado ao small icon.
   static const _androidAccentColor = Color(0xFF7CBF4D);
 
-  /// Logo colorido exibido no corpo da notificação Android.
+  /// Logo colorido no corpo da notificação (também precisa ser drawable).
   static const _androidLargeIcon =
-      DrawableResourceAndroidBitmap('@mipmap/ic_launcher');
+      DrawableResourceAndroidBitmap('ic_notification_large');
 
   /// Ícone do app nas notificações web (resolvido contra a base do site).
   static final Uri _webIconUrl = Uri.parse('icons/Icon-192.webp');
@@ -87,8 +88,30 @@ class MealReminderService {
     _initialized = true;
   }
 
+  Future<void> applySettings(
+    MealReminderSettings settings, {
+    bool requestPermission = true,
+  }) async {
+    await MealReminderPrefs.save(settings);
+    // Propaga falha de init/agendamento para a UI (ex.: ícone Android inválido).
+    await _syncScheduledReminders(
+      requestPermission: requestPermission,
+      swallowErrors: false,
+    );
+  }
+
   /// Garante que os lembretes ativos estejam agendados (boot / login / resume).
   Future<void> syncScheduledReminders({bool requestPermission = false}) async {
+    await _syncScheduledReminders(
+      requestPermission: requestPermission,
+      swallowErrors: true,
+    );
+  }
+
+  Future<void> _syncScheduledReminders({
+    required bool requestPermission,
+    required bool swallowErrors,
+  }) async {
     if (!isSupported) {
       return;
     }
@@ -132,23 +155,22 @@ class MealReminderService {
         ..clear()
         ..addAll(activeIds);
     } catch (_) {
-      // Nunca derruba o app por falha de notificação.
+      if (!swallowErrors) {
+        rethrow;
+      }
+      // Boot/login: nunca derruba o app por falha de notificação.
     }
-  }
-
-  Future<void> applySettings(
-    MealReminderSettings settings, {
-    bool requestPermission = true,
-  }) async {
-    await MealReminderPrefs.save(settings);
-    await syncScheduledReminders(requestPermission: requestPermission);
   }
 
   Future<bool> areNotificationsEnabled() async {
     if (!isSupported) {
       return false;
     }
-    await initialize();
+    try {
+      await initialize();
+    } catch (_) {
+      return false;
+    }
 
     if (kIsWeb) {
       final web = _plugin.resolvePlatformSpecificImplementation<
