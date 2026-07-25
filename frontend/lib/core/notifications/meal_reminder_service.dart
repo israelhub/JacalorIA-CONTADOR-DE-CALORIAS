@@ -73,7 +73,6 @@ class MealReminderService {
 
     await _ensureTimezone();
 
-    const android = AndroidInitializationSettings(_androidSmallIcon);
     const ios = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -81,13 +80,24 @@ class MealReminderService {
     );
     const web = WebInitializationSettings();
 
-    await _plugin.initialize(
-      settings: const InitializationSettings(
-        android: android,
-        iOS: ios,
-        web: web,
-      ),
-    );
+    try {
+      await _plugin.initialize(
+        settings: const InitializationSettings(
+          android: AndroidInitializationSettings(_androidSmallIcon),
+          iOS: ios,
+          web: web,
+        ),
+      );
+    } catch (_) {
+      // Fallback: build antigo sem ic_notification — ainda agenda lembretes.
+      await _plugin.initialize(
+        settings: const InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          iOS: ios,
+          web: web,
+        ),
+      );
+    }
     _initialized = true;
   }
 
@@ -95,15 +105,15 @@ class MealReminderService {
     MealReminderSettings settings, {
     bool requestPermission = true,
   }) async {
+    // Sempre persiste localmente primeiro — falha de ícone/agendamento
+    // não pode impedir o usuário de salvar o horário.
     await MealReminderPrefs.save(settings);
     await MealReminderPrefs.setDirty(true);
-    // Propaga falha de init/agendamento para a UI (ex.: ícone Android inválido).
     await _syncScheduledReminders(
       requestPermission: requestPermission,
-      swallowErrors: false,
+      swallowErrors: true,
       pullRemote: false,
     );
-    // Envia ao backend em segundo plano (best-effort).
     unawaited(_pushSettingsToRemote());
   }
 
@@ -437,37 +447,55 @@ class MealReminderService {
       hour: config.hour,
       minute: config.minute,
     );
-
-    const androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: _channelDescription,
-      importance: Importance.high,
-      priority: Priority.high,
-      category: AndroidNotificationCategory.reminder,
-      icon: _androidSmallIcon,
-      color: _androidAccentColor,
-      largeIcon: _androidLargeIcon,
-    );
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
     );
 
-    await _plugin.zonedSchedule(
-      id: mealReminderNotificationId(config),
-      scheduledDate: when,
-      notificationDetails: const NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      title: copy.title,
-      body: copy.body,
-      payload: 'meal_reminder:${config.id}',
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
+    Future<void> schedule(AndroidNotificationDetails androidDetails) {
+      return _plugin.zonedSchedule(
+        id: mealReminderNotificationId(config),
+        scheduledDate: when,
+        notificationDetails: NotificationDetails(
+          android: androidDetails,
+          iOS: iosDetails,
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        title: copy.title,
+        body: copy.body,
+        payload: 'meal_reminder:${config.id}',
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    }
+
+    try {
+      await schedule(
+        const AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          category: AndroidNotificationCategory.reminder,
+          icon: _androidSmallIcon,
+          color: _androidAccentColor,
+          largeIcon: _androidLargeIcon,
+        ),
+      );
+    } catch (_) {
+      // Sem drawables novos: agenda com o ícone padrão do init.
+      await schedule(
+        const AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          category: AndroidNotificationCategory.reminder,
+        ),
+      );
+    }
   }
 }
 
