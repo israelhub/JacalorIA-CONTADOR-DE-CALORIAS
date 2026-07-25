@@ -12,6 +12,12 @@ class MealReminderPrefs {
   static const _promptedKey = 'meal_reminders_permission_prompted';
   static const _listKey = 'meal_reminders_list_v2';
 
+  /// `updatedAt` do backend na última sincronização bem-sucedida.
+  static const _remoteUpdatedAtKey = 'meal_reminders_remote_updated_at';
+
+  /// Há alteração local ainda não enviada ao backend.
+  static const _dirtyKey = 'meal_reminders_sync_dirty';
+
   // Chaves legadas (v1: 1 lembrete por FoodMealType).
   static String _legacyEnabledKey(FoodMealType type) =>
       'meal_reminders_${type.apiValue}_enabled';
@@ -64,6 +70,35 @@ class MealReminderPrefs {
       clipped.map((item) => item.toJson()).toList(growable: false),
     );
     await prefs.setString(_listKey, encoded);
+  }
+
+  static Future<String?> loadRemoteUpdatedAt({
+    SharedPreferences? preferences,
+  }) async {
+    final prefs = preferences ?? await SharedPreferences.getInstance();
+    final value = prefs.getString(_remoteUpdatedAtKey);
+    return (value == null || value.isEmpty) ? null : value;
+  }
+
+  static Future<void> saveRemoteUpdatedAt(
+    String updatedAt, {
+    SharedPreferences? preferences,
+  }) async {
+    final prefs = preferences ?? await SharedPreferences.getInstance();
+    await prefs.setString(_remoteUpdatedAtKey, updatedAt);
+  }
+
+  static Future<bool> isDirty({SharedPreferences? preferences}) async {
+    final prefs = preferences ?? await SharedPreferences.getInstance();
+    return prefs.getBool(_dirtyKey) ?? false;
+  }
+
+  static Future<void> setDirty(
+    bool dirty, {
+    SharedPreferences? preferences,
+  }) async {
+    final prefs = preferences ?? await SharedPreferences.getInstance();
+    await prefs.setBool(_dirtyKey, dirty);
   }
 
   static Future<bool> wasPermissionPrompted({

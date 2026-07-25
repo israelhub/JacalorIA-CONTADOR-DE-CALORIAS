@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -13,6 +14,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { DashboardTokenGuard } from '../analytics/guards/dashboard-token.guard';
 import { CreateBroadcastDto } from './dto/create-broadcast.dto';
+import { SaveReminderSettingsDto } from './dto/save-reminder-settings.dto';
 import { NotificationsService } from './notifications.service';
 
 @Controller('notifications')
@@ -39,6 +41,20 @@ export class NotificationsController {
   getInbox(@Req() req: any) {
     const userId = req.user?.sub as string;
     return this.notificationsService.getInbox(userId);
+  }
+
+  @Get('reminder-settings')
+  @UseGuards(JwtAuthGuard)
+  getReminderSettings(@Req() req: any) {
+    const userId = req.user?.sub as string;
+    return this.notificationsService.getReminderSettings(userId);
+  }
+
+  @Put('reminder-settings')
+  @UseGuards(JwtAuthGuard)
+  saveReminderSettings(@Req() req: any, @Body() dto: SaveReminderSettingsDto) {
+    const userId = req.user?.sub as string;
+    return this.notificationsService.saveReminderSettings(userId, dto);
   }
 
   @Post(':id/read')

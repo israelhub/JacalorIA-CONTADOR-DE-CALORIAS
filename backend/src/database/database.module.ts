@@ -18,6 +18,7 @@ import { AnalyticsEvent } from '../analytics/models/analytics-event.model';
 import { FoodImageAnalysis } from '../ai/models/food-image-analysis.model';
 import { SupportMessage } from '../support/models/support-message.model';
 import { NotificationBroadcast } from '../notifications/models/notification-broadcast.model';
+import { UserMealReminderSettings } from '../notifications/models/user-meal-reminder-settings.model';
 import { UserNotification } from '../notifications/models/user-notification.model';
 
 @Module({
@@ -79,6 +80,7 @@ import { UserNotification } from '../notifications/models/user-notification.mode
             SupportMessage,
             NotificationBroadcast,
             UserNotification,
+            UserMealReminderSettings,
           ],
           autoLoadModels: true,
           synchronize: !isProd,

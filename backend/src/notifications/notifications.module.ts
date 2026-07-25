@@ -7,6 +7,7 @@ import { DashboardTokenGuard } from '../analytics/guards/dashboard-token.guard';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
 import { NotificationBroadcast } from './models/notification-broadcast.model';
+import { UserMealReminderSettings } from './models/user-meal-reminder-settings.model';
 import { UserNotification } from './models/user-notification.model';
 
 @Module({
@@ -16,6 +17,7 @@ import { UserNotification } from './models/user-notification.model';
     SequelizeModule.forFeature([
       NotificationBroadcast,
       UserNotification,
+      UserMealReminderSettings,
       User,
     ]),
   ],

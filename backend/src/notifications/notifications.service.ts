@@ -11,7 +11,9 @@ import {
   CreateBroadcastDto,
   NotificationChannel,
 } from './dto/create-broadcast.dto';
+import { SaveReminderSettingsDto } from './dto/save-reminder-settings.dto';
 import { NotificationBroadcast } from './models/notification-broadcast.model';
+import { UserMealReminderSettings } from './models/user-meal-reminder-settings.model';
 import { UserNotification } from './models/user-notification.model';
 
 @Injectable()
@@ -23,6 +25,8 @@ export class NotificationsService {
     private readonly broadcastModel: typeof NotificationBroadcast,
     @InjectModel(UserNotification)
     private readonly userNotificationModel: typeof UserNotification,
+    @InjectModel(UserMealReminderSettings)
+    private readonly reminderSettingsModel: typeof UserMealReminderSettings,
     @InjectModel(User)
     private readonly userModel: typeof User,
     private readonly mailService: MailService,
@@ -182,6 +186,40 @@ export class NotificationsService {
       readAt: row.readAt ?? now,
     });
     return { success: true as const };
+  }
+
+  async getReminderSettings(userId: string) {
+    const row = await this.reminderSettingsModel.findByPk(userId);
+    if (!row) {
+      return { settings: null };
+    }
+    return { settings: this.toReminderSettingsDto(row) };
+  }
+
+  async saveReminderSettings(userId: string, dto: SaveReminderSettingsDto) {
+    const reminders = dto.reminders.map((item) => ({
+      id: item.id.trim(),
+      title: item.title.trim(),
+      enabled: item.enabled,
+      hour: item.hour,
+      minute: item.minute,
+    }));
+
+    const [row] = await this.reminderSettingsModel.upsert({
+      userId,
+      masterEnabled: dto.masterEnabled,
+      reminders,
+    });
+
+    return { settings: this.toReminderSettingsDto(row) };
+  }
+
+  private toReminderSettingsDto(row: UserMealReminderSettings) {
+    return {
+      masterEnabled: row.masterEnabled,
+      reminders: row.reminders ?? [],
+      updatedAt: row.updatedAt.toISOString(),
+    };
   }
 
   private toBroadcastDto(
