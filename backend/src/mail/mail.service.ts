@@ -145,6 +145,61 @@ export class MailService {
     }
   }
 
+  async sendAnnouncement(params: {
+    to: string;
+    title: string;
+    body: string;
+    userName?: string;
+  }): Promise<boolean> {
+    if (!this.isMailEnabled()) {
+      this.logger.warn('MAIL_ENABLED=false. Anuncio nao enviado.');
+      return false;
+    }
+
+    const from = this.configService.get<string>('MAIL_FROM');
+    if (!from) {
+      this.logger.error('MAIL_FROM nao configurado.');
+      return false;
+    }
+
+    const greeting = params.userName
+      ? `Ola, ${params.userName}!`
+      : 'Ola!';
+    const safeTitle = params.title.trim();
+    const safeBody = params.body.trim();
+    const text = `${greeting}\n\n${safeTitle}\n\n${safeBody}\n\n— Equipe Jacaloria`;
+    const html = `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111;">
+        <p>${greeting.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</p>
+        <h2 style="margin:16px 0 8px;color:#0f5132;">${safeTitle
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')}</h2>
+        <p style="white-space:pre-wrap;">${safeBody
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/\n/g, '<br/>')}</p>
+        <p style="margin-top:24px;color:#666;">— Equipe Jacaloria</p>
+      </div>
+    `;
+
+    try {
+      const transporter = this.getTransporter();
+      await transporter.sendMail({
+        from,
+        to: params.to,
+        subject: `[Jacaloria] ${safeTitle}`,
+        text,
+        html,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Falha ao enviar anuncio para ${params.to}: ${(error as Error).message}`,
+      );
+      return false;
+    }
+  }
+
   async sendSupportMessage(params: {
     subjectType: 'bug' | 'suggestion';
     description: string;

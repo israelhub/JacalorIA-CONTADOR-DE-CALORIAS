@@ -63,6 +63,10 @@
               <span class="nav-icon"><img src="./assets/nav-help.svg" alt="" width="18" height="18" /></span>
               <span>Suporte</span>
             </a>
+            <a class="nav-item" href="#notifications" data-view="notifications">
+              <span class="nav-icon"><img src="./assets/nav-messages.svg" alt="" width="18" height="18" /></span>
+              <span>Notificações</span>
+            </a>
 
             <p class="nav-section">Geral</p>
             <button id="logoutBtn" type="button" class="nav-item logout">
@@ -570,6 +574,93 @@
                           <th>Tipo</th>
                           <th>Quem</th>
                           <th>Mensagem</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </article>
+              </section>
+            </div>
+
+            <div id="view-notifications" class="view" data-view-panel="notifications" hidden>
+              <section class="bento bento-notifications">
+                <article class="panel span-4">
+                  <div class="panel-head">
+                    <div>
+                      <h2>Enviar aviso</h2>
+                      <p class="hint">
+                        Caixa = só dentro do app (sem alerta no celular). E-mail usa a lista de usuários cadastrados.
+                      </p>
+                    </div>
+                  </div>
+                  <form id="broadcastForm" class="broadcast-form">
+                    <label for="broadcastTitle">Título</label>
+                    <input
+                      id="broadcastTitle"
+                      name="title"
+                      type="text"
+                      maxlength="200"
+                      required
+                      placeholder="Ex.: Novidade no app"
+                    />
+
+                    <label for="broadcastBody">Mensagem</label>
+                    <textarea
+                      id="broadcastBody"
+                      name="body"
+                      rows="5"
+                      maxlength="5000"
+                      required
+                      placeholder="Texto do aviso…"
+                    ></textarea>
+
+                    <fieldset class="channel-fieldset">
+                      <legend>Canal</legend>
+                      <label class="channel-option">
+                        <input type="radio" name="channel" value="inbox" checked />
+                        <span>
+                          <strong>Só na caixa</strong>
+                          <small>Aparece em Notificações no app</small>
+                        </span>
+                      </label>
+                      <label class="channel-option">
+                        <input type="radio" name="channel" value="email" />
+                        <span>
+                          <strong>Só por e-mail</strong>
+                          <small>Não entra na caixa do app</small>
+                        </span>
+                      </label>
+                      <label class="channel-option">
+                        <input type="radio" name="channel" value="both" />
+                        <span>
+                          <strong>Caixa + e-mail</strong>
+                          <small>Os dois canais</small>
+                        </span>
+                      </label>
+                    </fieldset>
+
+                    <button id="broadcastSubmit" type="submit">Enviar para todos</button>
+                    <p id="broadcastStatus" class="broadcast-status" hidden></p>
+                  </form>
+                </article>
+
+                <article class="panel span-8">
+                  <div class="panel-head">
+                    <div>
+                      <h2>Histórico de envios</h2>
+                      <p class="hint">Broadcasts recentes para todos os usuários.</p>
+                    </div>
+                  </div>
+                  <div class="table-wrap table-wrap-scroll">
+                    <table id="broadcastTable">
+                      <thead>
+                        <tr>
+                          <th>Quando</th>
+                          <th>Canal</th>
+                          <th>Título</th>
+                          <th>Destinatários</th>
+                          <th>E-mail</th>
                         </tr>
                       </thead>
                       <tbody></tbody>

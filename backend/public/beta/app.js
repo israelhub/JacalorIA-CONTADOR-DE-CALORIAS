@@ -1,13 +1,14 @@
 (() => {
   const TOKEN_KEY = "jacaloria_beta_dashboard_token";
-  // Em localhost o origin seria a máquina local (CPU/RAM errados).
-  // Força a API da AWS; em produção (jacaloria.online/beta) usa same-origin.
+  // Em localhost: API same-origin (Nest local) — features novas como notificações
+  // ainda não estão no deploy. Performance/infra usa a AWS (CPU/RAM do EC2).
   const isLocalHost = /^(localhost|127\.0\.0\.1)$/i.test(
     window.location.hostname,
   );
-  const apiBase = isLocalHost
-    ? "https://jacaloria.online/api"
-    : `${window.location.origin}/api`;
+  const apiBase = `${window.location.origin}/api`;
+  const cloudApiBase = "https://jacaloria.online/api";
+  const analyticsApiBase = (path) =>
+    isLocalHost && path === "performance" ? cloudApiBase : apiBase;
 
   const gate = document.getElementById("gate");
   const app = document.getElementById("app");
@@ -29,6 +30,7 @@
     performance: "Performance",
     ai: "IA",
     support: "Suporte",
+    notifications: "Notificações",
   };
 
   // Sem animação no resize: evita o gráfico aparecer comprimido enquanto redesenha.
@@ -743,7 +745,8 @@
       );
 
       const concurrentSeries = infra.concurrentSeries || [];
-      barChart(
+      // Série temporal: lineChart (barChart vira horizontal com >5 labels).
+      lineChart(
         "concurrentChart",
         concurrentSeries.map((d) => shortBucket(d.bucket)),
         concurrentSeries.map((d) => d.peak),
@@ -832,7 +835,8 @@
 
   async function fetchDashboard(path, token) {
     const params = rangeParams(token);
-    const url = `${apiBase}/analytics/${path}?${params.toString()}`;
+    const base = analyticsApiBase(path);
+    const url = `${base}/analytics/${path}?${params.toString()}`;
     const res = await fetch(url, {
       headers: { "x-dashboard-token": token },
     });
@@ -845,9 +849,11 @@
       } catch (_) {
         /* ignore */
       }
-      showGate(
-        `${detail} Use o token de produção (AWS), não o de desenvolvimento local.`,
-      );
+      const hint =
+        base === cloudApiBase
+          ? " Use o token de produção (AWS), não o de desenvolvimento local."
+          : "";
+      showGate(`${detail}${hint}`);
       return null;
     }
     if (!res.ok) {
@@ -864,6 +870,66 @@
     return data;
   }
 
+  function channelLabel(channel) {
+    if (channel === "email") return "E-mail";
+    if (channel === "both") return "Caixa + e-mail";
+    return "Só caixa";
+  }
+
+  function renderBroadcastHistory(rows) {
+    const tbody = document.querySelector("#broadcastTable tbody");
+    if (!tbody) return;
+    tbody.innerHTML = rows.length
+      ? rows
+          .map((row) => {
+            const when = new Date(row.createdAt).toLocaleString("pt-BR");
+            const emailSummary =
+              row.channel === "inbox"
+                ? "—"
+                : `${row.emailSentCount || 0} ok · ${row.emailFailedCount || 0} falha`;
+            return `<tr>
+              <td>${escapeHtml(when)}</td>
+              <td>${escapeHtml(channelLabel(row.channel))}</td>
+              <td>${escapeHtml(row.title || "")}</td>
+              <td>${row.recipientCount ?? 0}</td>
+              <td>${escapeHtml(emailSummary)}</td>
+            </tr>`;
+          })
+          .join("")
+      : `<tr><td colspan="5">Nenhum aviso enviado ainda.</td></tr>`;
+  }
+
+  async function loadNotifications() {
+    loadError.hidden = true;
+    const token = getToken();
+    if (!token) {
+      showGate();
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiBase}/notifications/broadcasts?limit=50`, {
+        headers: { "x-dashboard-token": token },
+      });
+      if (res.status === 401) {
+        clearToken();
+        showGate("Token inválido.");
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const rows = await res.json();
+      showApp();
+      setView("notifications");
+      renderBroadcastHistory(Array.isArray(rows) ? rows : []);
+      meta.textContent = `Notificações · ${Array.isArray(rows) ? rows.length : 0} envios recentes`;
+    } catch (err) {
+      loadError.hidden = false;
+      loadError.textContent = `Falha ao carregar notificações: ${err.message}`;
+    }
+  }
+
   async function loadDashboard() {
     loadError.hidden = true;
     const token = getToken();
@@ -873,6 +939,10 @@
     }
 
     try {
+      if (currentView === "notifications") {
+        await loadNotifications();
+        return;
+      }
       if (currentView !== "engagement") {
         const data = await fetchDashboard("performance", token);
         if (!data) return;
@@ -957,6 +1027,72 @@
       if (window.innerWidth <= 820) closeSidebar();
     });
   });
+
+  const broadcastForm = document.getElementById("broadcastForm");
+  if (broadcastForm) {
+    broadcastForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const token = getToken();
+      if (!token) {
+        showGate();
+        return;
+      }
+
+      const title = document.getElementById("broadcastTitle").value.trim();
+      const body = document.getElementById("broadcastBody").value.trim();
+      const channelInput = broadcastForm.querySelector(
+        'input[name="channel"]:checked',
+      );
+      const channel = channelInput ? channelInput.value : "inbox";
+      const statusEl = document.getElementById("broadcastStatus");
+      const submitBtn = document.getElementById("broadcastSubmit");
+
+      statusEl.hidden = true;
+      statusEl.classList.remove("error");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Enviando…";
+
+      try {
+        const res = await fetch(`${apiBase}/notifications/broadcasts`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-dashboard-token": token,
+          },
+          body: JSON.stringify({ title, body, channel }),
+        });
+        if (res.status === 401) {
+          clearToken();
+          showGate("Token inválido.");
+          return;
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg = Array.isArray(data?.message)
+            ? data.message.join(" ")
+            : data?.message || `HTTP ${res.status}`;
+          throw new Error(msg);
+        }
+
+        broadcastForm.reset();
+        const inboxRadio = broadcastForm.querySelector(
+          'input[name="channel"][value="inbox"]',
+        );
+        if (inboxRadio) inboxRadio.checked = true;
+
+        statusEl.hidden = false;
+        statusEl.textContent = `Enviado para ${data.recipientCount ?? 0} usuários (${channelLabel(data.channel)}).`;
+        await loadNotifications();
+      } catch (err) {
+        statusEl.hidden = false;
+        statusEl.classList.add("error");
+        statusEl.textContent = `Falha ao enviar: ${err.message}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Enviar para todos";
+      }
+    });
+  }
 
   tokenInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") document.getElementById("unlockBtn").click();

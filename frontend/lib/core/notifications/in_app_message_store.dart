@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'in_app_message_models.dart';
 import 'meal_reminder_models.dart';
 import 'meal_reminder_prefs.dart';
+import 'notifications_remote_service.dart';
 
 /// Inbox local de mensagens in-app (lembretes + avisos cadastrados).
 class InAppMessageStore extends ChangeNotifier {
@@ -23,6 +24,8 @@ class InAppMessageStore extends ChangeNotifier {
   Set<String> _dismissedSourceKeys = <String>{};
   var _loaded = false;
   Future<void> _writeQueue = Future<void>.value();
+  final NotificationsRemoteService _remote =
+      const NotificationsRemoteService();
 
   List<InAppMessage> get messages => _messages;
 
@@ -124,9 +127,14 @@ class InAppMessageStore extends ChangeNotifier {
         return;
       }
 
+      final target = _messages[index];
       final next = _messages.toList(growable: true);
-      next[index] = next[index].copyWith(readAt: DateTime.now());
+      next[index] = target.copyWith(readAt: DateTime.now());
       await _persist(next, preferences: preferences);
+
+      if (target.source == InAppMessageSources.catalog) {
+        unawaited(_remote.markRead(id));
+      }
     });
   }
 
@@ -138,12 +146,22 @@ class InAppMessageStore extends ChangeNotifier {
       }
 
       final now = DateTime.now();
+      final catalogIds = _messages
+          .where(
+            (item) =>
+                item.isUnread && item.source == InAppMessageSources.catalog,
+          )
+          .map((item) => item.id)
+          .toList(growable: false);
       final next = _messages
           .map(
             (item) => item.isUnread ? item.copyWith(readAt: now) : item,
           )
           .toList(growable: false);
       await _persist(next, preferences: preferences);
+      for (final id in catalogIds) {
+        unawaited(_remote.markRead(id));
+      }
     });
   }
 
@@ -167,6 +185,93 @@ class InAppMessageStore extends ChangeNotifier {
 
       final next =
           _messages.where((item) => item.id != id).toList(growable: false);
+      await _persist(next, preferences: preferences);
+
+      if (removed.source == InAppMessageSources.catalog) {
+        unawaited(_remote.dismiss(id));
+      }
+    });
+  }
+
+  /// Busca avisos do servidor e mescla na caixa local (source catalog).
+  Future<void> syncRemoteCatalog({
+    SharedPreferences? preferences,
+    NotificationsRemoteService? remote,
+  }) async {
+    final client = remote ?? _remote;
+    List<InAppMessage> remoteMessages;
+    try {
+      remoteMessages = await client.fetchInbox();
+    } catch (_) {
+      return;
+    }
+    if (remoteMessages.isEmpty) {
+      return;
+    }
+
+    await _enqueue(() async {
+      await ensureLoaded(preferences: preferences);
+      var next = _messages.toList(growable: true);
+      var changed = false;
+
+      for (final message in remoteMessages) {
+        final sourceKey = message.sourceKey?.trim();
+        if (sourceKey != null &&
+            sourceKey.isNotEmpty &&
+            _dismissedSourceKeys.contains(sourceKey)) {
+          continue;
+        }
+
+        final index = next.indexWhere(
+          (item) =>
+              item.id == message.id ||
+              (sourceKey != null &&
+                  sourceKey.isNotEmpty &&
+                  item.sourceKey == sourceKey),
+        );
+
+        if (index >= 0) {
+          final existing = next[index];
+          final merged = InAppMessage(
+            id: message.id,
+            title: message.title,
+            body: message.body,
+            createdAt: message.createdAt,
+            source: InAppMessageSources.catalog,
+            sourceKey: sourceKey ?? existing.sourceKey,
+            readAt: message.readAt ?? existing.readAt,
+          );
+          if (existing.id != merged.id ||
+              existing.title != merged.title ||
+              existing.body != merged.body ||
+              existing.readAt != merged.readAt) {
+            next[index] = merged;
+            changed = true;
+          }
+          continue;
+        }
+
+        next.insert(
+          0,
+          InAppMessage(
+            id: message.id,
+            title: message.title.trim().isEmpty ? 'Aviso' : message.title.trim(),
+            body: message.body,
+            createdAt: message.createdAt,
+            source: InAppMessageSources.catalog,
+            sourceKey: sourceKey,
+            readAt: message.readAt,
+          ),
+        );
+        changed = true;
+      }
+
+      if (!changed) {
+        return;
+      }
+      if (next.length > _maxMessages) {
+        next = next.sublist(0, _maxMessages);
+      }
       await _persist(next, preferences: preferences);
     });
   }

@@ -17,6 +17,8 @@ import { SocialGroupMember } from '../social/models/social-group-member.model';
 import { AnalyticsEvent } from '../analytics/models/analytics-event.model';
 import { FoodImageAnalysis } from '../ai/models/food-image-analysis.model';
 import { SupportMessage } from '../support/models/support-message.model';
+import { NotificationBroadcast } from '../notifications/models/notification-broadcast.model';
+import { UserNotification } from '../notifications/models/user-notification.model';
 
 @Module({
   imports: [
@@ -75,6 +77,8 @@ import { SupportMessage } from '../support/models/support-message.model';
             AnalyticsEvent,
             FoodImageAnalysis,
             SupportMessage,
+            NotificationBroadcast,
+            UserNotification,
           ],
           autoLoadModels: true,
           synchronize: !isProd,
