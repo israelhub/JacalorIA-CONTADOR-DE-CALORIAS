@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ class FramedAvatar extends StatelessWidget {
     super.key,
     required this.size,
     this.avatarUrl,
+    this.avatarBytes,
     this.frameId,
     this.fallbackText,
     this.onTap,
@@ -22,6 +24,7 @@ class FramedAvatar extends StatelessWidget {
 
   final double size;
   final String? avatarUrl;
+  final Uint8List? avatarBytes;
   final String? frameId;
   final String? fallbackText;
   final VoidCallback? onTap;
@@ -42,6 +45,7 @@ class FramedAvatar extends StatelessWidget {
         final avatar = _AvatarCircle(
           size: avatarSize,
           avatarUrl: avatarUrl,
+          avatarBytes: avatarBytes,
           fallbackText: fallbackText,
           backgroundColor: backgroundColor,
         );
@@ -181,18 +185,29 @@ class _AvatarCircle extends StatelessWidget {
   const _AvatarCircle({
     required this.size,
     required this.avatarUrl,
+    required this.avatarBytes,
     required this.fallbackText,
     required this.backgroundColor,
   });
 
   final double size;
   final String? avatarUrl;
+  final Uint8List? avatarBytes;
   final String? fallbackText;
   final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     final imageUrl = _resolveAvatarUrl(avatarUrl);
+    final imageProvider = avatarBytes != null && avatarBytes!.isNotEmpty
+        ? MemoryImage(avatarBytes!) as ImageProvider
+        : imageUrl != null
+        ? CachedNetworkImageProvider(
+            imageUrl,
+            maxWidth: _cacheDimension(context),
+            maxHeight: _cacheDimension(context),
+          )
+        : null;
     final initial = fallbackText?.trim().isNotEmpty == true
         ? fallbackText!.trim()[0].toUpperCase()
         : null;
@@ -205,13 +220,9 @@ class _AvatarCircle extends StatelessWidget {
     return ClipOval(
       child: SizedBox.square(
         dimension: size,
-        child: imageUrl != null
+        child: imageProvider != null
             ? Image(
-                image: CachedNetworkImageProvider(
-                  imageUrl,
-                  maxWidth: _cacheDimension(context),
-                  maxHeight: _cacheDimension(context),
-                ),
+                image: imageProvider,
                 fit: BoxFit.cover,
                 gaplessPlayback: true,
                 frameBuilder: (_, child, frame, wasSynchronouslyLoaded) {

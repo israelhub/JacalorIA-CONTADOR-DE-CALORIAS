@@ -72,33 +72,35 @@
   }
 
   /* ---------------- Date helpers ---------------- */
+  // datetime-local usa o formato "YYYY-MM-DDTHH:mm" (hora local).
   function toInputValue(date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
     const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
+    const hh = String(date.getHours()).padStart(2, "0");
+    const mm = String(date.getMinutes()).padStart(2, "0");
+    return `${y}-${m}-${d}T${hh}:${mm}`;
   }
 
   function parseInputValue(value) {
-    const [y, m, d] = value.split("-").map(Number);
-    return new Date(y, (m || 1) - 1, d || 1);
+    if (!value) return new Date(NaN);
+    const [datePart, timePart = "00:00"] = value.split("T");
+    const [y, m, d] = datePart.split("-").map(Number);
+    const [hh, mm] = timePart.split(":").map(Number);
+    return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0);
   }
 
-  // 00:00 local do dia (início inclusivo)
-  function startOfDayISO(date) {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString();
-  }
-  // 00:00 local do dia seguinte (fim exclusivo -> inclui o dia "Até" inteiro)
-  function endExclusiveISO(date) {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).toISOString();
+  // Só a parte de data (00:00 local), para comparar dias nos atalhos.
+  function dayStart(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
   function setRangeDays(days) {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - (days - 1));
+    const now = new Date();
+    const start = dayStart(now);
+    start.setDate(start.getDate() - (days - 1));
     startDate.value = toInputValue(start);
-    endDate.value = toInputValue(end);
+    endDate.value = toInputValue(now);
   }
 
   function initRange() {
@@ -108,10 +110,13 @@
   function highlightPreset() {
     const start = parseInputValue(startDate.value);
     const end = parseInputValue(endDate.value);
-    const isToday = toInputValue(end) === toInputValue(new Date());
-    const days = Math.round((end - start) / 86400000) + 1;
+    // Atalho só casa quando começa em 00:00, termina "hoje" e cobre N dias cheios.
+    const startsAtMidnight = start.getHours() === 0 && start.getMinutes() === 0;
+    const isToday = toInputValue(dayStart(end)) === toInputValue(dayStart(new Date()));
+    const days = Math.round((dayStart(end) - dayStart(start)) / 86400000) + 1;
     presets.querySelectorAll(".chip").forEach((chip) => {
-      const match = isToday && Number(chip.dataset.days) === days;
+      const match =
+        startsAtMidnight && isToday && Number(chip.dataset.days) === days;
       chip.classList.toggle("active", match);
     });
   }
@@ -890,9 +895,10 @@
     }
     highlightPreset();
 
-    const betaStart = startOfDayISO(start);
-    const betaEnd = endExclusiveISO(end);
-    const days = Math.round((end - start) / 86400000) + 1;
+    // Agora o horário escolhido pelo usuário é respeitado (betaEnd é exclusivo).
+    const betaStart = start.toISOString();
+    const betaEnd = end.toISOString();
+    const days = Math.max(1, Math.round((end - start) / 86400000));
 
     return new URLSearchParams({
       days: String(days),
@@ -929,12 +935,16 @@
       throw new Error(`HTTP ${res.status}`);
     }
     const data = await res.json();
-    const rangeStartLabel = startDate.value
-      ? parseInputValue(startDate.value).toLocaleDateString("pt-BR")
-      : new Date(data.range.betaStart).toLocaleDateString("pt-BR");
-    const rangeEndLabel = endDate.value
-      ? parseInputValue(endDate.value).toLocaleDateString("pt-BR")
-      : new Date(data.range.betaEnd).toLocaleDateString("pt-BR");
+    const rangeLabel = (value, fallback) =>
+      (value ? parseInputValue(value) : new Date(fallback)).toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    const rangeStartLabel = rangeLabel(startDate.value, data.range.betaStart);
+    const rangeEndLabel = rangeLabel(endDate.value, data.range.betaEnd);
     meta.textContent = `Atualizado em ${new Date(data.generatedAt).toLocaleString("pt-BR")} · período ${rangeStartLabel} → ${rangeEndLabel}`;
     return data;
   }

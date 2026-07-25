@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -11,11 +13,13 @@ class SocialGroupResultShareCard extends StatelessWidget {
   const SocialGroupResultShareCard({
     super.key,
     required this.detail,
+    this.avatarBytesByUserId = const {},
   });
 
   static const double cardWidth = 1080;
 
   final SocialGroupDetail detail;
+  final Map<String, Uint8List> avatarBytesByUserId;
 
   static Size measureLogicalSize(SocialGroupDetail detail) {
     final ranking = detail.ranking;
@@ -42,11 +46,7 @@ class SocialGroupResultShareCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF14281F),
-            Color(0xFF1E513E),
-            Color(0xFF193629),
-          ],
+          colors: [Color(0xFF14281F), Color(0xFF1E513E), Color(0xFF193629)],
           stops: [0, 0.55, 1],
         ),
       ),
@@ -91,7 +91,9 @@ class SocialGroupResultShareCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            group.name.trim().isEmpty ? 'Grupo' : group.name.trim(),
+                            group.name.trim().isEmpty
+                                ? 'Grupo'
+                                : group.name.trim(),
                             style: GoogleFonts.baloo2(
                               fontSize: 72,
                               height: 0.95,
@@ -114,7 +116,9 @@ class SocialGroupResultShareCard extends StatelessWidget {
                               if (group.durationDaysLabel.trim().isNotEmpty)
                                 _TagChip(
                                   label: group.durationDaysLabel,
-                                  background: Colors.white.withValues(alpha: 0.12),
+                                  background: Colors.white.withValues(
+                                    alpha: 0.12,
+                                  ),
                                   foreground: Colors.white,
                                 ),
                             ],
@@ -137,10 +141,8 @@ class SocialGroupResultShareCard extends StatelessWidget {
                       width: 200,
                       height: 200,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const SizedBox(
-                        width: 160,
-                        height: 160,
-                      ),
+                      errorBuilder: (_, __, ___) =>
+                          const SizedBox(width: 160, height: 160),
                     ),
                   ],
                 ),
@@ -162,6 +164,7 @@ class SocialGroupResultShareCard extends StatelessWidget {
                       child: _RankRow(
                         entry: entry,
                         competitionType: group.competitionType,
+                        avatarBytes: avatarBytesByUserId[entry.userId],
                       ),
                     ),
                   ),
@@ -169,7 +172,10 @@ class SocialGroupResultShareCard extends StatelessWidget {
                 const Spacer(),
                 const SizedBox(height: 28),
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 28),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 22,
+                    horizontal: 28,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(28),
@@ -221,9 +227,7 @@ class _GlowOrb extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color, color.withValues(alpha: 0)],
-        ),
+        gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
       ),
     );
   }
@@ -277,10 +281,12 @@ class _RankRow extends StatelessWidget {
   const _RankRow({
     required this.entry,
     required this.competitionType,
+    this.avatarBytes,
   });
 
   final SocialRankingEntry entry;
   final String competitionType;
+  final Uint8List? avatarBytes;
 
   @override
   Widget build(BuildContext context) {
@@ -304,8 +310,8 @@ class _RankRow extends StatelessWidget {
           color: accent != null
               ? accent.withValues(alpha: 0.65)
               : highlight
-                  ? AppColors.action500.withValues(alpha: 0.55)
-                  : Colors.white.withValues(alpha: 0.1),
+              ? AppColors.action500.withValues(alpha: 0.55)
+              : Colors.white.withValues(alpha: 0.1),
           width: 2,
         ),
       ),
@@ -333,6 +339,8 @@ class _RankRow extends StatelessWidget {
             child: FramedAvatar(
               size: 64,
               avatarUrl: entry.avatarUrl,
+              avatarBytes: avatarBytes,
+              frameId: entry.avatarFrameId,
               fallbackText: entry.name,
               unframedAvatarScale: 1,
               backgroundColor: Colors.white.withValues(alpha: 0.14),

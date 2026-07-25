@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/analytics/analytics_service.dart';
@@ -161,7 +161,8 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
         friendId: entry.userId,
         initialFriendName: entry.name,
         groupId: widget.groupId,
-        competitionType: _detail?.group.competitionType ??
+        competitionType:
+            _detail?.group.competitionType ??
             widget.initialDetail?.group.competitionType,
         service: widget._service,
       ),
@@ -256,7 +257,9 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
               ),
               if (isCurrentUserLeader) ...[
                 GestureDetector(
-                  onTap: (_isLeavingGroup || _isDeletingGroup) ? null : _openEditGroupSheet,
+                  onTap: (_isLeavingGroup || _isDeletingGroup)
+                      ? null
+                      : _openEditGroupSheet,
                   behavior: HitTestBehavior.opaque,
                   child: const Padding(
                     padding: EdgeInsets.all(6),
@@ -278,11 +281,16 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
                       ? const SizedBox(
                           width: 22,
                           height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2.2, color: AppColors.textSecondary),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: AppColors.textSecondary,
+                          ),
                         )
                       : Icon(
                           Icons.logout_rounded,
-                          color: canLeaveGroup ? AppColors.textSecondary : AppColors.textMuted,
+                          color: canLeaveGroup
+                              ? AppColors.textSecondary
+                              : AppColors.textMuted,
                           size: 22,
                         ),
                 ),
@@ -368,7 +376,9 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
           ),
           const SizedBox(height: AppSpacing.lg),
           AppButton(
-            label: _isInvitingFriends ? 'Carregando amigos...' : 'Convidar amigos',
+            label: _isInvitingFriends
+                ? 'Carregando amigos...'
+                : 'Convidar amigos',
             variant: AppButtonVariant.outline,
             leadingIcon: Icons.person_add_alt_1_rounded,
             onPressed: _isInvitingFriends ? null : _openInviteFriendsModal,
@@ -381,11 +391,18 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
               decoration: BoxDecoration(
                 color: AppColors.missionsGoldPill,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.performanceCardBorder, width: 1.5),
+                border: Border.all(
+                  color: AppColors.performanceCardBorder,
+                  width: 1.5,
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.flag_rounded, color: AppColors.missionsRewardGold, size: 18),
+                  const Icon(
+                    Icons.flag_rounded,
+                    color: AppColors.missionsRewardGold,
+                    size: 18,
+                  ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
@@ -435,7 +452,8 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
                       entry: entry,
                       competitionType: detail.group.competitionType,
                       onTap: () => _openMemberProfile(entry),
-                      onRemove: isCurrentUserLeader &&
+                      onRemove:
+                          isCurrentUserLeader &&
                               !entry.isCurrentUser &&
                               !entry.isLeader
                           ? () => _removeMember(entry)
@@ -452,9 +470,13 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
               children: [
                 Expanded(
                   child: AppButton(
-                    label: _exportingAction == _ExportAction.download ? 'Baixando...' : 'Baixar resultado',
+                    label: _exportingAction == _ExportAction.download
+                        ? 'Baixando...'
+                        : 'Baixar resultado',
                     variant: AppButtonVariant.outline,
-                    onPressed: _exportingAction == null ? _downloadRankingJpg : null,
+                    onPressed: _exportingAction == null
+                        ? _downloadRankingJpg
+                        : null,
                     leadingIcon: Icons.download_rounded,
                     textStyle: AppTextStyles.socialResultAction,
                   ),
@@ -462,10 +484,16 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: AppButton(
-                    label: _exportingAction == _ExportAction.share ? 'Compartilhando...' : 'Compartilhar',
-                    onPressed: _exportingAction == null ? _shareRankingJpg : null,
+                    label: _exportingAction == _ExportAction.share
+                        ? 'Compartilhando...'
+                        : 'Compartilhar',
+                    onPressed: _exportingAction == null
+                        ? _shareRankingJpg
+                        : null,
                     leadingIcon: Icons.ios_share_rounded,
-                    textStyle: AppTextStyles.socialResultAction.copyWith(color: AppColors.surface),
+                    textStyle: AppTextStyles.socialResultAction.copyWith(
+                      color: AppColors.surface,
+                    ),
                   ),
                 ),
               ],
@@ -546,7 +574,11 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
       Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), isError: true);
+      AppToast.show(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
       setState(() => _isLeavingGroup = false);
     }
   }
@@ -608,7 +640,11 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
       Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), isError: true);
+      AppToast.show(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
       setState(() => _isDeletingGroup = false);
     }
   }
@@ -623,17 +659,18 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
       // Abre o modal na hora com os amigos já em cache (a aba Social costuma
       // tê-los carregados); só faz o GET bloqueante se não houver semente.
       final cachedFriends = SocialService.cachedFriends;
-      final friendsData =
-          cachedFriends ?? await widget._service.fetchFriends();
+      final friendsData = cachedFriends ?? await widget._service.fetchFriends();
       if (cachedFriends != null) {
         // Revalida em segundo plano para a próxima abertura.
-        unawaited(widget._service.fetchFriends().catchError(
-              (_) => friendsData,
-            ));
+        unawaited(
+          widget._service.fetchFriends().catchError((_) => friendsData),
+        );
       }
       if (!mounted || _detail == null) return;
 
-      final groupUserIds = _detail!.ranking.map((entry) => entry.userId).toSet();
+      final groupUserIds = _detail!.ranking
+          .map((entry) => entry.userId)
+          .toSet();
       final selectedFriendIds = await showDialog<List<String>>(
         context: context,
         builder: (context) => SocialInviteGroupFriendsDialog(
@@ -644,7 +681,9 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
         ),
       );
 
-      if (!mounted || selectedFriendIds == null || selectedFriendIds.isEmpty) return;
+      if (!mounted || selectedFriendIds == null || selectedFriendIds.isEmpty) {
+        return;
+      }
 
       final updated = await widget._service.addGroupMembers(
         groupId: widget.groupId,
@@ -680,7 +719,11 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
     final code = _groupInviteCode();
     if (code.isEmpty) {
       if (!mounted) return;
-      AppToast.show(context, message: 'ID do grupo indisponível', isError: true);
+      AppToast.show(
+        context,
+        message: 'ID do grupo indisponível',
+        isError: true,
+      );
       return;
     }
     await Share.share(_groupInviteLink());
@@ -690,7 +733,11 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
     final code = _groupInviteCode();
     if (code.isEmpty) {
       if (!mounted) return;
-      AppToast.show(context, message: 'ID do grupo indisponível', isError: true);
+      AppToast.show(
+        context,
+        message: 'ID do grupo indisponível',
+        isError: true,
+      );
       return;
     }
     await Clipboard.setData(ClipboardData(text: code));
@@ -707,24 +754,51 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
     return 'ranking-final-$groupName-${DateTime.now().millisecondsSinceEpoch}.jpg';
   }
 
-  Future<void> _precacheRankingAvatars(SocialGroupDetail detail) async {
-    if (!mounted) return;
-    // Prewarm em paralelo em vez de serial, para o JPG de resultado ficar
-    // pronto mais rápido.
-    final futures = <Future<void>>[];
+  Future<Map<String, Uint8List>> _loadRankingAvatarBytes(
+    SocialGroupDetail detail,
+  ) async {
+    final downloadsByUrl = <String, Future<Uint8List?>>{};
     for (final entry in detail.ranking) {
       final url = entry.avatarUrl?.trim();
       if (url == null || url.isEmpty || !url.startsWith('http')) {
         continue;
       }
-      futures.add(
-        precacheImage(CachedNetworkImageProvider(url), context)
-            .catchError((_) {}),
+      downloadsByUrl.putIfAbsent(url, () async {
+        try {
+          final response = await http
+              .get(Uri.parse(url))
+              .timeout(const Duration(seconds: 8));
+          if (response.statusCode < 200 ||
+              response.statusCode >= 300 ||
+              response.bodyBytes.isEmpty) {
+            return null;
+          }
+          return response.bodyBytes;
+        } catch (_) {
+          return null;
+        }
+      });
+    }
+
+    final bytesByUserId = <String, Uint8List>{};
+    for (final entry in detail.ranking) {
+      final url = entry.avatarUrl?.trim();
+      final download = url == null ? null : downloadsByUrl[url];
+      final bytes = download == null ? null : await download;
+      if (bytes != null) {
+        bytesByUserId[entry.userId] = bytes;
+      }
+    }
+
+    if (mounted) {
+      await Future.wait(
+        bytesByUserId.values.map(
+          (bytes) =>
+              precacheImage(MemoryImage(bytes), context).catchError((_) {}),
+        ),
       );
     }
-    if (futures.isNotEmpty) {
-      await Future.wait(futures);
-    }
+    return bytesByUserId;
   }
 
   /// Pre-renders the result image as soon as the finished group opens, so the
@@ -742,12 +816,14 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
     if (cached != null) return Future.value(cached);
     final pending = _resultJpgFuture;
     if (pending != null) return pending;
-    final future = _buildResultJpgBytes().then((bytes) {
-      _resultJpgCache = bytes;
-      return bytes;
-    }).whenComplete(() {
-      _resultJpgFuture = null;
-    });
+    final future = _buildResultJpgBytes()
+        .then((bytes) {
+          _resultJpgCache = bytes;
+          return bytes;
+        })
+        .whenComplete(() {
+          _resultJpgFuture = null;
+        });
     _resultJpgFuture = future;
     return future;
   }
@@ -759,10 +835,13 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
       GoogleFonts.baloo2(),
       GoogleFonts.nunito(),
     ]);
-    await _precacheRankingAvatars(detail);
+    final avatarBytesByUserId = await _loadRankingAvatarBytes(detail);
     final logicalSize = SocialGroupResultShareCard.measureLogicalSize(detail);
     return exportWidgetToImageBytes(
-      widget: SocialGroupResultShareCard(detail: detail),
+      widget: SocialGroupResultShareCard(
+        detail: detail,
+        avatarBytesByUserId: avatarBytesByUserId,
+      ),
       logicalSize: logicalSize,
       pixelRatio: 2,
       asJpeg: true,
@@ -787,7 +866,11 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
       );
     } catch (error) {
       if (!mounted) return;
-      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), isError: true);
+      AppToast.show(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
     } finally {
       if (mounted) setState(() => _exportingAction = null);
     }
@@ -803,10 +886,9 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
 
       if (kIsWeb) {
         try {
-          final result = await Share.shareXFiles(
-            [XFile.fromData(bytes, mimeType: 'image/jpeg', name: filename)],
-            text: shareText,
-          );
+          final result = await Share.shareXFiles([
+            XFile.fromData(bytes, mimeType: 'image/jpeg', name: filename),
+          ], text: shareText);
           if (result.status == ShareResultStatus.unavailable) {
             throw StateError('share unavailable');
           }
@@ -824,25 +906,26 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
           );
         }
       } else {
-        final path = await writeBytesToTempForSharing(bytes: bytes, filename: filename);
-        await Share.shareXFiles(
-          [XFile(path)],
-          text: shareText,
+        final path = await writeBytesToTempForSharing(
+          bytes: bytes,
+          filename: filename,
         );
+        await Share.shareXFiles([XFile(path)], text: shareText);
       }
     } catch (error) {
       if (!mounted) return;
-      AppToast.show(context, message: error.toString().replaceFirst('Exception: ', ''), isError: true);
+      AppToast.show(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
     } finally {
       if (mounted) setState(() => _exportingAction = null);
     }
   }
 }
 
-enum _ExportAction {
-  download,
-  share,
-}
+enum _ExportAction { download, share }
 
 class _LabelPill extends StatelessWidget {
   const _LabelPill({
