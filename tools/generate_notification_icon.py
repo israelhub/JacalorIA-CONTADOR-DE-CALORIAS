@@ -114,6 +114,9 @@ def main() -> None:
     # Suaviza a borda antes do downscale para evitar serrilhado.
     canvas = canvas.filter(ImageFilter.GaussianBlur(radius=canvas_side / 512))
 
+    fallback_dir = RES_DIR / "drawable"
+    fallback_dir.mkdir(parents=True, exist_ok=True)
+
     for density, size in SIZES.items():
         alpha = canvas.resize((size, size), Image.LANCZOS)
         icon = Image.new("RGBA", (size, size), (255, 255, 255, 0))
@@ -123,6 +126,33 @@ def main() -> None:
         out = out_dir / "ic_notification.png"
         icon.save(out)
         print(f"gerado: {out} ({size}x{size})")
+
+    # Fallback sem densidade (usado se o bucket de dpi não existir).
+    alpha = canvas.resize((96, 96), Image.LANCZOS)
+    icon = Image.new("RGBA", (96, 96), (255, 255, 255, 0))
+    icon.putalpha(alpha)
+    icon.save(fallback_dir / "ic_notification.png")
+    print(f"gerado: {fallback_dir / 'ic_notification.png'} (96x96)")
+
+    # Large icon colorido (corpo da notificação expandida).
+    large_sizes = {
+        "mdpi": 64,
+        "hdpi": 96,
+        "xhdpi": 128,
+        "xxhdpi": 192,
+        "xxxhdpi": 256,
+    }
+    color_src = Image.open(SOURCE).convert("RGBA")
+    for density, size in large_sizes.items():
+        out_dir = RES_DIR / f"drawable-{density}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out = out_dir / "ic_notification_large.png"
+        color_src.resize((size, size), Image.LANCZOS).save(out)
+        print(f"gerado: {out} ({size}x{size})")
+    color_src.resize((256, 256), Image.LANCZOS).save(
+        fallback_dir / "ic_notification_large.png"
+    )
+    print(f"gerado: {fallback_dir / 'ic_notification_large.png'} (256x256)")
 
 
 if __name__ == "__main__":
