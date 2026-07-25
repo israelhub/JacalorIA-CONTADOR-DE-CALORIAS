@@ -1,4 +1,4 @@
-/// Mensagem in-app (lembretes de refeição e avisos cadastrados pelos devs).
+/// Mensagem in-app (lembretes de refeição e avisos enviados pelo dashboard).
 class InAppMessage {
   const InAppMessage({
     required this.id,

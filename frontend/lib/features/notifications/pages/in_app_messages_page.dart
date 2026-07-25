@@ -44,6 +44,7 @@ class _InAppMessagesPageState extends State<InAppMessagesPage> {
 
   Future<void> _bootstrap() async {
     await _store.ensureLoaded();
+    await _store.syncRemoteCatalog();
     if (!mounted) {
       return;
     }

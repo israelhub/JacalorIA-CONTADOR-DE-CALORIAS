@@ -1213,3 +1213,129 @@ th .tip {
     height: 180px;
   }
 }
+
+/* ---- Broadcast / Notificações ---- */
+.bento-notifications {
+  grid-template-rows: auto;
+  align-items: stretch;
+}
+
+.bento-notifications .panel {
+  min-height: 520px;
+  height: auto;
+  align-self: stretch;
+}
+
+.bento-notifications .broadcast-form {
+  flex: 1;
+  min-height: 0;
+}
+
+.bento-notifications .table-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+.broadcast-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 8px;
+}
+
+.broadcast-form label,
+.channel-fieldset legend {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a5565;
+}
+
+.broadcast-form input[type="text"],
+.broadcast-form textarea {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: #111827;
+  background: #fff;
+  resize: vertical;
+}
+
+.broadcast-form input[type="text"]:focus,
+.broadcast-form textarea:focus {
+  outline: 2px solid #bbf7d0;
+  border-color: #86efac;
+}
+
+.channel-fieldset {
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.channel-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.channel-option input {
+  margin-top: 3px;
+}
+
+.channel-option strong {
+  display: block;
+  font-size: 13px;
+  color: #111827;
+}
+
+.channel-option small {
+  display: block;
+  font-size: 12px;
+  color: #6a7282;
+}
+
+.broadcast-form button[type="submit"] {
+  margin-top: 6px;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: #0f5132;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.broadcast-form button[type="submit"]:hover {
+  background: #166534;
+}
+
+.broadcast-form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.broadcast-status {
+  margin: 0;
+  font-size: 13px;
+  color: #166534;
+}
+
+.broadcast-status.error {
+  color: #b91c1c;
+}
+
+@media (max-width: 980px) {
+  .bento-notifications {
+    grid-template-rows: none;
+  }
+}

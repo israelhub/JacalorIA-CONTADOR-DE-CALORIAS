@@ -87,6 +87,7 @@ class _HomeShellPageState extends State<HomeShellPage>
     _trackTabOpened(_currentIndex);
     unawaited(MealReminderService.instance.syncScheduledReminders());
     unawaited(InAppMessageStore.instance.syncDueMealReminders());
+    unawaited(InAppMessageStore.instance.syncRemoteCatalog());
   }
 
   @override
@@ -103,6 +104,7 @@ class _HomeShellPageState extends State<HomeShellPage>
       AnalyticsService.instance.trackAppOpen(properties: {'from': 'resume'});
       unawaited(MealReminderService.instance.syncScheduledReminders());
       unawaited(InAppMessageStore.instance.syncDueMealReminders());
+      unawaited(InAppMessageStore.instance.syncRemoteCatalog());
       // Soft-refresh the visible tab after returning to the app
       // (inclui virada de dia para média calórica no social).
       _forceSoftRefreshForIndex(_currentIndex);
