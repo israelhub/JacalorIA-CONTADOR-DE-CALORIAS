@@ -1214,6 +1214,107 @@ th .tip {
   }
 }
 
+/* ---- Cotas Gemini ---- */
+.quota-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  padding: 4px 2px 8px;
+}
+
+.quota-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px;
+  background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quota-card header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quota-card h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.quota-card code {
+  font-size: 11px;
+  color: #6b7280;
+  background: transparent;
+  padding: 0;
+}
+
+.quota-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quota-meter-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.quota-meter-top strong {
+  font-size: 12px;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.quota-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.quota-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.quota-fill.tone-ok {
+  background: #16a34a;
+}
+
+.quota-fill.tone-warn {
+  background: #d97706;
+}
+
+.quota-fill.tone-danger {
+  background: #dc2626;
+}
+
+.quota-meter small {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.quota-empty {
+  margin: 0;
+  padding: 12px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+  .quota-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---- Broadcast / Notificações ---- */
 .bento-notifications {
   grid-template-rows: auto;

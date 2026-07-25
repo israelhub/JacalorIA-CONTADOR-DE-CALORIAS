@@ -7,8 +7,14 @@
   );
   const apiBase = `${window.location.origin}/api`;
   const cloudApiBase = "https://jacaloria.online/api";
-  const analyticsApiBase = (path) =>
-    isLocalHost && path === "performance" ? cloudApiBase : apiBase;
+  const analyticsApiBase = (path) => {
+    if (!isLocalHost) return apiBase;
+    // Só a view Performance precisa do EC2 (CPU/RAM). IA/suporte usam Nest local.
+    if (path === "performance" && currentView === "performance") {
+      return cloudApiBase;
+    }
+    return apiBase;
+  };
 
   const gate = document.getElementById("gate");
   const app = document.getElementById("app");
@@ -525,6 +531,67 @@
     return raw.slice(5);
   }
 
+  function formatQuotaNumber(n) {
+    const value = Number(n) || 0;
+    if (value >= 1000) return value.toLocaleString("pt-BR");
+    return String(value);
+  }
+
+  function quotaTone(pct) {
+    if (pct >= 90) return "danger";
+    if (pct >= 70) return "warn";
+    return "ok";
+  }
+
+  function quotaMeter(label, used, limit, pct) {
+    const tone = quotaTone(pct);
+    return `
+      <div class="quota-meter">
+        <div class="quota-meter-top">
+          <span>${escapeHtml(label)}</span>
+          <strong>${formatQuotaNumber(used)} / ${formatQuotaNumber(limit)}</strong>
+        </div>
+        <div class="quota-track" aria-hidden="true">
+          <div class="quota-fill tone-${tone}" style="width:${Math.min(100, pct)}%"></div>
+        </div>
+        <small>${pct}% usado</small>
+      </div>
+    `;
+  }
+
+  function renderAiQuotas(quotas) {
+    const grid = document.getElementById("aiQuotaGrid");
+    const hint = document.getElementById("aiQuotaHint");
+    if (!grid) return;
+
+    if (!quotas?.models?.length) {
+      grid.innerHTML = `<p class="quota-empty">Cotas indisponíveis neste ambiente.</p>`;
+      return;
+    }
+
+    if (hint) {
+      hint.textContent =
+        quotas.note ||
+        "RPM / TPM (último minuto) e RPD (hoje, fuso Pacific).";
+    }
+
+    grid.innerHTML = quotas.models
+      .map((row) => {
+        return `
+          <div class="quota-card">
+            <header>
+              <h3>${escapeHtml(row.label || row.model)}</h3>
+              <code>${escapeHtml(row.model)}</code>
+            </header>
+            ${quotaMeter("RPM", row.rpm.used, row.rpm.limit, row.rpm.pct)}
+            ${quotaMeter("TPM", row.tpm.used, row.tpm.limit, row.tpm.pct)}
+            ${quotaMeter("RPD", row.rpd.used, row.rpd.limit, row.rpd.pct)}
+          </div>
+        `;
+      })
+      .join("");
+  }
+
   function renderPerformance(data) {
     const ai = data.ai.overview;
     const support = data.support.overview;
@@ -633,6 +700,8 @@
         { foot: `${ai.cacheHitRatePct}% atendidas pelo cache` },
       ),
     ].join("");
+
+    renderAiQuotas(data.ai?.quotas);
 
     document.getElementById("supportKpis").innerHTML = [
       kpi(

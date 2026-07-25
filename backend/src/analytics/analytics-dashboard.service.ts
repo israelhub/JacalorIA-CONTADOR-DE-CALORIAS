@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
+import { resolveGeminiQuotaLimits } from '../ai/gemini-quota.config';
 import { InfraMetricsService } from './infra-metrics.service';
 
 export type DashboardQuery = {
@@ -15,6 +17,7 @@ export class AnalyticsDashboardService {
     @InjectConnection()
     private readonly sequelize: Sequelize,
     private readonly infraMetrics: InfraMetricsService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getDashboard(query: DashboardQuery = {}) {
@@ -73,6 +76,7 @@ export class AnalyticsDashboardService {
       aiSeries,
       models,
       errors,
+      quotas,
       supportOverview,
       recentSupport,
       infraLive,
@@ -84,12 +88,13 @@ export class AnalyticsDashboardService {
       this.getAiSeries(betaStart, betaEnd),
       this.getAiModels(betaStart, betaEnd),
       this.getAiErrors(betaStart, betaEnd),
-        this.getSupportOverview(betaStart, betaEnd).catch(() => ({
-          total: 0,
-          bugs: 0,
-          suggestions: 0,
-        })),
-        this.getRecentSupport(betaStart, betaEnd).catch(() => []),
+      this.getAiQuotas(),
+      this.getSupportOverview(betaStart, betaEnd).catch(() => ({
+        total: 0,
+        bugs: 0,
+        suggestions: 0,
+      })),
+      this.getRecentSupport(betaStart, betaEnd).catch(() => []),
       this.getInfraLive(),
       this.getInfraOverview(betaStart, betaEnd),
       this.getInfraSeries(betaStart, betaEnd),
@@ -110,6 +115,7 @@ export class AnalyticsDashboardService {
         series: aiSeries,
         models,
         errors,
+        quotas,
       },
       support: {
         overview: supportOverview,
@@ -357,6 +363,147 @@ export class AnalyticsDashboardService {
       bucket: row.bucket,
       peak: Number(row.peak || 0),
     }));
+  }
+
+  /**
+   * Espelho das cotas do AI Studio a partir dos eventos do Nest.
+   * Conta chamadas reais ao Gemini (modelo vencedor + tentativas em failed_models),
+   * excluindo cache. RPD usa dia Pacific (igual ao Google).
+   */
+  private async getAiQuotas() {
+    const limits = resolveGeminiQuotaLimits(
+      this.configService.get<string>('GEMINI_QUOTA_LIMITS'),
+    );
+    const modelKeys = limits.map((row) => row.model);
+
+    const rows = await this.sequelize.query<{
+      model: string;
+      rpd_used: string;
+      rpm_used: string;
+      tpm_used: string;
+    }>(
+      `
+      WITH base AS (
+        SELECT
+          occurred_at,
+          properties,
+          event_name,
+          COALESCE((properties->>'cache_hit')::boolean, false) AS cache_hit
+        FROM analytics_events
+        WHERE event_name IN ('ai_analyze_succeeded', 'ai_analyze_failed')
+          AND COALESCE(properties->>'source', 'server') = 'server'
+          AND occurred_at >= (NOW() AT TIME ZONE 'America/Los_Angeles')::date
+            AT TIME ZONE 'America/Los_Angeles'
+      ),
+      expanded AS (
+        SELECT
+          b.occurred_at,
+          TRIM(b.properties->>'model') AS model,
+          CASE
+            WHEN b.event_name = 'ai_analyze_succeeded'
+              AND (b.properties->>'total_tokens') ~ '^[0-9]+(\\.[0-9]+)?$'
+            THEN (b.properties->>'total_tokens')::numeric
+            ELSE 0
+          END AS tokens
+        FROM base b
+        WHERE NOT b.cache_hit
+          AND NULLIF(TRIM(b.properties->>'model'), '') IS NOT NULL
+          AND TRIM(b.properties->>'model') NOT IN ('cache', 'unknown', 'legado')
+          AND (
+            b.event_name = 'ai_analyze_succeeded'
+            OR jsonb_typeof(COALESCE(b.properties->'failed_models', '[]'::jsonb)) IS DISTINCT FROM 'array'
+            OR jsonb_array_length(COALESCE(b.properties->'failed_models', '[]'::jsonb)) = 0
+          )
+
+        UNION ALL
+
+        SELECT
+          b.occurred_at,
+          TRIM(failed.model) AS model,
+          0::numeric AS tokens
+        FROM base b
+        CROSS JOIN LATERAL jsonb_array_elements_text(
+          CASE
+            WHEN jsonb_typeof(COALESCE(b.properties->'failed_models', '[]'::jsonb)) = 'array'
+            THEN COALESCE(b.properties->'failed_models', '[]'::jsonb)
+            ELSE '[]'::jsonb
+          END
+        ) AS failed(model)
+        WHERE NULLIF(TRIM(failed.model), '') IS NOT NULL
+          AND TRIM(failed.model) NOT IN ('cache', 'unknown', 'legado')
+      )
+      SELECT
+        model,
+        COUNT(*) FILTER (
+          WHERE occurred_at >= (NOW() AT TIME ZONE 'America/Los_Angeles')::date
+            AT TIME ZONE 'America/Los_Angeles'
+        )::text AS rpd_used,
+        COUNT(*) FILTER (
+          WHERE occurred_at >= NOW() - INTERVAL '1 minute'
+        )::text AS rpm_used,
+        COALESCE(
+          SUM(tokens) FILTER (
+            WHERE occurred_at >= NOW() - INTERVAL '1 minute'
+          )::text,
+          '0'
+        ) AS tpm_used
+      FROM expanded
+      WHERE model IN (:models)
+      GROUP BY model
+      `,
+      {
+        replacements: { models: modelKeys },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    const usageByModel = new Map(
+      rows.map((row) => [
+        row.model,
+        {
+          rpdUsed: Number(row.rpd_used || 0),
+          rpmUsed: Number(row.rpm_used || 0),
+          tpmUsed: Number(row.tpm_used || 0),
+        },
+      ]),
+    );
+
+    const models = limits.map((limit) => {
+      const usage = usageByModel.get(limit.model) || {
+        rpdUsed: 0,
+        rpmUsed: 0,
+        tpmUsed: 0,
+      };
+      const pct = (used: number, max: number) =>
+        max > 0 ? Math.min(100, Math.round((1000 * used) / max) / 10) : 0;
+
+      return {
+        model: limit.model,
+        label: limit.label,
+        rpm: {
+          used: usage.rpmUsed,
+          limit: limit.rpm,
+          pct: pct(usage.rpmUsed, limit.rpm),
+        },
+        tpm: {
+          used: usage.tpmUsed,
+          limit: limit.tpm,
+          pct: pct(usage.tpmUsed, limit.tpm),
+        },
+        rpd: {
+          used: usage.rpdUsed,
+          limit: limit.rpd,
+          pct: pct(usage.rpdUsed, limit.rpd),
+        },
+      };
+    });
+
+    return {
+      source: 'analytics_mirror',
+      note: 'Espelho interno dos eventos do Nest (não é a API oficial do Google). RPD = dia Pacific. Cache não conta.',
+      resetTimezone: 'America/Los_Angeles',
+      models,
+    };
   }
 
   private async getAiOverview(betaStart: string, betaEnd: string) {
