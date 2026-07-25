@@ -45,4 +45,18 @@ export class AnalyticsController {
       betaEnd,
     });
   }
+
+  @Get('performance')
+  @UseGuards(DashboardTokenGuard)
+  async getPerformance(
+    @Query('days') days?: string,
+    @Query('betaStart') betaStart?: string,
+    @Query('betaEnd') betaEnd?: string,
+  ) {
+    return this.dashboardService.getPerformance({
+      days: days ? Number(days) : undefined,
+      betaStart,
+      betaEnd,
+    });
+  }
 }
