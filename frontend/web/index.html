@@ -62,8 +62,10 @@
   <script>
     // Flutter Web replaces our viewport meta and drops viewport-fit=cover.
     // Without it, iOS home-screen PWAs with black-translucent status bar report
-    // wrong document clientHeight vs the visual fullscreen size, which stretches
-    // the Flutter canvas and misaligns taps (hit targets sit above the UI).
+    // wrong document clientHeight vs the visual fullscreen size:
+    //  - taps misalign (hit targets above the painted UI)
+    //  - a blank band appears under the app, so the bottom nav floats too high
+    //    above the system home indicator / gesture bar
     (function () {
       function isIos() {
         var ua = navigator.userAgent || '';
@@ -75,6 +77,12 @@
         return navigator.standalone === true ||
           window.matchMedia('(display-mode: standalone)').matches ||
           window.matchMedia('(display-mode: fullscreen)').matches;
+      }
+
+      function notifySafeArea() {
+        try {
+          window.dispatchEvent(new Event('jacaloria-safe-area'));
+        } catch (_) {}
       }
 
       function ensureViewportFitCover() {
@@ -90,30 +98,56 @@
           'content',
           content.replace(/\s*$/, '') + ', viewport-fit=cover',
         );
-        try {
-          window.dispatchEvent(new Event('jacaloria-safe-area'));
-        } catch (_) {}
+        notifySafeArea();
         return true;
       }
 
-      function patchIosStandaloneViewportMetrics() {
+      // Make documentElement.clientHeight === window.innerHeight so Flutter
+      // sizes to the real fullscreen. defineProperty alone is unreliable on
+      // some iOS versions; pinning html/body height is the durable fix.
+      function syncIosStandaloneViewportSize() {
         if (!isIos() || !isStandaloneDisplay()) {
           return;
         }
+        var h = window.innerHeight;
+        var w = window.innerWidth;
+        var root = document.documentElement;
+        root.style.height = h + 'px';
+        root.style.width = w + 'px';
+        root.style.minHeight = h + 'px';
+        if (document.body) {
+          document.body.style.height = h + 'px';
+          document.body.style.width = w + 'px';
+          document.body.style.minHeight = h + 'px';
+        }
         try {
-          Object.defineProperty(document.documentElement, 'clientHeight', {
+          Object.defineProperty(root, 'clientHeight', {
             configurable: true,
             get: function () { return window.innerHeight; },
           });
-          Object.defineProperty(document.documentElement, 'clientWidth', {
+          Object.defineProperty(root, 'clientWidth', {
             configurable: true,
             get: function () { return window.innerWidth; },
           });
         } catch (_) {}
+        notifySafeArea();
       }
 
-      patchIosStandaloneViewportMetrics();
+      syncIosStandaloneViewportSize();
       ensureViewportFitCover();
+
+      window.addEventListener('resize', syncIosStandaloneViewportSize);
+      window.addEventListener('orientationchange', function () {
+        // iOS updates innerHeight after the orientation event settles.
+        setTimeout(syncIosStandaloneViewportSize, 50);
+        setTimeout(syncIosStandaloneViewportSize, 300);
+      });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncIosStandaloneViewportSize);
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncIosStandaloneViewportSize);
+      }
 
       if (document.head) {
         new MutationObserver(function () {
@@ -133,7 +167,7 @@
     // One-shot escape from older deploys that marked shell files as immutable
     // and/or left a Flutter service worker controlling the page.
     (function () {
-      var FLAG = 'jacaloria_force_uncache_v3';
+      var FLAG = 'jacaloria_force_uncache_v5';
       try {
         if (localStorage.getItem(FLAG)) {
           return;

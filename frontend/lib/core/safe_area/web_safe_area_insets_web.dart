@@ -27,14 +27,36 @@ EdgeInsets readWebCssSafeAreaInsets() {
     return double.tryParse(value.replaceAll('px', '').trim()) ?? 0;
   }
 
-  final bottom = math.min(px(style.paddingBottom), kMaxWebBottomSafeAreaInset);
-
   return EdgeInsets.fromLTRB(
     px(style.paddingLeft),
     px(style.paddingTop),
     px(style.paddingRight),
-    bottom,
+    _effectiveBottomInset(px(style.paddingBottom)),
   );
+}
+
+/// Home-indicator inset to apply inside the Flutter view.
+///
+/// Caps absurd CSS values and subtracts any bottom gap the browser already
+/// excluded from the visual viewport, so the bottom nav sits flush above the
+/// system gesture / home indicator instead of floating too high.
+double _effectiveBottomInset(double cssBottom) {
+  final capped = math.min(cssBottom, kMaxWebBottomSafeAreaInset);
+  if (capped <= 0) {
+    return 0;
+  }
+
+  final visualViewport = web.window.visualViewport;
+  if (visualViewport == null) {
+    return capped;
+  }
+
+  final innerHeight = web.window.innerHeight.toDouble();
+  final alreadyExcluded = math.max(
+    0.0,
+    innerHeight - visualViewport.height - visualViewport.offsetTop,
+  );
+  return math.max(0.0, capped - alreadyExcluded);
 }
 
 StreamSubscription<void> listenWebSafeAreaChanges(void Function() onChanged) {

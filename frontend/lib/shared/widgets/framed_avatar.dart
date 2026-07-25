@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/avatar_frames/models/avatar_frame_catalog.dart';
@@ -49,8 +50,11 @@ class FramedAvatar extends StatelessWidget {
           fallbackText: fallbackText,
           backgroundColor: backgroundColor,
         );
-        final frameCacheDimension =
-            (resolvedSize * MediaQuery.devicePixelRatioOf(context)).round();
+        // No web (Safari/iOS) o resize via cacheWidth remistura alpha e
+        // recria halo de "fundo nao cortado" nas molduras glossy.
+        final frameCacheDimension = kIsWeb
+            ? null
+            : (resolvedSize * MediaQuery.devicePixelRatioOf(context)).round();
 
         final content = SizedBox.square(
           dimension: resolvedSize,
@@ -68,6 +72,7 @@ class FramedAvatar extends StatelessWidget {
                       cacheWidth: frameCacheDimension,
                       cacheHeight: frameCacheDimension,
                       filterQuality: FilterQuality.medium,
+                      isAntiAlias: true,
                     ),
                   ),
                 ),
