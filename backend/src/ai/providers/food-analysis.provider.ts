@@ -39,8 +39,22 @@ export type FoodAnalysisResponse = {
   justification: string;
 };
 
+export type FoodAnalysisProviderMeta = {
+  model: string;
+  attempts: number;
+  failedModels: string[];
+  promptTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+};
+
+export type FoodAnalysisProviderResult = {
+  analysis: FoodAnalysisResponse;
+  meta: FoodAnalysisProviderMeta;
+};
+
 export interface FoodAnalysisProvider {
-  analyzeFood(analyzeFoodDto: AnalyzeFoodDto): Promise<FoodAnalysisResponse>;
+  analyzeFood(analyzeFoodDto: AnalyzeFoodDto): Promise<FoodAnalysisProviderResult>;
 }
 
 export const FOOD_ANALYSIS_PROVIDER = 'FOOD_ANALYSIS_PROVIDER';

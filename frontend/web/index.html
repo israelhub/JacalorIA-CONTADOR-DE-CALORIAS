@@ -43,7 +43,9 @@
     :root {
       --sat: env(safe-area-inset-top, 0px);
       --sar: env(safe-area-inset-right, 0px);
-      --sab: env(safe-area-inset-bottom, 0px);
+      /* iOS standalone PWAs sometimes over-report inset-bottom (100px+).
+         Home indicator / gesture bar stays within ~34 CSS px. */
+      --sab: min(env(safe-area-inset-bottom, 0px), 34px);
       --sal: env(safe-area-inset-left, 0px);
     }
     html, body {
@@ -131,7 +133,7 @@
     // One-shot escape from older deploys that marked shell files as immutable
     // and/or left a Flutter service worker controlling the page.
     (function () {
-      var FLAG = 'jacaloria_force_uncache_v2';
+      var FLAG = 'jacaloria_force_uncache_v3';
       try {
         if (localStorage.getItem(FLAG)) {
           return;

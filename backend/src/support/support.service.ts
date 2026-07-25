@@ -5,11 +5,13 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from '../auth/models/user.model';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { MailService } from '../mail/mail.service';
 import {
   CreateSupportMessageDto,
   SupportSubjectType,
 } from './dto/create-support-message.dto';
+import { SupportMessage } from './models/support-message.model';
 
 interface AuthenticatedUser {
   sub: string;
@@ -20,7 +22,10 @@ interface AuthenticatedUser {
 export class SupportService {
   constructor(
     private readonly mailService: MailService,
+    private readonly analyticsService: AnalyticsService,
     @InjectModel(User) private readonly userModel: typeof User,
+    @InjectModel(SupportMessage)
+    private readonly supportMessageModel: typeof SupportMessage,
   ) {}
 
   async createMessage(
@@ -50,9 +55,29 @@ export class SupportService {
       }
     }
 
+    const description = dto.description.trim();
+
+    const saved = await this.supportMessageModel.create({
+      userId: userId ?? null,
+      subjectType: dto.subjectType,
+      description,
+      contactEmail: contactEmail ?? null,
+      userEmail: userEmail ?? null,
+      userName: userName ?? null,
+    });
+
+    await this.analyticsService.trackSafe(userId ?? null, {
+      eventName: 'support_message_created',
+      properties: {
+        subject_type: dto.subjectType,
+        support_message_id: saved.id,
+        has_user: Boolean(userId),
+      },
+    });
+
     const sent = await this.mailService.sendSupportMessage({
       subjectType: dto.subjectType,
-      description: dto.description.trim(),
+      description,
       userId,
       userName,
       userEmail,

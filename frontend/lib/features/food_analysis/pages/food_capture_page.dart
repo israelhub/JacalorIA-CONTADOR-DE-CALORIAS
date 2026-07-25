@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/analytics/analytics_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../helpers/food_review_helpers.dart';
 import '../helpers/image_optimizer.dart';
 import '../models/food_analysis_result.dart';
@@ -60,6 +61,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
   String? _error;
   String? _cameraError;
   bool _isCameraInitializing = true;
+  bool _isFlashOn = false;
 
   FoodImagePicker get _imagePicker =>
       widget._imagePicker ?? ImagePickerAdapter(ImagePicker());
@@ -187,7 +189,48 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
     }
 
     final controller = _cameraController!;
-    return _CameraShell(child: CameraPreview(controller));
+    return _CameraShell(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CameraPreview(controller),
+          Positioned(
+            top: AppSpacing.md,
+            right: AppSpacing.md,
+            child: _FlashToggleButton(
+              isOn: _isFlashOn,
+              onTap: _isBusy ? null : _toggleFlash,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _toggleFlash() async {
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized) {
+      return;
+    }
+
+    final next = !_isFlashOn;
+    try {
+      await controller.setFlashMode(next ? FlashMode.torch : FlashMode.off);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isFlashOn = next;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      AppToast.error(
+        context,
+        message: 'Flash não disponível neste dispositivo.',
+      );
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -195,6 +238,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       setState(() {
         _isCameraInitializing = true;
         _cameraError = null;
+        _isFlashOn = false;
       });
 
       final cameras = await availableCameras();
@@ -225,6 +269,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       setState(() {
         _cameraController = controller;
         _isCameraInitializing = false;
+        _isFlashOn = false;
       });
     } catch (error) {
       if (!mounted) {
@@ -235,6 +280,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       setState(() {
         _cameraController = null;
         _isCameraInitializing = false;
+        _isFlashOn = false;
         _cameraError = _mapCameraError(error);
       });
     }
@@ -778,6 +824,45 @@ class _CameraShutterButton extends StatelessWidget {
                     color: ringColor,
                     size: 32,
                   ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FlashToggleButton extends StatelessWidget {
+  const _FlashToggleButton({required this.isOn, required this.onTap});
+
+  final bool isOn;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Ink(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.black.withValues(alpha: isOn ? 0.45 : 0.28),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.55),
+            ),
+          ),
+          child: Icon(
+            isOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+            size: 22,
+            color: enabled
+                ? (isOn ? AppColors.accent500 : Colors.white)
+                : Colors.white54,
           ),
         ),
       ),
