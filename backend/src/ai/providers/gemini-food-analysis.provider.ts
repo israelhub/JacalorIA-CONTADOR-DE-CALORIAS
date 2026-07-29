@@ -19,7 +19,15 @@ import {
 
 const AI_OVERLOAD_MESSAGE =
   'Estamos enfrentando uma sobrecarga na IA. Tente novamente em alguns instantes.';
-const TOTAL_TIMEOUT_MS = 180_000;
+// Budget total abaixo do CloudFront/nginx (120s). Preferimos falhar cedo a
+// segurar o usuario em espera inutil — a UX pede analise rapida.
+const TOTAL_TIMEOUT_MS = 55_000;
+// Flash/vision normalmente responde em poucos segundos. Se passar disso,
+// aborta e cai no proximo modelo em vez de "morrer" esperando.
+const PER_MODEL_TIMEOUT_MS = 12_000;
+// Apos timeout/429, nao gasta o budget de novo no mesmo modelo por um tempo
+// (cota RPM e por modelo — deixa o fallback atender enquanto o primario esfria).
+const MODEL_COOLDOWN_MS = 30_000;
 const MAX_MODELS = 8;
 const DEFAULT_PRIMARY_MODEL = 'gemini-3.5-flash-lite';
 // Cada modelo tem cota RPM/RPD separada no AI Studio — a cadeia espalha a carga
@@ -36,6 +44,7 @@ const DEFAULT_FALLBACK_MODELS = [
 @Injectable()
 export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
   private readonly logger = new Logger(FoodAnalysisProviderImpl.name);
+  private readonly modelCooldownUntil = new Map<string, number>();
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -52,6 +61,7 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
     const deadlineAt = Date.now() + TOTAL_TIMEOUT_MS;
     let lastErrorMessage = 'nenhuma tentativa concluída';
     const failedModels: string[] = [];
+    let attempts = 0;
 
     for (let index = 0; index < models.length; index += 1) {
       const model = models[index];
@@ -60,18 +70,38 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
         break;
       }
 
+      if (this.isModelInCooldown(model)) {
+        const hasLaterAvailable = models
+          .slice(index + 1)
+          .some((candidate) => !this.isModelInCooldown(candidate));
+        if (hasLaterAvailable) {
+          failedModels.push(model);
+          lastErrorMessage = `cooldown ativo (${MODEL_COOLDOWN_MS}ms)`;
+          this.logger.warn(
+            `Pulando modelo ${model} (tentativa ${index + 1}/${models.length}): ${lastErrorMessage}`,
+          );
+          continue;
+        }
+        // Ultimo recurso: tenta mesmo em cooldown para nao devolver 503
+        // instantaneo quando a cadeia inteira esfriou ao mesmo tempo.
+        this.logger.warn(
+          `Modelo ${model} em cooldown, mas sem alternativa livre — tentando mesmo assim`,
+        );
+      }
+
+      attempts += 1;
       try {
         const { analysis, usage } = await this.callGeminiModel({
           apiKey,
           model,
           contents,
-          timeoutMs: remainingMs,
+          timeoutMs: Math.min(remainingMs, PER_MODEL_TIMEOUT_MS),
         });
         return {
           analysis,
           meta: {
             model,
-            attempts: index + 1,
+            attempts,
             failedModels,
             promptTokens: usage.promptTokens,
             outputTokens: usage.outputTokens,
@@ -81,6 +111,7 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
       } catch (error) {
         lastErrorMessage = this.describeError(error);
         failedModels.push(model);
+        this.markModelCooldown(model, lastErrorMessage);
         this.logger.warn(
           `Falha no modelo ${model} (tentativa ${index + 1}/${models.length}): ${lastErrorMessage}`,
         );
@@ -93,6 +124,40 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
     const overload = new ServiceUnavailableException(AI_OVERLOAD_MESSAGE);
     (overload as Error & { failedModels?: string[] }).failedModels = failedModels;
     throw overload;
+  }
+
+  private isModelInCooldown(model: string): boolean {
+    const until = this.modelCooldownUntil.get(model) ?? 0;
+    if (until <= Date.now()) {
+      if (until > 0) {
+        this.modelCooldownUntil.delete(model);
+      }
+      return false;
+    }
+    return true;
+  }
+
+  private markModelCooldown(model: string, errorMessage: string): void {
+    if (!this.shouldCooldown(errorMessage)) {
+      return;
+    }
+    this.modelCooldownUntil.set(model, Date.now() + MODEL_COOLDOWN_MS);
+    this.logger.warn(
+      `Modelo ${model} em cooldown por ${MODEL_COOLDOWN_MS}ms apos: ${errorMessage}`,
+    );
+  }
+
+  private shouldCooldown(errorMessage: string): boolean {
+    const normalized = errorMessage.toLowerCase();
+    return (
+      normalized.includes('timeout') ||
+      normalized.includes('429') ||
+      normalized.includes('rate') ||
+      normalized.includes('quota') ||
+      normalized.includes('resource_exhausted') ||
+      normalized.includes('resource exhausted') ||
+      normalized.includes('unavailable')
+    );
   }
 
   private resolveModels(): string[] {

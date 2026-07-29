@@ -48,7 +48,7 @@ jobs:
           docker push "$REGISTRY/$REPOSITORY:latest"
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
 
-      - name: Gerar bundle de deploy (Dockerrun.aws.json)
+      - name: Gerar bundle de deploy (Dockerrun + nginx timeouts)
         env:
           IMAGE: ${{ steps.image.outputs.image }}
         run: |
@@ -59,7 +59,9 @@ jobs:
             "Ports": [ { "ContainerPort": 3000 } ]
           }
           EOF
-          zip -r deploy-bundle.zip Dockerrun.aws.json
+          # .platform sobe config do nginx do host EB (proxy_read_timeout, body size).
+          cp -r backend/.platform .platform
+          zip -r deploy-bundle.zip Dockerrun.aws.json .platform
 
       - name: Deploy no Elastic Beanstalk
         env:

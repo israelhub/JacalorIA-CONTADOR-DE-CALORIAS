@@ -11,6 +11,43 @@ import '../models/food_analysis_result.dart';
 import '../services/food_analysis_service.dart';
 import '../widgets/food_analysis_page_header.dart';
 
+class _StatusStage {
+  const _StatusStage({
+    required this.after,
+    required this.title,
+    required this.message,
+  });
+
+  final Duration after;
+  final String title;
+  final String message;
+}
+
+/// Mensagens progressivas enquanto a análise roda (budget ~55s).
+/// Só UX de espera — sem jargão de fallback/modelo.
+const List<_StatusStage> _analysisStatusStages = [
+  _StatusStage(
+    after: Duration.zero,
+    title: 'Analisando...',
+    message: 'A inteligência artificial está analisando sua refeição...',
+  ),
+  _StatusStage(
+    after: Duration(seconds: 12),
+    title: 'Ainda analisando...',
+    message: 'Isso pode levar alguns segundos. Estamos olhando bem o prato.',
+  ),
+  _StatusStage(
+    after: Duration(seconds: 28),
+    title: 'Quase pronto...',
+        message: 'Demorando um pouco mais; refinando a estimativa das calorias.',
+  ),
+  _StatusStage(
+    after: Duration(seconds: 42),
+    title: 'Só mais um instante...',
+    message: 'Obrigado pela paciência. Se não concluir, você pode tentar de novo.',
+  ),
+];
+
 class FoodAnalysisProcessingPage extends StatefulWidget {
   const FoodAnalysisProcessingPage({
     super.key,
@@ -45,8 +82,47 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
   late final AnimationController _scannerController;
   bool _didResolve = false;
   String? _errorMessage;
-  bool _isHighDemandError = false;
+  bool _canRetry = false;
   bool _started = false;
+  int _statusStageIndex = 0;
+  Timer? _statusTimer;
+  int _elapsedSeconds = 0;
+
+  bool get _hasError => _errorMessage != null;
+
+  String get _displayTitle {
+    if (_hasError) {
+      return 'Não foi possível';
+    }
+    if (_statusStageIndex == 0) {
+      return widget.title;
+    }
+    return _analysisStatusStages[_statusStageIndex].title;
+  }
+
+  String get _displayMessage {
+    if (_hasError) {
+      return _errorMessage!;
+    }
+    if (_statusStageIndex == 0) {
+      return widget.message;
+    }
+    return _analysisStatusStages[_statusStageIndex].message;
+  }
+
+  IconData get _displayIcon {
+    if (_hasError) {
+      return Icons.error_outline;
+    }
+    return widget.statusIcon;
+  }
+
+  Color get _displayIconColor {
+    if (_hasError) {
+      return AppColors.textError;
+    }
+    return AppColors.action500;
+  }
 
   @override
   void initState() {
@@ -61,14 +137,51 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
         return;
       }
       _started = true;
+      _startStatusProgression();
       unawaited(_runOperation());
     });
   }
 
   @override
   void dispose() {
+    _statusTimer?.cancel();
     _scannerController.dispose();
     super.dispose();
+  }
+
+  void _startStatusProgression() {
+    _statusTimer?.cancel();
+    _elapsedSeconds = 0;
+    _statusStageIndex = 0;
+
+    _statusTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || _hasError || _didResolve) {
+        return;
+      }
+
+      _elapsedSeconds += 1;
+      final elapsed = Duration(seconds: _elapsedSeconds);
+      var nextIndex = 0;
+      for (var i = 0; i < _analysisStatusStages.length; i++) {
+        if (elapsed >= _analysisStatusStages[i].after) {
+          nextIndex = i;
+        }
+      }
+
+      if (nextIndex != _statusStageIndex || _elapsedSeconds > 0) {
+        setState(() {
+          _statusStageIndex = nextIndex;
+        });
+      }
+    });
+  }
+
+  void _stopStatusProgression({required bool stopScanner}) {
+    _statusTimer?.cancel();
+    _statusTimer = null;
+    if (stopScanner && _scannerController.isAnimating) {
+      _scannerController.stop();
+    }
   }
 
   Future<void> _runOperation() async {
@@ -80,22 +193,19 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
       }
 
       _didResolve = true;
+      _stopStatusProgression(stopScanner: true);
       Navigator.of(context).pop(result);
     } catch (error) {
       if (!mounted || _didResolve) {
         return;
       }
 
-      final message = error.toString().replaceFirst('Exception: ', '');
-      final isHighDemandError =
-          error is FoodAnalysisHighDemandException ||
-          _looksLikeHighDemandError(message);
+      final mapped = FoodAnalysisService.toUserFacingError(error);
+      _stopStatusProgression(stopScanner: true);
 
       setState(() {
-        _errorMessage = isHighDemandError
-            ? FoodAnalysisService.highDemandMessage
-            : message;
-        _isHighDemandError = isHighDemandError;
+        _errorMessage = mapped.message;
+        _canRetry = mapped.canRetry;
       });
     }
   }
@@ -156,7 +266,9 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
                                 ),
                               ),
                             ),
-                          if (widget.showScanner && hasPreviewImage)
+                          if (widget.showScanner &&
+                              hasPreviewImage &&
+                              !_hasError)
                             Positioned.fill(
                               child: AnimatedBuilder(
                                 animation: _scannerController,
@@ -191,39 +303,42 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
                                 },
                               ),
                             ),
-                          if (hasPreviewImage)
-                            Positioned.fill(
-                              child: Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(
-                                        AppSpacing.md,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.surface.withValues(
-                                          alpha: 0.9,
-                                        ),
-                                        shape: BoxShape.circle,
-                                        boxShadow: AppShadows.sm,
-                                      ),
-                                      child: Icon(
-                                        widget.statusIcon,
-                                        color: AppColors.action500,
-                                        size: 32,
-                                      ),
+                          Positioned.fill(
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(
+                                      AppSpacing.md,
                                     ),
-                                    const SizedBox(height: AppSpacing.md),
-                                    Text(
-                                      widget.title,
-                                      style: AppTextStyles.homeSectionTitle
-                                          .copyWith(color: AppColors.surface),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                      shape: BoxShape.circle,
+                                      boxShadow: AppShadows.sm,
                                     ),
-                                  ],
-                                ),
+                                    child: Icon(
+                                      _displayIcon,
+                                      color: _displayIconColor,
+                                      size: 32,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  Text(
+                                    _displayTitle,
+                                    style: AppTextStyles.homeSectionTitle
+                                        .copyWith(
+                                      color: hasPreviewImage
+                                          ? AppColors.surface
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
+                          ),
                         ],
                       ),
                     ),
@@ -232,22 +347,32 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
               ),
               const SizedBox(height: AppSpacing.xxl),
               Text(
-                _errorMessage ?? widget.message,
+                _displayMessage,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodyLarge.copyWith(
-                  color: _errorMessage == null
-                      ? AppColors.textPrimary
-                      : AppColors.textError,
+                  color: _hasError
+                      ? AppColors.textError
+                      : AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (!_hasError && _statusStageIndex >= 1) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  _elapsedHint(),
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
-              if (_errorMessage == null)
+              if (!_hasError)
                 const CircularProgressIndicator(color: AppColors.action500)
-              else if (_isHighDemandError)
-                _HighDemandActions(
+              else if (_canRetry)
+                _RetryActions(
                   onRetry: _retry,
-                  onGoHome: _goHome,
+                  onGoBack: () => Navigator.of(context).pop(null),
                 )
               else
                 TextButton(
@@ -260,6 +385,19 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
         ),
       ),
     );
+  }
+
+  String _elapsedHint() {
+    final seconds = _elapsedSeconds;
+    if (seconds < 60) {
+      return 'Há ${seconds}s nesta análise';
+    }
+    final minutes = seconds ~/ 60;
+    final rest = seconds % 60;
+    if (rest == 0) {
+      return 'Há ${minutes}min nesta análise';
+    }
+    return 'Há ${minutes}min ${rest}s nesta análise';
   }
 
   Widget _buildPreviewImage() {
@@ -322,34 +460,25 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
     );
   }
 
-  bool _looksLikeHighDemandError(String message) {
-    final normalizedMessage = message.toLowerCase();
-    return normalizedMessage.contains('high demand') ||
-        normalizedMessage.contains('alta demanda') ||
-        normalizedMessage.contains('sobrecarga') ||
-        normalizedMessage.contains('too many requests') ||
-        normalizedMessage.contains('rate limit') ||
-        normalizedMessage.contains('service unavailable');
-  }
-
   void _retry() {
     setState(() {
       _errorMessage = null;
-      _isHighDemandError = false;
+      _canRetry = false;
+      _statusStageIndex = 0;
     });
+    if (!_scannerController.isAnimating) {
+      _scannerController.repeat();
+    }
+    _startStatusProgression();
     unawaited(_runOperation());
-  }
-
-  void _goHome() {
-    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 }
 
-class _HighDemandActions extends StatelessWidget {
-  const _HighDemandActions({required this.onRetry, required this.onGoHome});
+class _RetryActions extends StatelessWidget {
+  const _RetryActions({required this.onRetry, required this.onGoBack});
 
   final VoidCallback onRetry;
-  final VoidCallback onGoHome;
+  final VoidCallback onGoBack;
 
   @override
   Widget build(BuildContext context) {
@@ -361,9 +490,9 @@ class _HighDemandActions extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         AppButton(
-          label: 'Voltar para home',
+          label: 'Voltar',
           variant: AppButtonVariant.outline,
-          onPressed: onGoHome,
+          onPressed: onGoBack,
         ),
       ],
     );

@@ -12,3 +12,4 @@ Dockerfile
 test
 coverage
 .vscode
+.platform
