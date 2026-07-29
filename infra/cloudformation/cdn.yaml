@@ -76,6 +76,12 @@ Resources:
             CustomOriginConfig:
               OriginProtocolPolicy: http-only
               HTTPPort: 80
+              # Analise de comida (Gemini + fallbacks) pode passar de 30s.
+              # Default do CloudFront e 30s — sem isso o edge devolve 504 HTML
+              # e o app quebra com "Unrecognized token '<'" / connection abort.
+              # Max sem pedir quota AWS: 120s. Nest TOTAL_TIMEOUT deve ficar abaixo.
+              OriginReadTimeout: 120
+              OriginKeepaliveTimeout: 60
               OriginSSLProtocols:
                 - TLSv1.2
         DefaultCacheBehavior:
@@ -86,8 +92,9 @@ Resources:
           Compress: true
           # Managed-CachingOptimized
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-        # SPA fallback: /friend e /group nao existem no S3; sem isso o OAC
-        # devolve XML AccessDenied (403) em vez do index.html do Flutter Web.
+        # SPA fallback: so vale para erros do origin S3 (front). Respostas
+        # 403/404 do /api/* tambem sao reescritas — o Nest deve preferir 400/422
+        # com JSON em rotas de API; 502/504 do gateway nao entram aqui.
         CustomErrorResponses:
           - ErrorCode: 403
             ResponseCode: 200

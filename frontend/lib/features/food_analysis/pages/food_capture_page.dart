@@ -458,7 +458,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       }
 
       setState(() {
-        _error = error.toString().replaceFirst('Exception: ', '');
+        _error = FoodAnalysisService.toUserFacingError(error).message;
       });
     } finally {
       if (mounted) {
@@ -546,7 +546,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
       setState(() {
         _isBusy = false;
-        _error = error.toString().replaceFirst('Exception: ', '');
+        _error = FoodAnalysisService.toUserFacingError(error).message;
       });
     }
   }

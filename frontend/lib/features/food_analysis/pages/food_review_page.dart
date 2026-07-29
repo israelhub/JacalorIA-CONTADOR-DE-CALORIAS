@@ -255,7 +255,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
 
       setState(() {
         _isBusy = false;
-        _error = error.toString().replaceFirst('Exception: ', '');
+        _error = FoodAnalysisService.toUserFacingError(error).message;
       });
     }
   }
