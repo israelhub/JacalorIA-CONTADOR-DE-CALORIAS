@@ -7,6 +7,13 @@ import {
   FoodAnalysisResponse,
   FoodAnalysisTotals,
 } from '../providers/food-analysis.provider';
+import {
+  buildMatchableFood,
+  findBestFoodMatch,
+  MatchableFood,
+  normalizeFoodName,
+  tokenizeFoodName,
+} from './food-match.util';
 
 type TacoFoodRow = {
   descricao: string | null;
@@ -17,21 +24,11 @@ type TacoFoodRow = {
   lipideos_g: string | null;
 };
 
-type TacoFoodEntry = {
-  description: string;
-  normalizedDescription: string;
-  tokens: string[];
-  tokenSet: Set<string>;
-  category: string | null;
+type TacoFoodEntry = MatchableFood & {
   caloriesPer100g: number | null;
   proteinPer100g: number | null;
   carbsPer100g: number | null;
   fatPer100g: number | null;
-};
-
-type FoodMatch = {
-  score: number;
-  food: TacoFoodEntry;
 };
 
 type RecipeTemplate = {
@@ -42,25 +39,6 @@ type RecipeTemplate = {
 const MATCH_THRESHOLD = 0.58;
 const RECIPE_INGREDIENT_THRESHOLD = 0.5;
 const CACHE_TTL_MS = 10 * 60 * 1000;
-
-const STOP_WORDS = new Set([
-  'de',
-  'da',
-  'do',
-  'das',
-  'dos',
-  'com',
-  'sem',
-  'ao',
-  'aos',
-  'na',
-  'no',
-  'nas',
-  'nos',
-  'e',
-  'ou',
-  'em',
-]);
 
 const RECIPE_TEMPLATES: RecipeTemplate[] = [
   {
@@ -131,7 +109,7 @@ export class FoodNutritionRagService {
           return this.markAsAiEstimate(item);
         }
 
-        const dbMatch = this.findBestFoodMatch(item.name, foods, MATCH_THRESHOLD);
+        const dbMatch = findBestFoodMatch(item.name, foods, MATCH_THRESHOLD);
         if (dbMatch) {
           dbMatches += 1;
           return this.calculateFromMatchedFood(item, dbMatch.food, 'taco_db');
@@ -274,15 +252,13 @@ export class FoodNutritionRagService {
       return null;
     }
 
-    const normalizedDescription = this.normalizeName(description);
-    const tokens = this.tokenize(normalizedDescription);
+    const base = buildMatchableFood({
+      description,
+      category: row.categoria,
+    });
 
     return {
-      description,
-      normalizedDescription,
-      tokens,
-      tokenSet: new Set(tokens),
-      category: row.categoria,
+      ...base,
       caloriesPer100g: this.parseTacoNumber(row.energia_kcal),
       proteinPer100g: this.parseTacoNumber(row.proteina_g),
       carbsPer100g: this.parseTacoNumber(row.carboidrato_g),
@@ -318,111 +294,6 @@ export class FoodNutritionRagService {
 
     const parsed = Number(numeric);
     return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  private normalizeName(value: string): string {
-    return value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-
-  private tokenize(normalized: string): string[] {
-    const baseTokens = normalized.split(' ').filter((token) => token.length > 1);
-    const filtered = baseTokens.filter((token) => !STOP_WORDS.has(token));
-    return filtered.length ? filtered : baseTokens;
-  }
-
-  private findBestFoodMatch(
-    foodName: string,
-    foods: TacoFoodEntry[],
-    threshold: number,
-  ): FoodMatch | null {
-    const normalized = this.normalizeName(foodName);
-    if (!normalized) {
-      return null;
-    }
-
-    const tokens = this.tokenize(normalized);
-
-    let best: FoodMatch | null = null;
-
-    for (const food of foods) {
-      if (!this.isPotentialCandidate(normalized, tokens, food)) {
-        continue;
-      }
-
-      const score = this.scoreMatch(normalized, tokens, food);
-      if (!best || score > best.score) {
-        best = { score, food };
-      }
-    }
-
-    if (!best || best.score < threshold) {
-      return null;
-    }
-
-    return best;
-  }
-
-  private isPotentialCandidate(
-    normalized: string,
-    tokens: string[],
-    food: TacoFoodEntry,
-  ): boolean {
-    if (
-      food.normalizedDescription.includes(normalized) ||
-      normalized.includes(food.normalizedDescription)
-    ) {
-      return true;
-    }
-
-    for (const token of tokens) {
-      if (food.tokenSet.has(token)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private scoreMatch(
-    normalized: string,
-    tokens: string[],
-    food: TacoFoodEntry,
-  ): number {
-    if (normalized === food.normalizedDescription) {
-      return 1;
-    }
-
-    let shared = 0;
-    for (const token of tokens) {
-      if (food.tokenSet.has(token)) {
-        shared += 1;
-      }
-    }
-
-    const tokenOverlap = tokens.length ? shared / tokens.length : 0;
-    const foodCoverage = food.tokens.length ? shared / food.tokens.length : 0;
-    const hasSubstring =
-      food.normalizedDescription.includes(normalized) ||
-      normalized.includes(food.normalizedDescription);
-    const sameFirstToken =
-      tokens.length > 0 && food.tokens.length > 0 && tokens[0] === food.tokens[0];
-
-    const tokenBonus = tokens.length === 1 && shared === 1 ? 0.08 : 0;
-
-    return Math.min(
-      1,
-      tokenOverlap * 0.5 +
-        foodCoverage * 0.2 +
-        (hasSubstring ? 0.25 : 0) +
-        (sameFirstToken ? 0.12 : 0) +
-        tokenBonus,
-    );
   }
 
   private calculateFromMatchedFood(
@@ -530,7 +401,7 @@ export class FoodNutritionRagService {
     item: FoodAnalysisItem,
     foods: TacoFoodEntry[],
   ): FoodAnalysisItem | null {
-    const normalized = this.normalizeName(item.name);
+    const normalized = normalizeFoodName(item.name);
     const template = RECIPE_TEMPLATES.find((candidate) =>
       candidate.pattern.test(normalized),
     );
@@ -541,7 +412,7 @@ export class FoodNutritionRagService {
 
     const ingredientMatches = template.ingredients
       .map((ingredient) => {
-        const match = this.findBestFoodMatch(
+        const match = findBestFoodMatch(
           ingredient.name,
           foods,
           RECIPE_INGREDIENT_THRESHOLD,
@@ -558,7 +429,7 @@ export class FoodNutritionRagService {
           value,
         ): value is {
           ratio: number;
-          match: FoodMatch;
+          match: NonNullable<ReturnType<typeof findBestFoodMatch<TacoFoodEntry>>>;
         } => value !== null,
       );
 
@@ -583,11 +454,12 @@ export class FoodNutritionRagService {
       { calories: 0, protein: 0, carbs: 0, fat: 0 },
     );
 
+    const tokens = tokenizeFoodName(normalized);
     const syntheticFood: TacoFoodEntry = {
       description: item.name,
       normalizedDescription: normalized,
-      tokens: this.tokenize(normalized),
-      tokenSet: new Set(this.tokenize(normalized)),
+      tokens,
+      tokenSet: new Set(tokens),
       category: null,
       caloriesPer100g: aggregated.calories,
       proteinPer100g: aggregated.protein,
