@@ -363,12 +363,16 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
   }
 
   private buildImageAnalysisPrompt(): string {
-    return 'Analise a imagem enviada e retorne a estimativa nutricional no JSON solicitado, com alimentos, gramas, calorias, proteínas, carboidratos, gorduras e justificativa curta.';
+    return [
+      'Analise a imagem enviada e retorne a estimativa nutricional no JSON solicitado, com alimentos, gramas, calorias, proteínas, carboidratos, gorduras e justificativa curta.',
+      'No campo name, inclua corte e preparo quando forem identificáveis na foto (ex.: "Frango peito grelhado", à milanesa); se não forem claros, use o nome simples.',
+    ].join(' ');
   }
 
   private buildManualTextPrompt(manualText: string): string {
     return [
       'O usuário digitou a refeição abaixo. Identifique os alimentos e as quantidades consumidas.',
+      'No campo name, preserve corte e preparo quando o usuário informar (ex.: "Frango peito grelhado", "Frango à milanesa"); se não houver, use o nome simples.',
       'Se houver dados de tabela nutricional (porção de referência + kcal/macros + quanto consumiu), EXTRAIA-OS em nutritionLabel com os valores da TABELA e deixe calories/protein/carbs/fat do item em 0 — o sistema calculará a proporção.',
       'Priorize sempre a tabela nutricional informada pelo usuário sobre qualquer estimativa.',
       'Retorne apenas o JSON solicitado, sem texto fora do JSON.',
@@ -387,6 +391,7 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
 
     return [
       'Recalcule a estimativa nutricional total do prato com base nos itens já corrigidos pelo usuário.',
+      'Preserve no campo name o corte e o preparo informados nos itens corrigidos quando houver.',
       'Retorne o mesmo JSON solicitado anteriormente, sem incluir texto fora do JSON.',
       'Itens corrigidos:',
       itemsText,

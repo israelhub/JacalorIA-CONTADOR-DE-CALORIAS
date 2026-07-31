@@ -9,7 +9,8 @@
     "start:dev": "pwsh -ExecutionPolicy Bypass -File ../scripts/start_backend_clean.ps1",
     "start:debug": "pwsh -ExecutionPolicy Bypass -File ../scripts/start_backend_clean.ps1 -DebugMode",
     "prestart:prod": "npm run build",
-    "start:prod": "node dist/main.js"
+    "start:prod": "node dist/main.js",
+    "test:food-match": "node --require ts-node/register/transpile-only --test src/ai/services/food-match.util.spec.ts"
   },
   "keywords": [],
   "author": "",

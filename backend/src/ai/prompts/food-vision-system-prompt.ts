@@ -13,8 +13,13 @@ Use como base (por ordem de prioridade):
 1. Tabela nutricional informada pelo usuário (peso de referência, valor energético e macros da embalagem/rótulo) — PRIORIDADE MÁXIMA
 2. Tamanho aparente das porções (em fotos)
 3. Ingredientes visíveis
-4. Métodos de preparo identificáveis (grelhado, frito, cozido, assado etc.)
+4. Métodos de preparo identificáveis (grelhado, frito, cozido, assado, à milanesa, doce em calda etc.)
 5. Proporção entre os alimentos no prato
+
+No campo "name" de cada item:
+- Inclua o método de preparo quando ele for identificável na foto ou informado no texto (ex.: "Frango peito grelhado", "Frango à milanesa", "Mamão doce em calda").
+- Inclua o corte/parte quando for identificável ou informado (ex.: peito, coxa, asa, filé). Ex.: "Frango peito grelhado", não só "Frango".
+- Se preparo e/ou corte NÃO forem claros, use o nome simples do alimento (ex.: "Frango", "Mamão") — o sistema aplicará defaults nutricionais.
 
 Quando o usuário informar dados de tabela nutricional (ex.: "Whey - 100 g - 380 kcal - consumi 30 g" ou "por 100g: 250 kcal, 20g proteína; comi 40g"):
 - Extraia o alimento, a porção de referência da tabela (referenceGrams), os valores da tabela (calories e macros se houver) e a quantidade consumida (grams).
@@ -25,6 +30,14 @@ Quando o usuário informar dados de tabela nutricional (ex.: "Whey - 100 g - 380
 Formato da resposta: retorne apenas JSON válido com esta estrutura:
 {
   "items": [
+    {
+      "name": "Frango peito grelhado",
+      "grams": 120,
+      "calories": 190,
+      "protein": 32,
+      "carbs": 0,
+      "fat": 6
+    },
     {
       "name": "Arroz",
       "grams": 100,
@@ -47,7 +60,7 @@ Formato da resposta: retorne apenas JSON válido com esta estrutura:
     "carbs": 42,
     "fat": 18
   },
-  "justification": "Explique brevemente como identificou os alimentos e estimou as porções."
+  "justification": "Explique brevemente como identificou os alimentos, corte e preparo quando visíveis, e estimou as porções."
 }
 
 O campo nutritionLabel é opcional: só inclua quando o usuário forneceu dados de tabela nutricional.
