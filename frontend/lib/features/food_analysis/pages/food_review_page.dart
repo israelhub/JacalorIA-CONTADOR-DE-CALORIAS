@@ -70,8 +70,6 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   static const Duration _itemInsertDuration = Duration(milliseconds: 220);
   static const Duration _itemRemoveDuration = Duration(milliseconds: 180);
 
-  bool get _hasChanges => _currentSignature != _confirmedSignature;
-
   String get _currentSignature {
     return _currentItems.map((item) => item.signature()).join('|');
   }
@@ -325,6 +323,18 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
     );
   }
 
+  void _syncItemControllersFromAnalysis(FoodAnalysisResult analysis) {
+    final count = analysis.items.length < _items.length
+        ? analysis.items.length
+        : _items.length;
+    for (var index = 0; index < count; index++) {
+      final synced = analysis.items[index];
+      _items[index].nameController.text = synced.name;
+      _items[index].measurementController.text =
+          '${synced.grams} ${synced.unit}';
+    }
+  }
+
   void _handleMealTypeChanged(FoodMealType type) {
     final currentTitle = _mealTitleController.text.trim();
     final shouldSyncTitle = isDefaultMealTitle(currentTitle);
@@ -341,7 +351,6 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   Future<void> _saveAndOpenDetails(
   ) async {
     final currentItems = _currentItems;
-    final shouldReanalyze = _hasChanges;
 
     final mealTitle = _mealTitleController.text.trim();
     FoodMealRecord? persistedMealRecord;
@@ -352,14 +361,16 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
         imageUrl: widget.imageUrl,
         imageAsset: widget.imageAsset,
         appBarTitle: 'Detalhes da refeição',
-        title: 'Carregando calorias...',
+        title: '',
         message: 'Estamos salvando e atualizando os dados nutricionais.',
         statusIcon: Icons.local_fire_department,
         showScanner: false,
         operation: () async {
-          final analysisToSave = shouldReanalyze
-              ? await widget.analysisService.recalculate(items: currentItems)
-              : _analysis;
+          // Sempre recalcula no save: reaplica match TACO e grava o nome da
+          // tabela (não só as kcal), mesmo sem edição manual dos itens.
+          final analysisToSave = await widget.analysisService.recalculate(
+            items: currentItems,
+          );
 
           final mealRecordToSave = FoodMealRecord.fromAnalysis(
             id: widget.existingMealId,
@@ -406,6 +417,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
 
     setState(() {
       _analysis = savedAnalysis;
+      _syncItemControllersFromAnalysis(savedAnalysis);
       _confirmedSignature = _currentSignature;
       _isBusy = false;
     });

@@ -77,6 +77,38 @@ const CATALOG = [
     description: 'Coxinha de frango, frita',
     category: 'Carnes e derivados',
   }),
+  buildMatchableFood({
+    description: 'Ovo, de galinha, inteiro, frito',
+    category: 'Ovos e derivados',
+  }),
+  buildMatchableFood({
+    description: 'Ovo, de galinha, inteiro, cozido',
+    category: 'Ovos e derivados',
+  }),
+  buildMatchableFood({
+    description: 'Ovo, de galinha, gema, cozida/10minutos',
+    category: 'Ovos e derivados',
+  }),
+  buildMatchableFood({
+    description: 'Feijão, carioca, cru',
+    category: 'Leguminosas e derivados',
+  }),
+  buildMatchableFood({
+    description: 'Feijão, carioca, cozido',
+    category: 'Leguminosas e derivados',
+  }),
+  buildMatchableFood({
+    description: 'Feijão, preto, cru',
+    category: 'Leguminosas e derivados',
+  }),
+  buildMatchableFood({
+    description: 'Feijão, preto, cozido',
+    category: 'Leguminosas e derivados',
+  }),
+  buildMatchableFood({
+    description: 'Feijão, jalo, cru',
+    category: 'Leguminosas e derivados',
+  }),
 ];
 
 function match(query: string) {
@@ -159,5 +191,25 @@ describe('food-match.util', () => {
     assert.ok(result);
     assert.notEqual(result.food.description, 'Cana, aguardente 1');
     assert.match(result.food.description, /^Água/i);
+  });
+
+  it('ovo frito casa com ovo de galinha inteiro frito', () => {
+    const result = match('ovo frito');
+    assert.ok(result);
+    assert.equal(result.food.description, 'Ovo, de galinha, inteiro, frito');
+  });
+
+  it('feijão sozinho prefere carioca/preto cozido (não cru)', () => {
+    const result = match('feijão');
+    assert.ok(result);
+    assert.match(result.food.description, /cozido/i);
+    assert.doesNotMatch(result.food.description, /\bcru\b/i);
+    assert.match(result.food.description, /carioca|preto/i);
+  });
+
+  it('feijão preto cru respeita cru quando informado', () => {
+    const result = match('feijão preto cru');
+    assert.ok(result);
+    assert.equal(result.food.description, 'Feijão, preto, cru');
   });
 });

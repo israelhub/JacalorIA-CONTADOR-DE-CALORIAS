@@ -144,6 +144,9 @@ class HomeDailyGoalCard extends StatelessWidget {
     final normalizedSelectedDate = normalizeHomeDate(selectedDate);
     final todayRecords = records
         .where((record) {
+          if (record.status.trim().toLowerCase() == 'deleted') {
+            return false;
+          }
           final createdAt = record.createdAt;
           return createdAt != null &&
               isSameHomeDate(createdAt, normalizedSelectedDate);

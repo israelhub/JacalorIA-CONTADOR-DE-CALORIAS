@@ -94,6 +94,10 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
     if (_hasError) {
       return 'Não foi possível';
     }
+    // Save/recalc sem título no overlay: não sobe os stages de "Analisando...".
+    if (widget.title.trim().isEmpty) {
+      return '';
+    }
     if (_statusStageIndex == 0) {
       return widget.title;
     }
@@ -104,7 +108,7 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
     if (_hasError) {
       return _errorMessage!;
     }
-    if (_statusStageIndex == 0) {
+    if (widget.title.trim().isEmpty || _statusStageIndex == 0) {
       return widget.message;
     }
     return _analysisStatusStages[_statusStageIndex].message;
@@ -308,33 +312,38 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(
-                                      AppSpacing.md,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surface.withValues(
-                                        alpha: 0.9,
+                                  // Sem imagem: sem ícone no meio (só a mensagem embaixo).
+                                  if (hasPreviewImage || _hasError) ...[
+                                    Container(
+                                      padding: const EdgeInsets.all(
+                                        AppSpacing.md,
                                       ),
-                                      shape: BoxShape.circle,
-                                      boxShadow: AppShadows.sm,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface.withValues(
+                                          alpha: 0.9,
+                                        ),
+                                        shape: BoxShape.circle,
+                                        boxShadow: AppShadows.sm,
+                                      ),
+                                      child: Icon(
+                                        _displayIcon,
+                                        color: _displayIconColor,
+                                        size: 32,
+                                      ),
                                     ),
-                                    child: Icon(
-                                      _displayIcon,
-                                      color: _displayIconColor,
-                                      size: 32,
+                                    if (_displayTitle.isNotEmpty)
+                                      const SizedBox(height: AppSpacing.md),
+                                  ],
+                                  if (_displayTitle.isNotEmpty)
+                                    Text(
+                                      _displayTitle,
+                                      style: AppTextStyles.homeSectionTitle
+                                          .copyWith(
+                                        color: hasPreviewImage
+                                            ? AppColors.surface
+                                            : AppColors.textPrimary,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  Text(
-                                    _displayTitle,
-                                    style: AppTextStyles.homeSectionTitle
-                                        .copyWith(
-                                      color: hasPreviewImage
-                                          ? AppColors.surface
-                                          : AppColors.textPrimary,
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -356,7 +365,9 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              if (!_hasError && _statusStageIndex >= 1) ...[
+              if (!_hasError &&
+                  widget.title.trim().isNotEmpty &&
+                  _statusStageIndex >= 1) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   _elapsedHint(),

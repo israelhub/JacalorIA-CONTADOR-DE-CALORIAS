@@ -78,7 +78,15 @@ export class AiService {
 
         if (cachedAnalysis) {
           cacheHit = true;
-          result = cachedAnalysis.result;
+          // Reaplica o RAG (nomes/kcal TACO) — o cache pode ser de antes do
+          // matching atual; sem isso o cliente recebe o nome cru da IA.
+          result = await this.foodNutritionRagService.enrichAnalysis(
+            cachedAnalysis.result as FoodAnalysisResponse,
+          );
+          await this.foodImageAnalysisModel.update(
+            { result },
+            { where: { id: cachedAnalysis.id } },
+          );
           meta = {
             model: 'cache',
             attempts: 0,

@@ -47,6 +47,7 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
   bool _started = false;
   bool _isSavingTemplate = false;
   bool _wasEdited = false;
+  bool _isClosing = false;
 
   static const Duration _sectionRevealDuration = Duration(milliseconds: 280);
 
@@ -113,10 +114,14 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
     return PopScope<FoodMealRecord>(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
+        if (didPop || _isClosing) {
           return;
         }
-        Navigator.of(context).pop(_wasEdited ? _record : null);
+        // canPop:false: o 1º Navigator.pop não fecha a rota — só chama este
+        // callback. Precisamos re-popar preservando o result (ex.: deleted).
+        _isClosing = true;
+        final payload = result ?? (_wasEdited ? _record : null);
+        Navigator.of(context).pop(payload);
       },
       child: Scaffold(
         backgroundColor: AppColors.surface,
@@ -533,6 +538,7 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
       return;
     }
 
+    // canPop:false — o PopScope re-popará preservando este result.
     Navigator.of(context).pop(_record.copyWith(status: 'deleted'));
   }
 }
