@@ -325,7 +325,10 @@ export class FoodNutritionRagService {
     );
 
     return {
-      name: item.name?.trim() || food.description,
+      name:
+        source === 'taco_db'
+          ? food.description
+          : item.name?.trim() || food.description,
       grams: this.round(grams),
       calories,
       protein,

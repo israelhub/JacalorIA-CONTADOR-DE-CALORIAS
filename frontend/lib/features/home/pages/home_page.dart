@@ -389,6 +389,9 @@ class _HomePageState extends State<HomePage>
     final normalizedDate = normalizeHomeDate(date);
     final selectedDateRecords = _records
         .where((record) {
+          if (record.status.trim().toLowerCase() == 'deleted') {
+            return false;
+          }
           final createdAt = record.createdAt;
           return createdAt != null && isSameHomeDate(createdAt, normalizedDate);
         })
@@ -435,6 +438,9 @@ class _HomePageState extends State<HomePage>
     final normalizedDate = normalizeHomeDate(date);
     final dailyRecords = _records
         .where((record) {
+          if (record.status.trim().toLowerCase() == 'deleted') {
+            return false;
+          }
           final createdAt = record.createdAt;
           return createdAt != null && isSameHomeDate(createdAt, normalizedDate);
         })
@@ -587,6 +593,19 @@ class _HomePageState extends State<HomePage>
   void _applySavedMeal(FoodMealRecord record) {
     final recordDate = normalizeHomeDate(record.createdAt ?? DateTime.now());
     final recordId = (record.id ?? '').trim();
+    final isDeleted = record.status.trim().toLowerCase() == 'deleted';
+
+    if (isDeleted) {
+      setState(() {
+        if (recordId.isNotEmpty) {
+          _records.removeWhere((item) => (item.id ?? '').trim() == recordId);
+        }
+        _isDataLoading = false;
+      });
+      SocialDataInvalidator.markDirty();
+      return;
+    }
+
     final shouldPlayCelebration = _hasCalorieGoalReachedForDate(
       date: recordDate,
       extraRecord: record,
@@ -793,6 +812,9 @@ class _HomeBody extends StatelessWidget {
     final bottomInset = homeShellFabBottomInset(context);
     final dayRecords = records
         .where((record) {
+          if (record.status.trim().toLowerCase() == 'deleted') {
+            return false;
+          }
           final createdAt = record.createdAt;
           if (createdAt == null) {
             return true;

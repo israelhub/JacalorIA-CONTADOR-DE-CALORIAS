@@ -98,6 +98,22 @@ const MEAT_CATEGORIES = new Set([
   'ovos e derivados',
 ]);
 
+/** Cortes (peito/asa) só fazem sentido em carnes/pescados — não em ovos. */
+const MEAT_CUT_CATEGORIES = new Set([
+  'carnes e derivados',
+  'pescados e frutos do mar',
+]);
+
+const LEGUME_CATEGORIES = new Set(['leguminosas e derivados']);
+
+const EGG_CATEGORIES = new Set(['ovos e derivados']);
+
+/** Variedades comuns de feijão quando a query é só "feijão". */
+const COMMON_BEAN_VARIETIES: Record<string, number> = {
+  carioca: 3,
+  preto: 2,
+};
+
 export function normalizeFoodName(value: string): string {
   return value
     .normalize('NFD')
@@ -159,6 +175,25 @@ function isMeatCategory(category: string | null): boolean {
   return MEAT_CATEGORIES.has(normalizeCategory(category));
 }
 
+function isMeatCutCategory(category: string | null): boolean {
+  return MEAT_CUT_CATEGORIES.has(normalizeCategory(category));
+}
+
+function isLegumeCategory(category: string | null): boolean {
+  return LEGUME_CATEGORIES.has(normalizeCategory(category));
+}
+
+function isEggCategory(category: string | null): boolean {
+  return EGG_CATEGORIES.has(normalizeCategory(category));
+}
+
+function queryMentionsCookedState(queryTokens: string[]): boolean {
+  return queryTokens.some(
+    (token) =>
+      RAW_TOKENS.has(token) || token === 'cozido' || token === 'cozida',
+  );
+}
+
 function queryMentionsPrep(queryTokens: string[]): boolean {
   return queryTokens.some((token) => PREP_QUERY_TOKENS.has(token));
 }
@@ -213,6 +248,32 @@ function categoryPrepAdjustment(
   queryTokens: string[],
   food: MatchableFood,
 ): { scoreDelta: number; prepPreference: number } {
+  if (isLegumeCategory(food.category)) {
+    if (queryMentionsCookedState(queryTokens)) {
+      return { scoreDelta: 0, prepPreference: 0 };
+    }
+
+    let scoreDelta = 0;
+    let prepPreference = 0;
+    for (const token of food.tokens) {
+      if (RAW_TOKENS.has(token)) {
+        scoreDelta -= 0.28;
+        prepPreference -= 3;
+      }
+      if (token === 'cozido' || token === 'cozida') {
+        scoreDelta += 0.2;
+        prepPreference += 3;
+      }
+      const beanRank = COMMON_BEAN_VARIETIES[token];
+      if (beanRank) {
+        // Preferência carioca > preto; soma depois do cozido para não ser zerada.
+        scoreDelta += 0.04 * beanRank;
+        prepPreference += beanRank;
+      }
+    }
+    return { scoreDelta, prepPreference };
+  }
+
   if (!isMeatCategory(food.category) || queryMentionsPrep(queryTokens)) {
     return { scoreDelta: 0, prepPreference: 0 };
   }
@@ -238,12 +299,35 @@ function categoryPrepAdjustment(
   return { scoreDelta, prepPreference };
 }
 
-/** Preferência de corte quando a query não especifica (peito > filé > …). */
+/**
+ * Preferência de corte quando a query não especifica.
+ * Carnes: peito > filé. Ovos: inteiro (não só gema/clara).
+ */
 function categoryCutAdjustment(
   queryTokens: string[],
   food: MatchableFood,
 ): { scoreDelta: number; cutPreference: number } {
-  if (!isMeatCategory(food.category) || queryMentionsCut(queryTokens)) {
+  if (isEggCategory(food.category)) {
+    if (queryTokens.includes('gema') || queryTokens.includes('clara')) {
+      return { scoreDelta: 0, cutPreference: 0 };
+    }
+
+    let scoreDelta = 0;
+    let cutPreference = 0;
+    for (const token of food.tokens) {
+      if (token === 'inteiro') {
+        scoreDelta += 0.12;
+        cutPreference = Math.max(cutPreference, 3);
+      }
+      if (token === 'gema' || token === 'clara') {
+        scoreDelta -= 0.15;
+        cutPreference -= 2;
+      }
+    }
+    return { scoreDelta, cutPreference };
+  }
+
+  if (!isMeatCutCategory(food.category) || queryMentionsCut(queryTokens)) {
     return { scoreDelta: 0, cutPreference: 0 };
   }
 
