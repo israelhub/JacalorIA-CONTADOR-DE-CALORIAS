@@ -187,11 +187,51 @@ function isEggCategory(category: string | null): boolean {
   return EGG_CATEGORIES.has(normalizeCategory(category));
 }
 
-function queryMentionsCookedState(queryTokens: string[]): boolean {
-  return queryTokens.some(
-    (token) =>
-      RAW_TOKENS.has(token) || token === 'cozido' || token === 'cozida',
+function queryWantsCooked(queryTokens: string[]): boolean {
+  return queryTokens.includes('cozido') || queryTokens.includes('cozida');
+}
+
+function queryWantsRaw(queryTokens: string[]): boolean {
+  return queryTokens.some((token) => RAW_TOKENS.has(token));
+}
+
+function foodIsRaw(food: MatchableFood): boolean {
+  return food.tokens.some((token) => RAW_TOKENS.has(token));
+}
+
+function foodIsCookedLegume(food: MatchableFood): boolean {
+  return food.tokens.includes('cozido') || food.tokens.includes('cozida');
+}
+
+/**
+ * Query pede cozido mas o match TACO é cru (ou o inverso).
+ * Ex.: "grão de bico cozido" vs "Grão-de-bico, cru" — não forçar o cru.
+ */
+export function hasCookedRawConflict(
+  foodName: string,
+  food: MatchableFood,
+): boolean {
+  const tokens = tokenizeFoodName(normalizeFoodName(foodName));
+  if (queryWantsCooked(tokens) && foodIsRaw(food)) {
+    return true;
+  }
+  if (queryWantsRaw(tokens) && foodIsCookedLegume(food)) {
+    return true;
+  }
+  return false;
+}
+
+function isPrepOrStateToken(token: string): boolean {
+  return (
+    PREP_QUERY_TOKENS.has(token) ||
+    token === 'cozido' ||
+    token === 'cozida' ||
+    RAW_TOKENS.has(token)
   );
+}
+
+function contentTokens(tokens: string[]): string[] {
+  return tokens.filter((token) => !isPrepOrStateToken(token));
 }
 
 function queryMentionsPrep(queryTokens: string[]): boolean {
@@ -224,6 +264,12 @@ export function isPotentialFoodCandidate(
     return true;
   }
 
+  // Não candidatar só por "cozido"/"cru" — precisa overlap do alimento em si.
+  const queryContent = contentTokens(queryTokens);
+  if (queryContent.length > 0) {
+    return queryContent.some((token) => food.tokenSet.has(token));
+  }
+
   for (const token of queryTokens) {
     if (food.tokenSet.has(token)) {
       return true;
@@ -249,24 +295,36 @@ function categoryPrepAdjustment(
   food: MatchableFood,
 ): { scoreDelta: number; prepPreference: number } {
   if (isLegumeCategory(food.category)) {
-    if (queryMentionsCookedState(queryTokens)) {
-      return { scoreDelta: 0, prepPreference: 0 };
-    }
+    const wantsCooked = queryWantsCooked(queryTokens);
+    const wantsRaw = queryWantsRaw(queryTokens);
 
     let scoreDelta = 0;
     let prepPreference = 0;
     for (const token of food.tokens) {
       if (RAW_TOKENS.has(token)) {
-        scoreDelta -= 0.28;
-        prepPreference -= 3;
+        if (wantsCooked) {
+          // Nunca empurrar "cozido" para o grão seco da TACO.
+          scoreDelta -= 0.55;
+          prepPreference -= 6;
+        } else if (!wantsRaw) {
+          scoreDelta -= 0.28;
+          prepPreference -= 3;
+        } else {
+          scoreDelta += 0.15;
+          prepPreference += 2;
+        }
       }
       if (token === 'cozido' || token === 'cozida') {
-        scoreDelta += 0.2;
-        prepPreference += 3;
+        if (wantsRaw) {
+          scoreDelta -= 0.55;
+          prepPreference -= 6;
+        } else {
+          scoreDelta += 0.2;
+          prepPreference += 3;
+        }
       }
       const beanRank = COMMON_BEAN_VARIETIES[token];
       if (beanRank) {
-        // Preferência carioca > preto; soma depois do cozido para não ser zerada.
         scoreDelta += 0.04 * beanRank;
         prepPreference += beanRank;
       }
@@ -383,6 +441,22 @@ export function scoreFoodMatch(
   const prep = categoryPrepAdjustment(queryTokens, food);
   const cut = categoryCutAdjustment(queryTokens, food);
 
+  // "grao de bico" vs "feijao ... cozido": só "cozido" em comum não basta.
+  const queryContent = contentTokens(queryTokens);
+  if (queryContent.length > 0) {
+    const sharedContent = queryContent.filter((token) =>
+      food.tokenSet.has(token),
+    ).length;
+    if (sharedContent === 0) {
+      return {
+        score: 0,
+        foodCoverage,
+        prepPreference: prep.prepPreference,
+        cutPreference: cut.cutPreference,
+      };
+    }
+  }
+
   const rawScore =
     tokenOverlap * 0.45 +
     foodCoverage * 0.35 +
@@ -458,6 +532,10 @@ export function findBestFoodMatch<T extends MatchableFood>(
   }
 
   if (!best || best.score < threshold) {
+    return null;
+  }
+
+  if (hasCookedRawConflict(foodName, best.food)) {
     return null;
   }
 
