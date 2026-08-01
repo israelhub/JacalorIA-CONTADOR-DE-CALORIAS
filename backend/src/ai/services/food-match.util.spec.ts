@@ -109,6 +109,10 @@ const CATALOG = [
     description: 'Feijão, jalo, cru',
     category: 'Leguminosas e derivados',
   }),
+  buildMatchableFood({
+    description: 'Grão-de-bico, cru',
+    category: 'Leguminosas e derivados',
+  }),
 ];
 
 function match(query: string) {
@@ -211,5 +215,16 @@ describe('food-match.util', () => {
     const result = match('feijão preto cru');
     assert.ok(result);
     assert.equal(result.food.description, 'Feijão, preto, cru');
+  });
+
+  it('grão de bico cozido não casa com grão-de-bico cru', () => {
+    const result = match('grão de bico cozido');
+    assert.equal(result, null);
+  });
+
+  it('grão de bico cru casa com grão-de-bico cru', () => {
+    const result = match('grão de bico cru');
+    assert.ok(result);
+    assert.equal(result.food.description, 'Grão-de-bico, cru');
   });
 });
