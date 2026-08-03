@@ -1009,8 +1009,11 @@ export class AnalyticsDashboardService {
   private async getRetention(betaStart: string, betaEnd: string) {
     const rows = await this.sequelize.query<{
       cohort_size: string;
+      mature_d1: string;
       retained_d1: string;
+      mature_d7: string;
       retained_d7: string;
+      mature_d14: string;
       retained_d14: string;
     }>(
       `
@@ -1020,6 +1023,7 @@ export class AnalyticsDashboardService {
           (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS signup_day
         FROM users
         WHERE created_at >= :betaStart AND created_at < :betaEnd
+          AND COALESCE(is_dev, false) = false
       ),
       activity AS (
         SELECT DISTINCT
@@ -1034,26 +1038,41 @@ export class AnalyticsDashboardService {
           (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS activity_day
         FROM meals
         WHERE status = 'active' AND user_id IS NOT NULL
+      ),
+      today AS (
+        SELECT (NOW() AT TIME ZONE 'America/Sao_Paulo')::date AS d
       )
       SELECT
         COUNT(*)::text AS cohort_size,
         COUNT(*) FILTER (
-          WHERE EXISTS (
-            SELECT 1 FROM activity a
-            WHERE a.user_id = c.user_id AND a.activity_day = c.signup_day + 1
-          )
+          WHERE c.signup_day + 1 <= (SELECT d FROM today)
+        )::text AS mature_d1,
+        COUNT(*) FILTER (
+          WHERE c.signup_day + 1 <= (SELECT d FROM today)
+            AND EXISTS (
+              SELECT 1 FROM activity a
+              WHERE a.user_id = c.user_id AND a.activity_day = c.signup_day + 1
+            )
         )::text AS retained_d1,
         COUNT(*) FILTER (
-          WHERE EXISTS (
-            SELECT 1 FROM activity a
-            WHERE a.user_id = c.user_id AND a.activity_day = c.signup_day + 7
-          )
+          WHERE c.signup_day + 7 <= (SELECT d FROM today)
+        )::text AS mature_d7,
+        COUNT(*) FILTER (
+          WHERE c.signup_day + 7 <= (SELECT d FROM today)
+            AND EXISTS (
+              SELECT 1 FROM activity a
+              WHERE a.user_id = c.user_id AND a.activity_day >= c.signup_day + 7
+            )
         )::text AS retained_d7,
         COUNT(*) FILTER (
-          WHERE EXISTS (
-            SELECT 1 FROM activity a
-            WHERE a.user_id = c.user_id AND a.activity_day = c.signup_day + 14
-          )
+          WHERE c.signup_day + 14 <= (SELECT d FROM today)
+        )::text AS mature_d14,
+        COUNT(*) FILTER (
+          WHERE c.signup_day + 14 <= (SELECT d FROM today)
+            AND EXISTS (
+              SELECT 1 FROM activity a
+              WHERE a.user_id = c.user_id AND a.activity_day >= c.signup_day + 14
+            )
         )::text AS retained_d14
       FROM cohort c
       `,
@@ -1064,15 +1083,21 @@ export class AnalyticsDashboardService {
     );
 
     const row = rows[0];
-    const cohortSize = Number(row?.cohort_size ?? 0);
-    const pct = (n: number) =>
-      cohortSize > 0 ? Math.round((1000 * n) / cohortSize) / 10 : 0;
+    const pct = (n: number, denom: number) =>
+      denom > 0 ? Math.round((1000 * n) / denom) / 10 : 0;
+
+    const d1Users = Number(row?.retained_d1 ?? 0);
+    const d1Cohort = Number(row?.mature_d1 ?? 0);
+    const d7Users = Number(row?.retained_d7 ?? 0);
+    const d7Cohort = Number(row?.mature_d7 ?? 0);
+    const d14Users = Number(row?.retained_d14 ?? 0);
+    const d14Cohort = Number(row?.mature_d14 ?? 0);
 
     return {
-      cohortSize,
-      d1: { users: Number(row?.retained_d1 ?? 0), pct: pct(Number(row?.retained_d1 ?? 0)) },
-      d7: { users: Number(row?.retained_d7 ?? 0), pct: pct(Number(row?.retained_d7 ?? 0)) },
-      d14: { users: Number(row?.retained_d14 ?? 0), pct: pct(Number(row?.retained_d14 ?? 0)) },
+      cohortSize: Number(row?.cohort_size ?? 0),
+      d1: { users: d1Users, cohortSize: d1Cohort, pct: pct(d1Users, d1Cohort) },
+      d7: { users: d7Users, cohortSize: d7Cohort, pct: pct(d7Users, d7Cohort) },
+      d14: { users: d14Users, cohortSize: d14Cohort, pct: pct(d14Users, d14Cohort) },
     };
   }
 
@@ -1092,6 +1117,7 @@ export class AnalyticsDashboardService {
           (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS signup_day
         FROM users
         WHERE created_at >= :betaStart AND created_at < :betaEnd
+          AND COALESCE(is_dev, false) = false
       ),
       activated AS (
         SELECT DISTINCT user_id
@@ -1147,7 +1173,7 @@ export class AnalyticsDashboardService {
           ) AS used_social,
           EXISTS (
             SELECT 1 FROM activity_days a
-            WHERE a.user_id = c.user_id AND a.activity_day = c.signup_day + 7
+            WHERE a.user_id = c.user_id AND a.activity_day >= c.signup_day + 7
           ) AS retained_d7
         FROM cohort c
         INNER JOIN activated act ON act.user_id = c.user_id

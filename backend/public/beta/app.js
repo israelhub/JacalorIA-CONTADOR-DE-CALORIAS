@@ -194,30 +194,31 @@
 
   function renderRetention(data) {
     const r = data.retention;
+    const denom = (bucket) => bucket.cohortSize ?? r.cohortSize;
     document.getElementById("retentionCards").innerHTML = `
       <div class="ret-card">
         <span class="ret-label">
           Dia seguinte
-          ${tipBadge("D1", "D1 = Day 1. Percentual que voltou no dia seguinte ao cadastro.")}
+          ${tipBadge("D1", "D1 = Day 1. Voltou no dia seguinte. Só quem já passou do dia 1. Exclui is_dev.")}
         </span>
         <strong>${r.d1.pct}%</strong>
-        <small>${r.d1.users} de ${r.cohortSize} pessoas</small>
+        <small>${r.d1.users} de ${denom(r.d1)} pessoas</small>
       </div>
       <div class="ret-card">
         <span class="ret-label">
           Após 7 dias
-          ${tipBadge("D7", "D7 = Day 7. Percentual que voltou 7 dias depois do cadastro.")}
+          ${tipBadge("D7", "D7+. Conta quem abriu no 7º dia ou depois. Só coorte madura (já passou do dia 7). Exclui is_dev.")}
         </span>
         <strong>${r.d7.pct}%</strong>
-        <small>${r.d7.users} de ${r.cohortSize} pessoas</small>
+        <small>${r.d7.users} de ${denom(r.d7)} pessoas</small>
       </div>
       <div class="ret-card">
         <span class="ret-label">
           Após 14 dias
-          ${tipBadge("D14", "D14 = Day 14. Percentual que voltou 14 dias depois do cadastro.")}
+          ${tipBadge("D14", "D14+. Conta quem abriu no 14º dia ou depois. Só coorte madura. Exclui is_dev.")}
         </span>
         <strong>${r.d14.pct}%</strong>
-        <small>${r.d14.users} de ${r.cohortSize} pessoas</small>
+        <small>${r.d14.users} de ${denom(r.d14)} pessoas</small>
       </div>
     `;
   }

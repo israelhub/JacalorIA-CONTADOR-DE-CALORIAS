@@ -139,6 +139,10 @@ export class User extends Model {
   @Column({ type: DataType.DATE, field: 'last_active_at' })
   lastActiveAt: Date | null;
 
+  @Default(false)
+  @Column({ type: DataType.BOOLEAN, field: 'is_dev' })
+  isDev: boolean;
+
   @CreatedAt
   @Column({ field: 'created_at' })
   createdAt: Date;
