@@ -169,6 +169,10 @@ export class AiService {
         error && typeof error === 'object' && 'failedModels' in error
           ? (error as { failedModels?: string[] }).failedModels
           : undefined;
+      const providerError =
+        error && typeof error === 'object' && 'providerError' in error
+          ? String((error as { providerError?: unknown }).providerError ?? '')
+          : '';
       const lastModel = failedModels?.length
         ? failedModels[failedModels.length - 1]
         : 'unknown';
@@ -179,10 +183,10 @@ export class AiService {
           latency_ms: Date.now() - stopwatchStarted,
           error_code:
             error instanceof Error ? error.name || 'error' : 'error',
-          error_message:
-            error instanceof Error
-              ? error.message.slice(0, 240)
-              : String(error).slice(0, 240),
+          error_message: (
+            providerError ||
+            (error instanceof Error ? error.message : String(error))
+          ).slice(0, 240),
           source: 'server',
           model: lastModel,
           failed_models: failedModels ?? [],

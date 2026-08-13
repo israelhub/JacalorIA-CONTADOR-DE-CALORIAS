@@ -16,30 +16,19 @@ import {
   FoodAnalysisTotals,
   FoodNutritionLabel,
 } from './food-analysis.provider';
+import {
+  DEFAULT_FALLBACK_MODELS,
+  DEFAULT_PRIMARY_MODEL,
+  MODEL_COOLDOWN_MS,
+  TOTAL_TIMEOUT_MS,
+  parseGeminiModelList,
+  resolveModelTimeoutMs,
+  shouldCooldownModel,
+  thinkingConfigForModel,
+} from './gemini-model.util';
 
 const AI_OVERLOAD_MESSAGE =
   'Estamos enfrentando uma sobrecarga na IA. Tente novamente em alguns instantes.';
-// Budget total abaixo do CloudFront/nginx (120s). Preferimos falhar cedo a
-// segurar o usuario em espera inutil — a UX pede analise rapida.
-const TOTAL_TIMEOUT_MS = 55_000;
-// Flash/vision normalmente responde em poucos segundos. Se passar disso,
-// aborta e cai no proximo modelo em vez de "morrer" esperando.
-const PER_MODEL_TIMEOUT_MS = 12_000;
-// Apos timeout/429, nao gasta o budget de novo no mesmo modelo por um tempo
-// (cota RPM e por modelo — deixa o fallback atender enquanto o primario esfria).
-const MODEL_COOLDOWN_MS = 30_000;
-const MAX_MODELS = 8;
-const DEFAULT_PRIMARY_MODEL = 'gemini-3.5-flash-lite';
-// Cada modelo tem cota RPM/RPD separada no AI Studio — a cadeia espalha a carga
-// quando o primário toma 429 por minuto.
-const DEFAULT_FALLBACK_MODELS = [
-  'gemini-3.1-flash-lite',
-  'gemini-2.5-flash-lite',
-  'gemini-3-flash',
-  'gemini-3.5-flash',
-  'gemini-3.6-flash',
-  'gemini-2.5-flash',
-].join(',');
 
 @Injectable()
 export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
@@ -95,7 +84,7 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
           apiKey,
           model,
           contents,
-          timeoutMs: Math.min(remainingMs, PER_MODEL_TIMEOUT_MS),
+          timeoutMs: resolveModelTimeoutMs(index, remainingMs),
         });
         return {
           analysis,
@@ -122,7 +111,10 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
       `Todos os modelos falharam ou o timeout de ${TOTAL_TIMEOUT_MS}ms foi atingido. Último erro: ${lastErrorMessage}`,
     );
     const overload = new ServiceUnavailableException(AI_OVERLOAD_MESSAGE);
-    (overload as Error & { failedModels?: string[] }).failedModels = failedModels;
+    Object.assign(overload, {
+      failedModels,
+      providerError: lastErrorMessage,
+    });
     throw overload;
   }
 
@@ -138,7 +130,7 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
   }
 
   private markModelCooldown(model: string, errorMessage: string): void {
-    if (!this.shouldCooldown(errorMessage)) {
+    if (!shouldCooldownModel(errorMessage)) {
       return;
     }
     this.modelCooldownUntil.set(model, Date.now() + MODEL_COOLDOWN_MS);
@@ -147,23 +139,10 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
     );
   }
 
-  private shouldCooldown(errorMessage: string): boolean {
-    const normalized = errorMessage.toLowerCase();
-    return (
-      normalized.includes('timeout') ||
-      normalized.includes('429') ||
-      normalized.includes('rate') ||
-      normalized.includes('quota') ||
-      normalized.includes('resource_exhausted') ||
-      normalized.includes('resource exhausted') ||
-      normalized.includes('unavailable')
-    );
-  }
-
   private resolveModels(): string[] {
     const configuredChain = this.configService.get<string>('GEMINI_MODELS')?.trim();
     if (configuredChain) {
-      return this.parseModelList(configuredChain);
+      return parseGeminiModelList(configuredChain);
     }
 
     const primary = this.configService.get<string>(
@@ -175,27 +154,7 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
       DEFAULT_FALLBACK_MODELS,
     );
 
-    return this.parseModelList(`${primary},${fallbacks}`);
-  }
-
-  private parseModelList(value: string): string[] {
-    const models: string[] = [];
-    const seen = new Set<string>();
-
-    for (const part of value.split(',')) {
-      const model = part.trim();
-      if (!model || seen.has(model)) {
-        continue;
-      }
-
-      seen.add(model);
-      models.push(model);
-      if (models.length >= MAX_MODELS) {
-        break;
-      }
-    }
-
-    return models.length > 0 ? models : [DEFAULT_PRIMARY_MODEL];
+    return parseGeminiModelList(`${primary},${fallbacks}`);
   }
 
   private buildRequestContents(analyzeFoodDto: AnalyzeFoodDto): {
@@ -256,6 +215,7 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
       init: Record<string, unknown>,
     ) => Promise<any>;
 
+    const thinkingConfig = thinkingConfigForModel(model);
     const controller = new AbortController();
     const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -276,6 +236,8 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
             generationConfig: {
               temperature: 0.2,
               responseMimeType: 'application/json',
+              maxOutputTokens: 2048,
+              ...(thinkingConfig ? { thinkingConfig } : {}),
             },
           }),
         },
