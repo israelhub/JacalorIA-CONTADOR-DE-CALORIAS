@@ -3,8 +3,11 @@
 export const TOTAL_TIMEOUT_MS = 55_000;
 export const PRIMARY_MODEL_TIMEOUT_MS = 25_000;
 export const PER_MODEL_TIMEOUT_MS = 16_000;
-export const MODEL_COOLDOWN_MS = 30_000;
+/** Um pouco acima da janela de RPM do AI Studio (1 min). */
+export const MODEL_COOLDOWN_MS = 65_000;
 export const MAX_MODELS = 8;
+/** Um pedido não pode queimar a cota RPM de toda a cadeia. */
+export const MAX_ATTEMPTS_PER_REQUEST = 3;
 export const DEFAULT_PRIMARY_MODEL = 'gemini-3.5-flash-lite';
 export const DEFAULT_FALLBACK_MODELS = [
   'gemini-3.1-flash-lite',

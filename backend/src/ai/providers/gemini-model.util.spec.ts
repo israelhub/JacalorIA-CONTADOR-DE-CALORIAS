@@ -7,6 +7,8 @@ import {
   thinkingConfigForModel,
   PRIMARY_MODEL_TIMEOUT_MS,
   PER_MODEL_TIMEOUT_MS,
+  MAX_ATTEMPTS_PER_REQUEST,
+  MODEL_COOLDOWN_MS,
   DEFAULT_PRIMARY_MODEL,
 } from './gemini-model.util';
 
@@ -31,6 +33,13 @@ describe('resolveModelTimeoutMs', () => {
     assert.equal(resolveModelTimeoutMs(0, 55_000), PRIMARY_MODEL_TIMEOUT_MS);
     assert.equal(resolveModelTimeoutMs(1, 55_000), PER_MODEL_TIMEOUT_MS);
     assert.equal(resolveModelTimeoutMs(0, 8_000), 8_000);
+  });
+});
+
+describe('limites de cota', () => {
+  it('esfria 429 por mais de 1 min e cap de tentativas por pedido', () => {
+    assert.ok(MODEL_COOLDOWN_MS >= 60_000);
+    assert.equal(MAX_ATTEMPTS_PER_REQUEST, 3);
   });
 });
 
