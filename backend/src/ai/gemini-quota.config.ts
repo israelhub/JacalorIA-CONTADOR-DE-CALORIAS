@@ -45,13 +45,6 @@ export const DEFAULT_GEMINI_QUOTA_LIMITS: GeminiQuotaLimit[] = [
     rpd: 20,
   },
   {
-    model: 'gemini-3-flash',
-    label: 'Gemini 3 Flash',
-    rpm: 5,
-    tpm: 250_000,
-    rpd: 20,
-  },
-  {
     model: 'gemini-3.5-flash',
     label: 'Gemini 3.5 Flash',
     rpm: 5,

@@ -150,6 +150,34 @@ void main() {
     expect(parse.message, FoodAnalysisService.serverErrorMessage);
   });
 
+  test('nao faz auto-retry em sobrecarga 503 da IA', () {
+    final overload = FoodAnalysisService.toUserFacingError(
+      Exception('Estamos enfrentando uma sobrecarga na IA. Tente novamente'),
+    );
+    expect(
+      FoodAnalysisService.shouldAutoRetry(overload, overload),
+      isFalse,
+    );
+  });
+
+  test('faz auto-retry em timeout e falha de conexao', () {
+    const timeout = const FoodAnalysisHighDemandException(
+      FoodAnalysisService.timeoutMessage,
+    );
+    expect(
+      FoodAnalysisService.shouldAutoRetry(timeout, timeout),
+      isTrue,
+    );
+
+    final connection = FoodAnalysisService.toUserFacingError(
+      Exception('connection abort'),
+    );
+    expect(
+      FoodAnalysisService.shouldAutoRetry(connection, connection),
+      isTrue,
+    );
+  });
+
   testWidgets('permite retentar apos erro', (tester) async {
     var attempts = 0;
     final completer = Completer<FoodAnalysisResult>();

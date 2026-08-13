@@ -181,7 +181,7 @@ class FoodAnalysisService {
         lastError = error;
         final mapped = toUserFacingError(error);
         final canAutoRetry =
-            attempt < _maxAttempts && _isTransientFailure(mapped, error);
+            attempt < _maxAttempts && shouldAutoRetry(mapped, error);
         if (!canAutoRetry) {
           throw mapped;
         }
@@ -336,13 +336,15 @@ class FoodAnalysisService {
 
   /// Falhas tipicas de proxy/rede que costumam passar na 2a tentativa
   /// (cache/dedupe no backend ajuda se a 1a chegou a concluir no Nest).
-  static bool _isTransientFailure(FoodAnalysisException mapped, Object error) {
-    if (mapped.isHighDemand) {
-      return true;
+  /// 503/cota da IA nao entra: retry imediato queima o restante dos modelos.
+  static bool shouldAutoRetry(FoodAnalysisException mapped, Object error) {
+    if (mapped.message == highDemandMessage) {
+      return false;
     }
     if (mapped.message == connectionErrorMessage ||
         mapped.message == serverErrorMessage ||
-        mapped.message == timeoutMessage) {
+        mapped.message == timeoutMessage ||
+        mapped.isHighDemand) {
       return true;
     }
     final normalized = error.toString().toLowerCase();
