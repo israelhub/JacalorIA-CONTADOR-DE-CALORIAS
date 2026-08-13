@@ -19,6 +19,7 @@ import {
 import {
   DEFAULT_FALLBACK_MODELS,
   DEFAULT_PRIMARY_MODEL,
+  MAX_ATTEMPTS_PER_REQUEST,
   MODEL_COOLDOWN_MS,
   TOTAL_TIMEOUT_MS,
   parseGeminiModelList,
@@ -78,13 +79,21 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
         );
       }
 
+      if (attempts >= MAX_ATTEMPTS_PER_REQUEST) {
+        lastErrorMessage = `limite de ${MAX_ATTEMPTS_PER_REQUEST} tentativas por pedido`;
+        this.logger.warn(
+          `Parando fallback: ${lastErrorMessage}. Proximo livre seria ${model}`,
+        );
+        break;
+      }
+
       attempts += 1;
       try {
         const { analysis, usage } = await this.callGeminiModel({
           apiKey,
           model,
           contents,
-          timeoutMs: resolveModelTimeoutMs(index, remainingMs),
+          timeoutMs: resolveModelTimeoutMs(attempts - 1, remainingMs),
         });
         return {
           analysis,
