@@ -171,19 +171,7 @@ jobs:
             if [ -n "${{ vars.ANDROID_RELEASE_SHA256 }}" ]; then
               ASSETLINKS_FILE="$ASSETLINKS_FILE" \
               ANDROID_RELEASE_SHA256="${{ vars.ANDROID_RELEASE_SHA256 }}" \
-              python3 - <<'PY'
-import json, os
-path = os.environ["ASSETLINKS_FILE"]
-extra = os.environ.get("ANDROID_RELEASE_SHA256", "").strip().upper()
-with open(path, encoding="utf-8") as f:
-    data = json.load(f)
-fps = data[0]["target"].setdefault("sha256_cert_fingerprints", [])
-if extra and extra not in fps:
-    fps.append(extra)
-with open(path, "w", encoding="utf-8") as f:
-    json.dump(data, f, indent=2)
-    f.write("\n")
-PY
+              python3 -c 'import json,os; p=os.environ["ASSETLINKS_FILE"]; e=os.environ.get("ANDROID_RELEASE_SHA256","").strip().upper(); d=json.load(open(p,encoding="utf-8")); f=d[0]["target"].setdefault("sha256_cert_fingerprints",[]); e and e not in f and f.append(e); o=open(p,"w",encoding="utf-8"); json.dump(d,o,indent=2); o.write("\n"); o.close()'
             fi
             aws s3 cp "$ASSETLINKS_FILE" \
               "s3://$BUCKET/.well-known/assetlinks.json" \
