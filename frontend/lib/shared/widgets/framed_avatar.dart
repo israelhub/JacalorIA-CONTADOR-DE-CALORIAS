@@ -212,15 +212,6 @@ class _AvatarCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = _resolveAvatarUrl(avatarUrl);
-    final imageProvider = avatarBytes != null && avatarBytes!.isNotEmpty
-        ? MemoryImage(avatarBytes!) as ImageProvider
-        : imageUrl != null
-        ? CachedNetworkImageProvider(
-            imageUrl,
-            maxWidth: _cacheDimension(context),
-            maxHeight: _cacheDimension(context),
-          )
-        : null;
     final initial = fallbackText?.trim().isNotEmpty == true
         ? fallbackText!.trim()[0].toUpperCase()
         : null;
@@ -230,29 +221,72 @@ class _AvatarCircle extends StatelessWidget {
       backgroundColor: backgroundColor,
     );
 
-    return ClipOval(
-      child: SizedBox.square(
-        dimension: size,
-        child: imageProvider != null
-            ? Image(
-                image: imageProvider,
-                fit: BoxFit.cover,
-                gaplessPlayback: true,
-                frameBuilder: (_, child, frame, wasSynchronouslyLoaded) {
-                  if (wasSynchronouslyLoaded || frame != null) {
-                    return child;
-                  }
-                  return AppSkeletonBox(
-                    width: size,
-                    height: size,
-                    borderRadius: size / 2,
-                  );
-                },
-                errorBuilder: (_, __, ___) => fallback,
-              )
-            : fallback,
-      ),
-    );
+    Widget buildImage(Widget image) {
+      return ClipOval(
+        child: SizedBox.square(dimension: size, child: image),
+      );
+    }
+
+    if (avatarBytes != null && avatarBytes!.isNotEmpty) {
+      return buildImage(
+        Image(
+          key: ValueKey('avatar-bytes-${avatarBytes!.length}'),
+          image: MemoryImage(avatarBytes!),
+          fit: BoxFit.cover,
+          width: size,
+          height: size,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => fallback,
+        ),
+      );
+    }
+
+    if (imageUrl != null) {
+      final cacheKey = ValueKey('avatar-$imageUrl');
+      if (kIsWeb) {
+        return buildImage(
+          Image.network(
+            key: cacheKey,
+            imageUrl,
+            fit: BoxFit.cover,
+            width: size,
+            height: size,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => fallback,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) {
+                return child;
+              }
+              return AppSkeletonBox(
+                width: size,
+                height: size,
+                borderRadius: size / 2,
+              );
+            },
+          ),
+        );
+      }
+
+      return buildImage(
+        CachedNetworkImage(
+          key: cacheKey,
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          width: size,
+          height: size,
+          memCacheWidth: _cacheDimension(context),
+          memCacheHeight: _cacheDimension(context),
+          placeholder: (_, __) => AppSkeletonBox(
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+          ),
+          errorWidget: (_, __, ___) => fallback,
+        ),
+      );
+    }
+
+    return buildImage(fallback);
   }
 
   int? _cacheDimension(BuildContext context) {

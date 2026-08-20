@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
-import '../../../shared/widgets/app_skeleton.dart';
+import '../../../shared/widgets/app_network_image.dart';
 import '../models/food_analysis_result.dart';
 import '../services/food_analysis_service.dart';
 import '../widgets/food_analysis_page_header.dart';
@@ -419,21 +418,12 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
 
     final imageUrl = (widget.imageUrl ?? '').trim();
     if (imageUrl.toLowerCase().startsWith('http')) {
-      return Image(
-        image: CachedNetworkImageProvider(imageUrl),
+      return AppNetworkImage(
+        url: imageUrl,
         fit: BoxFit.cover,
         width: double.infinity,
-        gaplessPlayback: true,
-        frameBuilder: (_, child, frame, wasSyncLoaded) {
-          if (wasSyncLoaded || frame != null) {
-            return child;
-          }
-          return const AppSkeletonBox(
-            height: double.infinity,
-            borderRadius: 0,
-          );
-        },
-        errorBuilder: (_, __, ___) => _buildMissingImage(),
+        height: double.infinity,
+        error: _buildMissingImage(),
       );
     }
 

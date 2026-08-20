@@ -1,10 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_skeleton.dart';
+import '../../../shared/widgets/app_network_image.dart';
 import '../helpers/food_review_helpers.dart';
 
 class FoodReviewMealHeader extends StatefulWidget {
@@ -114,21 +113,13 @@ class _FoodReviewMealHeaderState extends State<FoodReviewMealHeader> {
                     width: double.infinity,
                   )
                 : hasNetworkImage
-                ? Image(
-                    image: CachedNetworkImageProvider(widget.imageUrl!),
+                ? AppNetworkImage(
+                    url: widget.imageUrl!,
                     fit: BoxFit.cover,
                     width: double.infinity,
-                    gaplessPlayback: true,
-                    frameBuilder: (_, child, frame, wasSyncLoaded) {
-                      if (wasSyncLoaded || frame != null) {
-                        return child;
-                      }
-                      return const AppSkeletonBox(
-                        height: double.infinity,
-                        borderRadius: 0,
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => Center(
+                    height: double.infinity,
+                    borderRadius: AppRadius.md,
+                    error: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [

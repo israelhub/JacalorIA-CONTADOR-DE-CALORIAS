@@ -20,6 +20,9 @@ class SocialService {
       <String, SocialFriendProfile>{};
   static SocialFriendsData? _friendsSeed;
 
+  static final Map<String, String> _avatarUrlByUserId = <String, String>{};
+  static final Map<String, String> _avatarFrameByUserId = <String, String>{};
+
   static SocialGroupDetail? cachedGroup(String groupId) =>
       _groupSeed[groupId.trim()];
 
@@ -42,6 +45,8 @@ class SocialService {
     _groupSeed.clear();
     _friendProfileSeed.clear();
     _friendsSeed = null;
+    _avatarUrlByUserId.clear();
+    _avatarFrameByUserId.clear();
   }
 
   Future<List<SocialGroupSummary>> fetchGroups() async {
@@ -85,7 +90,7 @@ class SocialService {
       fallbackError: 'Erro ao carregar ranking de XP.',
     );
     if (response.statusCode == 200) {
-      return SocialXpRanking.fromJson(body);
+      return _mergeXpRanking(SocialXpRanking.fromJson(body));
     }
     throw Exception(_extractMessage(body, 'Erro ao carregar ranking de XP.'));
   }
@@ -308,7 +313,7 @@ class SocialService {
     );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
-      final detail = SocialGroupDetail.fromJson(body);
+      final detail = _mergeGroupDetail(SocialGroupDetail.fromJson(body));
       _groupSeed[groupId.trim()] = detail;
       return detail;
     }
@@ -357,6 +362,7 @@ class SocialService {
       return (body['messages'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(SocialGroupChatMessage.fromJson)
+          .map(_mergeChatMessage)
           .toList(growable: false);
     }
     throw Exception(_extractMessage(body, 'Erro ao carregar o chat.'));
@@ -685,14 +691,194 @@ class SocialService {
   }
 
   void _seedGroup(SocialGroupDetail detail) {
-    final id = detail.group.id.trim();
+    final merged = _mergeGroupDetail(detail);
+    final id = merged.group.id.trim();
     if (id.isNotEmpty) {
-      _groupSeed[id] = detail;
+      _groupSeed[id] = merged;
     }
   }
 
+  static void _rememberUserAvatar({
+    required String userId,
+    String? avatarUrl,
+    String? avatarFrameId,
+  }) {
+    final id = userId.trim();
+    if (id.isEmpty) return;
+    final url = avatarUrl?.trim();
+    if (url != null && url.isNotEmpty) {
+      _avatarUrlByUserId[id] = url;
+    }
+    final frame = avatarFrameId?.trim();
+    if (frame != null && frame.isNotEmpty) {
+      _avatarFrameByUserId[id] = frame;
+    }
+  }
+
+  static SocialRankingEntry _mergeRankingEntry(SocialRankingEntry entry) {
+    final userId = entry.userId.trim();
+    final avatarUrl = entry.avatarUrl ?? _avatarUrlByUserId[userId];
+    final avatarFrameId = entry.avatarFrameId ?? _avatarFrameByUserId[userId];
+    _rememberUserAvatar(
+      userId: userId,
+      avatarUrl: avatarUrl,
+      avatarFrameId: avatarFrameId,
+    );
+    if (avatarUrl == entry.avatarUrl && avatarFrameId == entry.avatarFrameId) {
+      return entry;
+    }
+    return SocialRankingEntry(
+      id: entry.id,
+      userId: entry.userId,
+      name: entry.name,
+      avatarUrl: avatarUrl,
+      avatarFrameId: avatarFrameId,
+      points: entry.points,
+      streakDays: entry.streakDays,
+      isCurrentUser: entry.isCurrentUser,
+      isLeader: entry.isLeader,
+      position: entry.position,
+      subtitle: entry.subtitle,
+      dailyCalorieGoal: entry.dailyCalorieGoal,
+    );
+  }
+
+  SocialGroupDetail _mergeGroupDetail(SocialGroupDetail detail) {
+    final previous = _groupSeed[detail.group.id.trim()];
+    final previousByUserId = <String, SocialRankingEntry>{
+      if (previous != null)
+        for (final entry in previous.ranking)
+          if (entry.userId.trim().isNotEmpty) entry.userId.trim(): entry,
+    };
+
+    final ranking = detail.ranking.map((entry) {
+      final previousEntry = previousByUserId[entry.userId.trim()];
+      if (previousEntry == null) {
+        return _mergeRankingEntry(entry);
+      }
+      return _mergeRankingEntry(
+        SocialRankingEntry(
+          id: entry.id,
+          userId: entry.userId,
+          name: entry.name,
+          avatarUrl: entry.avatarUrl ?? previousEntry.avatarUrl,
+          avatarFrameId: entry.avatarFrameId ?? previousEntry.avatarFrameId,
+          points: entry.points,
+          streakDays: entry.streakDays,
+          isCurrentUser: entry.isCurrentUser,
+          isLeader: entry.isLeader,
+          position: entry.position,
+          subtitle: entry.subtitle,
+          dailyCalorieGoal: entry.dailyCalorieGoal,
+        ),
+      );
+    }).toList(growable: false);
+
+    return SocialGroupDetail(
+      group: detail.group,
+      ranking: ranking,
+      recentActivities: detail.recentActivities,
+      hasMoreActivities: detail.hasMoreActivities,
+    );
+  }
+
+  SocialXpRanking _mergeXpRanking(SocialXpRanking ranking) {
+    return SocialXpRanking(
+      period: ranking.period,
+      ranking: ranking.ranking.map(_mergeRankingEntry).toList(growable: false),
+      viewerPosition: ranking.viewerPosition,
+      viewerPoints: ranking.viewerPoints,
+    );
+  }
+
+  static SocialFriend _mergeFriend(SocialFriend friend) {
+    final userId = friend.id.trim();
+    final avatarUrl = friend.avatarUrl ?? _avatarUrlByUserId[userId];
+    final avatarFrameId = friend.avatarFrameId ?? _avatarFrameByUserId[userId];
+    _rememberUserAvatar(
+      userId: userId,
+      avatarUrl: avatarUrl,
+      avatarFrameId: avatarFrameId,
+    );
+    if (avatarUrl == friend.avatarUrl && avatarFrameId == friend.avatarFrameId) {
+      return friend;
+    }
+    return SocialFriend(
+      id: friend.id,
+      name: friend.name,
+      avatarUrl: avatarUrl,
+      avatarFrameId: avatarFrameId,
+      streakDays: friend.streakDays,
+    );
+  }
+
+  static SocialGroupChatMessage _mergeChatMessage(SocialGroupChatMessage message) {
+    final userId = message.userId.trim();
+    final senderAvatarUrl =
+        message.senderAvatarUrl ?? _avatarUrlByUserId[userId];
+    final senderAvatarFrameId =
+        message.senderAvatarFrameId ?? _avatarFrameByUserId[userId];
+    _rememberUserAvatar(
+      userId: userId,
+      avatarUrl: senderAvatarUrl,
+      avatarFrameId: senderAvatarFrameId,
+    );
+    if (senderAvatarUrl == message.senderAvatarUrl &&
+        senderAvatarFrameId == message.senderAvatarFrameId) {
+      return message;
+    }
+    return SocialGroupChatMessage(
+      id: message.id,
+      groupId: message.groupId,
+      userId: message.userId,
+      type: message.type,
+      body: message.body,
+      imageUrl: message.imageUrl,
+      createdAt: message.createdAt,
+      editedAt: message.editedAt,
+      isDeleted: message.isDeleted,
+      senderName: message.senderName,
+      senderAvatarUrl: senderAvatarUrl,
+      senderAvatarFrameId: senderAvatarFrameId,
+      isCurrentUser: message.isCurrentUser,
+      replyTo: message.replyTo,
+      reactions: message.reactions,
+    );
+  }
+
+  SocialFriendsData _mergeFriendsData(SocialFriendsData data) {
+    final previous = _friendsSeed;
+    final previousById = <String, SocialFriend>{
+      if (previous != null)
+        for (final friend in previous.friends)
+          if (friend.id.trim().isNotEmpty) friend.id.trim(): friend,
+    };
+
+    final friends = data.friends.map((friend) {
+      final previousFriend = previousById[friend.id.trim()];
+      if (previousFriend == null) {
+        return _mergeFriend(friend);
+      }
+      return _mergeFriend(
+        SocialFriend(
+          id: friend.id,
+          name: friend.name,
+          avatarUrl: friend.avatarUrl ?? previousFriend.avatarUrl,
+          avatarFrameId: friend.avatarFrameId ?? previousFriend.avatarFrameId,
+          streakDays: friend.streakDays,
+        ),
+      );
+    }).toList(growable: false);
+
+    return SocialFriendsData(
+      friends: friends,
+      inviteCode: data.inviteCode,
+      pendingRequests: data.pendingRequests,
+    );
+  }
+
   SocialFriendsData _parseFriendsData(Map<String, dynamic> body) {
-    _friendsSeed = SocialFriendsData(
+    final parsed = SocialFriendsData(
       friends: (body['friends'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(SocialFriend.fromJson)
@@ -703,6 +889,7 @@ class SocialService {
           .map(SocialFriendRequest.fromJson)
           .toList(growable: false),
     );
+    _friendsSeed = _mergeFriendsData(parsed);
     return _friendsSeed!;
   }
 }
