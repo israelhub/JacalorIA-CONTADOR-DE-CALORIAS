@@ -56,27 +56,30 @@ class FramedAvatar extends StatelessWidget {
             ? null
             : (resolvedSize * MediaQuery.devicePixelRatioOf(context)).round();
 
-        final content = SizedBox.square(
-          dimension: resolvedSize,
-          child: Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              avatar,
-              if (hasFrame)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Image.asset(
-                      frame!.assetPath!,
-                      fit: BoxFit.contain,
-                      cacheWidth: frameCacheDimension,
-                      cacheHeight: frameCacheDimension,
-                      filterQuality: FilterQuality.medium,
-                      isAntiAlias: true,
+        // Center: pai apertado nao estica a PNG. Sem expand: a foto fica no furo.
+        final content = Center(
+          child: SizedBox.square(
+            dimension: resolvedSize,
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                avatar,
+                if (hasFrame)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Image.asset(
+                        frame!.assetPath!,
+                        fit: BoxFit.contain,
+                        cacheWidth: frameCacheDimension,
+                        cacheHeight: frameCacheDimension,
+                        filterQuality: FilterQuality.medium,
+                        isAntiAlias: true,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         );
 
@@ -115,6 +118,8 @@ class FramedAvatar extends StatelessWidget {
       case 'royal_gold':
       case 'soft_pink':
       case 'soft_blue':
+      case 'aug_sunset_ring':
+      case 'aug_mint_leaf':
         return 0.8;
       default:
         return framedAvatarScale;

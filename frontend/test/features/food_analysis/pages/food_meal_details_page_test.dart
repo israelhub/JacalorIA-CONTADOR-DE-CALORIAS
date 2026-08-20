@@ -72,12 +72,14 @@ FoodMealRecord _mealFixture() {
     createdAt: DateTime(2026, 7, 22, 12, 55),
     items: const [
       FoodAnalysisItem(
-        name: 'Arroz branco cozido',
+        name: 'Arroz',
         grams: 100,
         calories: 130,
         protein: 3,
         carbs: 28,
         fat: 0.2,
+        source: 'taco_db',
+        matchedFood: 'Arroz, tipo 1, cozido',
       ),
       FoodAnalysisItem(
         name: 'Feijao preto cozido',
@@ -86,6 +88,7 @@ FoodMealRecord _mealFixture() {
         protein: 6,
         carbs: 16,
         fat: 0.5,
+        source: 'ai_estimate',
       ),
     ],
   );
@@ -115,11 +118,78 @@ void main() {
     expect(find.text('Detalhes da refeição'), findsOneWidget);
     expect(find.text('Almoço'), findsWidgets);
     expect(find.text('12:55'), findsOneWidget);
-    expect(find.text('Arroz branco cozido'), findsOneWidget);
+    expect(find.text('Arroz'), findsOneWidget);
     expect(find.text('Feijao preto cozido'), findsOneWidget);
     expect(find.textContaining('56/200g'), findsOneWidget);
     expect(find.textContaining('13/120g'), findsOneWidget);
     expect(find.textContaining('1/60g'), findsOneWidget);
+  });
+
+  testWidgets('mostra tag TACO, match expandido e barras vs total da refeicao', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _wrap(
+        FoodMealDetailsPage(
+          record: _mealFixture(),
+          userProfile: const {
+            'dailyProteinGoal': 120,
+            'dailyCarbsGoal': 200,
+            'dailyFatGoal': 60,
+          },
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('TACO'), findsOneWidget);
+    expect(
+      find.text('Identificado na tabela TACO como: Arroz, tipo 1, cozido'),
+      findsNothing,
+    );
+    expect(find.text('3/13g'), findsNothing);
+    expect(find.text('28/56g'), findsNothing);
+    expect(find.text('13/120g'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Arroz'));
+    await tester.tap(find.text('Arroz'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Identificado na tabela TACO como: Arroz, tipo 1, cozido'),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(find.text('130kcal')).dy,
+      lessThan(
+        tester
+            .getTopLeft(
+              find.text(
+                'Identificado na tabela TACO como: Arroz, tipo 1, cozido',
+              ),
+            )
+            .dy,
+      ),
+    );
+    expect(
+      tester.getTopLeft(find.text('130kcal')).dy,
+      lessThan(tester.getTopLeft(find.text('Carboidratos').last).dy),
+    );
+    expect(find.text('3/13g'), findsOneWidget);
+    expect(find.text('28/56g'), findsOneWidget);
+    expect(find.text('3/120g'), findsNothing);
+
+    await tester.tap(find.text('Feijao preto cozido'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('TACO'), findsOneWidget);
+    expect(find.text('6/13g'), findsOneWidget);
   });
 
   testWidgets('atualiza detalhes apos editar e confirmar refeicao', (
@@ -171,6 +241,27 @@ void main() {
     expect(find.byType(FoodMealDetailsPage), findsOneWidget);
     expect(find.text('Janta leve'), findsOneWidget);
     expect(find.text('Janta'), findsOneWidget);
-    expect(find.textContaining('283 Calorias consumidas'), findsOneWidget);
+    expect(find.textContaining('410 Calorias consumidas'), findsOneWidget);
+  });
+
+  testWidgets('modo somente leitura oculta editar, excluir e salvar', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        FoodMealDetailsPage(
+          record: _mealFixture(),
+          readOnly: true,
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detalhes da refeição'), findsOneWidget);
+    expect(find.text('Arroz'), findsOneWidget);
+    expect(find.byTooltip('Editar refeição'), findsNothing);
+    expect(find.byTooltip('Excluir refeição'), findsNothing);
+    expect(find.byTooltip('Salvar para reutilizar'), findsNothing);
   });
 }

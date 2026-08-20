@@ -111,6 +111,10 @@ export class User extends Model {
   @Column({ type: DataType.JSONB, field: 'purchased_avatar_background_ids' })
   purchasedAvatarBackgroundIds: string[];
 
+  @Default([])
+  @Column({ type: DataType.JSONB, field: 'purchased_jaca_emoji_ids' })
+  purchasedJacaEmojiIds: string[];
+
   @AllowNull(true)
   @Column({ type: DataType.STRING, field: 'equipped_offensive_blocker_id' })
   equippedOffensiveBlockerId: string | null;
@@ -134,6 +138,10 @@ export class User extends Model {
   @AllowNull(true)
   @Column({ type: DataType.BOOLEAN, field: 'hide_guide_me' })
   hideGuideMe: boolean | null;
+
+  @Default(false)
+  @Column({ type: DataType.BOOLEAN, field: 'hide_public_profile_meals' })
+  hidePublicProfileMeals: boolean;
 
   @AllowNull(true)
   @Column({ type: DataType.DATE, field: 'last_active_at' })

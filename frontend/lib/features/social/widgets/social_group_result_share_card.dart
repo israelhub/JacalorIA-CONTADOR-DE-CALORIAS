@@ -294,6 +294,7 @@ class _RankRow extends StatelessWidget {
       competitionType: competitionType,
       points: entry.points,
       streakDays: entry.streakDays,
+      dailyCalorieGoal: entry.dailyCalorieGoal,
     );
     final highlight = entry.isCurrentUser;
     final accent = _placeAccent(entry.position);

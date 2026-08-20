@@ -27,8 +27,7 @@ class SocialService {
     String friendUserId, {
     String? groupId,
     String? viaUserId,
-  }) =>
-      _friendProfileSeed[_friendProfileKey(friendUserId, groupId, viaUserId)];
+  }) => _friendProfileSeed[_friendProfileKey(friendUserId, groupId, viaUserId)];
 
   static SocialFriendsData? get cachedFriends => _friendsSeed;
 
@@ -46,7 +45,10 @@ class SocialService {
   }
 
   Future<List<SocialGroupSummary>> fetchGroups() async {
-    final response = await http.get(Uri.parse('$_baseUrl/social/groups'), headers: _headers());
+    final response = await http.get(
+      Uri.parse('$_baseUrl/social/groups'),
+      headers: _headers(),
+    );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
       return (body['groups'] as List<dynamic>? ?? const [])
@@ -58,7 +60,10 @@ class SocialService {
   }
 
   Future<SocialFriendsData> fetchFriends() async {
-    final response = await http.get(Uri.parse('$_baseUrl/social/friends'), headers: _headers());
+    final response = await http.get(
+      Uri.parse('$_baseUrl/social/friends'),
+      headers: _headers(),
+    );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
       final data = _parseFriendsData(body);
@@ -66,6 +71,23 @@ class SocialService {
       return data;
     }
     throw Exception(_extractMessage(body, 'Erro ao carregar amigos.'));
+  }
+
+  Future<SocialXpRanking> fetchXpRanking({
+    SocialXpRankingPeriod period = SocialXpRankingPeriod.all,
+  }) async {
+    final uri = Uri.parse(
+      '$_baseUrl/social/xp-ranking',
+    ).replace(queryParameters: {'period': period.apiValue});
+    final response = await http.get(uri, headers: _headers());
+    final body = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Erro ao carregar ranking de XP.',
+    );
+    if (response.statusCode == 200) {
+      return SocialXpRanking.fromJson(body);
+    }
+    throw Exception(_extractMessage(body, 'Erro ao carregar ranking de XP.'));
   }
 
   Future<SocialFriendsData> addFriendByEmail(String email) async {
@@ -78,16 +100,23 @@ class SocialService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return _parseFriendsData(body);
     }
-    throw Exception(_extractMessage(body, 'Erro ao enviar solicitação de amizade.'));
+    throw Exception(
+      _extractMessage(body, 'Erro ao enviar solicitação de amizade.'),
+    );
   }
 
   Future<SocialFriendsData> addFriendByLinkCode(String inviteCode) async {
-    final response = await http.post(Uri.parse('$_baseUrl/social/friends/by-link/${inviteCode.trim()}'), headers: _headers());
+    final response = await http.post(
+      Uri.parse('$_baseUrl/social/friends/by-link/${inviteCode.trim()}'),
+      headers: _headers(),
+    );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
       return _parseFriendsData(body);
     }
-    throw Exception(_extractMessage(body, 'Erro ao enviar solicitação por link.'));
+    throw Exception(
+      _extractMessage(body, 'Erro ao enviar solicitação por link.'),
+    );
   }
 
   Future<SocialFriendsData> addFriendById(String friendUserId) async {
@@ -99,7 +128,9 @@ class SocialService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return _parseFriendsData(body);
     }
-    throw Exception(_extractMessage(body, 'Erro ao enviar solicitação por ID.'));
+    throw Exception(
+      _extractMessage(body, 'Erro ao enviar solicitação por ID.'),
+    );
   }
 
   Future<SocialFriendsData> acceptFriendRequest(String requestId) async {
@@ -140,21 +171,25 @@ class SocialService {
     if (normalizedViaUserId != null && normalizedViaUserId.isNotEmpty) {
       queryParameters['viaUserId'] = normalizedViaUserId;
     }
-    final uri = Uri.parse(
-      '$_baseUrl/social/friends/${friendUserId.trim()}/profile',
-    ).replace(queryParameters: queryParameters.isEmpty ? null : queryParameters);
+    final uri =
+        Uri.parse(
+          '$_baseUrl/social/friends/${friendUserId.trim()}/profile',
+        ).replace(
+          queryParameters: queryParameters.isEmpty ? null : queryParameters,
+        );
     final response = await http.get(uri, headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
       final profile = SocialFriendProfile.fromJson(body);
       _friendProfileSeed[_friendProfileKey(
-        friendUserId,
-        normalizedGroupId,
-        normalizedViaUserId,
-      )] = profile;
+            friendUserId,
+            normalizedGroupId,
+            normalizedViaUserId,
+          )] =
+          profile;
       return profile;
     }
-      throw Exception(_extractMessage(body, 'Erro ao carregar perfil.'));
+    throw Exception(_extractMessage(body, 'Erro ao carregar perfil.'));
   }
 
   Future<List<SocialFriend>> fetchUserFriends(
@@ -171,9 +206,10 @@ class SocialService {
     if (normalizedViaUserId != null && normalizedViaUserId.isNotEmpty) {
       queryParameters['viaUserId'] = normalizedViaUserId;
     }
-    final uri = Uri.parse(
-      '$_baseUrl/social/friends/${userId.trim()}/list',
-    ).replace(queryParameters: queryParameters.isEmpty ? null : queryParameters);
+    final uri = Uri.parse('$_baseUrl/social/friends/${userId.trim()}/list')
+        .replace(
+          queryParameters: queryParameters.isEmpty ? null : queryParameters,
+        );
     final response = await http.get(uri, headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
@@ -198,9 +234,9 @@ class SocialService {
   }
 
   Future<List<SocialUserSearchResult>> searchUsers(String query) async {
-    final uri = Uri.parse('$_baseUrl/social/users/search').replace(
-      queryParameters: {'q': query.trim()},
-    );
+    final uri = Uri.parse(
+      '$_baseUrl/social/users/search',
+    ).replace(queryParameters: {'q': query.trim()});
     final response = await http.get(uri, headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
@@ -213,7 +249,10 @@ class SocialService {
   }
 
   Future<SocialGroupDetail> joinGroupByInviteCode(String inviteCode) async {
-    final response = await http.post(Uri.parse('$_baseUrl/social/groups/join/${inviteCode.trim()}'), headers: _headers());
+    final response = await http.post(
+      Uri.parse('$_baseUrl/social/groups/join/${inviteCode.trim()}'),
+      headers: _headers(),
+    );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
       final detail = SocialGroupDetail.fromJson(body);
@@ -234,7 +273,9 @@ class SocialService {
     if (competitionType != null && competitionType.trim().isNotEmpty) {
       params['competitionType'] = competitionType.trim();
     }
-    final uri = Uri.parse('$_baseUrl/social/groups/public').replace(queryParameters: params.isEmpty ? null : params);
+    final uri = Uri.parse(
+      '$_baseUrl/social/groups/public',
+    ).replace(queryParameters: params.isEmpty ? null : params);
     final response = await http.get(uri, headers: _headers());
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
@@ -247,7 +288,10 @@ class SocialService {
   }
 
   Future<SocialGroupDetail> joinPublicGroup(String groupId) async {
-    final response = await http.post(Uri.parse('$_baseUrl/social/groups/public/${groupId.trim()}/join'), headers: _headers());
+    final response = await http.post(
+      Uri.parse('$_baseUrl/social/groups/public/${groupId.trim()}/join'),
+      headers: _headers(),
+    );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
       final detail = SocialGroupDetail.fromJson(body);
@@ -258,7 +302,10 @@ class SocialService {
   }
 
   Future<SocialGroupDetail> fetchGroup(String groupId) async {
-    final response = await http.get(Uri.parse('$_baseUrl/social/groups/$groupId'), headers: _headers());
+    final response = await http.get(
+      Uri.parse('$_baseUrl/social/groups/$groupId'),
+      headers: _headers(),
+    );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200) {
       final detail = SocialGroupDetail.fromJson(body);
@@ -266,6 +313,144 @@ class SocialService {
       return detail;
     }
     throw Exception(_extractMessage(body, 'Erro ao carregar o grupo.'));
+  }
+
+  Future<List<SocialActivityItem>> fetchGroupActivities(String groupId) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/social/groups/${groupId.trim()}/activities'),
+      headers: _headers(),
+    );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200) {
+      return (body['activities'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(SocialActivityItem.fromJson)
+          .toList(growable: false);
+    }
+    throw Exception(_extractMessage(body, 'Erro ao carregar atividades.'));
+  }
+
+  Future<List<SocialGroupChatMessage>> fetchGroupMessages(
+    String groupId, {
+    String? after,
+    String? before,
+    int limit = 80,
+  }) async {
+    final queryParameters = <String, String>{'limit': '$limit'};
+    final afterId = after?.trim();
+    if (afterId != null && afterId.isNotEmpty) {
+      queryParameters['after'] = afterId;
+    }
+    final beforeId = before?.trim();
+    if (beforeId != null && beforeId.isNotEmpty) {
+      queryParameters['before'] = beforeId;
+    }
+    final uri = Uri.parse(
+      '$_baseUrl/social/groups/${groupId.trim()}/messages',
+    ).replace(queryParameters: queryParameters);
+    final response = await http.get(uri, headers: _headers());
+    final body = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Erro ao carregar o chat.',
+    );
+    if (response.statusCode == 200) {
+      return (body['messages'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(SocialGroupChatMessage.fromJson)
+          .toList(growable: false);
+    }
+    throw Exception(_extractMessage(body, 'Erro ao carregar o chat.'));
+  }
+
+  Future<SocialGroupChatMessage> sendGroupMessage({
+    required String groupId,
+    required String type,
+    String? body,
+    String? imageUrl,
+    String? replyToId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/social/groups/${groupId.trim()}/messages'),
+      headers: _headers(withJsonContentType: true),
+      body: jsonEncode({
+        'type': type,
+        if (body != null) 'body': body,
+        if (imageUrl != null) 'imageUrl': imageUrl,
+        if (replyToId != null) 'replyToId': replyToId,
+      }),
+    );
+    final parsed = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Erro ao enviar mensagem.',
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return SocialGroupChatMessage.fromJson(parsed);
+    }
+    throw Exception(_extractMessage(parsed, 'Erro ao enviar mensagem.'));
+  }
+
+  Future<SocialGroupChatMessage> editGroupMessage({
+    required String groupId,
+    required String messageId,
+    required String body,
+  }) async {
+    final response = await http.patch(
+      Uri.parse(
+        '$_baseUrl/social/groups/${groupId.trim()}/messages/${messageId.trim()}',
+      ),
+      headers: _headers(withJsonContentType: true),
+      body: jsonEncode({'body': body}),
+    );
+    final parsed = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Erro ao editar mensagem.',
+    );
+    if (response.statusCode == 200) {
+      return SocialGroupChatMessage.fromJson(parsed);
+    }
+    throw Exception(_extractMessage(parsed, 'Erro ao editar mensagem.'));
+  }
+
+  Future<SocialGroupChatMessage> deleteGroupMessage({
+    required String groupId,
+    required String messageId,
+  }) async {
+    final response = await http.delete(
+      Uri.parse(
+        '$_baseUrl/social/groups/${groupId.trim()}/messages/${messageId.trim()}',
+      ),
+      headers: _headers(),
+    );
+    final parsed = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Erro ao excluir mensagem.',
+    );
+    if (response.statusCode == 200) {
+      return SocialGroupChatMessage.fromJson(parsed);
+    }
+    throw Exception(_extractMessage(parsed, 'Erro ao excluir mensagem.'));
+  }
+
+  Future<SocialGroupChatMessage> reactToGroupMessage({
+    required String groupId,
+    required String messageId,
+    required String emojiId,
+  }) async {
+    final response = await http.post(
+      Uri.parse(
+        '$_baseUrl/social/groups/${groupId.trim()}/messages/${messageId.trim()}/reactions',
+      ),
+      headers: _headers(withJsonContentType: true),
+      body: jsonEncode({'emojiId': emojiId}),
+    );
+    final parsed = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Erro ao reagir à mensagem.',
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return SocialGroupChatMessage.fromJson(parsed);
+    }
+    throw Exception(_extractMessage(parsed, 'Erro ao reagir à mensagem.'));
   }
 
   Future<SocialMemberDailyMeals> fetchGroupMemberDailyMeals({
@@ -286,11 +471,51 @@ class SocialService {
     if (response.statusCode == 200) {
       return SocialMemberDailyMeals.fromJson(body);
     }
-    throw Exception(_extractMessage(body, 'Erro ao carregar refeições do membro.'));
+    throw Exception(
+      _extractMessage(body, 'Erro ao carregar refeições do membro.'),
+    );
+  }
+
+  Future<SocialMemberDailyMeals> fetchPublicProfileDailyMeals({
+    required String userId,
+    String? date,
+    String? groupId,
+    String? viaUserId,
+  }) async {
+    final queryParameters = <String, String>{};
+    final normalizedDate = date?.trim();
+    if (normalizedDate != null && normalizedDate.isNotEmpty) {
+      queryParameters['date'] = normalizedDate;
+    }
+    final normalizedGroupId = groupId?.trim();
+    if (normalizedGroupId != null && normalizedGroupId.isNotEmpty) {
+      queryParameters['groupId'] = normalizedGroupId;
+    }
+    final normalizedViaUserId = viaUserId?.trim();
+    if (normalizedViaUserId != null && normalizedViaUserId.isNotEmpty) {
+      queryParameters['viaUserId'] = normalizedViaUserId;
+    }
+    final uri =
+        Uri.parse(
+          '$_baseUrl/social/friends/${userId.trim()}/daily-meals',
+        ).replace(
+          queryParameters: queryParameters.isEmpty ? null : queryParameters,
+        );
+    final response = await http.get(uri, headers: _headers());
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200) {
+      return SocialMemberDailyMeals.fromJson(body);
+    }
+    throw Exception(
+      _extractMessage(body, 'Erro ao carregar refeições do perfil.'),
+    );
   }
 
   Future<void> leaveGroup(String groupId) async {
-    final response = await http.post(Uri.parse('$_baseUrl/social/groups/${groupId.trim()}/leave'), headers: _headers());
+    final response = await http.post(
+      Uri.parse('$_baseUrl/social/groups/${groupId.trim()}/leave'),
+      headers: _headers(),
+    );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
       _groupSeed.remove(groupId.trim());
@@ -300,7 +525,10 @@ class SocialService {
   }
 
   Future<void> deleteGroup(String groupId) async {
-    final response = await http.delete(Uri.parse('$_baseUrl/social/groups/${groupId.trim()}'), headers: _headers());
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/social/groups/${groupId.trim()}'),
+      headers: _headers(),
+    );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode == 200 || response.statusCode == 201) {
       _groupSeed.remove(groupId.trim());
@@ -324,7 +552,9 @@ class SocialService {
       _seedGroup(detail);
       return detail;
     }
-    throw Exception(_extractMessage(body, 'Erro ao convidar amigos para o grupo.'));
+    throw Exception(
+      _extractMessage(body, 'Erro ao convidar amigos para o grupo.'),
+    );
   }
 
   Future<SocialGroupDetail> removeGroupMember({
@@ -414,14 +644,19 @@ class SocialService {
 
   Map<String, String> _headers({bool withJsonContentType = false}) {
     final token = AuthService.globalToken;
-    if (token == null || token.isEmpty) throw Exception('Sessão inválida. Faça login novamente.');
+    if (token == null || token.isEmpty) {
+      throw Exception('Sessão inválida. Faça login novamente.');
+    }
 
     final headers = <String, String>{'Authorization': 'Bearer $token'};
     if (withJsonContentType) headers['Content-Type'] = 'application/json';
     return headers;
   }
 
-  Map<String, dynamic> _decodeJsonMap(String rawBody, {required String fallbackError}) {
+  Map<String, dynamic> _decodeJsonMap(
+    String rawBody, {
+    required String fallbackError,
+  }) {
     final trimmed = rawBody.trimLeft();
     if (trimmed.isEmpty) {
       throw Exception(fallbackError);

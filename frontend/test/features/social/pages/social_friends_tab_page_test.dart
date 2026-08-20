@@ -15,34 +15,38 @@ SocialFriend _friend() {
 }
 
 void main() {
-  testWidgets('mostra adicionar amigo e lista sem botão de solicitações inline', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: SizedBox(
-              width: 420,
-              child: SocialFriendsTabPage(
-                friends: [_friend()],
-                onAddFriend: () {},
-                pendingRequestCount: 3,
-                onOpenRequests: () {},
-                onOpenFriendProfile: (_) {},
+  testWidgets(
+    'mostra adicionar amigo e lista sem botão de solicitações inline',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 420,
+                child: SocialFriendsTabPage(
+                  friends: [_friend()],
+                  onAddFriend: () {},
+                  pendingRequestCount: 3,
+                  onOpenRequests: () {},
+                  onOpenFriendProfile: (_) {},
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    expect(find.text('Adicionar amigo'), findsOneWidget);
-    expect(find.byKey(const ValueKey('friend-requests-button')), findsNothing);
-    expect(find.text('Seus amigos'), findsOneWidget);
-    expect(find.text('Ana Paula'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.text('Adicionar amigo'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('friend-requests-button')),
+        findsNothing,
+      );
+      expect(find.text('Seus amigos'), findsOneWidget);
+      expect(find.text('Ana Paula'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('oculta solicitações inline mesmo sem pedidos pendentes', (
     tester,

@@ -6,6 +6,7 @@ import '../../../core/notifications/meal_reminder_models.dart';
 import '../../../core/notifications/meal_reminder_prefs.dart';
 import '../../../core/notifications/meal_reminder_service.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_dashed_action_button.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_time_picker.dart';
@@ -159,48 +160,16 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
   }
 
   Future<void> _removeReminder(MealReminderConfig config) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: Text(
-            'Remover lembrete?',
-            style: AppTextStyles.homeSectionTitle.copyWith(
-              color: AppColors.brand900Variant,
-            ),
-          ),
-          content: Text(
-            'O aviso de "${config.title}" às ${config.timeLabel} será removido.',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(
-                'Cancelar',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(
-                'Remover',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textError,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    final confirmed = await AppConfirmModal.show(
+      context,
+      title: 'Remover lembrete?',
+      message:
+          'O aviso de "${config.title}" às ${config.timeLabel} será removido.',
+      confirmLabel: 'Remover',
+      cancelLabel: 'Cancelar',
+      isDanger: true,
     );
-    if (confirmed != true || !mounted) {
+    if (!confirmed || !mounted) {
       return;
     }
     await _persist(

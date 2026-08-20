@@ -31,12 +31,31 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="jacaloria.online" android:pathPrefix="/friend"/>
+                <data android:scheme="https" android:host="jacaloria.online" android:pathPrefix="/group"/>
+                <data android:scheme="https" android:host="www.jacaloria.online" android:pathPrefix="/friend"/>
+                <data android:scheme="https" android:host="www.jacaloria.online" android:pathPrefix="/group"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="jacaloria" android:host="friend"/>
+                <data android:scheme="jacaloria" android:host="group"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="flutter_deeplinking_enabled"
+            android:value="false" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
             <intent-filter>
@@ -45,6 +64,17 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".MealReminderWidgetProvider"
+            android:exported="true"
+            android:label="JacalorIA">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/meal_reminder_widget_info" />
         </receiver>
     </application>
     <!-- Required to query activities that can process text, see:

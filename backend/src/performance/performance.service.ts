@@ -383,8 +383,13 @@ export class PerformanceService {
     return date.toISOString().slice(0, 10);
   }
 
-  private toDateTimeText(date: Date): string {
-    return date.toISOString();
+  private toDateTimeText(date: Date | string): string {
+    const value = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(value.getTime())) {
+      return new Date().toISOString();
+    }
+
+    return value.toISOString();
   }
 
   private goalPercent(value: number, goal: number): number {

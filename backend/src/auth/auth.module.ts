@@ -24,7 +24,7 @@ import { StreakModule } from '../streak/streak.module';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET')!,
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION', '7d') as any,
+          expiresIn: configService.get<string>('JWT_EXPIRATION', '365d') as any,
         },
       }),
     }),

@@ -227,6 +227,8 @@ class _FakeSocialService extends SocialService {
         iconKey: 'salad',
         competitionType: 'offensive',
         competitionLabel: 'Sequência',
+        rule:
+            'Registre as refeições todos os dias. Ganha quem mantiver a sequência mais longa.',
         durationDays: 7,
         durationDaysLabel: '7 dias',
         memberCount: 5,

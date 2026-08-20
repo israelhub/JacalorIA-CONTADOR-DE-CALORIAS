@@ -38,32 +38,30 @@ class _FrameSilhouettePainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
 
     // Outer ring (main frame border).
-    stroke.strokeWidth = size.width * 0.1;
-    canvas.drawCircle(center, size.width * 0.38, stroke);
+    stroke.strokeWidth = size.width * 0.08;
+    canvas.drawCircle(center, size.width * 0.42, stroke);
 
-    // Inner ring (photo opening).
-    stroke.strokeWidth = size.width * 0.07;
-    canvas.drawCircle(center, size.width * 0.26, stroke);
+    stroke.strokeWidth = size.width * 0.055;
+    canvas.drawCircle(center, size.width * 0.28, stroke);
 
-    // Soft accent bumps like ears / crown ornaments on round frames.
     final accent = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
 
-    final bumpRadius = size.width * 0.07;
+    final bumpRadius = size.width * 0.055;
     canvas.drawCircle(
-      Offset(center.dx - size.width * 0.22, center.dy - size.height * 0.3),
+      Offset(center.dx - size.width * 0.2, center.dy - size.height * 0.28),
       bumpRadius,
       accent,
     );
     canvas.drawCircle(
-      Offset(center.dx + size.width * 0.22, center.dy - size.height * 0.3),
+      Offset(center.dx + size.width * 0.2, center.dy - size.height * 0.28),
       bumpRadius,
       accent,
     );
     canvas.drawCircle(
-      Offset(center.dx, center.dy - size.height * 0.38),
-      size.width * 0.055,
+      Offset(center.dx, center.dy - size.height * 0.34),
+      size.width * 0.045,
       accent,
     );
   }

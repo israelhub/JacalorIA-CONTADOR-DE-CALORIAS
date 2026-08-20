@@ -92,6 +92,11 @@ export class Meal extends Model {
   @Column(DataType.STRING)
   status: MealStatus;
 
+  @AllowNull(false)
+  @Default(true)
+  @Column({ type: DataType.BOOLEAN, field: 'counts_for_streak' })
+  countsForStreak: boolean;
+
   @CreatedAt
   @Column({ field: 'created_at' })
   createdAt: Date;

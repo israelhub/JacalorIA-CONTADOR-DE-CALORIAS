@@ -34,13 +34,7 @@ void main() {
 
   testWidgets('exibe objetivo maintainWeight em portugues', (tester) async {
     await tester.pumpWidget(
-      _wrap(
-        const ProfilePage(
-          initialProfile: {
-            'objective': 'maintainWeight',
-          },
-        ),
-      ),
+      _wrap(const ProfilePage(initialProfile: {'objective': 'maintainWeight'})),
     );
 
     await tester.pumpAndSettle();
@@ -51,13 +45,7 @@ void main() {
 
   testWidgets('exibe objetivo loseWeight em portugues', (tester) async {
     await tester.pumpWidget(
-      _wrap(
-        const ProfilePage(
-          initialProfile: {
-            'objective': 'loseWeight',
-          },
-        ),
-      ),
+      _wrap(const ProfilePage(initialProfile: {'objective': 'loseWeight'})),
     );
 
     await tester.pumpAndSettle();
@@ -67,13 +55,7 @@ void main() {
 
   testWidgets('exibe objetivo gainMass em portugues', (tester) async {
     await tester.pumpWidget(
-      _wrap(
-        const ProfilePage(
-          initialProfile: {
-            'objective': 'gainMass',
-          },
-        ),
-      ),
+      _wrap(const ProfilePage(initialProfile: {'objective': 'gainMass'})),
     );
 
     await tester.pumpAndSettle();
@@ -104,5 +86,37 @@ void main() {
     expect(find.text('31'), findsOneWidget);
     expect(find.text('12'), findsOneWidget);
     expect(find.text('3'), findsOneWidget);
+  });
+
+  testWidgets('não exibe seletor de privacidade no perfil', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const ProfilePage(initialProfile: {'missionsCompleted': 1})),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Privacidade'), findsNothing);
+    expect(find.text('Mostrar refeições no perfil público'), findsNothing);
+    expect(find.byType(Switch), findsNothing);
+  });
+
+  testWidgets('FAB do perfil usa icone de engrenagem e abre as acoes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(const ProfilePage(initialProfile: {'name': 'Ana'})),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.settings_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.edit_rounded), findsNothing);
+
+    await tester.tap(find.bySemanticsLabel('Abrir ações do perfil'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Personalizar perfil'), findsOneWidget);
+    expect(find.text('Editar dados pessoais'), findsOneWidget);
+    expect(find.text('Suporte'), findsOneWidget);
+    expect(find.text('Lembretes de refeição'), findsOneWidget);
   });
 }

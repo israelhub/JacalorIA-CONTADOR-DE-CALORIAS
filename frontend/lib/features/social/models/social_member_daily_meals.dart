@@ -10,9 +10,11 @@ class SocialMemberDailyMeals {
     required this.endsAt,
     required this.totalCalories,
     required this.meals,
+    this.isPrivate = false,
   });
 
   final bool enabled;
+  final bool isPrivate;
   final String competitionType;
   final String? date;
   final String? startsAt;
@@ -23,6 +25,7 @@ class SocialMemberDailyMeals {
   factory SocialMemberDailyMeals.fromJson(Map<String, dynamic> json) {
     return SocialMemberDailyMeals(
       enabled: json['enabled'] == true,
+      isPrivate: json['isPrivate'] == true,
       competitionType: json['competitionType']?.toString() ?? '',
       date: json['date']?.toString(),
       startsAt: json['startsAt']?.toString(),

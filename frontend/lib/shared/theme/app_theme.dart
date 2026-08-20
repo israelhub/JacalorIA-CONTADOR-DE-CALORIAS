@@ -497,26 +497,66 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get theme {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      primary: AppColors.primary,
+      surface: AppColors.surface,
+    ).copyWith(
+      secondary: AppColors.brand900,
+      onSecondary: AppColors.surface,
+      secondaryContainer: AppColors.brand300,
+      onSecondaryContainer: AppColors.brand900Variant,
+      tertiary: AppColors.accent500,
+      onTertiary: AppColors.brand900Variant,
+      tertiaryContainer: AppColors.missionsGoldPill,
+      onTertiaryContainer: AppColors.brand900Variant,
+      onSurface: AppColors.textPrimary,
+      onSurfaceVariant: AppColors.textSecondary,
+      outline: AppColors.inputBorder,
+      outlineVariant: AppColors.borderAlt,
+    );
+
     final base = ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
-        primary: AppColors.primary,
-        surface: AppColors.surface,
-      ),
+      colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.background,
       textTheme: TextTheme(
-        displayLarge: AppTextStyles.displayLarge,
-        headlineLarge: AppTextStyles.headingLarge,
-        headlineMedium: AppTextStyles.headingMedium,
-        headlineSmall: AppTextStyles.headingSmall,
-        titleLarge: AppTextStyles.subtitleLarge,
-        bodyLarge: AppTextStyles.bodyLarge,
-        bodyMedium: AppTextStyles.bodyMedium,
-        bodySmall: AppTextStyles.bodySmall,
-        labelLarge: AppTextStyles.label,
-        labelMedium: AppTextStyles.caption,
-        labelSmall: AppTextStyles.micro,
+        displayLarge: AppTextStyles.displayLarge.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        headlineLarge: AppTextStyles.headingLarge.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        headlineMedium: AppTextStyles.headingMedium.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        headlineSmall: AppTextStyles.headingSmall.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        titleLarge: AppTextStyles.subtitleLarge.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        bodyLarge: AppTextStyles.bodyLarge.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        bodyMedium: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        bodySmall: AppTextStyles.bodySmall.copyWith(
+          color: AppColors.textSecondary,
+        ),
+        labelLarge: AppTextStyles.label.copyWith(color: AppColors.textPrimary),
+        labelMedium: AppTextStyles.caption.copyWith(
+          color: AppColors.textSecondary,
+        ),
+        labelSmall: AppTextStyles.micro.copyWith(
+          color: AppColors.textSecondary,
+        ),
+      ),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: AppColors.brand900,
+        selectionColor: AppColors.brand300,
+        selectionHandleColor: AppColors.brand900,
       ),
     );
 

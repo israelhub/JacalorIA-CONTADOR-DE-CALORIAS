@@ -14,6 +14,8 @@ import { SocialFriendship } from '../social/models/social-friendship.model';
 import { SocialGroup } from '../social/models/social-group.model';
 import { SocialGroupActivity } from '../social/models/social-group-activity.model';
 import { SocialGroupMember } from '../social/models/social-group-member.model';
+import { SocialGroupMessage } from '../social/models/social-group-message.model';
+import { SocialGroupMessageReaction } from '../social/models/social-group-message-reaction.model';
 import { AnalyticsEvent } from '../analytics/models/analytics-event.model';
 import { FoodImageAnalysis } from '../ai/models/food-image-analysis.model';
 import { SupportMessage } from '../support/models/support-message.model';
@@ -72,6 +74,8 @@ import { UserNotification } from '../notifications/models/user-notification.mode
             SocialGroup,
             SocialGroupMember,
             SocialGroupActivity,
+            SocialGroupMessage,
+            SocialGroupMessageReaction,
             SocialFriendship,
             SocialFriendLink,
             SocialFriendRequest,

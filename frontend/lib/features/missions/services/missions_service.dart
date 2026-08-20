@@ -96,6 +96,17 @@ class MissionsService {
     );
   }
 
+  Future<Map<String, dynamic>> purchaseJacaEmoji(String emojiId) {
+    return _postJsonWithFallback(
+      const <String>[
+        '/missions/store/jaca-emojis/purchase',
+        '/missions/store/stickers/purchase',
+      ],
+      body: <String, dynamic>{'emojiId': emojiId},
+      fallbackError: 'Erro ao comprar figurinha.',
+    );
+  }
+
   Future<Map<String, dynamic>> purchaseBlocker({
     required String blockerId,
     int quantity = 1,
@@ -108,6 +119,14 @@ class MissionsService {
       ],
       body: <String, dynamic>{'blockerId': blockerId, 'quantity': quantity},
       fallbackError: 'Erro ao comprar bloqueador.',
+    );
+  }
+
+  Future<Map<String, dynamic>> claimCheckIn() {
+    return _postJsonWithFallback(
+      const <String>['/missions/check-in'],
+      body: const <String, dynamic>{},
+      fallbackError: 'Erro ao receber recompensa de check-in.',
     );
   }
 

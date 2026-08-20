@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_skeleton.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../models/food_meal_record.dart';
 import '../models/saved_meal_template.dart';
 import '../services/food_analysis_service.dart';
@@ -14,11 +15,13 @@ import 'food_review_page.dart';
 class SavedMealsPage extends StatefulWidget {
   const SavedMealsPage({
     super.key,
+    this.recordedAt,
     MealTemplateService templateService = const MealTemplateService(),
     FoodAnalysisService analysisService = const FoodAnalysisService(),
   }) : _templateService = templateService,
        _analysisService = analysisService;
 
+  final DateTime? recordedAt;
   final MealTemplateService _templateService;
   final FoodAnalysisService _analysisService;
 
@@ -57,6 +60,7 @@ class _SavedMealsPageState extends State<SavedMealsPage> {
           analysis: template.toAnalysis(),
           analysisService: widget._analysisService,
           initialMealTitle: template.title,
+          recordedAt: widget.recordedAt,
         ),
       );
 
@@ -130,17 +134,14 @@ class _SavedMealsPageState extends State<SavedMealsPage> {
         return;
       }
       _reload();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Refeição removida das salvas')),
-      );
+      AppToast.success(context, message: 'Refeição removida das salvas');
     } catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.toString().replaceFirst('Exception: ', '')),
-        ),
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
       );
     }
   }

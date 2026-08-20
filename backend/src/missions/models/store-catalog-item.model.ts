@@ -15,7 +15,8 @@ export type StoreCatalogCategory =
   | 'avatar_frame'
   | 'avatar_background'
   | 'offensive_blocker'
-  | 'streak_restore';
+  | 'streak_restore'
+  | 'jaca_emoji';
 
 @Table({
   tableName: 'store_catalog_items',

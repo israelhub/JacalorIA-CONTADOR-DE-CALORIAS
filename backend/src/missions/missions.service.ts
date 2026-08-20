@@ -4,6 +4,7 @@ import { Transaction } from 'sequelize';
 import { Op } from 'sequelize';
 import { User } from '../auth/models/user.model';
 import { Meal, MealStatus, MealType } from '../meals/models/meal.model';
+import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
 import { StreakService } from '../streak/streak.service';
 import { parseNumber } from '../shared/utils/number-parser.util';
 import { hasReachedCalorieGoal } from '../shared/utils/calorie-goal.util';
@@ -12,7 +13,19 @@ import {
   AVATAR_FRAME_NONE_ID,
   OFFENSIVE_BLOCKER_DEFAULT_ID,
 } from './constants/avatar-frame-store';
-import { DEFAULT_MISSIONS } from './constants/missions.seed';
+import {
+  DEFAULT_MISSIONS,
+  WEEKEND_GOAL_MISSION_KEY,
+  WEEKLY_UPDATE_WEIGHT_MISSION_KEY,
+} from './constants/missions.seed';
+import { isCheckInExclusiveStoreItem } from './constants/store-catalog.seed';
+import {
+  ACTIVE_CHECK_IN_CAMPAIGN,
+  buildCheckInReferenceKey,
+  primaryCheckInRewardKind,
+  summarizeCheckInRewards,
+  type CheckInDayDefinition,
+} from './constants/check-in.campaign';
 import { Mission, MissionType } from './models/mission.model';
 import {
   CurrencyCode,
@@ -70,6 +83,7 @@ type StoreItem = {
   quantityOwned?: number;
   quantityPerPurchase?: number;
   storeAction?: 'inventory_blocker';
+  acquireSource?: 'purchase' | 'check_in';
 };
 
 @Injectable()
@@ -79,6 +93,8 @@ export class MissionsService implements OnModuleInit {
     private readonly missionModel: typeof Mission,
     @InjectModel(Meal)
     private readonly mealModel: typeof Meal,
+    @InjectModel(UserWeightEntry)
+    private readonly userWeightEntryModel: typeof UserWeightEntry,
     @InjectModel(User)
     private readonly userModel: typeof User,
     @InjectModel(UserCurrencyTransaction)
@@ -93,6 +109,8 @@ export class MissionsService implements OnModuleInit {
   }
 
   async ensureMissionsSeeded(): Promise<void> {
+    const seededKeys = new Set(DEFAULT_MISSIONS.map((seed) => seed.key));
+
     for (const seed of DEFAULT_MISSIONS) {
       const existing = await this.missionModel.findOne({
         where: { key: seed.key },
@@ -126,6 +144,19 @@ export class MissionsService implements OnModuleInit {
         isActive: true,
       });
     }
+
+    const obsoleteWeekend = await this.missionModel.findAll({
+      where: {
+        type: 'weekend',
+        key: {
+          [Op.notIn]: [...seededKeys],
+        },
+      },
+    });
+
+    for (const mission of obsoleteWeekend) {
+      await mission.update({ isActive: false });
+    }
   }
 
   async getMissions(userId: string) {
@@ -136,8 +167,13 @@ export class MissionsService implements OnModuleInit {
     const weekStart = this.streakService.getWeekStartInAppTimeZone(now);
     const nowParts = this.streakService.getDatePartsInAppTimeZone(now);
     const monthStart = new Date(Date.UTC(nowParts.year, nowParts.month - 1, 1));
+    const weekendWindow = this.getWeekendEventWindow(now);
+    const mealsRangeStart =
+      weekendWindow && weekendWindow.fridayStart.getTime() < monthStart.getTime()
+        ? weekendWindow.fridayStart
+        : monthStart;
 
-    const [user, missions, meals] = await Promise.all([
+    const [user, missions, meals, weeklyWeightLogs] = await Promise.all([
       this.userModel.findByPk(userId, {
         attributes: [
           'dailyCalorieGoal',
@@ -160,7 +196,7 @@ export class MissionsService implements OnModuleInit {
           userId,
           status: MealStatus.Active,
           createdAt: {
-            [Op.gte]: monthStart,
+            [Op.gte]: mealsRangeStart,
             [Op.lt]: now,
           },
         },
@@ -173,6 +209,15 @@ export class MissionsService implements OnModuleInit {
           'analysisItems',
           'mealType',
         ],
+      }),
+      this.userWeightEntryModel.count({
+        where: {
+          userId,
+          recordedAt: {
+            [Op.gte]: weekStart,
+            [Op.lt]: now,
+          },
+        },
       }),
     ]);
 
@@ -271,6 +316,18 @@ export class MissionsService implements OnModuleInit {
         entry.fat >= dailyFatGoal,
     ).length;
 
+    const isWeekendEvent = weekendWindow !== null;
+    const weekendGoalDays = weekendWindow
+      ? this.countWeekendGoalDays({
+          totalsByDay,
+          fridayStart: weekendWindow.fridayStart,
+          sundayStart: weekendWindow.sundayStart,
+          now,
+          dailyCalorieGoal,
+          objective: user?.objective,
+        })
+      : 0;
+
     const missionByKey = new Map<string, MissionProgress>([
       [
         'daily_protein_goal',
@@ -283,6 +340,13 @@ export class MissionsService implements OnModuleInit {
         'daily_three_meals',
         {
           progressCurrent: todayTotals?.completeMealTypes.size ?? 0,
+        },
+      ],
+      [
+        WEEKEND_GOAL_MISSION_KEY,
+        {
+          progressCurrent: weekendGoalDays,
+          progressTarget: 3,
         },
       ],
       [
@@ -301,6 +365,12 @@ export class MissionsService implements OnModuleInit {
         'weekly_variety_15_foods',
         {
           progressCurrent: weeklyFoods.size,
+        },
+      ],
+      [
+        WEEKLY_UPDATE_WEIGHT_MISSION_KEY,
+        {
+          progressCurrent: weeklyWeightLogs > 0 ? 1 : 0,
         },
       ],
       [
@@ -323,7 +393,14 @@ export class MissionsService implements OnModuleInit {
       ],
     ]);
 
-    const missionItems: MissionItemPayload[] = missions.map((mission) => {
+    const visibleMissions = missions.filter((mission) => {
+      if (mission.type !== 'weekend') {
+        return true;
+      }
+      return isWeekendEvent && mission.key === WEEKEND_GOAL_MISSION_KEY;
+    });
+
+    const missionItems: MissionItemPayload[] = visibleMissions.map((mission) => {
       const mapped = missionByKey.get(mission.key) ?? {
         progressCurrent: metGoalToday || metAllMacrosToday ? mission.targetValue : 0,
       };
@@ -350,12 +427,14 @@ export class MissionsService implements OnModuleInit {
       };
     });
 
-    const sections = this.sectionOrder().map((section) => ({
-      id: section.id,
-      title: section.title,
-      subtitle: section.subtitle,
-      missions: missionItems.filter((mission) => mission.type === section.id),
-    }));
+    const sections = this.sectionOrder(isWeekendEvent, now)
+      .map((section) => ({
+        id: section.id,
+        title: section.title,
+        subtitle: section.subtitle,
+        missions: missionItems.filter((mission) => mission.type === section.id),
+      }))
+      .filter((section) => section.missions.length > 0);
 
     const completedMissions = missionItems.filter(
       (mission) => mission.progressCurrent >= mission.progressTarget,
@@ -363,6 +442,7 @@ export class MissionsService implements OnModuleInit {
 
     await this.awardMissionCompletions(userId, completedMissions, now);
     const wallet = await this.getWalletSnapshot(userId);
+    const checkIn = await this.buildCheckInPayload(userId, now);
 
     return {
       summary: {
@@ -376,10 +456,136 @@ export class MissionsService implements OnModuleInit {
       intro: {
         title: 'Bem-vindo às Missões!',
         description:
-          'Complete missões diárias, semanais e desafios mensais para ganhar ouro e XP. Troque na loja por molduras, fundos e proteção de sequência!',
+          'Complete missões diárias, o evento de fim de semana, semanais e mensais para ganhar ouro e XP. Troque na loja por molduras, fundos, figurinhas e proteção de sequência!',
       },
+      weekendEvent: isWeekendEvent && weekendWindow
+        ? {
+            active: true,
+            title: 'Missão do fim de semana',
+            headline: 'Que bom ver você de novo!',
+            subtitle: 'Complete o desafio pra ganhar recompensas extras!',
+            remainingDays: weekendWindow.remainingDays,
+            remainingLabel: weekendWindow.remainingLabel,
+          }
+        : {
+            active: false,
+          },
+      checkIn,
       sections,
     };
+  }
+
+  async claimCheckIn(userId: string) {
+    const campaign = ACTIVE_CHECK_IN_CAMPAIGN;
+    const now = new Date();
+    const todayKey = this.streakService.toDayKeyInAppTimeZone(now);
+
+    if (todayKey < campaign.startDayKey || todayKey > campaign.endDayKey) {
+      throw new BadRequestException('O check-in desta campanha não está ativo.');
+    }
+
+    const dayDefinition = campaign.days.find((day) => day.dayKey === todayKey);
+    if (!dayDefinition) {
+      throw new BadRequestException('Não há recompensa de check-in para hoje.');
+    }
+
+    const referenceKey = buildCheckInReferenceKey(campaign.id, todayKey);
+    const sequelize = this.userModel.sequelize;
+    if (!sequelize) {
+      throw new BadRequestException('Serviço indisponível no momento.');
+    }
+
+    let analyticsPayload: Record<string, unknown> | null = null;
+
+    const response = await sequelize.transaction(async (transaction) => {
+      const existing = await this.userCurrencyTransactionModel.findOne({
+        where: {
+          userId,
+          referenceKey,
+        },
+        attributes: ['id'],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (existing) {
+        throw new BadRequestException('Você já recebeu a recompensa de hoje.');
+      }
+
+      const user = await this.userModel.findByPk(userId, {
+        attributes: [
+          'id',
+          'purchasedAvatarFrameIds',
+          'equippedAvatarFrameId',
+          'purchasedAvatarBackgroundIds',
+          'equippedAvatarBackgroundId',
+          'offensiveBlockerInventoryCount',
+          'equippedOffensiveBlockerId',
+        ],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (!user) {
+        throw new BadRequestException('Usuário não encontrado.');
+      }
+
+      const granted = await this.applyCheckInRewards({
+        userId,
+        user,
+        dayDefinition,
+        referenceKey,
+        transaction,
+      });
+
+      const wallet = await this.getWalletSnapshot(userId, transaction);
+      analyticsPayload = {
+        campaign_id: campaign.id,
+        day_key: todayKey,
+        day_index: dayDefinition.dayIndex,
+        reward_gold: granted.goldGranted,
+        reward_blocker: granted.blockerGranted,
+        reward_frame: granted.frameGranted,
+        reward_background: granted.backgroundGranted,
+      };
+
+      return {
+        message: 'Recompensa de check-in recebida!',
+        rewardSummary: summarizeCheckInRewards(dayDefinition.rewards),
+        granted,
+        checkIn: await this.buildCheckInPayload(userId, now, transaction),
+        summary: {
+          gold: wallet.gold,
+          xp: wallet.xp,
+          goldLifetimeEarned: wallet.goldLifetimeEarned,
+          goldLifetimeSpent: wallet.goldLifetimeSpent,
+          xpLifetimeEarned: wallet.xpLifetimeEarned,
+          xpLifetimeSpent: wallet.xpLifetimeSpent,
+        },
+        profile: {
+          purchasedAvatarFrameIds: this.normalizeIdList(user.purchasedAvatarFrameIds),
+          equippedAvatarFrameId: user.equippedAvatarFrameId,
+          purchasedAvatarBackgroundIds: this.normalizeIdList(
+            user.purchasedAvatarBackgroundIds,
+          ),
+          equippedAvatarBackgroundId: user.equippedAvatarBackgroundId,
+          offensiveBlockerInventoryCount: Math.max(
+            0,
+            parseNumber(user.offensiveBlockerInventoryCount),
+          ),
+          equippedOffensiveBlockerId: user.equippedOffensiveBlockerId,
+        },
+      };
+    });
+
+    if (analyticsPayload) {
+      await this.analyticsService.trackSafe(userId, {
+        eventName: 'check_in_reward_claimed',
+        properties: analyticsPayload,
+      });
+    }
+
+    return response;
   }
 
   async getStore(userId: string) {
@@ -395,6 +601,7 @@ export class MissionsService implements OnModuleInit {
           'purchasedAvatarFrameIds',
           'equippedAvatarBackgroundId',
           'purchasedAvatarBackgroundIds',
+          'purchasedJacaEmojiIds',
           'equippedOffensiveBlockerId',
           'offensiveBlockerInventoryCount',
         ],
@@ -408,16 +615,18 @@ export class MissionsService implements OnModuleInit {
 
     const purchasedFrames = new Set(this.normalizeIdList(user.purchasedAvatarFrameIds));
     const purchasedBackgrounds = new Set(this.normalizeIdList(user.purchasedAvatarBackgroundIds));
+    const purchasedJacaEmojis = new Set(this.normalizeIdList(user.purchasedJacaEmojiIds));
     const equippedFrameId = this.normalizeOptionalId(user.equippedAvatarFrameId);
     const equippedBackgroundId = this.normalizeOptionalId(user.equippedAvatarBackgroundId);
     const equippedBlockerId =
       this.normalizeOptionalId(user.equippedOffensiveBlockerId) ?? OFFENSIVE_BLOCKER_DEFAULT_ID;
     const blockerInventoryCount = Math.max(0, parseNumber(user.offensiveBlockerInventoryCount));
 
-    const [frameCatalog, backgroundCatalog, blockerCatalog] =
+    const [frameCatalog, backgroundCatalog, stickerCatalog, blockerCatalog] =
       await Promise.all([
         this.storeCatalogService.listActiveByCategory('avatar_frame'),
         this.storeCatalogService.listActiveByCategory('avatar_background'),
+        this.storeCatalogService.listActiveByCategory('jaca_emoji'),
         this.storeCatalogService.listActiveByCategory('offensive_blocker'),
       ]);
 
@@ -428,6 +637,9 @@ export class MissionsService implements OnModuleInit {
       priceGold: entry.priceGold,
       owned: purchasedFrames.has(entry.itemKey),
       equipped: equippedFrameId === entry.itemKey,
+      acquireSource: isCheckInExclusiveStoreItem(entry.itemKey)
+        ? 'check_in'
+        : 'purchase',
     }));
 
     const backgroundItems: StoreItem[] = backgroundCatalog.map((entry) => ({
@@ -437,6 +649,18 @@ export class MissionsService implements OnModuleInit {
       priceGold: entry.priceGold,
       owned: purchasedBackgrounds.has(entry.itemKey),
       equipped: equippedBackgroundId === entry.itemKey,
+      acquireSource: isCheckInExclusiveStoreItem(entry.itemKey)
+        ? 'check_in'
+        : 'purchase',
+    }));
+
+    const stickerItems: StoreItem[] = stickerCatalog.map((entry) => ({
+      id: entry.itemKey,
+      name: entry.name,
+      description: entry.description ?? '',
+      priceGold: entry.priceGold,
+      owned: purchasedJacaEmojis.has(entry.itemKey),
+      equipped: false,
     }));
 
     const defaultBlocker = blockerCatalog.find(
@@ -480,6 +704,11 @@ export class MissionsService implements OnModuleInit {
           items: backgroundItems,
         },
         {
+          id: 'jaca_emojis',
+          title: 'Figurinhas',
+          items: stickerItems,
+        },
+        {
           id: 'offensive_blockers',
           title: 'Bloqueadores de sequência',
           items: blockerItems,
@@ -490,6 +719,7 @@ export class MissionsService implements OnModuleInit {
         purchasedAvatarFrameIds: Array.from(purchasedFrames).sort(),
         equippedAvatarBackgroundId: equippedBackgroundId ?? AVATAR_BACKGROUND_NONE_ID,
         purchasedAvatarBackgroundIds: Array.from(purchasedBackgrounds).sort(),
+        purchasedJacaEmojiIds: Array.from(purchasedJacaEmojis).sort(),
         equippedOffensiveBlockerId: equippedBlockerId,
         offensiveBlockerInventoryCount: blockerInventoryCount,
       },
@@ -547,6 +777,12 @@ export class MissionsService implements OnModuleInit {
             xpLifetimeSpent: wallet.xpLifetimeSpent,
           },
         };
+      }
+
+      if (isCheckInExclusiveStoreItem(normalizedFrameId)) {
+        throw new BadRequestException(
+          'Esta moldura é exclusiva do check-in. Abra Missões para resgatar.',
+        );
       }
 
       const currentGold = await this.getBalanceByCurrency(userId, 'gold', transaction);
@@ -667,6 +903,12 @@ export class MissionsService implements OnModuleInit {
         };
       }
 
+      if (isCheckInExclusiveStoreItem(normalizedBackgroundId)) {
+        throw new BadRequestException(
+          'Este fundo é exclusivo do check-in. Abra Missões para resgatar.',
+        );
+      }
+
       const currentGold = await this.getBalanceByCurrency(userId, 'gold', transaction);
       if (currentGold < priceGold) {
         throw new BadRequestException('Ouro insuficiente para comprar esse fundo.');
@@ -710,6 +952,117 @@ export class MissionsService implements OnModuleInit {
         profile: {
           equippedAvatarBackgroundId: normalizedBackgroundId,
           purchasedAvatarBackgroundIds: Array.from(purchased).sort(),
+        },
+        summary: {
+          gold: wallet.gold,
+          xp: wallet.xp,
+          goldLifetimeEarned: wallet.goldLifetimeEarned,
+          goldLifetimeSpent: wallet.goldLifetimeSpent,
+          xpLifetimeEarned: wallet.xpLifetimeEarned,
+          xpLifetimeSpent: wallet.xpLifetimeSpent,
+        },
+      };
+    });
+
+    if (storePurchaseAnalytics) {
+      await this.analyticsService.trackSafe(userId, {
+        eventName: 'store_purchase',
+        properties: storePurchaseAnalytics,
+      });
+    }
+
+    return response;
+  }
+
+  async purchaseJacaEmoji(userId: string, emojiId: string) {
+    const normalizedEmojiId = emojiId.trim();
+    const catalogItem = await this.storeCatalogService.findActiveByKey(
+      normalizedEmojiId,
+    );
+    if (!catalogItem || catalogItem.category !== 'jaca_emoji') {
+      throw new BadRequestException('Figurinha inválida.');
+    }
+    const priceGold = catalogItem.priceGold;
+
+    const sequelize = this.userModel.sequelize;
+    if (!sequelize) {
+      throw new BadRequestException('Serviço indisponível no momento.');
+    }
+
+    let storePurchaseAnalytics: Record<string, unknown> | null = null;
+
+    const response = await sequelize.transaction(async (transaction) => {
+      const user = await this.userModel.findByPk(userId, {
+        attributes: ['id', 'purchasedJacaEmojiIds'],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (!user) {
+        throw new BadRequestException('Usuário não encontrado.');
+      }
+
+      const purchased = new Set(this.normalizeIdList(user.purchasedJacaEmojiIds));
+
+      if (purchased.has(normalizedEmojiId)) {
+        const wallet = await this.getWalletSnapshot(userId, transaction);
+        return {
+          message: 'Figurinha já desbloqueada.',
+          profile: {
+            purchasedJacaEmojiIds: Array.from(purchased).sort(),
+          },
+          summary: {
+            gold: wallet.gold,
+            xp: wallet.xp,
+            goldLifetimeEarned: wallet.goldLifetimeEarned,
+            goldLifetimeSpent: wallet.goldLifetimeSpent,
+            xpLifetimeEarned: wallet.xpLifetimeEarned,
+            xpLifetimeSpent: wallet.xpLifetimeSpent,
+          },
+        };
+      }
+
+      const currentGold = await this.getBalanceByCurrency(userId, 'gold', transaction);
+      if (currentGold < priceGold) {
+        throw new BadRequestException('Ouro insuficiente para comprar essa figurinha.');
+      }
+
+      await this.userCurrencyTransactionModel.create(
+        {
+          userId,
+          currency: 'gold',
+          amountSigned: -priceGold,
+          type: 'debit',
+          sourceType: 'jaca_emoji_purchase',
+          sourceId: normalizedEmojiId,
+          referenceKey: `jaca_emoji_purchase:${normalizedEmojiId}`,
+          metadata: {
+            emojiId: normalizedEmojiId,
+            priceGold,
+          },
+        },
+        { transaction },
+      );
+
+      purchased.add(normalizedEmojiId);
+      await user.update(
+        {
+          purchasedJacaEmojiIds: Array.from(purchased).sort(),
+        },
+        { transaction },
+      );
+
+      const wallet = await this.getWalletSnapshot(userId, transaction);
+      storePurchaseAnalytics = {
+        item_type: 'jaca_emoji',
+        item_id: normalizedEmojiId,
+        price_gold: priceGold,
+      };
+
+      return {
+        message: 'Figurinha desbloqueada.',
+        profile: {
+          purchasedJacaEmojiIds: Array.from(purchased).sort(),
         },
         summary: {
           gold: wallet.gold,
@@ -886,24 +1239,405 @@ export class MissionsService implements OnModuleInit {
     };
   }
 
-  private sectionOrder(): Array<{ id: MissionType; title: string; subtitle: string }> {
-    return [
+  private async buildCheckInPayload(
+    userId: string,
+    referenceDate: Date,
+    transaction?: Transaction,
+  ) {
+    const campaign = ACTIVE_CHECK_IN_CAMPAIGN;
+    const todayKey = this.streakService.toDayKeyInAppTimeZone(referenceDate);
+    const active =
+      todayKey >= campaign.startDayKey && todayKey <= campaign.endDayKey;
+
+    if (!active) {
+      return {
+        active: false,
+        campaignId: campaign.id,
+      };
+    }
+
+    const claimedKeys = await this.loadClaimedCheckInDayKeys(
+      userId,
+      campaign.id,
+      transaction,
+    );
+    const claimedToday = claimedKeys.has(todayKey);
+    const canClaimToday =
+      campaign.days.some((day) => day.dayKey === todayKey) && !claimedToday;
+
+    const monthPrefix = campaign.startDayKey.slice(0, 8);
+    const campaignStartDay = Number.parseInt(campaign.startDayKey.slice(8), 10);
+    const days: Array<{
+      dayKey: string;
+      dayIndex: number;
+      label: string;
+      status: 'claimable' | 'claimed' | 'missed' | 'locked';
+      primaryKind: ReturnType<typeof primaryCheckInRewardKind>;
+      rewardSummary: string;
+      rewards: CheckInDayDefinition['rewards'];
+    }> = [];
+
+    for (let dayOfMonth = 1; dayOfMonth < campaignStartDay; dayOfMonth += 1) {
+      const dayKey = `${monthPrefix}${String(dayOfMonth).padStart(2, '0')}`;
+      days.push({
+        dayKey,
+        dayIndex: dayOfMonth,
+        label: `Dia ${dayOfMonth}`,
+        status: 'missed',
+        primaryKind: 'gold',
+        rewardSummary: '',
+        rewards: [],
+      });
+    }
+
+    for (const day of campaign.days) {
+      const claimed = claimedKeys.has(day.dayKey);
+      let status: 'claimable' | 'claimed' | 'missed' | 'locked' = 'locked';
+      if (claimed) {
+        status = 'claimed';
+      } else if (day.dayKey === todayKey) {
+        status = 'claimable';
+      } else if (day.dayKey < todayKey) {
+        status = 'missed';
+      }
+
+      const dayOfMonth = Number.parseInt(day.dayKey.slice(8), 10);
+      days.push({
+        dayKey: day.dayKey,
+        dayIndex: day.dayIndex,
+        label: `Dia ${dayOfMonth}`,
+        status,
+        primaryKind: primaryCheckInRewardKind(day.rewards),
+        rewardSummary: summarizeCheckInRewards(day.rewards),
+        rewards: day.rewards,
+      });
+    }
+
+    return {
+      active: true,
+      campaignId: campaign.id,
+      title: campaign.title,
+      subtitle: campaign.subtitle,
+      endsOnLabel: '',
+      todayDayKey: todayKey,
+      canClaimToday,
+      claimedToday,
+      days,
+    };
+  }
+
+  private async loadClaimedCheckInDayKeys(
+    userId: string,
+    campaignId: string,
+    transaction?: Transaction,
+  ): Promise<Set<string>> {
+    const prefix = `check_in_reward:${campaignId}:`;
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where: {
+        userId,
+        sourceType: 'check_in_reward',
+        referenceKey: {
+          [Op.like]: `${prefix}%`,
+        },
+      },
+      attributes: ['referenceKey'],
+      transaction,
+    });
+
+    const claimed = new Set<string>();
+    for (const row of rows) {
+      const key = row.referenceKey?.trim() ?? '';
+      if (!key.startsWith(prefix)) {
+        continue;
+      }
+      claimed.add(key.slice(prefix.length));
+    }
+    return claimed;
+  }
+
+  private async applyCheckInRewards(params: {
+    userId: string;
+    user: User;
+    dayDefinition: CheckInDayDefinition;
+    referenceKey: string;
+    transaction: Transaction;
+  }): Promise<{
+    goldGranted: number;
+    blockerGranted: number;
+    frameGranted: string | null;
+    backgroundGranted: string | null;
+    consolacaoGold: number;
+  }> {
+    const { userId, user, dayDefinition, referenceKey, transaction } = params;
+    let goldGranted = 0;
+    let blockerGranted = 0;
+    let frameGranted: string | null = null;
+    let backgroundGranted: string | null = null;
+    let consolacaoGold = 0;
+
+    const purchasedFrames = await this.syncUserPurchasedAvatarFrames(
+      user,
+      transaction,
+    );
+    const purchasedBackgrounds = await this.syncUserPurchasedAvatarBackgrounds(
+      user,
+      transaction,
+    );
+
+    for (const reward of dayDefinition.rewards) {
+      if (reward.kind === 'gold') {
+        goldGranted += Math.max(0, reward.amount);
+        continue;
+      }
+
+      if (reward.kind === 'blocker') {
+        const quantity = Math.max(1, Math.floor(reward.quantity));
+        const currentInventory = Math.max(
+          0,
+          parseNumber(user.offensiveBlockerInventoryCount),
+        );
+        const nextInventory = currentInventory + quantity;
+        await user.update(
+          {
+            offensiveBlockerInventoryCount: nextInventory,
+            equippedOffensiveBlockerId:
+              this.normalizeOptionalId(user.equippedOffensiveBlockerId) ??
+              OFFENSIVE_BLOCKER_DEFAULT_ID,
+          },
+          { transaction },
+        );
+        user.offensiveBlockerInventoryCount = nextInventory;
+        user.equippedOffensiveBlockerId =
+          this.normalizeOptionalId(user.equippedOffensiveBlockerId) ??
+          OFFENSIVE_BLOCKER_DEFAULT_ID;
+        blockerGranted += quantity;
+        continue;
+      }
+
+      if (reward.kind === 'frame') {
+        if (purchasedFrames.has(reward.itemKey)) {
+          consolacaoGold += 20;
+          continue;
+        }
+        purchasedFrames.add(reward.itemKey);
+        await user.update(
+          {
+            purchasedAvatarFrameIds: Array.from(purchasedFrames).sort(),
+            equippedAvatarFrameId: reward.itemKey,
+          },
+          { transaction },
+        );
+        user.purchasedAvatarFrameIds = Array.from(purchasedFrames).sort();
+        user.equippedAvatarFrameId = reward.itemKey;
+        frameGranted = reward.itemKey;
+        continue;
+      }
+
+      if (purchasedBackgrounds.has(reward.itemKey)) {
+        consolacaoGold += 20;
+        continue;
+      }
+      purchasedBackgrounds.add(reward.itemKey);
+      await user.update(
+        {
+          purchasedAvatarBackgroundIds: Array.from(purchasedBackgrounds).sort(),
+          equippedAvatarBackgroundId: reward.itemKey,
+        },
+        { transaction },
+      );
+      user.purchasedAvatarBackgroundIds = Array.from(purchasedBackgrounds).sort();
+      user.equippedAvatarBackgroundId = reward.itemKey;
+      backgroundGranted = reward.itemKey;
+    }
+
+    const totalGold = goldGranted + consolacaoGold;
+    await this.userCurrencyTransactionModel.create(
+      {
+        userId,
+        currency: 'gold',
+        amountSigned: totalGold,
+        type: 'credit',
+        sourceType: 'check_in_reward',
+        sourceId: dayDefinition.dayKey,
+        referenceKey,
+        metadata: {
+          campaignId: ACTIVE_CHECK_IN_CAMPAIGN.id,
+          dayKey: dayDefinition.dayKey,
+          dayIndex: dayDefinition.dayIndex,
+          rewards: dayDefinition.rewards,
+          goldGranted,
+          consolacaoGold,
+          blockerGranted,
+          frameGranted,
+          backgroundGranted,
+        },
+      },
+      { transaction },
+    );
+
+    return {
+      goldGranted: totalGold,
+      blockerGranted,
+      frameGranted,
+      backgroundGranted,
+      consolacaoGold,
+    };
+  }
+
+  private sectionOrder(
+    includeWeekend: boolean,
+    referenceDate: Date,
+  ): Array<{ id: MissionType; title: string; subtitle: string }> {
+    const sections: Array<{ id: MissionType; title: string; subtitle: string }> = [];
+
+    if (includeWeekend) {
+      sections.push({
+        id: 'weekend',
+        title: 'Missão do fim de semana',
+        subtitle: this.formatResetRemainingLabel(
+          this.msUntilWeeklyReset(referenceDate),
+        ),
+      });
+    }
+
+    sections.push(
       {
         id: 'daily',
         title: 'Missões diárias',
-        subtitle: 'Renovam à meia-noite',
+        subtitle: this.formatResetRemainingLabel(
+          this.streakService.msUntilNextDayStartInAppTimeZone(referenceDate),
+        ),
       },
       {
         id: 'weekly',
         title: 'Missões semanais',
-        subtitle: 'Renovam toda segunda-feira',
+        subtitle: this.formatResetRemainingLabel(
+          this.msUntilWeeklyReset(referenceDate),
+        ),
       },
       {
         id: 'monthly',
         title: 'Desafios do mês',
-        subtitle: 'Renovam no início de cada mês',
+        subtitle: this.formatResetRemainingLabel(
+          this.msUntilMonthlyReset(referenceDate),
+        ),
       },
-    ];
+    );
+
+    return sections;
+  }
+
+  private msUntilWeeklyReset(referenceDate: Date): number {
+    const dayStart = this.streakService.getDayStartInAppTimeZone(referenceDate);
+    const weekday = dayStart.getUTCDay();
+    let daysUntilMonday = (1 - weekday + 7) % 7;
+    if (daysUntilMonday === 0) {
+      daysUntilMonday = 7;
+    }
+
+    return (
+      (daysUntilMonday - 1) * 86_400_000 +
+      this.streakService.msUntilNextDayStartInAppTimeZone(referenceDate)
+    );
+  }
+
+  private msUntilMonthlyReset(referenceDate: Date): number {
+    const parts = this.streakService.getDatePartsInAppTimeZone(referenceDate);
+    const daysInMonth = new Date(Date.UTC(parts.year, parts.month, 0)).getUTCDate();
+    const fullDaysAfterToday = daysInMonth - parts.day;
+
+    return (
+      fullDaysAfterToday * 86_400_000 +
+      this.streakService.msUntilNextDayStartInAppTimeZone(referenceDate)
+    );
+  }
+
+  private formatResetRemainingLabel(ms: number): string {
+    const safeMs = Math.max(0, ms);
+    const totalHours = Math.max(1, Math.ceil(safeMs / 3_600_000));
+
+    if (totalHours < 24) {
+      return totalHours === 1 ? '1 HORA' : `${totalHours} HORAS`;
+    }
+
+    const totalDays = Math.max(1, Math.ceil(safeMs / 86_400_000));
+    return totalDays === 1 ? '1 DIA' : `${totalDays} DIAS`;
+  }
+
+  private getWeekendEventWindow(referenceDate: Date): {
+    fridayStart: Date;
+    sundayStart: Date;
+    remainingDays: number;
+    remainingLabel: string;
+    periodKey: string;
+  } | null {
+    const dayStart = this.streakService.getDayStartInAppTimeZone(referenceDate);
+    const weekday = dayStart.getUTCDay();
+    if (weekday !== 5 && weekday !== 6 && weekday !== 0) {
+      return null;
+    }
+
+    const fridayStart = new Date(dayStart);
+    if (weekday === 6) {
+      fridayStart.setUTCDate(fridayStart.getUTCDate() - 1);
+    } else if (weekday === 0) {
+      fridayStart.setUTCDate(fridayStart.getUTCDate() - 2);
+    }
+
+    const sundayStart = new Date(fridayStart);
+    sundayStart.setUTCDate(sundayStart.getUTCDate() + 2);
+
+    const remainingLabel = this.formatResetRemainingLabel(
+      this.msUntilWeeklyReset(referenceDate),
+    );
+    const remainingDays = Math.max(
+      1,
+      Math.ceil(this.msUntilWeeklyReset(referenceDate) / 86_400_000),
+    );
+
+    return {
+      fridayStart,
+      sundayStart,
+      remainingDays,
+      remainingLabel,
+      periodKey: this.streakService.toDayKeyFromAppDayStart(fridayStart),
+    };
+  }
+
+  private countWeekendGoalDays(params: {
+    totalsByDay: Map<string, DailyTotals>;
+    fridayStart: Date;
+    sundayStart: Date;
+    now: Date;
+    dailyCalorieGoal: number;
+    objective?: string | null;
+  }): number {
+    let goalDays = 0;
+    const cursor = new Date(params.fridayStart);
+    const lastDay = params.sundayStart;
+
+    while (cursor <= lastDay) {
+      if (cursor.getTime() > params.now.getTime()) {
+        break;
+      }
+
+      const dayKey = this.streakService.toDayKeyFromAppDayStart(cursor);
+      const totals = params.totalsByDay.get(dayKey);
+      if (
+        totals &&
+        hasReachedCalorieGoal({
+          consumedCalories: totals.calories,
+          dailyCalorieGoal: params.dailyCalorieGoal,
+          objective: params.objective,
+        })
+      ) {
+        goalDays += 1;
+      }
+
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return goalDays;
   }
 
   private collectDayTotalsInRange(
@@ -1053,6 +1787,14 @@ export class MissionsService implements OnModuleInit {
 
   private buildMissionPeriodKey(missionType: MissionType, referenceDate: Date): string {
     if (missionType === 'daily') {
+      return this.streakService.toDayKeyInAppTimeZone(referenceDate);
+    }
+
+    if (missionType === 'weekend') {
+      const weekendWindow = this.getWeekendEventWindow(referenceDate);
+      if (weekendWindow) {
+        return weekendWindow.periodKey;
+      }
       return this.streakService.toDayKeyInAppTimeZone(referenceDate);
     }
 

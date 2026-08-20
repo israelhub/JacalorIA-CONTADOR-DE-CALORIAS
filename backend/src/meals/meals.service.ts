@@ -6,6 +6,7 @@ import { CreateMealDto } from './dto/create-meal.dto';
 import { UpdateMealDto } from './dto/update-meal.dto';
 import { MealStatus, MealType } from './models/meal.model';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { StreakService } from '../streak/streak.service';
 
 @Injectable()
 export class MealsService {
@@ -13,14 +14,33 @@ export class MealsService {
     @InjectModel(Meal)
     private readonly mealModel: typeof Meal,
     private readonly analyticsService: AnalyticsService,
+    private readonly streakService: StreakService,
   ) {}
 
   async create(createMealDto: CreateMealDto, userId: string): Promise<Meal> {
+    const now = new Date();
+    const todayKey = this.streakService.toDayKeyInAppTimeZone(now);
+    const { createdAt: createdAtInput, ...mealFields } = createMealDto;
+
+    let mealCreatedAt = now;
+    if (createdAtInput) {
+      const parsed = new Date(createdAtInput);
+      if (!Number.isNaN(parsed.getTime())) {
+        const parsedKey = this.streakService.toDayKeyInAppTimeZone(parsed);
+        mealCreatedAt = parsedKey > todayKey ? now : parsed;
+      }
+    }
+
+    const mealDayKey = this.streakService.toDayKeyInAppTimeZone(mealCreatedAt);
+    const countsForStreak = mealDayKey === todayKey;
+
     const meal = await this.mealModel.create({
-      ...createMealDto,
+      ...mealFields,
       mealType: createMealDto.mealType ?? MealType.Free,
       userId,
       status: MealStatus.Active,
+      createdAt: mealCreatedAt,
+      countsForStreak,
     });
 
     const hasImage = Boolean(createMealDto.imageUrl?.trim());
@@ -37,6 +57,8 @@ export class MealsService {
         has_analysis_items: hasAnalysisItems,
         calories: createMealDto.calories,
         meal_type: createMealDto.mealType ?? MealType.Free,
+        counts_for_streak: countsForStreak,
+        meal_day_key: mealDayKey,
       },
     });
 

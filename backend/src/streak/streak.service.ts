@@ -161,6 +161,7 @@ export class StreakService {
         where: {
           userId: { [Op.in]: uniqueUserIds },
           status: MealStatus.Active,
+          countsForStreak: true,
         },
         attributes: ['userId', 'createdAt'],
         order: [
@@ -272,6 +273,47 @@ export class StreakService {
     return { year, month, day };
   }
 
+  getDateTimePartsInAppTimeZone(date: Date): {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+  } {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: this.appTimeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    });
+
+    const pieces = formatter.formatToParts(date);
+    const read = (type: Intl.DateTimeFormatPartTypes) =>
+      Number(pieces.find((piece) => piece.type === type)?.value ?? 0);
+
+    return {
+      year: read('year'),
+      month: read('month'),
+      day: read('day'),
+      hour: read('hour'),
+      minute: read('minute'),
+      second: read('second'),
+    };
+  }
+
+  /** Ms até a próxima meia-noite civil no fuso do app (DST BR: dia fixo de 24h). */
+  msUntilNextDayStartInAppTimeZone(date: Date): number {
+    const parts = this.getDateTimePartsInAppTimeZone(date);
+    const elapsedMs =
+      parts.hour * 3_600_000 + parts.minute * 60_000 + parts.second * 1_000;
+    return Math.max(1_000, 86_400_000 - elapsedMs);
+  }
+
   private calculateStreakFromDayKeys(dayKeys: Set<string>): number {
     let streak = 0;
     const cursor = this.getDayStartInAppTimeZone(new Date());
@@ -323,6 +365,7 @@ export class StreakService {
         where: {
           userId,
           status: MealStatus.Active,
+          countsForStreak: true,
           createdAt: {
             [Op.lte]: now,
           },

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../features/home/widgets/home_shell_layout.dart';
 import '../theme/app_theme.dart';
 
 class AppToast {
@@ -21,7 +22,8 @@ class AppToast {
     _activeEntry?.remove();
     _activeEntry = null;
 
-    final overlay = Overlay.of(context);
+    final bottomInset = homeShellToastBottomInset(context);
+    final overlay = Overlay.of(context, rootOverlay: true);
     late final OverlayEntry entry;
     entry = OverlayEntry(
       builder: (_) => _ToastOverlay(
@@ -33,6 +35,7 @@ class AppToast {
         backgroundColor:
             isError ? _errorBackground : AppColors.brand900Variant,
         duration: duration,
+        bottomInset: bottomInset,
         onClose: () {
           entry.remove();
           if (_activeEntry == entry) _activeEntry = null;
@@ -67,6 +70,7 @@ class _ToastOverlay extends StatefulWidget {
     required this.icon,
     required this.backgroundColor,
     required this.duration,
+    required this.bottomInset,
     required this.onClose,
   });
 
@@ -74,6 +78,7 @@ class _ToastOverlay extends StatefulWidget {
   final IconData icon;
   final Color backgroundColor;
   final Duration duration;
+  final double bottomInset;
   final VoidCallback onClose;
 
   @override
@@ -115,12 +120,10 @@ class _ToastOverlayState extends State<_ToastOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
-
     return Positioned(
       left: AppSpacing.lg,
       right: AppSpacing.lg,
-      bottom: bottomInset + AppSpacing.lg,
+      bottom: widget.bottomInset,
       child: IgnorePointer(
         child: SlideTransition(
           position: _slide,

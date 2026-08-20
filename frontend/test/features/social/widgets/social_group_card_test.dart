@@ -33,6 +33,12 @@ void main() {
     expect(find.text('14 dias'), findsOneWidget);
     expect(find.text('3 dias restantes'), findsOneWidget);
     expect(find.text('Posição 2º'), findsOneWidget);
+    expect(
+      find.text(
+        'Registre as refeições todos os dias. Ganha quem mantiver a sequência mais longa.',
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('mostra Grupo finalizado e remove Encerrado quando finalizado', (
@@ -56,7 +62,9 @@ void main() {
       'durationDays': 14,
     });
 
-    await tester.pumpWidget(_wrap(SocialGroupCard(group: group, isFinished: true)));
+    await tester.pumpWidget(
+      _wrap(SocialGroupCard(group: group, isFinished: true)),
+    );
 
     expect(find.text('Grupo finalizado'), findsOneWidget);
     expect(find.text('Encerrado'), findsNothing);

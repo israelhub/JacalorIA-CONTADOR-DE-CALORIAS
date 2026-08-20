@@ -65,6 +65,21 @@ class SocialPageController extends ChangeNotifier {
   static const String _hideIntroLocalKeyPrefix = 'social_hide_intro_local';
   final Set<String> _viewedFinishedGroupIds = <String>{};
 
+  SocialXpRankingPeriod _xpRankingPeriod = SocialXpRankingPeriod.all;
+  SocialXpRankingPeriod get xpRankingPeriod => _xpRankingPeriod;
+
+  final List<SocialRankingEntry> _xpRanking = <SocialRankingEntry>[];
+  List<SocialRankingEntry> get xpRanking =>
+      List<SocialRankingEntry>.unmodifiable(_xpRanking);
+
+  bool _isXpRankingLoading = false;
+  bool get isXpRankingLoading => _isXpRankingLoading;
+
+  String? _xpRankingErrorMessage;
+  String? get xpRankingErrorMessage => _xpRankingErrorMessage;
+
+  bool _hasLoadedXpRanking = false;
+
   String _hideIntroLocalKeyForUserId(String userId) {
     final normalized = userId.trim().isEmpty ? 'user' : userId.trim();
     return '$_hideIntroLocalKeyPrefix:$normalized';
@@ -166,6 +181,9 @@ class SocialPageController extends ChangeNotifier {
       _hasLoadedOnce = true;
       _isLoading = false;
       notifyListeners();
+      if (_tabIndex == 2) {
+        await loadXpRanking(silent: true);
+      }
     } catch (error) {
       _isLoading = false;
       if (!silent || !hadData) {
@@ -204,6 +222,44 @@ class SocialPageController extends ChangeNotifier {
     _previousTabIndex = _tabIndex;
     _tabIndex = index;
     notifyListeners();
+    if (index == 2) {
+      loadXpRanking(silent: _hasLoadedXpRanking);
+    }
+  }
+
+  Future<void> changeXpRankingPeriod(SocialXpRankingPeriod period) async {
+    if (_xpRankingPeriod == period) return;
+    _xpRankingPeriod = period;
+    notifyListeners();
+    await loadXpRanking(silent: _xpRanking.isNotEmpty);
+  }
+
+  Future<void> loadXpRanking({bool silent = false}) async {
+    final hadData = _xpRanking.isNotEmpty;
+    _isXpRankingLoading = true;
+    if (!silent || !hadData) {
+      _xpRankingErrorMessage = null;
+    }
+    notifyListeners();
+
+    try {
+      final data = await _service.fetchXpRanking(period: _xpRankingPeriod);
+      _xpRanking
+        ..clear()
+        ..addAll(data.ranking);
+      _xpRankingPeriod = data.period;
+      _hasLoadedXpRanking = true;
+      _isXpRankingLoading = false;
+      _xpRankingErrorMessage = null;
+      notifyListeners();
+    } catch (error) {
+      _isXpRankingLoading = false;
+      if (!silent || !hadData) {
+        _xpRankingErrorMessage =
+            error.toString().replaceFirst('Exception: ', '');
+      }
+      notifyListeners();
+    }
   }
 
   Future<void> addFriendByEmail(String email) async {

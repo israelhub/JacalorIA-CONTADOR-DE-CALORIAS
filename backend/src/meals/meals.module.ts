@@ -4,9 +4,10 @@ import { MealsService } from './meals.service';
 import { MealsController } from './meals.controller';
 import { Meal } from './models/meal.model';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { StreakModule } from '../streak/streak.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Meal]), AnalyticsModule],
+  imports: [SequelizeModule.forFeature([Meal]), AnalyticsModule, StreakModule],
   controllers: [MealsController],
   providers: [MealsService],
   exports: [MealsService],

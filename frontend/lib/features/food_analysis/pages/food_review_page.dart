@@ -366,8 +366,8 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
         statusIcon: Icons.local_fire_department,
         showScanner: false,
         operation: () async {
-          // Sempre recalcula no save: reaplica match TACO e grava o nome da
-          // tabela (não só as kcal), mesmo sem edição manual dos itens.
+          // Sempre recalcula no save: reaplica match TACO nas macros/kcal
+          // e metadados (source/matchedFood), sem trocar o nome digitado.
           final analysisToSave = await widget.analysisService.recalculate(
             items: currentItems,
           );
@@ -440,6 +440,8 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
             imageUrl: persistedMealRecord!.imageUrl ?? fallbackMealRecord.imageUrl,
             imageAsset:
                 persistedMealRecord!.imageAsset ?? fallbackMealRecord.imageAsset,
+            createdAt:
+                persistedMealRecord!.createdAt ?? fallbackMealRecord.createdAt,
             status: persistedMealRecord!.status,
           );
 

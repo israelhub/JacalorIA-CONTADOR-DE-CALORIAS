@@ -31,3 +31,24 @@ bool isSameHomeDate(DateTime first, DateTime second) {
       firstLocal.month == secondLocal.month &&
       firstLocal.day == secondLocal.day;
 }
+
+DateTime resolveMealRecordedAt({
+  required DateTime selectedDate,
+  DateTime? now,
+}) {
+  final reference = (now ?? DateTime.now()).toLocal();
+  final day = normalizeHomeDate(selectedDate);
+  if (isSameHomeDate(day, reference)) {
+    return reference;
+  }
+
+  return DateTime(
+    day.year,
+    day.month,
+    day.day,
+    reference.hour,
+    reference.minute,
+    reference.second,
+    reference.millisecond,
+  );
+}

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_date_picker.dart';
+import '../../../shared/widgets/app_page_route.dart';
 import '../../food_analysis/models/food_meal_record.dart';
+import '../../food_analysis/pages/food_meal_details_page.dart';
 import '../../home/helpers/home_date_helpers.dart';
 import '../../home/widgets/home_meal_card.dart';
 import '../models/social_member_daily_meals.dart';
@@ -11,15 +13,17 @@ import '../services/social_service.dart';
 class SocialMemberDailyMealsSection extends StatefulWidget {
   const SocialMemberDailyMealsSection({
     super.key,
-    required this.groupId,
     required this.memberUserId,
-    this.competitionType,
+    this.groupId,
+    this.viaUserId,
+    this.readOnly = true,
     SocialService? service,
   }) : service = service ?? const SocialService();
 
-  final String groupId;
   final String memberUserId;
-  final String? competitionType;
+  final String? groupId;
+  final String? viaUserId;
+  final bool readOnly;
   final SocialService service;
 
   @override
@@ -37,22 +41,10 @@ class _SocialMemberDailyMealsSectionState
   String? _error;
   DateTime? _selectedDate;
 
-  bool get _shouldLoad {
-    final competitionType = widget.competitionType?.trim();
-    if (competitionType == null || competitionType.isEmpty) {
-      return true;
-    }
-    return competitionType == 'goal_average';
-  }
-
   @override
   void initState() {
     super.initState();
-    if (_shouldLoad) {
-      _load();
-    } else {
-      _isLoading = false;
-    }
+    _load();
   }
 
   Future<void> _load({DateTime? date}) async {
@@ -64,10 +56,11 @@ class _SocialMemberDailyMealsSectionState
     });
 
     try {
-      final result = await widget.service.fetchGroupMemberDailyMeals(
-        groupId: widget.groupId,
-        memberUserId: widget.memberUserId,
+      final result = await widget.service.fetchPublicProfileDailyMeals(
+        userId: widget.memberUserId,
         date: date != null ? _toDayKey(date) : _data?.date,
+        groupId: widget.groupId,
+        viaUserId: widget.viaUserId,
       );
       if (!mounted) return;
 
@@ -131,12 +124,18 @@ class _SocialMemberDailyMealsSectionState
     await _load(date: normalized);
   }
 
+  Future<void> _openMealDetails(FoodMealRecord meal) async {
+    final updated = await context.pushSlidePage<FoodMealRecord>(
+      FoodMealDetailsPage(record: meal, readOnly: widget.readOnly),
+    );
+    if (!mounted || widget.readOnly || updated == null) {
+      return;
+    }
+    await _load(date: _selectedDate);
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (!_shouldLoad) {
-      return const SizedBox.shrink();
-    }
-
     if (_isLoading) {
       return const Padding(
         padding: EdgeInsets.only(top: AppSpacing.xl),
@@ -221,8 +220,6 @@ class _SocialMemberDailyMealsSectionState
                         formatHomeDateLabel(selectedDate),
                         style: AppTextStyles.caption.copyWith(
                           color: AppColors.textSecondary,
-                          decoration: TextDecoration.underline,
-                          decorationColor: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
@@ -244,6 +241,15 @@ class _SocialMemberDailyMealsSectionState
               color: AppColors.textSecondary,
             ),
           ),
+          if (data.isPrivate) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Visível só para você. Suas refeições estão privadas.',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
           if (_isRefreshing)
             const Padding(
@@ -293,6 +299,7 @@ class _SocialMemberDailyMealsSectionState
           imageUrl: meal.imageUrl,
           imageAsset: meal.imageAsset,
           height: _mealCardHeight,
+          onTap: () => _openMealDetails(meal),
         ),
       );
     }

@@ -11,7 +11,7 @@ import {
   Unique,
 } from 'sequelize-typescript';
 
-export type MissionType = 'daily' | 'weekly' | 'monthly';
+export type MissionType = 'daily' | 'weekly' | 'monthly' | 'weekend';
 export type MissionAccent = 'action' | 'accent' | 'challenge';
 
 @Table({ tableName: 'missions', underscored: true })

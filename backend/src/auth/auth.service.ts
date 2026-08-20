@@ -8,6 +8,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { UniqueConstraintError } from 'sequelize';
 import { Op } from 'sequelize';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
 import { User } from './models/user.model';
@@ -34,14 +35,23 @@ import { parseNumber } from '../shared/utils/number-parser.util';
 import { Meal, MealStatus } from '../meals/models/meal.model';
 import { StreakService } from '../streak/streak.service';
 
+interface JwtSessionPayload {
+  sub: string;
+  email: string;
+  iat?: number;
+  exp?: number;
+}
+
 @Injectable()
 export class AuthService {
   private readonly SALT_ROUNDS = 12;
   private readonly CODE_EXPIRATION_MINUTES = 15;
+  private readonly DEFAULT_SESSION_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
 
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
     private readonly mailService: MailService,
     @InjectModel(SocialFriendship)
     private readonly socialFriendshipModel: typeof SocialFriendship,
@@ -447,6 +457,9 @@ export class AuthService {
     if (payload.purchasedAvatarBackgroundIds != null) {
       delete payload.purchasedAvatarBackgroundIds;
     }
+    if (payload.purchasedJacaEmojiIds != null) {
+      delete payload.purchasedJacaEmojiIds;
+    }
     if (payload.offensiveBlockerInventoryCount != null) {
       delete payload.offensiveBlockerInventoryCount;
     }
@@ -549,11 +562,81 @@ export class AuthService {
     };
   }
 
+  async refreshSession(rawToken: string) {
+    let payload: JwtSessionPayload;
+    try {
+      payload = this.jwtService.verify<JwtSessionPayload>(rawToken, {
+        ignoreExpiration: true,
+      });
+    } catch {
+      throw new UnauthorizedException('Sessão inválida. Faça login novamente.');
+    }
+
+    if (!payload?.sub || !payload?.email) {
+      throw new UnauthorizedException('Sessão inválida. Faça login novamente.');
+    }
+
+    const maxAgeSeconds = this.getSessionMaxAgeSeconds();
+    if (typeof payload.iat === 'number') {
+      const ageSeconds = Math.floor(Date.now() / 1000) - payload.iat;
+      if (ageSeconds > maxAgeSeconds) {
+        throw new UnauthorizedException('Sessão inválida. Faça login novamente.');
+      }
+    }
+
+    const user = await this.authRepository.findProfileById(payload.sub);
+    if (!user || user.email.toLowerCase() !== payload.email.toLowerCase()) {
+      throw new UnauthorizedException('Sessão inválida. Faça login novamente.');
+    }
+
+    const token = this.generateToken(user as User);
+
+    return {
+      message: 'Sessão renovada com sucesso',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+    };
+  }
+
   private generateToken(user: User): string {
     return this.jwtService.sign({
       sub: user.id,
       email: user.email,
     });
+  }
+
+  private getSessionMaxAgeSeconds(): number {
+    const configured =
+      this.parseDurationToSeconds(
+        this.configService.get<string>('JWT_EXPIRATION', '365d') ?? '365d',
+      ) ?? this.DEFAULT_SESSION_MAX_AGE_SECONDS;
+    return Math.max(configured, this.DEFAULT_SESSION_MAX_AGE_SECONDS);
+  }
+
+  private parseDurationToSeconds(value: string): number | null {
+    const match = /^(\d+)\s*([smhd])$/i.exec(value.trim());
+    if (!match) {
+      return null;
+    }
+
+    const amount = Number(match[1]);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return null;
+    }
+
+    const unit = match[2].toLowerCase();
+    const multipliers: Record<string, number> = {
+      s: 1,
+      m: 60,
+      h: 3600,
+      d: 86400,
+    };
+
+    return amount * (multipliers[unit] ?? 86400);
   }
 
   private generateCode(): string {

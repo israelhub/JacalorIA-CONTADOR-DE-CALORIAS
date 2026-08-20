@@ -755,6 +755,90 @@ code {
   inset: 0;
 }
 
+.meal-entry-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) 1fr;
+  gap: 16px;
+  align-items: center;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.meal-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.meal-entry-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 2px 4px;
+  border-bottom: 1px solid var(--border, #e8ebe6);
+  margin-bottom: 2px;
+}
+
+.meal-entry-total span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.meal-entry-total strong {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--brand);
+  letter-spacing: -0.02em;
+}
+
+.meal-entry-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meal-entry-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.meal-entry-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.meal-entry-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.meal-entry-stats {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.meal-entry-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--panel-muted);
+  overflow: hidden;
+}
+
+.meal-entry-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
 .retention {
   display: grid;
   grid-template-columns: 1fr;
@@ -1111,6 +1195,10 @@ th .tip {
 
   .retention {
     grid-template-rows: none;
+  }
+
+  .meal-entry-layout {
+    grid-template-columns: 1fr;
   }
 
   .table-wrap-scroll {

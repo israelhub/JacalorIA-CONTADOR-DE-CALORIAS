@@ -31,6 +31,74 @@ void main() {
     expect(record.items.first.grams, 100);
   });
 
+  test('fromJson preserva source e matchedFood do item', () {
+    final record = FoodMealRecord.fromJson({
+      'title': 'Almoço',
+      'description': 'Arroz',
+      'calories': 130,
+      'protein': 3,
+      'carbs': 28,
+      'fat': 0,
+      'timeLabel': '12:55',
+      'imageUrl': null,
+      'analysisItems': [
+        {
+          'name': 'Arroz',
+          'grams': 100,
+          'calories': 130,
+          'unit': 'g',
+          'protein': 3,
+          'carbs': 28,
+          'fat': 0.2,
+          'source': 'taco_db',
+          'matchedFood': 'Arroz, tipo 1, cozido',
+        },
+      ],
+    });
+
+    final item = record.items.single;
+    expect(item.name, 'Arroz');
+    expect(item.source, 'taco_db');
+    expect(item.matchedFood, 'Arroz, tipo 1, cozido');
+    expect(item.hasTacoMatch, isTrue);
+  });
+
+  test('toJson inclui source e matchedFood quando presentes', () {
+    const item = FoodAnalysisItem(
+      name: 'Arroz',
+      grams: 100,
+      calories: 130,
+      protein: 3,
+      carbs: 28,
+      fat: 0.2,
+      source: 'taco_db',
+      matchedFood: 'Arroz, tipo 1, cozido',
+    );
+
+    final json = item.toJson();
+    expect(json['source'], 'taco_db');
+    expect(json['matchedFood'], 'Arroz, tipo 1, cozido');
+
+    final roundTrip = FoodAnalysisItem.fromJson(json);
+    expect(roundTrip.hasTacoMatch, isTrue);
+    expect(roundTrip.matchedFood, 'Arroz, tipo 1, cozido');
+  });
+
+  test('hasTacoMatch é falso sem source taco_db', () {
+    const item = FoodAnalysisItem(
+      name: 'Algo',
+      grams: 50,
+      calories: 10,
+      protein: 1,
+      carbs: 1,
+      fat: 0,
+      source: 'ai_estimate',
+      matchedFood: 'Algo inventado',
+    );
+
+    expect(item.hasTacoMatch, isFalse);
+  });
+
   test('fromAnalysis replica os itens da analise', () {
     const analysis = FoodAnalysisResult(
       items: [

@@ -49,5 +49,20 @@
 	<string>Precisamos acessar a galeria para escolher uma foto da refeição.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.jacaloria.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>jacaloria</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -8,12 +8,15 @@ import '../../../core/analytics/analytics_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_modal.dart';
+import '../../../shared/widgets/app_svg_icon.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/avatar_profile_preview.dart';
 import '../../../shared/widgets/frame_silhouette_icon.dart';
 import '../../../shared/widgets/framed_avatar.dart';
 import '../../auth/service/auth_service.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../../missions/services/missions_service.dart';
+import '../../social/models/jaca_emoji_catalog.dart';
 import '../models/avatar_background_catalog.dart';
 import '../models/avatar_frame_catalog.dart';
 
@@ -40,6 +43,7 @@ class AvatarFrameStorePage extends StatefulWidget {
 class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
   late Set<String> _purchasedFrameIds;
   late Set<String> _purchasedBackgroundIds;
+  late Set<String> _purchasedStickerIds;
   late Map<String, int> _blockerInventory;
   late String _equippedFrameId;
   late String _equippedBackgroundId;
@@ -56,7 +60,6 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
   final Set<StoreCategory> _visitedCategories = <StoreCategory>{
     StoreCategory.blockers,
   };
-  bool _showOwnedOnly = false;
   bool _isLoadingCatalog = true;
   bool _isSaving = false;
   bool _hasChanges = false;
@@ -78,6 +81,9 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     );
     _purchasedBackgroundIds =
         AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(_profileSnapshot);
+    _purchasedStickerIds = JacaEmojiCatalog.purchasedIdsFromProfile(
+      _profileSnapshot,
+    );
     _equippedBackgroundId = AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
       _profileSnapshot,
     );
@@ -124,6 +130,9 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(
           _profileSnapshot,
         );
+    _purchasedStickerIds = JacaEmojiCatalog.purchasedIdsFromProfile(
+      _profileSnapshot,
+    );
     _equippedBackgroundId =
         AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
           _profileSnapshot,
@@ -192,6 +201,13 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
       }
     }
 
+    for (final item in _catalog.stickers) {
+      final path = JacaEmojiCatalog.byId(item.id)?.assetPath;
+      if (path != null && path.isNotEmpty) {
+        providers.add(AssetImage(path));
+      }
+    }
+
     final avatarUrl =
         _profileSnapshot['avatarUrl'] as String? ??
         _profileSnapshot['avatar_url'] as String?;
@@ -223,13 +239,21 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
       case StoreCategory.backgrounds:
         items = _catalog.backgrounds;
         break;
+      case StoreCategory.stickers:
+        items = _catalog.stickers;
+        break;
     }
 
-    if (!_showOwnedOnly) {
-      return items;
+    final owned = <StoreCatalogItem>[];
+    final locked = <StoreCatalogItem>[];
+    for (final item in items) {
+      if (_isOwned(item)) {
+        owned.add(item);
+      } else {
+        locked.add(item);
+      }
     }
-
-    return items.where(_isOwned).toList(growable: false);
+    return [...owned, ...locked];
   }
 
   bool _isOwned(StoreCatalogItem item) {
@@ -238,6 +262,8 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         return _purchasedFrameIds.contains(item.id);
       case StoreItemType.background:
         return _purchasedBackgroundIds.contains(item.id);
+      case StoreItemType.sticker:
+        return _purchasedStickerIds.contains(item.id);
       case StoreItemType.blocker:
         return (_blockerInventory[item.id] ?? 0) > 0;
     }
@@ -249,19 +275,10 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         return _equippedFrameId == item.id;
       case StoreItemType.background:
         return _equippedBackgroundId == item.id;
+      case StoreItemType.sticker:
       case StoreItemType.blocker:
         return false;
     }
-  }
-
-  bool _canPurchase(StoreCatalogItem item) {
-    if (item.isInventoryBlocker) {
-      return _goldBalance >= item.priceGold;
-    }
-    if (_isOwned(item)) {
-      return true;
-    }
-    return _goldBalance >= item.priceGold;
   }
 
   int get _totalBlockerInventory {
@@ -278,6 +295,14 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
 
   Future<void> _buyOrEquip(StoreCatalogItem item) async {
     if (_isSaving) {
+      return;
+    }
+
+    if (item.isCheckInExclusive && !_isOwned(item)) {
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop('go_to_missions');
       return;
     }
 
@@ -310,6 +335,12 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
           successMessage = isOwned
               ? 'Fundo equipado.'
               : 'Fundo comprado e equipado.';
+          break;
+        case StoreItemType.sticker:
+          response = await _missionsService.purchaseJacaEmoji(item.id);
+          successMessage = isOwned
+              ? 'Figurinha já desbloqueada.'
+              : 'Figurinha desbloqueada.';
           break;
         case StoreItemType.blocker:
           response = await _missionsService.purchaseBlocker(
@@ -427,89 +458,163 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     );
   }
 
-  Future<void> _toggleOwnedItem(StoreCatalogItem item) async {
+  Future<void> _onTileTap(StoreCatalogItem item) async {
+    if (!_isOwned(item) ||
+        item.isInventoryBlocker ||
+        item.type == StoreItemType.sticker) {
+      _previewItem(item);
+      return;
+    }
+    _equipOwnedItem(item);
+  }
+
+  void _equipOwnedItem(StoreCatalogItem item) {
+    if (item.type == StoreItemType.frame) {
+      final nextId = _equippedFrameId == item.id
+          ? AvatarFrameCatalog.noneId
+          : item.id;
+      setState(() {
+        _equippedFrameId = nextId;
+        _previewFrameId = nextId;
+        _profileSnapshot['equippedAvatarFrameId'] = nextId;
+      });
+      _hasChanges = true;
+      unawaited(_persistEquippedCosmetic(
+        field: 'equippedAvatarFrameId',
+        value: nextId,
+      ));
+      return;
+    }
+
+    if (item.type == StoreItemType.background) {
+      final nextId = _equippedBackgroundId == item.id
+          ? AvatarFrameCatalog.noneId
+          : item.id;
+      setState(() {
+        _equippedBackgroundId = nextId;
+        _previewBackgroundId = nextId;
+        _profileSnapshot['equippedAvatarBackgroundId'] = nextId;
+      });
+      _hasChanges = true;
+      unawaited(_persistEquippedCosmetic(
+        field: 'equippedAvatarBackgroundId',
+        value: nextId,
+      ));
+    }
+  }
+
+  Future<void> _persistEquippedCosmetic({
+    required String field,
+    required String value,
+  }) async {
+    try {
+      await _authService.updateProfile(<String, dynamic>{field: value});
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showToast(
+        error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _confirmPurchase(StoreCatalogItem item) async {
     if (_isSaving) {
       return;
     }
-
-    if (item.type == StoreItemType.frame && _equippedFrameId == item.id) {
-      setState(() {
-        _isSaving = true;
-      });
-      try {
-        await _authService.updateProfile(<String, dynamic>{
-          'equippedAvatarFrameId': AvatarFrameCatalog.noneId,
-        });
-        _profileSnapshot['equippedAvatarFrameId'] = AvatarFrameCatalog.noneId;
-        setState(() {
-          _equippedFrameId = AvatarFrameCatalog.equippedIdFromProfile(
-            _profileSnapshot,
-          );
-          _previewFrameId = _equippedFrameId;
-        });
-        unawaited(_loadCatalog(silent: true));
-        _hasChanges = true;
-        if (mounted) {
-          _showToast('Moldura desequipada.');
-        }
-      } catch (error) {
-        if (mounted) {
-          _showToast(
-            error.toString().replaceFirst('Exception: ', ''),
-            isError: true,
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isSaving = false;
-          });
-        }
+    if (item.isCheckInExclusive && !_isOwned(item)) {
+      if (!mounted) {
+        return;
       }
+      Navigator.of(context).pop('go_to_missions');
+      return;
+    }
+    if (!item.isInventoryBlocker && _isOwned(item)) {
       return;
     }
 
-    if (item.type == StoreItemType.background &&
-        _equippedBackgroundId == item.id) {
-      setState(() {
-        _isSaving = true;
-      });
-      try {
-        await _authService.updateProfile(<String, dynamic>{
-          'equippedAvatarBackgroundId': AvatarFrameCatalog.noneId,
-        });
-        _profileSnapshot['equippedAvatarBackgroundId'] =
-            AvatarFrameCatalog.noneId;
-        setState(() {
-          _equippedBackgroundId =
-              AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
-                _profileSnapshot,
-              );
-          _previewBackgroundId = _equippedBackgroundId;
-        });
-        unawaited(_loadCatalog(silent: true));
-        _hasChanges = true;
-        if (mounted) {
-          _showToast('Fundo desequipado.');
-        }
-      } catch (error) {
-        if (mounted) {
-          _showToast(
-            error.toString().replaceFirst('Exception: ', ''),
-            isError: true,
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isSaving = false;
-          });
-        }
-      }
-      return;
-    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AppModal(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Deseja comprar esse item?',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.missionsSectionTitle.copyWith(
+                  color: AppColors.brand900Variant,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              SizedBox(
+                height: 140,
+                width: double.infinity,
+                child: Center(
+                  child: _StoreItemPreview(
+                    item: item,
+                    avatarUrl: _profileSnapshot['avatarUrl'] as String? ??
+                        _profileSnapshot['avatar_url'] as String?,
+                    name: _profileSnapshot['name']?.toString(),
+                  ),
+                ),
+              ),
+              if (item.isInventoryBlocker) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  item.name,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.brand900Variant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${item.priceGold}',
+                    style: AppTextStyles.captionStrong.copyWith(
+                      color: AppColors.brand900Variant,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const AppSvgIcon.gold(size: 18),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      label: 'Cancelar',
+                      variant: AppButtonVariant.outline,
+                      onPressed: () => Navigator.of(context).pop(false),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: AppButton(
+                      label: 'Comprar',
+                      onPressed: () => Navigator.of(context).pop(true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
 
-    await _buyOrEquip(item);
+    if (confirmed == true && mounted) {
+      await _buyOrEquip(item);
+    }
   }
 
   void _applyResponseState(Map<String, dynamic> response) {
@@ -551,6 +656,9 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
           AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(
             _profileSnapshot,
           );
+      _purchasedStickerIds = JacaEmojiCatalog.purchasedIdsFromProfile(
+        _profileSnapshot,
+      );
       _equippedBackgroundId =
           AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(_profileSnapshot);
       _previewFrameId = _equippedFrameId;
@@ -574,6 +682,7 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
           _previewBackgroundId = item.id;
         });
         return;
+      case StoreItemType.sticker:
       case StoreItemType.blocker:
         return;
     }
@@ -640,13 +749,9 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
           ),
         ),
         body: SafeArea(
+          bottom: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-            ),
+            padding: homeShellNestedFillPadding(context),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -666,41 +771,7 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                     });
                   },
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppButton(
-                        label: 'Todos',
-                        onPressed: () {
-                          setState(() {
-                            _showOwnedOnly = false;
-                          });
-                        },
-                        variant: _showOwnedOnly
-                            ? AppButtonVariant.outline
-                            : AppButtonVariant.primary,
-                        textStyle: AppTextStyles.buttonSmall,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: AppButton(
-                        label: 'Habilitado',
-                        onPressed: () {
-                          setState(() {
-                            _showOwnedOnly = true;
-                          });
-                        },
-                        variant: _showOwnedOnly
-                            ? AppButtonVariant.primary
-                            : AppButtonVariant.outline,
-                        textStyle: AppTextStyles.buttonSmall,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.md),
                 Expanded(
                   child: RefreshIndicator(
                     color: AppColors.action500,
@@ -736,10 +807,9 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                                         blockerInventory: _blockerInventory,
                                         isOwned: _isOwned,
                                         isEquipped: _isEquipped,
-                                        canPurchase: _canPurchase,
                                         isSaving: _isSaving,
-                                        onPreview: _previewItem,
-                                        onPressed: _toggleOwnedItem,
+                                        onTileTap: _onTileTap,
+                                        onBuy: _confirmPurchase,
                                       )
                                     : const SizedBox.expand(),
                             ],
@@ -765,10 +835,9 @@ class _StoreCategoryGrid extends StatelessWidget {
     required this.blockerInventory,
     required this.isOwned,
     required this.isEquipped,
-    required this.canPurchase,
     required this.isSaving,
-    required this.onPreview,
-    required this.onPressed,
+    required this.onTileTap,
+    required this.onBuy,
   });
 
   final StoreCategory category;
@@ -778,10 +847,9 @@ class _StoreCategoryGrid extends StatelessWidget {
   final Map<String, int> blockerInventory;
   final bool Function(StoreCatalogItem item) isOwned;
   final bool Function(StoreCatalogItem item) isEquipped;
-  final bool Function(StoreCatalogItem item) canPurchase;
   final bool isSaving;
-  final ValueChanged<StoreCatalogItem> onPreview;
-  final ValueChanged<StoreCatalogItem> onPressed;
+  final ValueChanged<StoreCatalogItem> onTileTap;
+  final ValueChanged<StoreCatalogItem> onBuy;
 
   @override
   Widget build(BuildContext context) {
@@ -810,7 +878,7 @@ class _StoreCategoryGrid extends StatelessWidget {
         // (banner largo) ficam mais compactos; molduras/bloqueadores ganham
         // altura pra o preview nao esmagar o botao em telas estreitas.
         final childAspectRatio =
-            category == StoreCategory.backgrounds ? 1.05 : 0.82;
+            category == StoreCategory.backgrounds ? 1.35 : 1.12;
         return GridView.builder(
           // Evita reconstruir tiles fora da viewport ao voltar pra categoria.
           addAutomaticKeepAlives: true,
@@ -836,10 +904,9 @@ class _StoreCategoryGrid extends StatelessWidget {
                 blockerQuantityFallback: item.quantityOwned,
                 isOwned: isOwned(item),
                 isEquipped: isEquipped(item),
-                canPurchase: canPurchase(item),
                 isSaving: isSaving,
-                onPreview: () => onPreview(item),
-                onPressed: () => onPressed(item),
+                onTileTap: () => onTileTap(item),
+                onBuy: () => onBuy(item),
               ),
             );
           },
@@ -855,57 +922,99 @@ class _StoreCategorySwitcher extends StatelessWidget {
     required this.onSelected,
   });
 
+  static const _indicatorWidth = 22.0;
+  static const _indicatorHeight = 3.0;
+
   final StoreCategory selected;
   final ValueChanged<StoreCategory> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _CategoryButton(
-              label: 'Bloqueadores',
-              iconBuilder: (color) => Icon(
-                Icons.shield_rounded,
-                size: 26,
-                color: color,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tabCount = StoreCategory.values.length;
+        final tabWidth = constraints.maxWidth / tabCount;
+        final left =
+            selected.index * tabWidth + (tabWidth - _indicatorWidth) / 2;
+
+        return SizedBox(
+          height: 46,
+          child: Stack(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _CategoryButton(
+                      label: 'Bloqueadores',
+                      iconBuilder: (color) => Icon(
+                        Icons.shield_outlined,
+                        size: 26,
+                        color: color,
+                      ),
+                      isSelected: selected == StoreCategory.blockers,
+                      onTap: () => onSelected(StoreCategory.blockers),
+                    ),
+                  ),
+                  Expanded(
+                    child: _CategoryButton(
+                      label: 'Molduras',
+                      iconBuilder: (color) => SizedBox(
+                        width: 26,
+                        height: 26,
+                        child: Center(
+                          child: FrameSilhouetteIcon(
+                            size: 22,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                      isSelected: selected == StoreCategory.frames,
+                      onTap: () => onSelected(StoreCategory.frames),
+                    ),
+                  ),
+                  Expanded(
+                    child: _CategoryButton(
+                      label: 'Fundos',
+                      iconBuilder: (color) => Icon(
+                        Icons.landscape_outlined,
+                        size: 26,
+                        color: color,
+                      ),
+                      isSelected: selected == StoreCategory.backgrounds,
+                      onTap: () => onSelected(StoreCategory.backgrounds),
+                    ),
+                  ),
+                  Expanded(
+                    child: _CategoryButton(
+                      label: 'Figurinhas',
+                      iconBuilder: (color) => AppSvgIcon.sticker(
+                        size: 26,
+                        color: color,
+                      ),
+                      isSelected: selected == StoreCategory.stickers,
+                      onTap: () => onSelected(StoreCategory.stickers),
+                    ),
+                  ),
+                ],
               ),
-              isSelected: selected == StoreCategory.blockers,
-              onTap: () => onSelected(StoreCategory.blockers),
-            ),
-          ),
-          Expanded(
-            child: _CategoryButton(
-              label: 'Molduras',
-              iconBuilder: (color) => FrameSilhouetteIcon(
-                size: 26,
-                color: color,
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                left: left,
+                bottom: 2,
+                width: _indicatorWidth,
+                height: _indicatorHeight,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.brand900Variant,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                ),
               ),
-              isSelected: selected == StoreCategory.frames,
-              onTap: () => onSelected(StoreCategory.frames),
-            ),
+            ],
           ),
-          Expanded(
-            child: _CategoryButton(
-              label: 'Fundos',
-              iconBuilder: (color) => Icon(
-                Icons.landscape_rounded,
-                size: 26,
-                color: color,
-              ),
-              isSelected: selected == StoreCategory.backgrounds,
-              onTap: () => onSelected(StoreCategory.backgrounds),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -925,51 +1034,27 @@ class _CategoryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _PressableCategoryButton(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        child: TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0, end: isSelected ? 1 : 0),
-          duration: const Duration(milliseconds: 320),
-          curve: Curves.easeOutCubic,
-          builder: (context, t, _) {
-            final iconColor = Color.lerp(
-              AppColors.textSecondary,
-              AppColors.action500,
-              t,
-            )!;
-            final labelColor = Color.lerp(
-              AppColors.textSecondary,
-              AppColors.brand900Variant,
-              t,
-            )!;
-            // Overshoot leve pra dar um "pop" na hora que vira selecionado.
-            final pop = 1 + (math.sin(t * math.pi) * 0.1) + (t * 0.06);
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Transform.scale(
-                  scale: pop,
-                  child: iconBuilder(iconColor),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.captionStrong.copyWith(
-                    color: labelColor,
-                    fontWeight: FontWeight.lerp(
-                      FontWeight.w600,
-                      FontWeight.w700,
-                      t,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: _PressableCategoryButton(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(0, AppSpacing.sm, 0, 10),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0, end: isSelected ? 1 : 0),
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            builder: (context, t, _) {
+              final iconColor = Color.lerp(
+                AppColors.textSecondary,
+                AppColors.brand900Variant,
+                t,
+              )!;
+              return iconBuilder(iconColor);
+            },
+          ),
         ),
       ),
     );
@@ -1004,22 +1089,17 @@ class _PressableCategoryButtonState extends State<_PressableCategoryButton> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        splashColor: AppColors.action500.withValues(alpha: 0.12),
-        highlightColor: AppColors.action500.withValues(alpha: 0.06),
-        onTap: widget.onTap,
-        onTapDown: (_) => _setPressed(true),
-        onTapCancel: () => _setPressed(false),
-        onTapUp: (_) => _setPressed(false),
-        child: AnimatedScale(
-          scale: _isPressed ? 0.92 : 1.0,
-          duration: Duration(milliseconds: _isPressed ? 90 : 260),
-          curve: _isPressed ? Curves.easeOut : Curves.easeOutBack,
-          child: widget.child,
-        ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
+      onTapDown: (_) => _setPressed(true),
+      onTapCancel: () => _setPressed(false),
+      onTapUp: (_) => _setPressed(false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.88 : 1.0,
+        duration: Duration(milliseconds: _isPressed ? 90 : 280),
+        curve: _isPressed ? Curves.easeOut : Curves.easeOutBack,
+        child: widget.child,
       ),
     );
   }
@@ -1061,11 +1141,7 @@ class _InsufficientGoldRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        Icon(
-          Icons.monetization_on_rounded,
-          size: 16,
-          color: valueColor,
-        ),
+        const AppSvgIcon.gold(size: 18),
       ],
     );
   }
@@ -1088,11 +1164,7 @@ class _GoldPill extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          const Icon(
-            Icons.monetization_on_rounded,
-            size: 14,
-            color: AppColors.brand900Variant,
-          ),
+          const AppSvgIcon.gold(size: 16),
           const SizedBox(width: AppSpacing.xs),
           Text(
             value,
@@ -1123,11 +1195,7 @@ class _BlockerPill extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          const Icon(
-            Icons.shield_rounded,
-            size: 14,
-            color: AppColors.action500,
-          ),
+          const AppSvgIcon.blocker(size: 16),
           const SizedBox(width: AppSpacing.xs),
           Text(
             value,
@@ -1150,10 +1218,9 @@ class _StoreTile extends StatelessWidget {
     required this.blockerQuantityFallback,
     required this.isOwned,
     required this.isEquipped,
-    required this.canPurchase,
     required this.isSaving,
-    required this.onPreview,
-    required this.onPressed,
+    required this.onTileTap,
+    required this.onBuy,
   });
 
   final StoreCatalogItem item;
@@ -1163,108 +1230,99 @@ class _StoreTile extends StatelessWidget {
   final int blockerQuantityFallback;
   final bool isOwned;
   final bool isEquipped;
-  final bool canPurchase;
   final bool isSaving;
-  final VoidCallback onPreview;
-  final VoidCallback onPressed;
+  final VoidCallback onTileTap;
+  final VoidCallback onBuy;
 
   @override
   Widget build(BuildContext context) {
     final effectiveBlockerQuantity = blockerQuantity > 0
         ? blockerQuantity
         : blockerQuantityFallback;
-    final label = item.isInventoryBlocker
-        ? 'Comprar'
-        : isEquipped
-        ? 'Desequipar'
-        : isOwned
-        ? 'Equipar'
-        : 'Comprar';
-    final buttonEnabled = !isSaving;
-    final metaLabel = item.isInventoryBlocker
-        ? (effectiveBlockerQuantity > 0 ? 'x$effectiveBlockerQuantity' : ' ')
-        : isOwned
-        ? 'Comprado'
-        : ' ';
+    final isCheckInExclusive = item.isCheckInExclusive && !isOwned;
+    final showPrice = item.isInventoryBlocker || (!isOwned && !isCheckInExclusive);
+    final showChip = showPrice || isCheckInExclusive;
 
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      clipBehavior: Clip.none,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        onTap: onPreview,
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          clipBehavior: Clip.none,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: isEquipped
-                  ? AppColors.action500
-                  : AppColors.performanceCardBorder,
-              width: isEquipped ? 2 : 1.5,
-            ),
-            boxShadow: AppShadows.sm,
+    return GestureDetector(
+      onTap: onTileTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: isEquipped
+                ? AppColors.action500
+                : AppColors.performanceCardBorder,
+            width: isEquipped ? 2 : 1.5,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Align(
-                  alignment: Alignment.center,
-                  child: _StoreItemPreview(
-                    item: item,
-                    avatarUrl: avatarUrl,
-                    name: name,
+          boxShadow: AppShadows.sm,
+        ),
+        clipBehavior: Clip.none,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: _StoreItemPreview(
+                  item: item,
+                  avatarUrl: avatarUrl,
+                  name: name,
+                ),
+              ),
+            ),
+            if (showChip)
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: isSaving ? null : onBuy,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isCheckInExclusive
+                          ? AppColors.missionsXpPill
+                          : AppColors.missionsGoldPill,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      boxShadow: AppShadows.sm,
+                    ),
+                    child: isCheckInExclusive
+                        ? Text(
+                            'Check-in',
+                            style: AppTextStyles.missionsPillValue.copyWith(
+                              color: AppColors.brand900Variant,
+                            ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (item.isInventoryBlocker &&
+                                  effectiveBlockerQuantity > 0) ...[
+                                Text(
+                                  'x$effectiveBlockerQuantity',
+                                  style: AppTextStyles.missionsPillValue.copyWith(
+                                    color: AppColors.action500,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Text(
+                                '${item.priceGold}',
+                                style: AppTextStyles.missionsPillValue.copyWith(
+                                  color: AppColors.brand900Variant,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const AppSvgIcon.gold(size: 18),
+                            ],
+                          ),
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                height: 16,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        metaLabel,
-                        style: AppTextStyles.captionStrong.copyWith(
-                          color: metaLabel.trim().isEmpty
-                              ? Colors.transparent
-                              : AppColors.action500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      '${item.priceGold}',
-                      style: AppTextStyles.captionStrong.copyWith(
-                        color: AppColors.brand900Variant,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    const Icon(
-                      Icons.monetization_on_rounded,
-                      size: 16,
-                      color: AppColors.missionsRewardGold,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              AppButton(
-                label: label,
-                onPressed: buttonEnabled ? onPressed : null,
-                variant: isOwned && !item.isInventoryBlocker
-                    ? AppButtonVariant.outline
-                    : AppButtonVariant.primary,
-                textStyle: AppTextStyles.buttonSmall,
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -1379,9 +1437,27 @@ class _StoreItemPreview extends StatelessWidget {
                 color: AppColors.surfaceAlt,
                 border: Border.all(color: AppColors.performanceCardBorder),
               ),
-              child: Icon(
-                Icons.shield_rounded,
+              child: AppSvgIcon.blocker(
                 size: iconSize,
+              ),
+            );
+          case StoreItemType.sticker:
+            final size = _resolveSquareSize(constraints);
+            final path = JacaEmojiCatalog.byId(item.id)?.assetPath;
+            if (path != null) {
+              return Image.asset(
+                path,
+                width: size,
+                height: size,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              );
+            }
+            return SizedBox(
+              width: size,
+              height: size,
+              child: AppSvgIcon.sticker(
+                size: math.max(24.0, size * 0.45),
                 color: AppColors.brand900Variant,
               ),
             );

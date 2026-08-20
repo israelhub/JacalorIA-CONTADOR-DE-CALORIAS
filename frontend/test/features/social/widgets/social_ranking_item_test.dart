@@ -23,7 +23,9 @@ SocialRankingEntry _entryForPosition(int position) {
 }
 
 void main() {
-  testWidgets('mostra posicao e metrica de sequencia por padrao', (tester) async {
+  testWidgets('mostra posicao e metrica de sequencia por padrao', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(SocialRankingItem(entry: _entryForPosition(1))),
     );
@@ -54,15 +56,28 @@ void main() {
     await tester.pumpWidget(
       _wrap(
         SocialRankingItem(
-          entry: _entryForPosition(1),
+          entry: SocialRankingEntry(
+            id: 'ranking-1',
+            userId: 'user-1',
+            name: 'Usuário 1',
+            avatarUrl: null,
+            avatarFrameId: null,
+            points: 1800,
+            streakDays: 0,
+            isCurrentUser: false,
+            isLeader: true,
+            position: 1,
+            subtitle: '',
+            dailyCalorieGoal: 2000,
+          ),
           competitionType: 'goal_average',
         ),
       ),
     );
 
     expect(find.text('1'), findsOneWidget);
-    expect(find.text('100'), findsOneWidget);
-    expect(find.text('média'), findsOneWidget);
+    expect(find.text('1800/2000'), findsOneWidget);
+    expect(find.text('média/meta'), findsOneWidget);
     expect(find.byIcon(Icons.track_changes_rounded), findsOneWidget);
   });
 
@@ -79,22 +94,20 @@ void main() {
       isLeader: false,
       position: 1,
       subtitle: '',
+      dailyCalorieGoal: 2100,
     );
 
     await tester.pumpWidget(
-      _wrap(
-        SocialRankingItem(
-          entry: entry,
-          competitionType: 'goal_average',
-        ),
-      ),
+      _wrap(SocialRankingItem(entry: entry, competitionType: 'goal_average')),
     );
 
-    expect(find.text('1884.5'), findsOneWidget);
-    expect(find.text('média'), findsOneWidget);
+    expect(find.text('1884.5/2100'), findsOneWidget);
+    expect(find.text('média/meta'), findsOneWidget);
   });
 
-  testWidgets('mostra sem dados quando nao ha media registrada', (tester) async {
+  testWidgets('mostra sem dados quando nao ha media registrada', (
+    tester,
+  ) async {
     final entry = SocialRankingEntry(
       id: 'ranking-empty',
       userId: 'user-empty',
@@ -107,18 +120,14 @@ void main() {
       isLeader: false,
       position: 3,
       subtitle: '',
+      dailyCalorieGoal: 2000,
     );
 
     await tester.pumpWidget(
-      _wrap(
-        SocialRankingItem(
-          entry: entry,
-          competitionType: 'goal_average',
-        ),
-      ),
+      _wrap(SocialRankingItem(entry: entry, competitionType: 'goal_average')),
     );
 
-    expect(find.text('—'), findsOneWidget);
+    expect(find.text('—/2000'), findsOneWidget);
     expect(find.text('sem dados'), findsOneWidget);
   });
 

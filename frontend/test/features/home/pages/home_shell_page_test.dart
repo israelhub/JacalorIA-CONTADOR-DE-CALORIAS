@@ -52,6 +52,37 @@ void main() {
     expect(find.byType(AppMainBottomNavigation), findsOneWidget);
   });
 
+  testWidgets('arrasto vertical nao troca de aba', (tester) async {
+    tester.view.physicalSize = const Size(412, 917);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _wrap(
+        const HomeShellPage(
+          performancePage: ColoredBox(color: Colors.red),
+          homePage: ColoredBox(color: Colors.blue),
+          missionsPage: ColoredBox(color: Colors.green),
+        ),
+      ),
+    );
+
+    final pageView = tester.widget<PageView>(find.byType(PageView));
+    final controller = pageView.controller!;
+
+    expect(controller.page, closeTo(1, 0.001));
+
+    await tester.timedDrag(
+      find.byType(PageView),
+      const Offset(40, 280),
+      const Duration(milliseconds: 280),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.page, closeTo(1, 0.001));
+  });
+
   testWidgets('tap em desempenho troca para a pagina da esquerda', (
     tester,
   ) async {

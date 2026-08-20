@@ -46,6 +46,8 @@ class MealReminderConfig {
     return '$h:$m';
   }
 
+  int get minutesFromMidnight => hour * 60 + minute;
+
   static MealReminderConfig defaultsForBuiltIn(String id) {
     switch (id) {
       case MealReminderDefaults.breakfastId:

@@ -160,12 +160,14 @@ export class AuthRepository {
         'purchasedAvatarFrameIds',
         'equippedAvatarBackgroundId',
         'purchasedAvatarBackgroundIds',
+        'purchasedJacaEmojiIds',
         'equippedOffensiveBlockerId',
         'offensiveBlockerInventoryCount',
         'streakBlockerAppliedDayKeys',
         'hideMissionsGuideMe',
         'hideSocialGuideMe',
         'hideGuideMe',
+        'hidePublicProfileMeals',
         'createdAt',
         'updatedAt',
       ],
@@ -176,15 +178,20 @@ export class AuthRepository {
     const user = await this.userModel.findByPk(userId);
     if (!user) return null;
 
-    const previousWeight = this.toNumber(user.weight);
-    const nextWeight = this.toNumber(data.weight);
+    const logWeightEntry = data?.logWeightEntry === true;
+    const profileData = { ...data };
+    delete profileData.logWeightEntry;
 
-    await user.update(data);
+    const previousWeight = this.toNumber(user.weight);
+    const nextWeight =
+      this.toNumber(profileData.weight) ?? (logWeightEntry ? previousWeight : null);
+
+    await user.update(profileData);
 
     if (
       Number.isFinite(nextWeight) &&
       nextWeight > 0 &&
-      (previousWeight === null || previousWeight !== nextWeight)
+      (logWeightEntry || previousWeight === null || previousWeight !== nextWeight)
     ) {
       await this.userWeightEntryModel.create({
         userId,

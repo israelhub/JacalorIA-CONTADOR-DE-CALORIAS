@@ -15,6 +15,7 @@ import {
 import { User } from '../../auth/models/user.model';
 import { SocialGroupActivity } from './social-group-activity.model';
 import { SocialGroupMember } from './social-group-member.model';
+import { SocialGroupMessage } from './social-group-message.model';
 
 @Table({ tableName: 'social_groups', underscored: true })
 export class SocialGroup extends Model {
@@ -76,6 +77,9 @@ export class SocialGroup extends Model {
 
   @HasMany(() => SocialGroupActivity, { as: 'activities', foreignKey: 'groupId' })
   activities: SocialGroupActivity[];
+
+  @HasMany(() => SocialGroupMessage, { as: 'messages', foreignKey: 'groupId' })
+  messages: SocialGroupMessage[];
 
   @CreatedAt
   @Column({ field: 'created_at' })

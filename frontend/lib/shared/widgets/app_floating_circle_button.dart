@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Circular floating action button used on Profile (edit pencil) and elsewhere.
+/// Circular floating action button used on Profile, Home, and elsewhere.
 class AppFloatingCircleButton extends StatefulWidget {
   const AppFloatingCircleButton({
     super.key,
@@ -86,10 +86,27 @@ class _AppFloatingCircleButtonState extends State<AppFloatingCircleButton> {
                       ],
                     ),
                     alignment: Alignment.center,
-                    child: Icon(
-                      widget.icon,
-                      color: Colors.white,
-                      size: widget.iconSize,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) {
+                        return RotationTransition(
+                          turns: Tween<double>(begin: 0.75, end: 1).animate(
+                            animation,
+                          ),
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: Icon(
+                        widget.icon,
+                        key: ValueKey(widget.icon),
+                        color: Colors.white,
+                        size: widget.iconSize,
+                      ),
                     ),
                   ),
                   if (badge.isNotEmpty)

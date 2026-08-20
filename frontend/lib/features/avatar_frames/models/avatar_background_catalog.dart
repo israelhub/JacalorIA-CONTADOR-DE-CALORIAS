@@ -88,6 +88,18 @@ class AvatarBackgroundCatalog {
       description: 'Tons azuis para combinar com a moldura Azul Suave.',
       assetPath: 'assets/images/avatar_backgrounds/soft_blue.png',
     ),
+    AvatarBackgroundItem(
+      id: 'aug_dusk_glow',
+      name: 'Brilho do Crepusculo',
+      description: 'Fundo exclusivo do check-in de agosto, no brilho do crepusculo.',
+      assetPath: 'assets/images/avatar_backgrounds/aug_dusk_glow.png',
+    ),
+    AvatarBackgroundItem(
+      id: 'aug_mint_lagoon',
+      name: 'Laguna de Menta',
+      description: 'Fundo exclusivo do check-in de agosto, com aguas de menta.',
+      assetPath: 'assets/images/avatar_backgrounds/aug_mint_lagoon.png',
+    ),
   ];
 
   static AvatarBackgroundItem? byId(String? id) {

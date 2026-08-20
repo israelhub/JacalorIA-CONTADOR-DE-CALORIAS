@@ -9,6 +9,8 @@ class FoodAnalysisItem {
     required this.protein,
     required this.carbs,
     required this.fat,
+    this.source,
+    this.matchedFood,
   });
 
   final String name;
@@ -18,8 +20,18 @@ class FoodAnalysisItem {
   final double protein;
   final double carbs;
   final double fat;
+  final String? source;
+  final String? matchedFood;
+
+  bool get hasTacoMatch {
+    final match = matchedFood?.trim() ?? '';
+    return source == 'taco_db' && match.isNotEmpty;
+  }
 
   factory FoodAnalysisItem.fromJson(Map<String, dynamic> json) {
+    final sourceRaw = (json['source'] as String?)?.trim();
+    final matchedFoodRaw = (json['matchedFood'] as String?)?.trim();
+
     return FoodAnalysisItem(
       name: (json['name'] as String? ?? '').trim(),
       grams: _asInt(json['grams']),
@@ -30,6 +42,10 @@ class FoodAnalysisItem {
       protein: _asDouble(json['protein']),
       carbs: _asDouble(json['carbs']),
       fat: _asDouble(json['fat']),
+      source: (sourceRaw != null && sourceRaw.isNotEmpty) ? sourceRaw : null,
+      matchedFood: (matchedFoodRaw != null && matchedFoodRaw.isNotEmpty)
+          ? matchedFoodRaw
+          : null,
     );
   }
 
@@ -42,6 +58,9 @@ class FoodAnalysisItem {
       'protein': protein,
       'carbs': carbs,
       'fat': fat,
+      if (source != null && source!.trim().isNotEmpty) 'source': source,
+      if (matchedFood != null && matchedFood!.trim().isNotEmpty)
+        'matchedFood': matchedFood,
     };
   }
 

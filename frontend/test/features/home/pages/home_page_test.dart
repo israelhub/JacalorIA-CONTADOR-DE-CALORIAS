@@ -22,12 +22,9 @@ class _FakeMealService extends MealService {
 
 class _FakeAuthService extends AuthService {
   @override
-  Future<Map<String, dynamic>> fetchProfile() async {
+  Future<Map<String, dynamic>> fetchProfile({bool forceRefresh = false}) async {
     return <String, dynamic>{'id': 'user-test', 'name': 'Usuário Teste'};
   }
-
-  @override
-  Future<void> signOut() async {}
 }
 
 Widget _wrap(Widget child) => MaterialApp(home: child);

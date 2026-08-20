@@ -1,6 +1,12 @@
-enum MissionType { daily, weekly, monthly }
+enum MissionType { daily, weekly, monthly, weekend }
 
 enum MissionAccent { action, accent, challenge }
+
+const weeklyUpdateWeightMissionKey = 'weekly_update_weight';
+
+enum CheckInDayStatus { claimable, claimed, missed, locked }
+
+enum CheckInRewardKind { gold, blocker, frame, background }
 
 class MissionsOverview {
   const MissionsOverview({
@@ -12,6 +18,8 @@ class MissionsOverview {
     this.xpLifetimeSpent = 0,
     required this.introTitle,
     required this.introDescription,
+    this.weekendEvent = const WeekendEventInfo(active: false),
+    this.checkIn = const CheckInInfo(active: false),
     required this.sections,
   });
 
@@ -23,6 +31,8 @@ class MissionsOverview {
   final int xpLifetimeSpent;
   final String introTitle;
   final String introDescription;
+  final WeekendEventInfo weekendEvent;
+  final CheckInInfo checkIn;
   final List<MissionSection> sections;
 
   factory MissionsOverview.fromJson(Map<String, dynamic> json) {
@@ -30,6 +40,11 @@ class MissionsOverview {
         (json['summary'] as Map<String, dynamic>? ?? const <String, dynamic>{});
     final intro =
         (json['intro'] as Map<String, dynamic>? ?? const <String, dynamic>{});
+    final weekendEventJson =
+        json['weekendEvent'] as Map<String, dynamic>? ??
+        const <String, dynamic>{};
+    final checkInJson =
+        json['checkIn'] as Map<String, dynamic>? ?? const <String, dynamic>{};
     final sections = (json['sections'] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>()
         .map(MissionSection.fromJson)
@@ -44,7 +59,173 @@ class MissionsOverview {
       xpLifetimeSpent: _asInt(summary['xpLifetimeSpent']),
       introTitle: intro['title'] as String? ?? 'Bem-vindo às Missões!',
       introDescription: intro['description'] as String? ?? '',
+      weekendEvent: WeekendEventInfo.fromJson(weekendEventJson),
+      checkIn: CheckInInfo.fromJson(checkInJson),
       sections: sections,
+    );
+  }
+
+  MissionsOverview copyWith({
+    int? gold,
+    int? xp,
+    int? goldLifetimeEarned,
+    int? goldLifetimeSpent,
+    int? xpLifetimeEarned,
+    int? xpLifetimeSpent,
+    String? introTitle,
+    String? introDescription,
+    WeekendEventInfo? weekendEvent,
+    CheckInInfo? checkIn,
+    List<MissionSection>? sections,
+  }) {
+    return MissionsOverview(
+      gold: gold ?? this.gold,
+      xp: xp ?? this.xp,
+      goldLifetimeEarned: goldLifetimeEarned ?? this.goldLifetimeEarned,
+      goldLifetimeSpent: goldLifetimeSpent ?? this.goldLifetimeSpent,
+      xpLifetimeEarned: xpLifetimeEarned ?? this.xpLifetimeEarned,
+      xpLifetimeSpent: xpLifetimeSpent ?? this.xpLifetimeSpent,
+      introTitle: introTitle ?? this.introTitle,
+      introDescription: introDescription ?? this.introDescription,
+      weekendEvent: weekendEvent ?? this.weekendEvent,
+      checkIn: checkIn ?? this.checkIn,
+      sections: sections ?? this.sections,
+    );
+  }
+}
+
+class CheckInInfo {
+  const CheckInInfo({
+    required this.active,
+    this.campaignId = '',
+    this.title = 'Recompensas de agosto',
+    this.subtitle = 'Ganhe recompensas até o fim de agosto',
+    this.endsOnLabel = '',
+    this.todayDayKey = '',
+    this.canClaimToday = false,
+    this.claimedToday = false,
+    this.days = const <CheckInDayItem>[],
+  });
+
+  final bool active;
+  final String campaignId;
+  final String title;
+  final String subtitle;
+  final String endsOnLabel;
+  final String todayDayKey;
+  final bool canClaimToday;
+  final bool claimedToday;
+  final List<CheckInDayItem> days;
+
+  factory CheckInInfo.fromJson(Map<String, dynamic> json) {
+    final days = (json['days'] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map(CheckInDayItem.fromJson)
+        .toList(growable: false);
+
+    return CheckInInfo(
+      active: json['active'] == true,
+      campaignId: json['campaignId'] as String? ?? '',
+      title: json['title'] as String? ?? 'Recompensas de agosto',
+      subtitle:
+          json['subtitle'] as String? ??
+          'Ganhe recompensas até o fim de agosto',
+      endsOnLabel: json['endsOnLabel'] as String? ?? '',
+      todayDayKey: json['todayDayKey'] as String? ?? '',
+      canClaimToday: json['canClaimToday'] == true,
+      claimedToday: json['claimedToday'] == true,
+      days: days,
+    );
+  }
+}
+
+class CheckInDayItem {
+  const CheckInDayItem({
+    required this.dayKey,
+    required this.dayIndex,
+    required this.label,
+    required this.status,
+    required this.primaryKind,
+    required this.rewardSummary,
+    this.rewards = const <CheckInRewardItem>[],
+  });
+
+  final String dayKey;
+  final int dayIndex;
+  final String label;
+  final CheckInDayStatus status;
+  final CheckInRewardKind primaryKind;
+  final String rewardSummary;
+  final List<CheckInRewardItem> rewards;
+
+  factory CheckInDayItem.fromJson(Map<String, dynamic> json) {
+    final rewards = (json['rewards'] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map(CheckInRewardItem.fromJson)
+        .toList(growable: false);
+
+    return CheckInDayItem(
+      dayKey: json['dayKey'] as String? ?? '',
+      dayIndex: _asInt(json['dayIndex']),
+      label: json['label'] as String? ?? '',
+      status: _checkInStatusFromString(json['status'] as String? ?? ''),
+      primaryKind: _checkInKindFromString(json['primaryKind'] as String? ?? ''),
+      rewardSummary: json['rewardSummary'] as String? ?? '',
+      rewards: rewards,
+    );
+  }
+}
+
+class CheckInRewardItem {
+  const CheckInRewardItem({
+    required this.kind,
+    this.amount = 0,
+    this.itemKey = '',
+    this.quantity = 0,
+  });
+
+  final CheckInRewardKind kind;
+  final int amount;
+  final String itemKey;
+  final int quantity;
+
+  factory CheckInRewardItem.fromJson(Map<String, dynamic> json) {
+    return CheckInRewardItem(
+      kind: _checkInKindFromString(json['kind'] as String? ?? ''),
+      amount: _asInt(json['amount']),
+      itemKey: json['itemKey'] as String? ?? '',
+      quantity: _asInt(json['quantity']),
+    );
+  }
+}
+
+class WeekendEventInfo {
+  const WeekendEventInfo({
+    required this.active,
+    this.title = '',
+    this.headline = '',
+    this.subtitle = '',
+    this.remainingDays = 0,
+    this.remainingLabel = '',
+  });
+
+  final bool active;
+  final String title;
+  final String headline;
+  final String subtitle;
+  final int remainingDays;
+  final String remainingLabel;
+
+  factory WeekendEventInfo.fromJson(Map<String, dynamic> json) {
+    return WeekendEventInfo(
+      active: json['active'] == true,
+      title: json['title'] as String? ?? 'Missão do fim de semana',
+      headline: json['headline'] as String? ?? 'Que bom ver você de novo!',
+      subtitle:
+          json['subtitle'] as String? ??
+          'Complete o desafio pra ganhar recompensas extras!',
+      remainingDays: _asInt(json['remainingDays']),
+      remainingLabel: json['remainingLabel'] as String? ?? '',
     );
   }
 }
@@ -106,7 +287,8 @@ class MissionItem {
   final int rewardGold;
   final int rewardXp;
 
-  bool get isCompleted => progressCurrent >= progressTarget && progressTarget > 0;
+  bool get isCompleted =>
+      progressCurrent >= progressTarget && progressTarget > 0;
 
   factory MissionItem.fromJson(Map<String, dynamic> json) {
     return MissionItem(
@@ -132,6 +314,8 @@ MissionType _missionTypeFromString(String value) {
       return MissionType.daily;
     case 'weekly':
       return MissionType.weekly;
+    case 'weekend':
+      return MissionType.weekend;
     default:
       return MissionType.monthly;
   }
@@ -145,6 +329,32 @@ MissionAccent _missionAccentFromString(String value) {
       return MissionAccent.accent;
     default:
       return MissionAccent.challenge;
+  }
+}
+
+CheckInDayStatus _checkInStatusFromString(String value) {
+  switch (value) {
+    case 'claimable':
+      return CheckInDayStatus.claimable;
+    case 'claimed':
+      return CheckInDayStatus.claimed;
+    case 'missed':
+      return CheckInDayStatus.missed;
+    default:
+      return CheckInDayStatus.locked;
+  }
+}
+
+CheckInRewardKind _checkInKindFromString(String value) {
+  switch (value) {
+    case 'blocker':
+      return CheckInRewardKind.blocker;
+    case 'frame':
+      return CheckInRewardKind.frame;
+    case 'background':
+      return CheckInRewardKind.background;
+    default:
+      return CheckInRewardKind.gold;
   }
 }
 
