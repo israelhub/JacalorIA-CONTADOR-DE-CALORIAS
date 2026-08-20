@@ -1,4 +1,6 @@
+export 'jaca_emoji_catalog.dart';
 export 'social_activity_item.dart';
+export 'social_group_chat_message.dart';
 export 'social_friend.dart';
 export 'social_friend_request.dart';
 export 'social_friend_profile.dart';
@@ -8,3 +10,4 @@ export 'social_group_summary.dart';
 export 'social_member_daily_meals.dart';
 export 'social_ranking_entry.dart';
 export 'social_user_search_result.dart';
+export 'social_xp_ranking.dart';

@@ -136,6 +136,7 @@ jobs:
           aws s3 sync "$WEB_DIR" "s3://$BUCKET" --delete \
             --exclude "assets/*" \
             --exclude "canvaskit/*" \
+            --exclude ".well-known/*" \
             --cache-control "no-cache,must-revalidate"
 
           # Flutter asset bundle (images/videos). Long browser cache with
@@ -162,6 +163,45 @@ jobs:
               --cache-control "public,max-age=31536000,immutable"
           fi
 
+          # App Links / Universal Links (fonte em frontend/web, nao depender so do build).
+          WELL_KNOWN_SRC="frontend/web/.well-known"
+          if [ -f "$WELL_KNOWN_SRC/assetlinks.json" ]; then
+            ASSETLINKS_FILE="$(mktemp)"
+            cp "$WELL_KNOWN_SRC/assetlinks.json" "$ASSETLINKS_FILE"
+            if [ -n "${{ vars.ANDROID_RELEASE_SHA256 }}" ]; then
+              ASSETLINKS_FILE="$ASSETLINKS_FILE" \
+              ANDROID_RELEASE_SHA256="${{ vars.ANDROID_RELEASE_SHA256 }}" \
+              python3 - <<'PY'
+import json, os
+path = os.environ["ASSETLINKS_FILE"]
+extra = os.environ.get("ANDROID_RELEASE_SHA256", "").strip().upper()
+with open(path, encoding="utf-8") as f:
+    data = json.load(f)
+fps = data[0]["target"].setdefault("sha256_cert_fingerprints", [])
+if extra and extra not in fps:
+    fps.append(extra)
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2)
+    f.write("\n")
+PY
+            fi
+            aws s3 cp "$ASSETLINKS_FILE" \
+              "s3://$BUCKET/.well-known/assetlinks.json" \
+              --cache-control "public,max-age=300" \
+              --content-type "application/json"
+          fi
+          if [ -f "$WELL_KNOWN_SRC/apple-app-site-association" ]; then
+            AASA_FILE="$(mktemp)"
+            cp "$WELL_KNOWN_SRC/apple-app-site-association" "$AASA_FILE"
+            if [ -n "${{ vars.APPLE_TEAM_ID }}" ]; then
+              sed -i "s/TEAMID/${{ vars.APPLE_TEAM_ID }}/g" "$AASA_FILE"
+            fi
+            aws s3 cp "$AASA_FILE" \
+              "s3://$BUCKET/.well-known/apple-app-site-association" \
+              --cache-control "public,max-age=300" \
+              --content-type "application/json"
+          fi
+
       - name: Invalidar cache do CloudFront
         run: |
           aws cloudfront create-invalidation \
@@ -176,5 +216,6 @@ jobs:
               "/main.dart.js" \
               "/main.dart.wasm" \
               "/main.dart.mjs" \
+              "/.well-known/*" \
               "/assets/*" \
               "/*" >/dev/null

@@ -5,18 +5,23 @@ import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_expandable_fab.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
-import '../../../../shared/widgets/framed_avatar.dart';
-import '../../../../shared/widgets/frame_silhouette_icon.dart';
 import '../../../../shared/widgets/app_page_route.dart';
+import '../../../../shared/widgets/app_svg_icon.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/avatar_profile_preview.dart';
+import '../../../../shared/widgets/frame_silhouette_icon.dart';
+import '../../../../shared/widgets/framed_avatar.dart';
 import '../../avatar_frames/models/avatar_background_catalog.dart';
 import '../../avatar_frames/models/avatar_frame_catalog.dart';
 import '../../avatar_frames/pages/avatar_frame_store_page.dart';
+import '../../social/models/jaca_emoji_catalog.dart';
 import '../../auth/pages/enter_page.dart';
+import '../../home/pages/home_shell_page.dart';
+import '../../home/widgets/home_weight_quick_edit_button.dart';
 import '../../reminders/pages/meal_reminders_page.dart';
 import '../../support/pages/support_page.dart';
 import '../../auth/service/auth_service.dart';
+import '../../../../shared/widgets/app_main_bottom_navigation.dart';
 import '../../missions/services/missions_service.dart';
 import '../../social/widgets/social_profile_info_card.dart';
 import '../../social/widgets/social_profile_metric_card.dart';
@@ -44,6 +49,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _equippedAvatarFrameId = AvatarFrameCatalog.noneId;
   Set<String> _purchasedAvatarFrameIds = const <String>{};
   Set<String> _purchasedAvatarBackgroundIds = const <String>{};
+  Set<String> _purchasedStickerIds = const <String>{};
   String _equippedCoverId = _ProfileCustomizationState.noneId;
   String _equippedBackgroundId = _ProfileCustomizationState.noneId;
   String? _equippedBlockerId;
@@ -88,6 +94,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
     _purchasedAvatarBackgroundIds =
         AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(profile);
+    _purchasedStickerIds = JacaEmojiCatalog.purchasedIdsFromProfile(profile);
     final personalization = _ProfileCustomizationState.fromProfile(profile);
     _equippedCoverId = personalization.equippedCoverId;
     _equippedBackgroundId = personalization.equippedBackgroundId;
@@ -122,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _openStorePage() async {
-    final updated = await context.pushSlidePage<bool>(
+    final updated = await context.pushSlidePage<Object>(
       AvatarFrameStorePage(
         initialGoldBalance: _intFromKeys(const ['gold'], fallback: 0),
         profile: Map<String, dynamic>.from(_profileData),
@@ -130,6 +137,15 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
 
+    if (!mounted) {
+      return;
+    }
+    if (updated == 'go_to_missions') {
+      await HomeShellPage.controllerOf(
+        context,
+      )?.openTab(AppMainBottomTab.missions);
+      return;
+    }
     if (updated == true) {
       _hasChanges = true;
       await _refreshProfileSnapshot();
@@ -174,22 +190,20 @@ class _ProfilePageState extends State<ProfilePage> {
                   storeFrameById.containsKey(frame.id) ||
                   _purchasedAvatarFrameIds.contains(frame.id),
             )
-            .map(
-              (frame) {
-                final storeItem = storeFrameById[frame.id];
-                return _ProfileCustomizationOption(
-                  id: frame.id,
-                  name: storeItem?.name ?? frame.name,
-                  description: storeItem?.description ?? frame.description,
-                  isOwned:
-                      frame.id == AvatarFrameCatalog.noneId ||
-                      _purchasedAvatarFrameIds.contains(frame.id),
-                  priceGold: frame.id == AvatarFrameCatalog.noneId
-                      ? 0
-                      : (storeItem?.priceGold ?? 0),
-                );
-              },
-            )
+            .map((frame) {
+              final storeItem = storeFrameById[frame.id];
+              return _ProfileCustomizationOption(
+                id: frame.id,
+                name: storeItem?.name ?? frame.name,
+                description: storeItem?.description ?? frame.description,
+                isOwned:
+                    frame.id == AvatarFrameCatalog.noneId ||
+                    _purchasedAvatarFrameIds.contains(frame.id),
+                priceGold: frame.id == AvatarFrameCatalog.noneId
+                    ? 0
+                    : (storeItem?.priceGold ?? 0),
+              );
+            })
             .toList(growable: false);
 
         return StatefulBuilder(
@@ -277,25 +291,21 @@ class _ProfilePageState extends State<ProfilePage> {
                                   storeFrameById.containsKey(frame.id) ||
                                   _purchasedAvatarFrameIds.contains(frame.id),
                             )
-                            .map(
-                              (frame) {
-                                final storeItem = storeFrameById[frame.id];
-                                return _ProfileCustomizationOption(
-                                  id: frame.id,
-                                  name: storeItem?.name ?? frame.name,
-                                  description:
-                                      storeItem?.description ?? frame.description,
-                                  isOwned:
-                                      frame.id == AvatarFrameCatalog.noneId ||
-                                      _purchasedAvatarFrameIds.contains(
-                                        frame.id,
-                                      ),
-                                  priceGold: frame.id == AvatarFrameCatalog.noneId
-                                      ? 0
-                                      : (storeItem?.priceGold ?? 0),
-                                );
-                              },
-                            )
+                            .map((frame) {
+                              final storeItem = storeFrameById[frame.id];
+                              return _ProfileCustomizationOption(
+                                id: frame.id,
+                                name: storeItem?.name ?? frame.name,
+                                description:
+                                    storeItem?.description ?? frame.description,
+                                isOwned:
+                                    frame.id == AvatarFrameCatalog.noneId ||
+                                    _purchasedAvatarFrameIds.contains(frame.id),
+                                priceGold: frame.id == AvatarFrameCatalog.noneId
+                                    ? 0
+                                    : (storeItem?.priceGold ?? 0),
+                              );
+                            })
                             .toList(growable: false);
                         selectedFrameId = option.id;
                       });
@@ -499,10 +509,7 @@ class _ProfilePageState extends State<ProfilePage> {
       await _refreshProfileSnapshot();
       if (mounted) {
         _hasChanges = true;
-        AppToast.success(
-          context,
-          message: 'Personalização salva com sucesso.',
-        );
+        AppToast.success(context, message: 'Personalização salva com sucesso.');
       }
     } catch (e) {
       if (mounted) {
@@ -527,7 +534,7 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
-      await _authService.signOut();
+      await AuthService.signOut();
       if (!mounted) {
         return;
       }
@@ -583,10 +590,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   String _formatObjective(String? value) {
-    final raw = (value ?? '')
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z]'), '');
+    final raw = (value ?? '').trim().toLowerCase().replaceAll(
+      RegExp(r'[^a-z]'),
+      '',
+    );
     if (raw.isEmpty) return 'Não informado';
 
     const labels = <String, String>{
@@ -644,7 +651,9 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   int get _cosmeticsOwnedCount =>
-      _purchasedAvatarFrameIds.length + _purchasedAvatarBackgroundIds.length;
+      _purchasedAvatarFrameIds.length +
+      _purchasedAvatarBackgroundIds.length +
+      _purchasedStickerIds.length;
 
   String _formatBirthDate() {
     final raw = _stringFromKeys(const ['birthDate', 'birth_date']);
@@ -983,41 +992,45 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
         ),
-        floatingActionButton: AppExpandableFab(
-          closedIcon: Icons.edit_rounded,
-          openIcon: Icons.close_rounded,
-          closedSemanticLabel: 'Abrir ações do perfil',
-          openSemanticLabel: 'Fechar ações do perfil',
-          actions: [
-            AppExpandableFabAction(
-              label: 'Lembretes de refeição',
-              icon: Icons.notifications_active_outlined,
-              onPressed: () {
-                context.pushSlidePage(const MealRemindersPage());
-              },
-            ),
-            AppExpandableFabAction(
-              label: 'Suporte',
-              icon: Icons.support_agent_rounded,
-              onPressed: () {
-                context.pushSlidePage(const SupportPage());
-              },
-            ),
-            AppExpandableFabAction(
-              label: 'Editar dados pessoais',
-              icon: Icons.badge_rounded,
-              onPressed: () {
-                _openEditDataPage();
-              },
-            ),
-            AppExpandableFabAction(
-              label: 'Personalizar perfil',
-              icon: Icons.storefront_rounded,
-              onPressed: () {
-                _openStorePage();
-              },
-            ),
-          ],
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        floatingActionButton: Padding(
+          padding: EdgeInsets.only(bottom: homeShellFabBottomInset(context)),
+          child: AppExpandableFab(
+            closedIcon: Icons.settings_rounded,
+            openIcon: Icons.close_rounded,
+            closedSemanticLabel: 'Abrir ações do perfil',
+            openSemanticLabel: 'Fechar ações do perfil',
+            actions: [
+              AppExpandableFabAction(
+                label: 'Lembretes de refeição',
+                icon: Icons.notifications_active_outlined,
+                onPressed: () {
+                  context.pushSlidePage(const MealRemindersPage());
+                },
+              ),
+              AppExpandableFabAction(
+                label: 'Suporte',
+                icon: Icons.support_agent_rounded,
+                onPressed: () {
+                  context.pushSlidePage(const SupportPage());
+                },
+              ),
+              AppExpandableFabAction(
+                label: 'Editar dados pessoais',
+                icon: Icons.badge_rounded,
+                onPressed: () {
+                  _openEditDataPage();
+                },
+              ),
+              AppExpandableFabAction(
+                label: 'Personalizar perfil',
+                icon: Icons.storefront_rounded,
+                onPressed: () {
+                  _openStorePage();
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1047,13 +1060,7 @@ class _ProfileCustomizationCategorySwitcher extends StatelessWidget {
           Expanded(
             child: _CategoryButton(
               label: 'Bloqueadores',
-              icon: Icon(
-                Icons.shield_rounded,
-                size: 22,
-                color: selected == _ProfileCustomizationCategory.blockers
-                    ? AppColors.action500
-                    : AppColors.textSecondary,
-              ),
+              icon: const AppSvgIcon.blocker(size: 24),
               isSelected: selected == _ProfileCustomizationCategory.blockers,
               onTap: () => onSelected(_ProfileCustomizationCategory.blockers),
             ),
@@ -1376,11 +1383,7 @@ class _PersonalizationOptionCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.monetization_on_rounded,
-                      size: 14,
-                      color: AppColors.missionsRewardGold,
-                    ),
+                    const AppSvgIcon.gold(size: 16),
                     const SizedBox(width: 2),
                     Text(
                       '$priceGold',

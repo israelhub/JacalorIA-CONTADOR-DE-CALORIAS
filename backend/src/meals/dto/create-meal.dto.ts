@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsIn } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  IsIn,
+  IsDateString,
+} from 'class-validator';
 import { MealType } from '../models/meal.model';
 
 export class CreateMealDto {
@@ -40,4 +47,8 @@ export class CreateMealDto {
   @IsOptional()
   @IsArray()
   analysisItems?: any[];
+
+  @IsOptional()
+  @IsDateString()
+  createdAt?: string;
 }

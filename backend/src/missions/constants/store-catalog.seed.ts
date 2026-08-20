@@ -10,7 +10,7 @@ import { StoreCatalogCategory } from '../models/store-catalog-item.model';
  * - Legendary (1–2 meses): meta aspiracional de longo prazo
  * - Bloqueador (~2,5 dias): loss aversion útil, sem ser punitivo
  *
- * Total cosméticos ativos ≈ 3835 ouro → sink maior que 1 mês perfeito.
+ * Total cosméticos ativos ≈ 4090 ouro → sink maior que 1 mês perfeito.
  */
 export type StoreCatalogSeedItem = {
   itemKey: string;
@@ -93,6 +93,22 @@ export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
     description: 'Anel azul simples com brilhos e bolhas.',
     priceGold: 40,
     sortOrder: 6,
+  },
+  {
+    itemKey: 'aug_sunset_ring',
+    category: 'avatar_frame',
+    name: 'Anel do Por do Sol',
+    description: 'Exclusiva do check-in de agosto.',
+    priceGold: 0,
+    sortOrder: 200,
+  },
+  {
+    itemKey: 'aug_mint_leaf',
+    category: 'avatar_frame',
+    name: 'Folha de Menta',
+    description: 'Exclusiva do check-in de agosto.',
+    priceGold: 0,
+    sortOrder: 210,
   },
   {
     itemKey: 'sky',
@@ -191,6 +207,62 @@ export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
     sortOrder: 6,
   },
   {
+    itemKey: 'aug_dusk_glow',
+    category: 'avatar_background',
+    name: 'Brilho do Crepusculo',
+    description: 'Exclusivo do check-in de agosto.',
+    priceGold: 0,
+    sortOrder: 200,
+  },
+  {
+    itemKey: 'aug_mint_lagoon',
+    category: 'avatar_background',
+    name: 'Laguna de Menta',
+    description: 'Exclusivo do check-in de agosto.',
+    priceGold: 0,
+    sortOrder: 210,
+  },
+  {
+    itemKey: 'amor',
+    category: 'jaca_emoji',
+    name: 'Amor',
+    description: 'Figurinha do Jaca apaixonado para o chat.',
+    priceGold: 35,
+    sortOrder: 10,
+  },
+  {
+    itemKey: 'fogo',
+    category: 'jaca_emoji',
+    name: 'Fogo',
+    description: 'Figurinha do Jaca em chamas para o chat.',
+    priceGold: 50,
+    sortOrder: 20,
+  },
+  {
+    itemKey: 'festa',
+    category: 'jaca_emoji',
+    name: 'Festa',
+    description: 'Figurinha do Jaca comemorando para o chat.',
+    priceGold: 60,
+    sortOrder: 30,
+  },
+  {
+    itemKey: 'sono',
+    category: 'jaca_emoji',
+    name: 'Sono',
+    description: 'Figurinha do Jaca sonolento para o chat.',
+    priceGold: 40,
+    sortOrder: 40,
+  },
+  {
+    itemKey: 'forca',
+    category: 'jaca_emoji',
+    name: 'Força',
+    description: 'Figurinha do Jaca determinado para o chat.',
+    priceGold: 70,
+    sortOrder: 50,
+  },
+  {
     itemKey: 'offensive_guard',
     category: 'offensive_blocker',
     name: 'Bloqueador de sequência',
@@ -207,3 +279,16 @@ export const DEPRECATED_STORE_CATALOG_ITEM_KEYS = [
   'cosmic_blossom',
   'streak_restore',
 ] as const;
+
+export const CHECK_IN_EXCLUSIVE_STORE_ITEM_KEYS = [
+  'aug_sunset_ring',
+  'aug_mint_leaf',
+  'aug_dusk_glow',
+  'aug_mint_lagoon',
+] as const;
+
+export function isCheckInExclusiveStoreItem(itemKey: string): boolean {
+  return (CHECK_IN_EXCLUSIVE_STORE_ITEM_KEYS as readonly string[]).includes(
+    itemKey.trim(),
+  );
+}

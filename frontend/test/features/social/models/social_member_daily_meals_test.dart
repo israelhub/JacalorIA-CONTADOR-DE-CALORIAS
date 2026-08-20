@@ -24,6 +24,16 @@ void main() {
           'mealType': 'lunch',
           'imageUrl': null,
           'createdAt': '2026-07-24T15:30:00.000Z',
+          'analysisItems': [
+            {
+              'name': 'Arroz',
+              'grams': 100,
+              'calories': 130,
+              'protein': 3,
+              'carbs': 28,
+              'fat': 0.2,
+            },
+          ],
         },
       ],
     });
@@ -37,6 +47,8 @@ void main() {
     expect(data.meals, hasLength(1));
     expect(data.meals.first.title, 'Almoço');
     expect(data.meals.first.calories, 500);
+    expect(data.meals.first.items, hasLength(1));
+    expect(data.meals.first.items.first.name, 'Arroz');
   });
 
   test('SocialMemberDailyMeals.fromJson parses disabled payload', () {
@@ -53,5 +65,21 @@ void main() {
     expect(data.enabled, isFalse);
     expect(data.meals, isEmpty);
     expect(data.date, isNull);
+  });
+
+  test('SocialMemberDailyMeals.fromJson parses private payload', () {
+    final data = SocialMemberDailyMeals.fromJson({
+      'enabled': true,
+      'isPrivate': true,
+      'date': '2026-08-15',
+      'startsAt': '2026-01-01',
+      'endsAt': '2026-08-15',
+      'totalCalories': 0,
+      'meals': [],
+    });
+
+    expect(data.enabled, isTrue);
+    expect(data.isPrivate, isTrue);
+    expect(data.meals, isEmpty);
   });
 }

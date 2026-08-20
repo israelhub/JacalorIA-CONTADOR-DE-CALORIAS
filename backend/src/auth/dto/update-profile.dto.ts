@@ -22,6 +22,10 @@ export class UpdateProfileDto {
   weight?: number;
 
   @IsOptional()
+  @IsBoolean()
+  logWeightEntry?: boolean;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
   height?: number;
@@ -85,6 +89,11 @@ export class UpdateProfileDto {
   purchasedAvatarBackgroundIds?: string[];
 
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  purchasedJacaEmojiIds?: string[];
+
+  @IsOptional()
   @IsString()
   equippedOffensiveBlockerId?: string;
 
@@ -104,4 +113,8 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsBoolean()
   hideGuideMe?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hidePublicProfileMeals?: boolean;
 }

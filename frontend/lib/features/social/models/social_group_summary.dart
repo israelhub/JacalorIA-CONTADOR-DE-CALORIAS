@@ -10,6 +10,7 @@ class SocialGroupSummary {
     required this.iconKey,
     required this.competitionType,
     required this.competitionLabel,
+    required this.rule,
     required this.durationDays,
     required this.durationDaysLabel,
     required this.memberCount,
@@ -32,6 +33,7 @@ class SocialGroupSummary {
   final String iconKey;
   final String competitionType;
   final String competitionLabel;
+  final String rule;
   final int durationDays;
   final String durationDaysLabel;
   final int memberCount;
@@ -60,6 +62,7 @@ class SocialGroupSummary {
         : (rawDurationDays > 0 ? rawDurationDays : 7);
     final remainingDays = socialToInt(json['remainingDays']);
     final isDefeated = json['isDefeated'] == true;
+    final apiRule = json['rule']?.toString().trim() ?? '';
 
     return SocialGroupSummary(
       id: json['id']?.toString() ?? '',
@@ -68,6 +71,9 @@ class SocialGroupSummary {
       iconKey: json['iconKey']?.toString() ?? 'salad',
       competitionType: competitionType,
       competitionLabel: socialCompetitionLabel(competitionType),
+      rule: apiRule.isNotEmpty
+          ? apiRule
+          : socialCompetitionRule(competitionType),
       durationDays: durationDays,
       durationDaysLabel: socialDurationLabel(durationDays),
       memberCount: socialToInt(json['memberCount']),

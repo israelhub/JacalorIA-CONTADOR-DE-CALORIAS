@@ -8,25 +8,7 @@ import '../../../shared/widgets/app_floating_circle_button.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../auth/service/auth_service.dart';
 
-/// Gap between shell FABs and the top of the bottom navigation.
-const homeShellFabNavGap = AppSpacing.lg;
-
-/// Fallback nav body height (surface + camera overlap) when [MediaQuery.padding]
-/// has not yet absorbed the shell bar.
-const homeShellBottomNavBodyHeight = 56.0 + AppSpacing.xs;
-
-/// Bottom inset for FABs on tab pages under the home shell (`extendBody: true`).
-///
-/// With `extendBody`, Flutter moves the bottom-nav height into
-/// [MediaQuery.padding] and zeroes [MediaQuery.viewPadding]. Nested Scaffold
-/// FABs do not honor that padding in `contentBottom`, so we apply it here.
-double homeShellFabBottomInset(BuildContext context) {
-  final mediaQuery = MediaQuery.of(context);
-  final shellOverlap = mediaQuery.padding.bottom > mediaQuery.viewPadding.bottom
-      ? mediaQuery.padding.bottom
-      : homeShellBottomNavBodyHeight + mediaQuery.viewPadding.bottom;
-  return shellOverlap + homeShellFabNavGap;
-}
+export 'home_shell_layout.dart';
 
 /// Opens [HomeWeightQuickEditButton] from an external trigger (e.g. expandable FAB).
 class HomeWeightQuickEditController {
@@ -238,8 +220,7 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
       final shouldSave = await AppConfirmModal.show(
         context,
         title: 'Deseja salvar as alterações?',
-        message:
-            'Você alterou o peso. Escolha se deseja salvar antes de sair.',
+        message: 'Você alterou o peso. Escolha se deseja salvar antes de sair.',
         confirmLabel: 'Salvar',
         cancelLabel: 'Não salvar',
         barrierDismissible: false,
@@ -278,15 +259,12 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
   }
 
   Future<void> _persistWeight(double weight, String unit) async {
-    if (_isUnchanged(weight, unit)) {
-      return;
-    }
-
     setState(() => _isSaving = true);
     try {
       final updated = await _authService.updateProfile(<String, dynamic>{
         'weight': weight,
         'weightUnit': unit,
+        'logWeightEntry': true,
       });
       widget.onWeightUpdated?.call(<String, dynamic>{
         ...updated,
@@ -371,8 +349,8 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
                                 textAlign: TextAlign.center,
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
+                                      decimal: true,
+                                    ),
                                 textInputAction: TextInputAction.done,
                                 enableSuggestions: false,
                                 autocorrect: false,
@@ -389,12 +367,11 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
                                   isDense: true,
                                   border: InputBorder.none,
                                   hintText: '0',
-                                  hintStyle:
-                                      AppTextStyles.headingLarge.copyWith(
-                                    color: AppColors.textSecondary.withValues(
-                                      alpha: 0.45,
-                                    ),
-                                  ),
+                                  hintStyle: AppTextStyles.headingLarge
+                                      .copyWith(
+                                        color: AppColors.textSecondary
+                                            .withValues(alpha: 0.45),
+                                      ),
                                 ),
                                 onChanged: (_) => setState(() {}),
                                 onTap: () => _showKeyboard(_focusNode),

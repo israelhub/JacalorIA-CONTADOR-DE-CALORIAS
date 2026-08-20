@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
-import 'app_button.dart';
 import 'app_floating_circle_button.dart';
 
-/// One row in the expandable FAB menu (same pattern as Profile).
 class AppExpandableFabAction {
   const AppExpandableFabAction({
     required this.label,
@@ -23,7 +21,6 @@ class AppExpandableFabAction {
   final String? semanticLabel;
 }
 
-/// Expandable circular FAB with stacked outline actions (Profile-style).
 class AppExpandableFab extends StatefulWidget {
   const AppExpandableFab({
     super.key,
@@ -32,7 +29,6 @@ class AppExpandableFab extends StatefulWidget {
     this.openIcon = Icons.close_rounded,
     this.closedSemanticLabel = 'Abrir ações',
     this.openSemanticLabel = 'Fechar ações',
-    this.menuWidth = 220,
     this.badgeCount,
   });
 
@@ -42,7 +38,6 @@ class AppExpandableFab extends StatefulWidget {
   final IconData openIcon;
   final String closedSemanticLabel;
   final String openSemanticLabel;
-  final double menuWidth;
   final int? badgeCount;
 
   @override
@@ -51,6 +46,9 @@ class AppExpandableFab extends StatefulWidget {
 
 class _AppExpandableFabState extends State<AppExpandableFab>
     with SingleTickerProviderStateMixin {
+  static const _openCurve = Cubic(0.16, 1, 0.3, 1);
+
+  final _overlayController = OverlayPortalController();
   late final AnimationController _controller;
   var _expanded = false;
 
@@ -59,8 +57,8 @@ class _AppExpandableFabState extends State<AppExpandableFab>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
-      reverseDuration: const Duration(milliseconds: 240),
+      duration: const Duration(milliseconds: 280),
+      reverseDuration: const Duration(milliseconds: 180),
     );
   }
 
@@ -71,12 +69,17 @@ class _AppExpandableFabState extends State<AppExpandableFab>
   }
 
   void _toggle() {
-    setState(() => _expanded = !_expanded);
     if (_expanded) {
-      _controller.forward();
+      _close();
     } else {
-      _controller.reverse();
+      _open();
     }
+  }
+
+  void _open() {
+    setState(() => _expanded = true);
+    _overlayController.show();
+    _controller.forward();
   }
 
   void _close() {
@@ -84,141 +87,255 @@ class _AppExpandableFabState extends State<AppExpandableFab>
       return;
     }
     setState(() => _expanded = false);
-    _controller.reverse();
+    _controller.reverse().whenComplete(() {
+      if (!mounted || _expanded) {
+        return;
+      }
+      _overlayController.hide();
+    });
+  }
+
+  double _progressFor(int indexFromBottom) {
+    final start = indexFromBottom * 0.07;
+    final span = 1 - start;
+    if (span <= 0) {
+      return _controller.value;
+    }
+    final delayed = ((_controller.value - start) / span).clamp(0.0, 1.0);
+    final curve = _controller.status == AnimationStatus.reverse
+        ? Curves.easeInCubic
+        : _openCurve;
+    return curve.transform(delayed);
   }
 
   Widget _animatedAction(AppExpandableFabAction action, int indexFromBottom) {
-    final start = indexFromBottom * 0.08;
-    final animation = CurvedAnimation(
-      parent: _controller,
-      curve: Interval(start, 1, curve: Curves.easeOutBack),
-      reverseCurve: Curves.easeInCubic,
-    );
-
-    final badge = action.badgeCount ?? 0;
-    final badgeLabel = badge <= 0 ? '' : (badge > 99 ? '99+' : '$badge');
-
     return AnimatedBuilder(
-      animation: animation,
+      animation: _controller,
       builder: (context, child) {
-        return Opacity(
-          opacity: animation.value.clamp(0, 1),
-          child: Transform.translate(
-            offset: Offset(0, 18 * (1 - animation.value)),
-            child: Transform.scale(
-              alignment: Alignment.bottomRight,
-              scale: 0.92 + (0.08 * animation.value),
-              child: child,
+        final t = _progressFor(indexFromBottom);
+        return IgnorePointer(
+          ignoring: t < 0.05,
+          child: Opacity(
+            opacity: t,
+            child: Transform.translate(
+              offset: Offset(10 * (1 - t), 14 * (1 - t)),
+              child: Transform.scale(
+                alignment: Alignment.bottomRight,
+                scale: 0.84 + (0.16 * t),
+                child: child,
+              ),
             ),
           ),
         );
       },
       child: Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-        child: Semantics(
-          button: true,
-          label: action.semanticLabel ?? action.label,
-          child: Stack(
-            children: [
-              // Reserve room for the badge: the menu lives inside a
-              // SizeTransition (ClipRect), so anything outside gets cut off.
-              Padding(
-                padding: badgeLabel.isEmpty
-                    ? EdgeInsets.zero
-                    : const EdgeInsets.only(top: 8),
-                child: AppButton(
-                  key: action.key,
-                  label: action.label,
-                  onPressed: () {
-                    _close();
-                    action.onPressed();
-                  },
-                  variant: AppButtonVariant.outline,
-                  leadingIcon: action.icon,
-                  textStyle: AppTextStyles.buttonSmall,
-                ),
-              ),
-              if (badgeLabel.isNotEmpty)
-                Positioned(
-                  key: ValueKey('expandable-fab-action-badge-$badgeLabel'),
-                  top: 0,
-                  right: 0,
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      minWidth: 20,
-                      minHeight: 20,
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: badgeLabel.length > 1 ? 5 : 0,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.brand900Variant,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      border: Border.all(color: AppColors.surface, width: 1.5),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      badgeLabel,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.captionStrong.copyWith(
-                        color: AppColors.surface,
-                        height: 1,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+        child: _FabChoiceChip(
+          action: action,
+          onPressed: () {
+            _close();
+            action.onPressed();
+          },
         ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildOverlay(BuildContext context, OverlayChildLayoutInfo info) {
+    if (info.childPaintTransform.determinant() == 0.0) {
+      return const SizedBox.shrink();
+    }
+
     final actions = widget.actions;
     final count = actions.length;
+    final anchor = MatrixUtils.transformRect(
+      info.childPaintTransform,
+      Offset.zero & info.childSize,
+    );
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+    return Stack(
       children: [
-        // Fixed width keeps SizeTransition from expanding to full screen
-        // (its internal Align would otherwise center the menu away from the FAB).
-        SizedBox(
-          width: widget.menuWidth,
-          child: SizeTransition(
-            sizeFactor: CurvedAnimation(
-              parent: _controller,
-              curve: Curves.easeOutCubic,
-              reverseCurve: Curves.easeInCubic,
-            ),
-            axisAlignment: 1,
-            child: ExcludeSemantics(
-              excluding: !_expanded,
-              child: IgnorePointer(
-                ignoring: !_expanded,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var i = 0; i < count; i++)
-                      _animatedAction(actions[i], count - 1 - i),
-                  ],
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _close,
+            child: const ColoredBox(color: Colors.transparent),
+          ),
+        ),
+        Positioned(
+          right: info.overlaySize.width - anchor.right,
+          bottom: info.overlaySize.height - anchor.bottom,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (var i = 0; i < count; i++)
+                _animatedAction(actions[i], count - 1 - i),
+              GestureDetector(
+                onTap: _toggle,
+                child: SizedBox(
+                  width: info.childSize.width,
+                  height: info.childSize.height,
                 ),
               ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OverlayPortal.overlayChildLayoutBuilder(
+      controller: _overlayController,
+      overlayLocation: OverlayChildLocation.rootOverlay,
+      overlayChildBuilder: _buildOverlay,
+      child: AppFloatingCircleButton(
+        icon: _expanded ? widget.openIcon : widget.closedIcon,
+        semanticLabel: _expanded
+            ? widget.openSemanticLabel
+            : widget.closedSemanticLabel,
+        badgeCount: _expanded ? null : widget.badgeCount,
+        onPressed: _toggle,
+      ),
+    );
+  }
+}
+
+class _FabChoiceChip extends StatefulWidget {
+  const _FabChoiceChip({
+    required this.action,
+    required this.onPressed,
+  });
+
+  final AppExpandableFabAction action;
+  final VoidCallback onPressed;
+
+  @override
+  State<_FabChoiceChip> createState() => _FabChoiceChipState();
+}
+
+class _FabChoiceChipState extends State<_FabChoiceChip> {
+  var _isPressed = false;
+
+  void _setPressed(bool value) {
+    if (_isPressed == value) {
+      return;
+    }
+    setState(() => _isPressed = value);
+  }
+
+  String get _badgeLabel {
+    final count = widget.action.badgeCount ?? 0;
+    if (count <= 0) {
+      return '';
+    }
+    return count > 99 ? '99+' : '$count';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final action = widget.action;
+    final badgeLabel = _badgeLabel;
+
+    return Semantics(
+      button: true,
+      label: action.semanticLabel ?? action.label,
+      child: GestureDetector(
+        key: action.key,
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => _setPressed(true),
+        onTapCancel: () => _setPressed(false),
+        onTapUp: (_) => _setPressed(false),
+        onTap: widget.onPressed,
+        child: AnimatedSlide(
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOutCubic,
+          offset: Offset(0, _isPressed ? 0.012 : 0),
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOutBack,
+            scale: _isPressed ? 0.965 : 1,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(color: AppColors.borderBrand),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppColors.action500Shadow,
+                        offset: Offset(0, 3),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        action.label,
+                        style: AppTextStyles.buttonSmall.copyWith(
+                          color: AppColors.brand900Variant,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(
+                          color: AppColors.action500,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          action.icon,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (badgeLabel.isNotEmpty)
+                  Positioned(
+                    key: ValueKey('expandable-fab-action-badge-$badgeLabel'),
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 20,
+                        minHeight: 20,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: badgeLabel.length > 1 ? 5 : 0,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.brand900Variant,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(color: AppColors.surface, width: 1.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        badgeLabel,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.captionStrong.copyWith(
+                          color: AppColors.surface,
+                          height: 1,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
-        AppFloatingCircleButton(
-          icon: _expanded ? widget.openIcon : widget.closedIcon,
-          semanticLabel: _expanded
-              ? widget.openSemanticLabel
-              : widget.closedSemanticLabel,
-          badgeCount: _expanded ? null : widget.badgeCount,
-          onPressed: _toggle,
-        ),
-      ],
+      ),
     );
   }
 }

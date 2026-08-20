@@ -14,8 +14,10 @@ export type CurrencyCode = 'gold' | 'xp';
 export type CurrencyTransactionType = 'credit' | 'debit';
 export type CurrencyTransactionSource =
   | 'mission_reward'
+  | 'check_in_reward'
   | 'avatar_frame_purchase'
   | 'avatar_background_purchase'
+  | 'jaca_emoji_purchase'
   | 'offensive_blocker_purchase'
   | 'offensive_blocker_auto_purchase'
   | 'streak_restore_purchase'

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="meal_reminder_widget_description">Jaca, sequência e o lembrete para registrar a refeição.</string>
+    <string name="meal_reminder_widget_jaca">Jaca</string>
+    <string name="meal_reminder_widget_streak_placeholder">Comece hoje</string>
+    <string name="meal_reminder_widget_streak_unit_placeholder">dias de sequência</string>
+    <string name="meal_reminder_widget_title_placeholder">Hora de registrar</string>
+    <string name="meal_reminder_widget_body_placeholder">Que tal registrar uma refeição no JacalorIA?</string>
+</resources>

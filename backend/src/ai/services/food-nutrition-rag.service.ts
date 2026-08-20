@@ -326,11 +326,7 @@ export class FoodNutritionRagService {
     );
 
     return {
-      // Só renomeia para o rótulo TACO quando o preparo é compatível.
-      name:
-        source === 'taco_db' && !hasCookedRawConflict(item.name ?? '', food)
-          ? food.description
-          : item.name?.trim() || food.description,
+      name: item.name?.trim() || food.description,
       grams: this.round(grams),
       calories,
       protein,

@@ -36,6 +36,24 @@ void main() {
     expect(InviteLinkService.pending?.code, 'CODE01');
   });
 
+  test('captures invite from jacaloria:// custom scheme', () {
+    InviteLinkService.captureFromUri(
+      Uri.parse('jacaloria://friend?code=abc123'),
+    );
+
+    final invite = InviteLinkService.take();
+    expect(invite?.kind, InviteLinkKind.friend);
+    expect(invite?.code, 'ABC123');
+  });
+
+  test('bumps revision when a new invite is captured', () {
+    final before = InviteLinkService.revision.value;
+    InviteLinkService.captureFromUri(
+      Uri.parse('https://jacaloria.online/friend?code=rev001'),
+    );
+    expect(InviteLinkService.revision.value, before + 1);
+  });
+
   test('ignores urls without invite context', () {
     InviteLinkService.captureFromUri(
       Uri.parse('https://jacaloria.online/?code=ABC123'),

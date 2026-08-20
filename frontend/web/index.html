@@ -57,6 +57,59 @@
     }
   </style>
   <script>
+    // Convites: tenta abrir o app nativo no Android quando App Links ainda nao verificaram.
+    (function () {
+      try {
+        var path = (location.pathname || '').replace(/\/+$/, '') || '/';
+        var params = new URLSearchParams(location.search || '');
+        var code = (params.get('code') || '').trim();
+        var inviteParam = (params.get('invite') || '').trim().toLowerCase();
+        var kind = null;
+
+        if (path === '/friend' || path.indexOf('/friend/') === 0) {
+          kind = 'friend';
+        } else if (path === '/group' || path.indexOf('/group/') === 0) {
+          kind = 'group';
+        } else if (inviteParam === 'friend' || inviteParam === 'group') {
+          kind = inviteParam;
+        }
+
+        if (!kind || !code) return;
+        if (sessionStorage.getItem('jacaloria_native_open_tried')) return;
+        sessionStorage.setItem('jacaloria_native_open_tried', '1');
+
+        var ua = navigator.userAgent || '';
+        if (!/Android/i.test(ua)) return;
+
+        var httpsUrl = location.href;
+        var intentUrl =
+          'intent://' +
+          location.host +
+          path +
+          location.search +
+          '#Intent;scheme=https;package=com.jacaloria.app;' +
+          'action=android.intent.action.VIEW;' +
+          'category=android.intent.category.BROWSABLE;' +
+          'category=android.intent.category.DEFAULT;' +
+          'S.browser_fallback_url=' +
+          encodeURIComponent(httpsUrl) +
+          ';end';
+
+        location.replace(intentUrl);
+
+        setTimeout(function () {
+          if (document.visibilityState === 'hidden') return;
+          location.replace(
+            'jacaloria://' +
+              kind +
+              '?code=' +
+              encodeURIComponent(code.toUpperCase()),
+          );
+        }, 1200);
+      } catch (_) {}
+    })();
+  </script>
+  <script>
     // Flutter replaces <meta name="viewport"> without viewport-fit=cover.
     // Put it back so env(safe-area-inset-bottom) reflects the home indicator.
     (function () {

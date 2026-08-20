@@ -250,6 +250,49 @@
     `;
   }
 
+  const MEAL_ENTRY_COLORS = {
+    camera: "#0f5132",
+    gallery: "#166534",
+    text: "#22c55e",
+    saved_meal: "#86efac",
+  };
+
+  function renderMealEntryMix(data) {
+    const mix = data.mealEntryMix || { total: 0, methods: [] };
+    const el = document.getElementById("mealEntryMix");
+    if (!el) return;
+
+    if (!mix.methods.length || mix.total === 0) {
+      el.innerHTML = `<p class="hint">Ainda sem usos no período.</p>`;
+      return;
+    }
+
+    el.innerHTML = `
+      <div class="meal-entry-total">
+        <span>Total de usos</span>
+        <strong>${mix.total}</strong>
+      </div>
+      ${mix.methods
+        .map(
+          (row) => `
+        <div class="meal-entry-row">
+          <div class="meal-entry-meta">
+            <span class="meal-entry-label">
+              <i class="meal-entry-dot" style="background:${MEAL_ENTRY_COLORS[row.entry] || "#0f5132"}"></i>
+              ${escapeHtml(row.label)}
+            </span>
+            <span class="meal-entry-stats">${row.count} · ${row.pct}%</span>
+          </div>
+          <div class="meal-entry-bar">
+            <span style="width:${Math.min(100, row.pct)}%;background:${MEAL_ENTRY_COLORS[row.entry] || "#0f5132"}"></span>
+          </div>
+        </div>
+      `,
+        )
+        .join("")}
+    `;
+  }
+
   function renderFeatureTable(data) {
     const tbody = document.querySelector("#featureTable tbody");
     tbody.innerHTML = data.featureRetention
@@ -389,7 +432,7 @@
     });
   }
 
-  function doughnutChart(id, labels, values) {
+  function doughnutChart(id, labels, values, options = {}) {
     const ctx = document.getElementById(id);
     charts[id] = new Chart(ctx, {
       type: "doughnut",
@@ -409,18 +452,20 @@
         maintainAspectRatio: false,
         cutout: "62%",
         plugins: {
-          legend: {
-            position: "right",
-            labels: {
-              boxWidth: 8,
-              boxHeight: 8,
-              usePointStyle: true,
-              pointStyle: "circle",
-              padding: 10,
-              font: TICK_FONT,
-              color: "#6a7282",
-            },
-          },
+          legend: options.hideLegend
+            ? { display: false }
+            : {
+                position: "right",
+                labels: {
+                  boxWidth: 8,
+                  boxHeight: 8,
+                  usePointStyle: true,
+                  pointStyle: "circle",
+                  padding: 10,
+                  font: TICK_FONT,
+                  color: "#6a7282",
+                },
+              },
         },
       },
     });
@@ -464,6 +509,15 @@
       data.platforms.map((d) => d.platform || "outro"),
       data.platforms.map((d) => d.users),
     );
+    const mealMethods = (data.mealEntryMix && data.mealEntryMix.methods) || [];
+    if (mealMethods.some((d) => d.count > 0)) {
+      doughnutChart(
+        "mealEntryChart",
+        mealMethods.map((d) => d.label),
+        mealMethods.map((d) => d.count),
+        { hideLegend: true },
+      );
+    }
   }
 
   function multiLineChart(id, labels, series) {
@@ -1037,6 +1091,7 @@
         renderOverview(data);
         renderRetention(data);
         renderSessions(data);
+        renderMealEntryMix(data);
         renderFeatureTable(data);
         renderEventsTable(data);
         renderCharts(data);

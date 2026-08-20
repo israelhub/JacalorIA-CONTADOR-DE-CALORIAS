@@ -183,6 +183,7 @@ class _FoodReviewMealHeaderState extends State<FoodReviewMealHeader> {
                       focusNode: _titleFocusNode,
                       onChanged: widget.onTitleChanged,
                       textAlignVertical: const TextAlignVertical(y: -0.2),
+                      cursorColor: AppColors.brand900,
                       style: AppTextStyles.headingMedium.copyWith(
                         color: AppColors.textPrimary,
                         fontSize: 24,

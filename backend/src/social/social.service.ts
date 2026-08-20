@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Includeable, Op, QueryTypes } from 'sequelize';
 import { randomBytes } from 'crypto';
 import { User } from '../auth/models/user.model';
 import { Meal, MealStatus } from '../meals/models/meal.model';
@@ -8,12 +8,18 @@ import { UserCurrencyTransaction } from '../missions/models/user-currency-transa
 import { AddFriendByEmailDto } from './dto/add-friend-by-email.dto';
 import { AddGroupMembersDto } from './dto/add-group-members.dto';
 import { CreateSocialGroupDto } from './dto/create-social-group.dto';
+import { SendGroupMessageDto } from './dto/send-group-message.dto';
+import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
 import { UpdateSocialGroupDto } from './dto/update-social-group.dto';
+import { isJacaEmojiId, isPaidJacaEmojiId, JACA_EMOJI_IDS } from './constants/jaca-emojis';
+import { ReactGroupMessageDto } from './dto/react-group-message.dto';
 import { SocialFriendLink } from './models/social-friend-link.model';
 import { SocialFriendRequest } from './models/social-friend-request.model';
 import { SocialFriendship } from './models/social-friendship.model';
 import { SocialGroupActivity } from './models/social-group-activity.model';
 import { SocialGroupMember } from './models/social-group-member.model';
+import { SocialGroupMessage } from './models/social-group-message.model';
+import { SocialGroupMessageReaction } from './models/social-group-message-reaction.model';
 import { SocialGroup } from './models/social-group.model';
 import { StreakService } from '../streak/streak.service';
 import { hasReachedCalorieGoal } from '../shared/utils/calorie-goal.util';
@@ -25,6 +31,8 @@ import {
   countInclusiveCalendarDays,
 } from './utils/goal-average.util';
 
+const GROUP_ACTIVITY_PREVIEW_LIMIT = 3;
+
 @Injectable()
 export class SocialService {
   constructor(
@@ -34,6 +42,10 @@ export class SocialService {
     private readonly socialGroupMemberModel: typeof SocialGroupMember,
     @InjectModel(SocialGroupActivity)
     private readonly socialGroupActivityModel: typeof SocialGroupActivity,
+    @InjectModel(SocialGroupMessage)
+    private readonly socialGroupMessageModel: typeof SocialGroupMessage,
+    @InjectModel(SocialGroupMessageReaction)
+    private readonly socialGroupMessageReactionModel: typeof SocialGroupMessageReaction,
     @InjectModel(SocialFriendship)
     private readonly socialFriendshipModel: typeof SocialFriendship,
     @InjectModel(SocialFriendLink)
@@ -58,7 +70,7 @@ export class SocialService {
           model: SocialGroupActivity,
           as: 'activities',
           separate: true,
-          limit: 3,
+          limit: GROUP_ACTIVITY_PREVIEW_LIMIT,
           order: [['createdAt', 'DESC']],
           include: [{ model: User, as: 'user', attributes: ['id', 'name'] }],
         },
@@ -91,6 +103,115 @@ export class SocialService {
       friends: await this.getFriendsPayload(userId),
       inviteCode: links.inviteCode,
       pendingRequests,
+    };
+  }
+
+  async getXpRanking(userId: string, periodRaw?: string) {
+    const period = this.normalizeXpRankingPeriod(periodRaw);
+    const rangeStart = this.resolveXpRankingRangeStart(period);
+    const sequelize = this.userCurrencyTransactionModel.sequelize;
+    if (!sequelize) {
+      throw new BadRequestException('Ranking de XP indisponível no momento');
+    }
+
+    const replacements: Record<string, unknown> = {};
+    const dateClause = rangeStart
+      ? 'AND t.created_at >= :rangeStart'
+      : '';
+    if (rangeStart) {
+      replacements.rangeStart = rangeStart;
+    }
+
+    const rows = await sequelize.query<{ user_id: string; points: number | string }>(
+      `
+      SELECT t.user_id, COALESCE(SUM(t.amount_signed), 0)::int AS points
+      FROM user_currency_transactions t
+      INNER JOIN users u ON u.id = t.user_id
+      WHERE t.currency = 'xp'
+      ${dateClause}
+      GROUP BY t.user_id
+      HAVING COALESCE(SUM(t.amount_signed), 0) > 0
+      ORDER BY points DESC, t.user_id ASC
+      LIMIT 100
+      `,
+      { replacements, type: QueryTypes.SELECT },
+    );
+
+    const rankedUserIds = rows.map((row) => row.user_id).filter(Boolean);
+    const users = rankedUserIds.length
+      ? await this.userModel.findAll({
+          where: { id: { [Op.in]: rankedUserIds } },
+          attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'],
+        })
+      : [];
+    const userById = new Map(users.map((user) => [user.id, user]));
+
+    let previousPoints: number | null = null;
+    let previousPosition = 0;
+    const ranking = rows.map((row, index) => {
+      const points = parseNumber(row.points);
+      const position =
+        previousPoints !== null && points === previousPoints
+          ? previousPosition
+          : index + 1;
+      previousPoints = points;
+      previousPosition = position;
+      const user = userById.get(row.user_id);
+      const isCurrentUser = row.user_id === userId;
+      return {
+        id: row.user_id,
+        userId: row.user_id,
+        name: user?.name?.trim() || 'Sem nome',
+        avatarUrl: user?.avatarUrl ?? null,
+        avatarFrameId: user?.equippedAvatarFrameId ?? null,
+        points,
+        streakDays: 0,
+        isCurrentUser,
+        isLeader: false,
+        position,
+        subtitle: isCurrentUser ? 'Você' : '',
+      };
+    });
+
+    const viewerInList = ranking.some((entry) => entry.isCurrentUser);
+    let viewerPoints = ranking.find((entry) => entry.isCurrentUser)?.points ?? 0;
+    let viewerPosition =
+      ranking.find((entry) => entry.isCurrentUser)?.position ?? ranking.length + 1;
+
+    if (!viewerInList) {
+      viewerPoints = await this.sumXpEarnedForUser(userId, rangeStart);
+      viewerPosition = await this.countXpRankingPosition(
+        userId,
+        viewerPoints,
+        rangeStart,
+      );
+      const viewer = await this.userModel.findByPk(userId, {
+        attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'],
+      });
+      if (viewer) {
+        ranking.push({
+          id: viewer.id,
+          userId: viewer.id,
+          name: viewer.name?.trim() || 'Sem nome',
+          avatarUrl: viewer.avatarUrl ?? null,
+          avatarFrameId: viewer.equippedAvatarFrameId ?? null,
+          points: viewerPoints,
+          streakDays: 0,
+          isCurrentUser: true,
+          isLeader: false,
+          position: viewerPosition,
+          subtitle: 'Você',
+        });
+      }
+    }
+
+    return {
+      period,
+      ranking,
+      viewer: {
+        position: viewerPosition,
+        points: viewerPoints,
+      },
     };
   }
 
@@ -333,6 +454,7 @@ export class SocialService {
         'equippedAvatarBackgroundId',
         'purchasedAvatarFrameIds',
         'purchasedAvatarBackgroundIds',
+        'purchasedJacaEmojiIds',
         'birthDate',
         'objective',
         'sex',
@@ -502,7 +624,7 @@ export class SocialService {
           model: SocialGroupActivity,
           as: 'activities',
           separate: true,
-          limit: 3,
+          limit: GROUP_ACTIVITY_PREVIEW_LIMIT,
           order: [['createdAt', 'DESC']],
           include: [{ model: User, as: 'user', attributes: ['id', 'name'] }],
         },
@@ -801,6 +923,7 @@ export class SocialService {
       throw new BadRequestException('Apenas o líder pode excluir o grupo');
     }
 
+    await this.socialGroupMessageModel.destroy({ where: { groupId: group.id } });
     await this.socialGroupActivityModel.destroy({ where: { groupId: group.id } });
     await this.socialGroupMemberModel.destroy({ where: { groupId: group.id } });
     await this.socialGroupModel.destroy({ where: { id: group.id } });
@@ -815,6 +938,179 @@ export class SocialService {
       memberUserIds,
     );
     return await this.toGroupDetail(group, userId, streakByUserId, offensiveDayKeysByUserId);
+  }
+
+  async listGroupActivities(groupId: string, userId: string) {
+    const member = await this.socialGroupMemberModel.findOne({
+      where: { groupId, userId },
+      attributes: ['id'],
+    });
+    if (!member) {
+      throw new NotFoundException('Grupo não encontrado');
+    }
+
+    const activities = await this.socialGroupActivityModel.findAll({
+      where: { groupId },
+      include: [{ model: User, as: 'user', attributes: ['id', 'name'] }],
+      order: [['createdAt', 'DESC']],
+    });
+
+    return { activities: this.mapActivities(activities) };
+  }
+
+  async listGroupMessages(
+    userId: string,
+    groupId: string,
+    options: { after?: string; before?: string; limit?: number } = {},
+  ) {
+    await this.findGroupForMember(groupId, userId);
+    const limit = Math.min(Math.max(options.limit || 80, 1), 100);
+    const where: Record<string, unknown> = { groupId };
+
+    if (options.after?.trim()) {
+      const afterMessage = await this.socialGroupMessageModel.findOne({
+        where: { id: options.after.trim(), groupId },
+      });
+      if (!afterMessage) {
+        throw new BadRequestException('Mensagem de referência não encontrada');
+      }
+      where.createdAt = { [Op.gt]: afterMessage.createdAt };
+    } else if (options.before?.trim()) {
+      const beforeMessage = await this.socialGroupMessageModel.findOne({
+        where: { id: options.before.trim(), groupId },
+      });
+      if (!beforeMessage) {
+        throw new BadRequestException('Mensagem de referência não encontrada');
+      }
+      where.createdAt = { [Op.lt]: beforeMessage.createdAt };
+    }
+
+    const fetchNewestFirst = !options.after?.trim();
+    const rows = await this.socialGroupMessageModel.findAll({
+      where,
+      include: this.groupMessageIncludes(),
+      order: [['createdAt', fetchNewestFirst ? 'DESC' : 'ASC']],
+      limit,
+    });
+
+    const ordered = fetchNewestFirst ? [...rows].reverse() : rows;
+    const reactionsByMessageId = await this.loadReactionsByMessageId(
+      ordered.map((message) => message.id),
+    );
+    return {
+      messages: ordered.map((message) =>
+        this.mapGroupMessage(
+          message,
+          userId,
+          reactionsByMessageId.get(message.id) ?? [],
+        ),
+      ),
+    };
+  }
+
+  async sendGroupMessage(userId: string, groupId: string, dto: SendGroupMessageDto) {
+    await this.findGroupForMember(groupId, userId);
+
+    const type = dto.type;
+    const body = dto.body?.trim() ?? '';
+    const imageUrl = dto.imageUrl?.trim() ?? '';
+
+    if (type === 'text') {
+      if (body.length < 1) {
+        throw new BadRequestException('Escreva uma mensagem');
+      }
+    } else if (type === 'emoji') {
+      if (!isJacaEmojiId(body)) {
+        throw new BadRequestException('Emoji do Jaca inválido');
+      }
+      await this.assertOwnedJacaEmoji(userId, body);
+    } else if (!this.isAllowedGroupChatImageUrl(imageUrl)) {
+      throw new BadRequestException('Imagem inválida');
+    }
+
+    const replyToId = await this.resolveReplyToId(groupId, dto.replyToId);
+
+    const created = await this.socialGroupMessageModel.create({
+      groupId,
+      userId,
+      type,
+      body: type === 'image' ? null : body,
+      imageUrl: type === 'image' ? imageUrl : null,
+      replyToId,
+    } as never);
+
+    return this.loadMappedGroupMessage(created.id, userId);
+  }
+
+  async editGroupMessage(
+    userId: string,
+    groupId: string,
+    messageId: string,
+    dto: UpdateGroupMessageDto,
+  ) {
+    const message = await this.findOwnGroupMessage(userId, groupId, messageId);
+    if (message.type !== 'text') {
+      throw new BadRequestException('Só é possível editar mensagens de texto');
+    }
+
+    const body = dto.body?.trim() ?? '';
+    if (body.length < 1) {
+      throw new BadRequestException('Escreva uma mensagem');
+    }
+
+    await message.update({
+      body,
+      editedAt: new Date(),
+    });
+
+    return this.loadMappedGroupMessage(message.id, userId);
+  }
+
+  async deleteGroupMessage(userId: string, groupId: string, messageId: string) {
+    const message = await this.findOwnGroupMessage(userId, groupId, messageId);
+    await message.update({ deletedAt: new Date() });
+    return this.loadMappedGroupMessage(message.id, userId);
+  }
+
+  async reactToGroupMessage(
+    userId: string,
+    groupId: string,
+    messageId: string,
+    dto: ReactGroupMessageDto,
+  ) {
+    await this.findGroupForMember(groupId, userId);
+    const message = await this.socialGroupMessageModel.findOne({
+      where: { id: messageId, groupId },
+    });
+    if (!message) {
+      throw new NotFoundException('Mensagem não encontrada');
+    }
+    if (message.deletedAt) {
+      throw new BadRequestException('Mensagem apagada');
+    }
+    if (!isJacaEmojiId(dto.emojiId)) {
+      throw new BadRequestException('Emoji do Jaca inválido');
+    }
+    await this.assertOwnedJacaEmoji(userId, dto.emojiId);
+
+    const existing = await this.socialGroupMessageReactionModel.findOne({
+      where: { messageId, userId },
+    });
+    if (existing) {
+      if (existing.emojiId === dto.emojiId) {
+        await existing.destroy();
+      } else {
+        await existing.update({ emojiId: dto.emojiId });
+      }
+    } else {
+      await this.socialGroupMessageReactionModel.create({
+        messageId,
+        userId,
+        emojiId: dto.emojiId,
+      } as never);
+    }
+
+    return this.loadMappedGroupMessage(message.id, userId);
   }
 
   /**
@@ -849,17 +1145,7 @@ export class SocialService {
     const effectiveEndMs = Math.min(Date.now(), new Date(group.endsAt).getTime());
     const endDayKey = this.streakService.toDayKeyInAppTimeZone(new Date(effectiveEndMs));
 
-    let selectedDayKey = (date ?? '').trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDayKey)) {
-      selectedDayKey = endDayKey;
-    }
-    if (selectedDayKey < startDayKey) {
-      selectedDayKey = startDayKey;
-    }
-    if (selectedDayKey > endDayKey) {
-      selectedDayKey = endDayKey;
-    }
-
+    const selectedDayKey = this.clampDayKey(date, startDayKey, endDayKey);
     const meals = await this.findMemberMealsForDayKey(targetUserId, selectedDayKey);
     const totalCalories = meals.reduce((sum, meal) => sum + parseNumber(meal.calories), 0);
 
@@ -870,19 +1156,89 @@ export class SocialService {
       startsAt: startDayKey,
       endsAt: endDayKey,
       totalCalories,
-      meals: meals.map((meal) => ({
-        id: meal.id,
-        title: meal.title,
-        description: meal.description,
-        calories: parseNumber(meal.calories),
-        protein: parseNumber(meal.protein),
-        carbs: parseNumber(meal.carbs),
-        fat: parseNumber(meal.fat),
-        timeLabel: meal.timeLabel,
-        mealType: meal.mealType,
-        imageUrl: meal.imageUrl,
-        createdAt: meal.createdAt,
-      })),
+      meals: meals.map((meal) => this.toPublicMealPayload(meal)),
+    };
+  }
+
+  async getPublicProfileDailyMeals(
+    viewerId: string,
+    targetUserId: string,
+    date?: string,
+    options?: { groupId?: string; viaUserId?: string },
+  ) {
+    const canView = await this.canViewUserProfile(viewerId, targetUserId, options);
+    if (!canView) {
+      throw new NotFoundException('Perfil não encontrado');
+    }
+
+    const targetId = targetUserId.trim();
+    const target = await this.userModel.findByPk(targetId, {
+      attributes: ['id', 'createdAt', 'hidePublicProfileMeals'],
+    });
+    if (!target) {
+      throw new NotFoundException('Perfil não encontrado');
+    }
+
+    const isSelf = viewerId.trim().toLowerCase() === targetId.toLowerCase();
+    const isPrivate = target.hidePublicProfileMeals === true;
+    if (isPrivate && !isSelf) {
+      return {
+        enabled: false,
+        isPrivate: true,
+        date: null,
+        startsAt: null,
+        endsAt: null,
+        totalCalories: 0,
+        meals: [],
+      };
+    }
+
+    const createdAt = target.createdAt ? new Date(target.createdAt) : new Date();
+    const startDayKey = this.streakService.toDayKeyInAppTimeZone(createdAt);
+    const endDayKey = this.streakService.toDayKeyInAppTimeZone(new Date());
+    const selectedDayKey = this.clampDayKey(date, startDayKey, endDayKey);
+    const meals = await this.findMemberMealsForDayKey(target.id, selectedDayKey);
+    const totalCalories = meals.reduce((sum, meal) => sum + parseNumber(meal.calories), 0);
+
+    return {
+      enabled: true,
+      isPrivate: isPrivate && isSelf,
+      date: selectedDayKey,
+      startsAt: startDayKey,
+      endsAt: endDayKey,
+      totalCalories,
+      meals: meals.map((meal) => this.toPublicMealPayload(meal)),
+    };
+  }
+
+  private clampDayKey(date: string | undefined, startDayKey: string, endDayKey: string) {
+    let selectedDayKey = (date ?? '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDayKey)) {
+      selectedDayKey = endDayKey;
+    }
+    if (selectedDayKey < startDayKey) {
+      selectedDayKey = startDayKey;
+    }
+    if (selectedDayKey > endDayKey) {
+      selectedDayKey = endDayKey;
+    }
+    return selectedDayKey;
+  }
+
+  private toPublicMealPayload(meal: Meal) {
+    return {
+      id: meal.id,
+      title: meal.title,
+      description: meal.description,
+      calories: parseNumber(meal.calories),
+      protein: parseNumber(meal.protein),
+      carbs: parseNumber(meal.carbs),
+      fat: parseNumber(meal.fat),
+      timeLabel: meal.timeLabel,
+      mealType: meal.mealType,
+      imageUrl: meal.imageUrl,
+      createdAt: meal.createdAt,
+      analysisItems: Array.isArray(meal.analysisItems) ? meal.analysisItems : [],
     };
   }
 
@@ -920,6 +1276,7 @@ export class SocialService {
         'mealType',
         'imageUrl',
         'createdAt',
+        'analysisItems',
       ],
       order: [['createdAt', 'DESC']],
     });
@@ -937,6 +1294,7 @@ export class SocialService {
           model: SocialGroupActivity,
           as: 'activities',
           separate: true,
+          limit: GROUP_ACTIVITY_PREVIEW_LIMIT + 1,
           order: [['createdAt', 'DESC']],
           include: [{ model: User, as: 'user', attributes: ['id', 'name'] }],
         },
@@ -1178,6 +1536,98 @@ export class SocialService {
     return rows.reduce((sum, row) => sum + parseNumber(row.amountSigned), 0);
   }
 
+  private normalizeXpRankingPeriod(periodRaw?: string): 'all' | 'month' | 'week' {
+    const normalized = (periodRaw ?? 'all').trim().toLowerCase();
+    if (normalized === 'month' || normalized === 'mes' || normalized === 'mês') {
+      return 'month';
+    }
+    if (normalized === 'week' || normalized === 'semana') {
+      return 'week';
+    }
+    if (normalized === 'all' || normalized === 'geral' || normalized === '') {
+      return 'all';
+    }
+    throw new BadRequestException('Período inválido. Use geral, mes ou semana.');
+  }
+
+  private resolveXpRankingRangeStart(period: 'all' | 'month' | 'week'): Date | null {
+    if (period === 'all') {
+      return null;
+    }
+
+    const now = new Date();
+    const parts = this.streakService.getDateTimePartsInAppTimeZone(now);
+    const elapsedMs =
+      parts.hour * 3_600_000 + parts.minute * 60_000 + parts.second * 1_000;
+    const todayStart = new Date(now.getTime() - elapsedMs);
+
+    if (period === 'week') {
+      const weekStartToken = this.streakService.getWeekStartInAppTimeZone(now);
+      const todayToken = this.streakService.getDayStartInAppTimeZone(now);
+      const daysFromWeekStart = Math.max(
+        0,
+        Math.round((todayToken.getTime() - weekStartToken.getTime()) / 86_400_000),
+      );
+      return new Date(todayStart.getTime() - daysFromWeekStart * 86_400_000);
+    }
+
+    return new Date(todayStart.getTime() - (Math.max(1, parts.day) - 1) * 86_400_000);
+  }
+
+  private async sumXpEarnedForUser(userId: string, rangeStart: Date | null) {
+    const where: Record<string, unknown> = { userId, currency: 'xp' };
+    if (rangeStart) {
+      where.createdAt = { [Op.gte]: rangeStart };
+    }
+    const rows = await this.userCurrencyTransactionModel.findAll({
+      where,
+      attributes: ['amountSigned'],
+    });
+    return rows.reduce((sum, row) => sum + parseNumber(row.amountSigned), 0);
+  }
+
+  private async countXpRankingPosition(
+    userId: string,
+    viewerPoints: number,
+    rangeStart: Date | null,
+  ) {
+    const sequelize = this.userCurrencyTransactionModel.sequelize;
+    if (!sequelize) {
+      return 1;
+    }
+
+    const replacements: Record<string, unknown> = {
+      viewerPoints,
+      viewerId: userId,
+    };
+    const dateClause = rangeStart ? 'AND t.created_at >= :rangeStart' : '';
+    if (rangeStart) {
+      replacements.rangeStart = rangeStart;
+    }
+
+    const rows = await sequelize.query<{ higher_count: number | string }>(
+      `
+      SELECT COUNT(*)::int AS higher_count
+      FROM (
+        SELECT t.user_id
+        FROM user_currency_transactions t
+        INNER JOIN users u ON u.id = t.user_id
+        WHERE t.currency = 'xp'
+        ${dateClause}
+        GROUP BY t.user_id
+        HAVING COALESCE(SUM(t.amount_signed), 0) > :viewerPoints
+           OR (
+             COALESCE(SUM(t.amount_signed), 0) = :viewerPoints
+             AND t.user_id < :viewerId
+           )
+      ) ranked
+      `,
+      { replacements, type: QueryTypes.SELECT },
+    );
+
+    return parseNumber(rows[0]?.higher_count) + 1;
+  }
+
   /**
    * Cada missão concluída gera até duas transações (ouro e XP) com a mesma
    * reference_key, então o total vem da contagem de chaves distintas.
@@ -1198,7 +1648,10 @@ export class SocialService {
   }
 
   private countOwnedCosmetics(
-    user: Pick<User, 'purchasedAvatarFrameIds' | 'purchasedAvatarBackgroundIds'>,
+    user: Pick<
+      User,
+      'purchasedAvatarFrameIds' | 'purchasedAvatarBackgroundIds' | 'purchasedJacaEmojiIds'
+    >,
   ) {
     const frames = Array.isArray(user.purchasedAvatarFrameIds)
       ? user.purchasedAvatarFrameIds
@@ -1206,7 +1659,10 @@ export class SocialService {
     const backgrounds = Array.isArray(user.purchasedAvatarBackgroundIds)
       ? user.purchasedAvatarBackgroundIds
       : [];
-    return frames.length + backgrounds.length;
+    const stickers = Array.isArray(user.purchasedJacaEmojiIds)
+      ? user.purchasedJacaEmojiIds
+      : [];
+    return frames.length + backgrounds.length + stickers.length;
   }
 
   private async toGroupSummary(
@@ -1241,6 +1697,7 @@ export class SocialService {
       isDefeated: groupStreakDefeated,
       isPublic: group.isPublic,
       inviteCode: (group as SocialGroup & { inviteCode?: string }).inviteCode ?? null,
+      rule: this.getCompetitionRule(group.competitionType),
       activities: this.mapActivities(group.activities ?? []),
     };
   }
@@ -1276,21 +1733,228 @@ export class SocialService {
         rule: this.getCompetitionRule(group.competitionType),
         leaderName: topMember?.user?.name ?? group.owner?.name ?? 'Líder do grupo',
       },
-      ranking: ranked.map(({ member, position }) => ({
-        id: member.id,
-        userId: member.userId,
-        name: member.user?.name ?? 'Sem nome',
-        avatarUrl: member.user?.avatarUrl ?? null,
-        avatarFrameId: member.user?.equippedAvatarFrameId ?? null,
-        points: member.points,
-        streakDays: member.streakDays,
-        isCurrentUser: member.userId === userId,
-        isLeader: member.isLeader,
-        position,
-        subtitle: member.isLeader ? 'Líder do grupo' : '',
-      })),
-      recentActivities: this.mapActivities(group.activities ?? []),
+      ranking: ranked.map(({ member, position }) => {
+        const plain = member as SocialGroupMember & { dailyCalorieGoal?: number };
+        return {
+          id: member.id,
+          userId: member.userId,
+          name: member.user?.name ?? 'Sem nome',
+          avatarUrl: member.user?.avatarUrl ?? null,
+          avatarFrameId: member.user?.equippedAvatarFrameId ?? null,
+          points: member.points,
+          streakDays: member.streakDays,
+          dailyCalorieGoal:
+            group.competitionType === 'goal_average'
+              ? parseNumber(plain.dailyCalorieGoal, 2000)
+              : null,
+          isCurrentUser: member.userId === userId,
+          isLeader: member.isLeader,
+          position,
+          subtitle: member.isLeader ? 'Líder do grupo' : '',
+        };
+      }),
+      ...(await this.toRecentActivitiesPayload(group.id, group.activities ?? [])),
     };
+  }
+
+  private async toRecentActivitiesPayload(groupId: string, activities: SocialGroupActivity[]) {
+    const preview = activities.slice(0, GROUP_ACTIVITY_PREVIEW_LIMIT);
+    let hasMoreActivities = activities.length > GROUP_ACTIVITY_PREVIEW_LIMIT;
+    if (!hasMoreActivities && preview.length >= GROUP_ACTIVITY_PREVIEW_LIMIT) {
+      const total = await this.socialGroupActivityModel.count({ where: { groupId } });
+      hasMoreActivities = total > GROUP_ACTIVITY_PREVIEW_LIMIT;
+    }
+    return {
+      recentActivities: this.mapActivities(preview),
+      hasMoreActivities,
+    };
+  }
+
+  private mapGroupMessage(
+    message: SocialGroupMessage,
+    currentUserId: string,
+    reactions: Array<{ emojiId: string; userId: string }> = [],
+  ) {
+    const isDeleted = Boolean(message.deletedAt);
+    const replyTo = message.replyTo;
+    return {
+      id: message.id,
+      groupId: message.groupId,
+      userId: message.userId,
+      type: message.type,
+      body: isDeleted ? null : message.body,
+      imageUrl: isDeleted ? null : message.imageUrl,
+      createdAt: message.createdAt,
+      editedAt: message.editedAt ?? null,
+      isEdited: Boolean(message.editedAt),
+      isDeleted,
+      senderName: message.user?.name ?? 'Sem nome',
+      senderAvatarUrl: message.user?.avatarUrl ?? null,
+      senderAvatarFrameId: message.user?.equippedAvatarFrameId ?? null,
+      isCurrentUser: message.userId === currentUserId,
+      replyTo: replyTo
+        ? {
+            id: replyTo.id,
+            senderName: replyTo.user?.name ?? 'Sem nome',
+            type: replyTo.type,
+            body: replyTo.deletedAt ? null : replyTo.body,
+            imageUrl: replyTo.deletedAt ? null : replyTo.imageUrl,
+            isDeleted: Boolean(replyTo.deletedAt),
+          }
+        : null,
+      reactions: isDeleted
+        ? []
+        : this.mapReactionSummaries(reactions, currentUserId),
+    };
+  }
+
+  private groupMessageIncludes(): Includeable[] {
+    return [
+      {
+        model: User,
+        as: 'user',
+        attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'],
+      },
+      {
+        model: SocialGroupMessage,
+        as: 'replyTo',
+        required: false,
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'name'],
+          },
+        ],
+      },
+    ];
+  }
+
+  private async loadMappedGroupMessage(messageId: string, currentUserId: string) {
+    const message = await this.socialGroupMessageModel.findByPk(messageId, {
+      include: this.groupMessageIncludes(),
+    });
+    if (!message) {
+      throw new NotFoundException('Mensagem não encontrada');
+    }
+    const reactionsByMessageId = await this.loadReactionsByMessageId([messageId]);
+    return this.mapGroupMessage(
+      message,
+      currentUserId,
+      reactionsByMessageId.get(messageId) ?? [],
+    );
+  }
+
+  private async loadReactionsByMessageId(messageIds: string[]) {
+    const grouped = new Map<string, Array<{ emojiId: string; userId: string }>>();
+    if (messageIds.length === 0) return grouped;
+
+    const rows = await this.socialGroupMessageReactionModel.findAll({
+      where: { messageId: { [Op.in]: messageIds } },
+      attributes: ['messageId', 'userId', 'emojiId'],
+    });
+    for (const row of rows) {
+      const list = grouped.get(row.messageId) ?? [];
+      list.push({ emojiId: row.emojiId, userId: row.userId });
+      grouped.set(row.messageId, list);
+    }
+    return grouped;
+  }
+
+  private mapReactionSummaries(
+    reactions: Array<{ emojiId: string; userId: string }>,
+    currentUserId: string,
+  ) {
+    const byEmoji = new Map<string, { count: number; reactedByMe: boolean }>();
+    for (const reaction of reactions) {
+      const current = byEmoji.get(reaction.emojiId) ?? {
+        count: 0,
+        reactedByMe: false,
+      };
+      current.count += 1;
+      if (reaction.userId === currentUserId) {
+        current.reactedByMe = true;
+      }
+      byEmoji.set(reaction.emojiId, current);
+    }
+
+    const known = new Set<string>(JACA_EMOJI_IDS);
+    const orderedIds = [
+      ...JACA_EMOJI_IDS.filter((id) => byEmoji.has(id)),
+      ...[...byEmoji.keys()].filter((id) => !known.has(id)),
+    ];
+    return orderedIds.map((emojiId) => ({
+      emojiId,
+      count: byEmoji.get(emojiId)!.count,
+      reactedByMe: byEmoji.get(emojiId)!.reactedByMe,
+    }));
+  }
+
+  private async assertOwnedJacaEmoji(userId: string, emojiId: string) {
+    if (!isPaidJacaEmojiId(emojiId)) return;
+    const user = await this.userModel.findByPk(userId, {
+      attributes: ['purchasedJacaEmojiIds'],
+    });
+    const owned = new Set(
+      (Array.isArray(user?.purchasedJacaEmojiIds)
+        ? user.purchasedJacaEmojiIds
+        : []
+      )
+        .map((value) => value.toString().trim())
+        .filter((value) => value.length > 0),
+    );
+    if (!owned.has(emojiId)) {
+      throw new BadRequestException(
+        'Compre esta figurinha na loja para usar no chat',
+      );
+    }
+  }
+
+  private async resolveReplyToId(groupId: string, replyToId?: string) {
+    const targetId = replyToId?.trim();
+    if (!targetId) return null;
+
+    const target = await this.socialGroupMessageModel.findOne({
+      where: { id: targetId, groupId },
+    });
+    if (!target || target.deletedAt) {
+      throw new BadRequestException('Mensagem para responder não encontrada');
+    }
+    return target.id;
+  }
+
+  private async findOwnGroupMessage(
+    userId: string,
+    groupId: string,
+    messageId: string,
+  ) {
+    await this.findGroupForMember(groupId, userId);
+    const message = await this.socialGroupMessageModel.findOne({
+      where: { id: messageId, groupId },
+    });
+    if (!message) {
+      throw new NotFoundException('Mensagem não encontrada');
+    }
+    if (message.userId !== userId) {
+      throw new ForbiddenException('Só quem enviou pode alterar esta mensagem');
+    }
+    if (message.deletedAt) {
+      throw new BadRequestException('Mensagem apagada');
+    }
+    return message;
+  }
+
+  private isAllowedGroupChatImageUrl(url: string) {
+    try {
+      const parsed = new URL(url);
+      return (
+        parsed.protocol === 'https:' &&
+        parsed.hostname.endsWith('supabase.co') &&
+        parsed.pathname.includes('/storage/v1/object/public/group-chat/')
+      );
+    } catch {
+      return false;
+    }
   }
 
   private mapActivities(activities: SocialGroupActivity[]) {
@@ -1444,16 +2108,19 @@ export class SocialService {
 
   private getCompetitionRule(competitionType: string): string | null {
     if (competitionType === 'group_streak') {
-      return 'A sequência do grupo começa do zero e só conta os dias desde a criação. À meia-noite, continua só se todos os membros ativos daquele dia cumpriram a ofensiva.';
+      return 'Todos precisam registrar as refeições no dia. Se alguém pular, o desafio acaba.';
     }
     if (competitionType === 'offensive') {
-      return 'Todos começam do zero. Só contam os dias de sequência desde a criação do grupo.';
+      return 'Registre as refeições todos os dias. Ganha quem mantiver a sequência mais longa.';
+    }
+    if (competitionType === 'daily_goal') {
+      return 'Tente bater a sua meta de calorias todo dia. Ganha quem acertar mais vezes.';
     }
     if (competitionType === 'goal_average') {
-      return 'A média é o total de calorias ÷ dias decorridos do grupo (desde a criação; sobe após 00:00). Ganha quem ficar mais perto da própria meta.';
+      return 'Acompanhe sua meta de calorias ao longo do desafio. Ganha quem ficar mais perto.';
     }
     if (competitionType === 'xp') {
-      return 'Soma o XP ganho nas missões desde a criação do grupo. Ganha quem acumular mais XP no período.';
+      return 'Complete missões para ganhar XP. Ganha quem juntar mais pontos.';
     }
     return null;
   }
@@ -1694,8 +2361,10 @@ export class SocialService {
         ...this.memberToPlain(member),
         // points = média diária (exibida); goalDeviation = |média − meta| (ranking).
         // -1 = sem dias registrados; ranking trata como pior pontuação.
+        // dailyCalorieGoal = meta ao vivo do perfil (recalcula com peso etc.).
         points: stats?.averageCalories ?? -1,
         goalDeviation: stats?.goalDeviation ?? -1,
+        dailyCalorieGoal: stats?.dailyCalorieGoal ?? 2000,
       };
     }) as unknown as SocialGroupMember[];
   }
@@ -1804,18 +2473,31 @@ export class SocialService {
    * após cada 00:00 o denominador sobe; a cada refeição o numerador muda no próximo GET.
    * média = soma dos totais diários / dias decorridos (dia sem refeição conta como 0).
    * Sem nenhuma refeição no período → sem média (fica no fim do ranking).
-   * Ranking usa |média − meta| (menor = melhor); a UI exibe a média.
+   * Ranking usa |média − meta| (menor = melhor); a UI exibe média/meta do perfil ao vivo.
    */
   private async buildGoalAverageStatsByUserIds(
     userIds: string[],
     startsAt: Date,
     endsAt: Date,
-  ): Promise<Map<string, { averageCalories: number; goalDeviation: number }>> {
-    const statsByUserId = new Map<string, { averageCalories: number; goalDeviation: number }>();
+  ): Promise<
+    Map<
+      string,
+      {
+        averageCalories: number | null;
+        goalDeviation: number;
+        dailyCalorieGoal: number;
+      }
+    >
+  > {
+    const statsByUserId = new Map<
+      string,
+      {
+        averageCalories: number | null;
+        goalDeviation: number;
+        dailyCalorieGoal: number;
+      }
+    >();
     const elapsedDays = this.countElapsedCompetitionDays(startsAt, endsAt);
-    if (elapsedDays <= 0) {
-      return statsByUserId;
-    }
 
     // Limita o fim ao "agora" para o ranking acompanhar a virada do dia em tempo real.
     const effectiveEndsAt = new Date(Math.min(Date.now(), new Date(endsAt).getTime()));
@@ -1827,8 +2509,14 @@ export class SocialService {
 
     for (const userId of userIds) {
       const user = userById.get(userId);
+      const goal = parseNumber(user?.dailyCalorieGoal, 2000);
       const dayMap = caloriesByUserDay.get(userId);
-      if (!user || !dayMap || dayMap.size === 0) {
+      if (!user || !dayMap || dayMap.size === 0 || elapsedDays <= 0) {
+        statsByUserId.set(userId, {
+          averageCalories: null,
+          goalDeviation: -1,
+          dailyCalorieGoal: goal,
+        });
         continue;
       }
 
@@ -1838,10 +2526,10 @@ export class SocialService {
       }
       // Dias sem refeição não entram em dayMap → contribuem 0 ao numerador.
       const averageCalories = computeGoalAverageCalories(totalCalories, elapsedDays);
-      const goal = parseNumber(user.dailyCalorieGoal, 2000);
       statsByUserId.set(userId, {
         averageCalories,
         goalDeviation: computeGoalDeviation(averageCalories, goal),
+        dailyCalorieGoal: goal,
       });
     }
 

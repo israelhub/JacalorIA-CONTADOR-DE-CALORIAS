@@ -69,6 +69,13 @@ class SupabaseStorageService {
     return uploadBytes(bytes, 'meals', extension: extension);
   }
 
+  static Future<String?> uploadGroupChatImage(
+    Uint8List bytes, {
+    String? extension,
+  }) async {
+    return uploadBytes(bytes, 'group-chat', extension: extension);
+  }
+
   static String _fileExtension(String path) {
     final dotIndex = path.lastIndexOf('.');
     if (dotIndex == -1 || dotIndex == path.length - 1) {

@@ -26,6 +26,7 @@ import '../../../shared/widgets/framed_avatar.dart';
 import '../widgets/home_meal_card.dart';
 import '../widgets/home_actions_fab.dart';
 import '../widgets/home_weight_quick_edit_button.dart';
+import '../../../core/notifications/meal_reminder_home_widget.dart';
 import '../../auth/service/auth_service.dart';
 import '../../profile/pages/profile_page.dart';
 import '../../social/helpers/social_data_invalidator.dart';
@@ -127,7 +128,7 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _redirectToLoginPage({String? errorMessage}) async {
-    await widget._authService.signOut();
+    await AuthService.signOut();
     if (!mounted) {
       return;
     }
@@ -165,9 +166,7 @@ class _HomePageState extends State<HomePage>
           startDate: _selectedDate,
           endDate: _startOfNextDay(_selectedDate),
         ),
-        widget._authService.fetchProfile(
-          forceRefresh: forceRefreshDayGoal,
-        ),
+        widget._authService.fetchProfile(forceRefresh: forceRefreshDayGoal),
       ]);
       final meals = results[0] as List<FoodMealRecord>;
       final profile = results[1] as Map<String, dynamic>;
@@ -204,6 +203,14 @@ class _HomePageState extends State<HomePage>
         }
 
         _scheduleHomeImagePrecache(meals, profile);
+        unawaited(
+          MealReminderHomeWidget.sync(
+            streakDays: readHomeProfileInt(profile, const [
+              'streakDays',
+              'streak_days',
+            ]),
+          ),
+        );
       }
     } catch (e) {
       if (e.toString().contains('Sessão inválida')) {
@@ -580,7 +587,10 @@ class _HomePageState extends State<HomePage>
 
   Future<void> _openFoodCapture() async {
     final record = await context.pushSlidePage<FoodMealRecord>(
-      const FoodCapturePage(),
+      FoodCapturePage(
+        recordedAt: resolveMealRecordedAt(selectedDate: _selectedDate),
+      ),
+      rootNavigator: true,
     );
 
     if (record == null || !mounted) {
@@ -978,8 +988,6 @@ class _MealsHeader extends StatelessWidget {
               formatHomeDateLabel(selectedDate),
               style: AppTextStyles.caption.copyWith(
                 color: AppColors.textSecondary,
-                decoration: TextDecoration.underline,
-                decorationColor: AppColors.textSecondary,
               ),
             ),
           ),

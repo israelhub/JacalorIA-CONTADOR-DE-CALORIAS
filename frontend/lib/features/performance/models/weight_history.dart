@@ -48,18 +48,36 @@ class WeightHistory {
   final List<WeightHistoryPoint> points;
 
   factory WeightHistory.fromJson(Map<String, dynamic> json) {
-    final rangeJson =
-        json['range'] as Map<String, dynamic>? ?? const <String, dynamic>{};
-    final pointsJson = json['points'] as List<dynamic>? ?? const <dynamic>[];
-
     return WeightHistory(
-      range: WeightHistoryRange.fromJson(rangeJson),
-      points: pointsJson
-          .whereType<Map<String, dynamic>>()
+      range: WeightHistoryRange.fromJson(_asStringMap(json['range'])),
+      points: _asObjectList(json['points'])
           .map(WeightHistoryPoint.fromJson)
           .toList(growable: false),
     );
   }
+}
+
+Map<String, dynamic> _asStringMap(Object? value) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+
+  if (value is Map) {
+    return Map<String, dynamic>.from(value);
+  }
+
+  return const <String, dynamic>{};
+}
+
+List<Map<String, dynamic>> _asObjectList(Object? value) {
+  if (value is! List) {
+    return const <Map<String, dynamic>>[];
+  }
+
+  return value
+      .whereType<Map>()
+      .map(Map<String, dynamic>.from)
+      .toList(growable: false);
 }
 
 double _asDouble(Object? value) {

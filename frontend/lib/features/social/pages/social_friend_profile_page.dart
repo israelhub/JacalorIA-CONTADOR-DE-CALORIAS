@@ -305,14 +305,13 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                   longestStreakDays: profile.longestStreakDays,
                   cosmeticsOwned: profile.cosmeticsOwned,
                 ),
-                if (widget.groupId != null &&
-                    widget.groupId!.trim().isNotEmpty)
-                  SocialMemberDailyMealsSection(
-                    groupId: widget.groupId!,
-                    memberUserId: profile.id,
-                    competitionType: widget.competitionType,
-                    service: widget.service,
-                  ),
+                SocialMemberDailyMealsSection(
+                  memberUserId: profile.id,
+                  groupId: widget.groupId,
+                  viaUserId: widget.viaUserId,
+                  service: widget.service,
+                  readOnly: !profile.isSelf,
+                ),
               ],
             ),
           ),

@@ -36,9 +36,6 @@ const DEFAULT_FALLBACK_MODELS = [
   'gemini-3.1-flash-lite',
   'gemini-2.5-flash-lite',
   'gemini-3-flash',
-  'gemini-3.5-flash',
-  'gemini-3.6-flash',
-  'gemini-2.5-flash',
 ].join(',');
 
 @Injectable()
@@ -365,14 +362,14 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
   private buildImageAnalysisPrompt(): string {
     return [
       'Analise a imagem enviada e retorne a estimativa nutricional no JSON solicitado, com alimentos, gramas, calorias, proteínas, carboidratos, gorduras e justificativa curta.',
-      'No campo name, inclua corte e preparo quando forem identificáveis na foto (ex.: "Frango peito grelhado", à milanesa); se não forem claros, use o nome simples.',
+      'No campo name, inclua tipo, corte e preparo (ex.: "Frango peito grelhado", "Arroz branco cozido", "Feijão preto cozido"). Não use só "Arroz" ou "Feijão": no prato brasileiro o default é cozido. Só use pratos compostos (ex.: "Arroz carreteiro") com evidência clara na foto.',
     ].join(' ');
   }
 
   private buildManualTextPrompt(manualText: string): string {
     return [
       'O usuário digitou a refeição abaixo. Identifique os alimentos e as quantidades consumidas.',
-      'No campo name, preserve corte e preparo quando o usuário informar (ex.: "Frango peito grelhado", "Frango à milanesa"); se não houver, use o nome simples.',
+      'No campo name, preserve tipo, corte e preparo quando o usuário informar. Se o usuário escrever só "arroz"/"feijão" sem detalhe, normalize para o preparo típico (ex.: "Arroz branco cozido", "Feijão preto cozido"), salvo se indicar prato composto (carreteiro, à grega etc.).',
       'Se houver dados de tabela nutricional (porção de referência + kcal/macros + quanto consumiu), EXTRAIA-OS em nutritionLabel com os valores da TABELA e deixe calories/protein/carbs/fat do item em 0 — o sistema calculará a proporção.',
       'Priorize sempre a tabela nutricional informada pelo usuário sobre qualquer estimativa.',
       'Retorne apenas o JSON solicitado, sem texto fora do JSON.',
@@ -391,7 +388,7 @@ export class FoodAnalysisProviderImpl implements FoodAnalysisProvider {
 
     return [
       'Recalcule a estimativa nutricional total do prato com base nos itens já corrigidos pelo usuário.',
-      'Preserve no campo name o corte e o preparo informados nos itens corrigidos quando houver.',
+      'Preserve no campo name o tipo, corte e preparo informados nos itens corrigidos. Se o item vier só como "Arroz" ou "Feijão", normalize para o preparo típico (ex.: "Arroz branco cozido").',
       'Retorne o mesmo JSON solicitado anteriormente, sem incluir texto fora do JSON.',
       'Itens corrigidos:',
       itemsText,

@@ -9,6 +9,8 @@ import { SocialFriendRequest } from './models/social-friend-request.model';
 import { SocialFriendship } from './models/social-friendship.model';
 import { SocialGroupActivity } from './models/social-group-activity.model';
 import { SocialGroupMember } from './models/social-group-member.model';
+import { SocialGroupMessage } from './models/social-group-message.model';
+import { SocialGroupMessageReaction } from './models/social-group-message-reaction.model';
 import { SocialGroup } from './models/social-group.model';
 import { SocialService } from './social.service';
 import { StreakModule } from '../streak/streak.module';
@@ -22,6 +24,8 @@ import { AnalyticsModule } from '../analytics/analytics.module';
       SocialGroup,
       SocialGroupMember,
       SocialGroupActivity,
+      SocialGroupMessage,
+      SocialGroupMessageReaction,
       SocialFriendship,
       SocialFriendLink,
       SocialFriendRequest,

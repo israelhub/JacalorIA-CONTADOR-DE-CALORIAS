@@ -9,6 +9,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'meal_reminder_models.dart';
 import 'meal_reminder_prefs.dart';
+import 'meal_reminder_home_widget.dart';
 import 'in_app_message_store.dart';
 import 'notifications_remote_service.dart';
 
@@ -115,6 +116,7 @@ class MealReminderService {
       pullRemote: false,
     );
     unawaited(_pushSettingsToRemote());
+    unawaited(MealReminderHomeWidget.sync(settings: settings));
   }
 
   /// Garante que os lembretes ativos estejam agendados (boot / login / resume),
@@ -439,6 +441,7 @@ class MealReminderService {
       ),
     );
     unawaited(InAppMessageStore.instance.addMealReminderMessage(config));
+    unawaited(MealReminderHomeWidget.sync());
   }
 
   Future<void> _scheduleDailyNative(MealReminderConfig config) async {

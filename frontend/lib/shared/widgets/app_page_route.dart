@@ -14,52 +14,97 @@ class AppPageRoute<T> extends PageRouteBuilder<T> {
     super.settings,
     super.fullscreenDialog,
   }) : super(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              builder(context),
-          transitionDuration: const Duration(milliseconds: 320),
-          reverseTransitionDuration: const Duration(milliseconds: 280),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            const begin = Offset(1.0, 0.0);
-            const end = Offset.zero;
-            const curve = Curves.easeInOutCubic;
+         pageBuilder: (context, animation, secondaryAnimation) =>
+             builder(context),
+         transitionDuration: const Duration(milliseconds: 240),
+         reverseTransitionDuration: const Duration(milliseconds: 200),
+         transitionsBuilder: (context, animation, secondaryAnimation, child) {
+           const begin = Offset(1.0, 0.0);
+           const end = Offset.zero;
+           const curve = Curves.easeInOutCubic;
 
-            final tween = Tween(begin: begin, end: end).chain(
-              CurveTween(curve: curve),
-            );
+           final tween = Tween(
+             begin: begin,
+             end: end,
+           ).chain(CurveTween(curve: curve));
 
-            final slideTween = animation.drive(tween);
+           final slideTween = animation.drive(tween);
 
-            // Saída com leve deslocamento para a esquerda
-            final secondaryTween = Tween(
-              begin: Offset.zero,
-              end: const Offset(-0.25, 0.0),
-            ).chain(CurveTween(curve: curve));
+           // Saída com leve deslocamento para a esquerda
+           final secondaryTween = Tween(
+             begin: Offset.zero,
+             end: const Offset(-0.25, 0.0),
+           ).chain(CurveTween(curve: curve));
 
-            return SlideTransition(
-              position: slideTween,
-              child: SlideTransition(
-                position: secondaryAnimation.drive(secondaryTween),
-                child: child,
-              ),
-            );
-          },
-        );
+           return SlideTransition(
+             position: slideTween,
+             child: SlideTransition(
+               position: secondaryAnimation.drive(secondaryTween),
+               child: child,
+             ),
+           );
+         },
+       );
+}
+
+/// Transição de surgimento (fade + scale), sem slide lateral.
+class AppAppearPageRoute<T> extends PageRouteBuilder<T> {
+  AppAppearPageRoute({
+    required WidgetBuilder builder,
+    super.settings,
+    super.fullscreenDialog,
+  }) : super(
+         pageBuilder: (context, animation, secondaryAnimation) =>
+             builder(context),
+         transitionDuration: const Duration(milliseconds: 220),
+         reverseTransitionDuration: const Duration(milliseconds: 180),
+         transitionsBuilder: (context, animation, secondaryAnimation, child) {
+           final curved = CurvedAnimation(
+             parent: animation,
+             curve: Curves.easeOutCubic,
+             reverseCurve: Curves.easeInCubic,
+           );
+
+           return FadeTransition(
+             opacity: curved,
+             child: ScaleTransition(
+               scale: Tween<double>(begin: 0.94, end: 1).animate(curved),
+               child: child,
+             ),
+           );
+         },
+       );
 }
 
 extension AppPageRouteNavigation on BuildContext {
-  Future<T?> pushSlidePage<T>(Widget page) {
-    return Navigator.of(this).push<T>(
-      AppPageRoute(builder: (_) => page),
+  Future<T?> pushSlidePage<T>(Widget page, {bool rootNavigator = false}) {
+    final navigator = Navigator.of(this, rootNavigator: rootNavigator);
+    final isRoot = identical(
+      navigator,
+      Navigator.of(this, rootNavigator: true),
     );
+    return navigator.push<T>(
+      isRoot
+          ? AppPageRoute(builder: (_) => page)
+          : AppAppearPageRoute(builder: (_) => page),
+    );
+  }
+
+  Future<T?> pushAppearPage<T>(Widget page, {bool rootNavigator = false}) {
+    return Navigator.of(
+      this,
+      rootNavigator: rootNavigator,
+    ).push<T>(AppAppearPageRoute(builder: (_) => page));
   }
 
   Future<T?> pushAndRemoveUntilSlidePage<T>(
     Widget page,
-    RoutePredicate predicate,
-  ) {
-    return Navigator.of(this).pushAndRemoveUntil<T>(
-      AppPageRoute(builder: (_) => page),
-      predicate,
-    );
+    RoutePredicate predicate, {
+    bool rootNavigator = true,
+  }) {
+    return Navigator.of(
+      this,
+      rootNavigator: rootNavigator,
+    ).pushAndRemoveUntil<T>(AppPageRoute(builder: (_) => page), predicate);
   }
 }

@@ -11,6 +11,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MissionsService } from './missions.service';
 import { PurchaseAvatarFrameDto } from './dto/purchase-avatar-frame.dto';
 import { PurchaseAvatarBackgroundDto } from './dto/purchase-avatar-background.dto';
+import { PurchaseJacaEmojiDto } from './dto/purchase-jaca-emoji.dto';
 import { PurchaseOffensiveBlockerDto } from './dto/purchase-offensive-blocker.dto';
 
 @Controller('missions')
@@ -61,6 +62,16 @@ export class MissionsController {
     return this.missionsService.purchaseAvatarBackground(userId, dto.backgroundId);
   }
 
+  @Post('store/jaca-emojis/purchase')
+  async purchaseJacaEmoji(@Req() req: any, @Body() dto: PurchaseJacaEmojiDto) {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+
+    return this.missionsService.purchaseJacaEmoji(userId, dto.emojiId);
+  }
+
   @Post('store/offensive-blockers/purchase')
   async purchaseOffensiveBlocker(
     @Req() req: any,
@@ -76,6 +87,16 @@ export class MissionsController {
       dto.blockerId,
       dto.quantity,
     );
+  }
+
+  @Post('check-in')
+  async claimCheckIn(@Req() req: any) {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+
+    return this.missionsService.claimCheckIn(userId);
   }
 
   @Get('wallet/gold-statement')

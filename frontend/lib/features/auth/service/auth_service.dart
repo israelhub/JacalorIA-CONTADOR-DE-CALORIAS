@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/config/api_config.dart';
+import '../../../core/notifications/meal_reminder_home_widget.dart';
 
 class AuthService {
   static const Duration _apiTimeout = Duration(seconds: 90);
@@ -40,7 +41,57 @@ class AuthService {
       } catch (_) {}
     }
 
+    if (globalToken != null && globalToken!.isNotEmpty) {
+      await refreshSession();
+    }
+
     unawaited(warmupBackend());
+  }
+
+  static Future<bool> refreshSession() async {
+    final currentToken = globalToken;
+    if (currentToken == null || currentToken.isEmpty) {
+      return false;
+    }
+
+    try {
+      final uri = Uri.parse('$_baseUrl/auth/refresh');
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $currentToken',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        final nextToken = body['token'];
+        if (nextToken is String && nextToken.isNotEmpty) {
+          globalToken = nextToken;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('auth_token', nextToken);
+
+          final rawUser = body['user'];
+          if (rawUser is Map) {
+            globalUser = Map<String, dynamic>.from(rawUser);
+            await prefs.setString('auth_user', jsonEncode(globalUser));
+          }
+          return true;
+        }
+      }
+
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        await signOut();
+        return false;
+      }
+    } catch (_) {
+      return globalToken != null && globalToken!.isNotEmpty;
+    }
+
+    return globalToken != null && globalToken!.isNotEmpty;
   }
 
   static Future<void> warmupBackend() async {
@@ -490,12 +541,13 @@ class AuthService {
     return Map<String, dynamic>.from(merged);
   }
 
-  Future<void> signOut() async {
+  static Future<void> signOut() async {
     globalToken = null;
     globalUser = null;
     invalidateProfileCache();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     await prefs.remove('auth_user');
+    unawaited(MealReminderHomeWidget.clear());
   }
 }

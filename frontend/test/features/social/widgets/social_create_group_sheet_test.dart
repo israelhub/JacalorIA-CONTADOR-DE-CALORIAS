@@ -41,6 +41,8 @@ class _FakeSocialService extends SocialService {
         iconKey: iconKey,
         competitionType: competitionType,
         competitionLabel: 'Sequência',
+        rule:
+            'Registre as refeições todos os dias. Ganha quem mantiver a sequência mais longa.',
         durationDays: durationDays,
         durationDaysLabel: '$durationDays dias',
         memberCount: 1,
@@ -66,7 +68,9 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: SocialCreateGroupPage(service: _FakeSocialService())),
+        home: Scaffold(
+          body: SocialCreateGroupPage(service: _FakeSocialService()),
+        ),
       ),
     );
 
@@ -84,5 +88,50 @@ void main() {
     final decoration = chip.decoration as BoxDecoration;
 
     expect(decoration.color, isNot(AppColors.surfaceAlt));
+  });
+
+  testWidgets('mostra o microcopy de cada tipo de competicao', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SocialCreateGroupPage(service: _FakeSocialService()),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tipo de competição'), findsOneWidget);
+    expect(find.text('Média de meta'), findsOneWidget);
+    expect(
+      find.text(
+        'Acompanhe sua meta de calorias ao longo do desafio. Ganha quem ficar mais perto.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Registre as refeições todos os dias. Ganha quem mantiver a sequência mais longa.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Tente bater a sua meta de calorias todo dia. Ganha quem acertar mais vezes.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Complete missões para ganhar XP. Ganha quem juntar mais pontos.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Todos precisam registrar as refeições no dia. Se alguém pular, o desafio acaba.',
+      ),
+      findsOneWidget,
+    );
   });
 }

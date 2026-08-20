@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Patch, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Headers,
+  UseGuards,
+  Request,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -23,6 +33,15 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('refresh')
+  refresh(@Headers('authorization') authorization?: string) {
+    const token = this.extractBearerToken(authorization);
+    if (!token) {
+      throw new UnauthorizedException('Sessão inválida. Faça login novamente.');
+    }
+    return this.authService.refreshSession(token);
   }
 
   @Post('google')
@@ -81,5 +100,16 @@ export class AuthController {
   async updateProfileDev(@Body() dto: UpdateProfileDto) {
     const devProfile = await this.authService.getFallbackProfile();
     return this.authService.updateProfile(devProfile.id, dto);
+  }
+
+  private extractBearerToken(authorization?: string): string | null {
+    if (!authorization) {
+      return null;
+    }
+    const [scheme, token] = authorization.trim().split(/\s+/);
+    if (!scheme || scheme.toLowerCase() !== 'bearer' || !token) {
+      return null;
+    }
+    return token;
   }
 }

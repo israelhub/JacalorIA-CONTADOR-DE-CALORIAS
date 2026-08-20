@@ -14,9 +14,9 @@ class AvatarFrameItem {
   bool get isFree => id == AvatarFrameCatalog.noneId;
 }
 
-enum StoreCategory { blockers, frames, backgrounds }
+enum StoreCategory { blockers, frames, backgrounds, stickers }
 
-enum StoreItemType { blocker, frame, background }
+enum StoreItemType { blocker, frame, background, sticker }
 
 class StoreCatalogItem {
   const StoreCatalogItem({
@@ -26,6 +26,7 @@ class StoreCatalogItem {
     required this.description,
     required this.priceGold,
     this.quantityOwned = 0,
+    this.acquireSource = 'purchase',
   });
 
   final String id;
@@ -34,9 +35,11 @@ class StoreCatalogItem {
   final String description;
   final int priceGold;
   final int quantityOwned;
+  final String acquireSource;
 
   bool get isConsumable => type == StoreItemType.blocker;
   bool get isInventoryBlocker => isConsumable;
+  bool get isCheckInExclusive => acquireSource == 'check_in';
 }
 
 class StoreCatalogData {
@@ -44,11 +47,13 @@ class StoreCatalogData {
     required this.frames,
     required this.backgrounds,
     required this.blockers,
+    this.stickers = const <StoreCatalogItem>[],
   });
 
   final List<StoreCatalogItem> frames;
   final List<StoreCatalogItem> backgrounds;
   final List<StoreCatalogItem> blockers;
+  final List<StoreCatalogItem> stickers;
 
   static StoreCatalogData fromJson(Map<String, dynamic> json) {
     final store =
@@ -64,12 +69,21 @@ class StoreCatalogData {
       (store['avatarBackgrounds'] as List?) ?? (store['backgrounds'] as List?),
       type: StoreItemType.background,
     );
+    var stickers = _parseStoreItems(
+      (store['jacaEmojis'] as List?) ??
+          (store['stickers'] as List?) ??
+          (store['jaca_emojis'] as List?),
+      type: StoreItemType.sticker,
+    );
     var blockers = _parseStoreItems(
       (store['blockers'] as List?) ?? (store['profileBlockers'] as List?),
       type: StoreItemType.blocker,
     );
 
-    if ((frames.isEmpty || backgrounds.isEmpty || blockers.isEmpty) &&
+    if ((frames.isEmpty ||
+            backgrounds.isEmpty ||
+            blockers.isEmpty ||
+            stickers.isEmpty) &&
         store['categories'] is List) {
       final categories = (store['categories'] as List)
           .whereType<Map>()
@@ -90,6 +104,9 @@ class StoreCatalogData {
             rawItems,
             type: StoreItemType.background,
           );
+        } else if ((id == 'jaca_emojis' || id == 'stickers') &&
+            stickers.isEmpty) {
+          stickers = _parseStoreItems(rawItems, type: StoreItemType.sticker);
         } else if (id == 'offensive_blockers' && blockers.isEmpty) {
           blockers = _parseStoreItems(rawItems, type: StoreItemType.blocker);
         }
@@ -100,6 +117,7 @@ class StoreCatalogData {
       frames: frames,
       backgrounds: backgrounds,
       blockers: blockers,
+      stickers: stickers,
     );
   }
 }
@@ -169,6 +187,18 @@ class AvatarFrameCatalog {
       name: 'Azul Suave',
       description: 'Anel azul simples com brilhos e bolhas.',
       assetPath: 'assets/images/avatar_frames/soft_blue.png',
+    ),
+    AvatarFrameItem(
+      id: 'aug_sunset_ring',
+      name: 'Anel do Por do Sol',
+      description: 'Moldura exclusiva do check-in de agosto, em tons de por do sol.',
+      assetPath: 'assets/images/avatar_frames/aug_sunset_ring.png',
+    ),
+    AvatarFrameItem(
+      id: 'aug_mint_leaf',
+      name: 'Folha de Menta',
+      description: 'Moldura exclusiva do check-in de agosto, com folhas de menta.',
+      assetPath: 'assets/images/avatar_frames/aug_mint_leaf.png',
     ),
   ];
 
@@ -326,6 +356,11 @@ List<StoreCatalogItem> _parseStoreItems(
           return null;
         }
 
+        final acquireSource =
+            map['acquireSource']?.toString().trim().toLowerCase() ??
+            map['acquire_source']?.toString().trim().toLowerCase() ??
+            '';
+
         return StoreCatalogItem(
           id: idTrimmed,
           type: type,
@@ -335,9 +370,21 @@ List<StoreCatalogItem> _parseStoreItems(
           quantityOwned: AvatarFrameCatalog._asInt(
             map['quantityOwned'] ?? map['quantity'] ?? map['count'],
           ),
+          acquireSource:
+              acquireSource == 'check_in' ||
+                  _checkInExclusiveIds.contains(idTrimmed)
+              ? 'check_in'
+              : 'purchase',
         );
       })
       .whereType<StoreCatalogItem>()
       .where((item) => item.id.isNotEmpty)
       .toList(growable: false);
 }
+
+const Set<String> _checkInExclusiveIds = {
+  'aug_sunset_ring',
+  'aug_mint_leaf',
+  'aug_dusk_glow',
+  'aug_mint_lagoon',
+};

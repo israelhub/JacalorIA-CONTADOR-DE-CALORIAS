@@ -18,7 +18,10 @@ class _FakePerformanceService extends PerformanceService {
       calendarMonth: month.month,
       daysInMonth: 30,
       calendarDays: const [
-        PerformanceCalendarDay(day: 1, status: PerformanceDayStatus.goalAchieved),
+        PerformanceCalendarDay(
+          day: 1,
+          status: PerformanceDayStatus.goalAchieved,
+        ),
       ],
       metGoalDays: 1,
       elapsedDays: 1,
@@ -61,9 +64,7 @@ Widget _wrap(Widget child) => MaterialApp(home: child);
 void main() {
   testWidgets('nao renderiza bottom navigation local', (tester) async {
     await tester.pumpWidget(
-      _wrap(
-        PerformancePage(service: _FakePerformanceService()),
-      ),
+      _wrap(PerformancePage(service: _FakePerformanceService())),
     );
 
     expect(find.byType(AppMainBottomNavigation), findsNothing);
@@ -86,14 +87,31 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(
-      find.descendant(
-        of: find.byType(PerformanceCalendar),
-        matching: find.text('1'),
-      ).first,
+      find
+          .descendant(
+            of: find.byType(PerformanceCalendar),
+            matching: find.text('1'),
+          )
+          .first,
     );
     await tester.pumpAndSettle();
 
     final now = DateTime.now();
     expect(selectedDate, DateTime(now.year, now.month, 1));
+  });
+
+  testWidgets('destaca hero permanente com a sequencia do usuario', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(PerformancePage(service: _FakePerformanceService())),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Desempenho'), findsOneWidget);
+    expect(find.textContaining('dia de sequência!'), findsOneWidget);
+    expect(find.text('Continue!'), findsOneWidget);
+    expect(find.text('Ir para hoje'), findsNothing);
   });
 }

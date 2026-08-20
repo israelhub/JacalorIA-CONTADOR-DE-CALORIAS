@@ -13,6 +13,7 @@ import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/measurement_input_field.dart';
 import '../../auth/service/auth_service.dart';
 import '../helpers/profile_date_helpers.dart';
+import '../widgets/profile_privacy_card.dart';
 
 class ProfileEditPage extends StatefulWidget {
   const ProfileEditPage({super.key, required this.initialProfile});
@@ -51,6 +52,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String? _initialAvatarUrl;
   String _initialWeightUnit = 'kg';
   String _initialHeightUnit = 'cm';
+  bool _hidePublicProfileMeals = false;
+  bool _initialHidePublicProfileMeals = false;
 
   static const List<String> _sexOptions = [
     'Masculino',
@@ -145,6 +148,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
     _objectiveController.text = _objectiveLabels[_selectedObjective] ?? '';
     _activityController.text = _activityLabels[_selectedActivityLevel] ?? '';
+    _hidePublicProfileMeals = _boolFromProfile(profile, const [
+      'hidePublicProfileMeals',
+      'hide_public_profile_meals',
+    ]);
     _captureInitialSnapshot();
   }
 
@@ -159,6 +166,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     _initialAvatarUrl = _avatarUrl;
     _initialWeightUnit = _selectedWeightUnit;
     _initialHeightUnit = _selectedHeightUnit;
+    _initialHidePublicProfileMeals = _hidePublicProfileMeals;
   }
 
   bool get _hasUnsavedChanges {
@@ -171,7 +179,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _selectedActivityLevel != _initialActivityLevel ||
         _avatarUrl != _initialAvatarUrl ||
         _selectedWeightUnit != _initialWeightUnit ||
-        _selectedHeightUnit != _initialHeightUnit;
+        _selectedHeightUnit != _initialHeightUnit ||
+        _hidePublicProfileMeals != _initialHidePublicProfileMeals;
   }
 
   Future<void> _handleExitAttempt() async {
@@ -239,6 +248,25 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     return map[normalizedKey] ?? raw;
   }
 
+  bool _boolFromProfile(Map<String, dynamic> profile, List<String> keys) {
+    for (final key in keys) {
+      final value = profile[key];
+      if (value is bool) {
+        return value;
+      }
+      if (value is String) {
+        final normalized = value.trim().toLowerCase();
+        if (normalized == 'true' || normalized == '1') {
+          return true;
+        }
+        if (normalized == 'false' || normalized == '0') {
+          return false;
+        }
+      }
+    }
+    return false;
+  }
+
   Future<void> _pickBirthDate() async {
     final now = DateTime.now();
     final initialDate = DateTime(now.year - 18, now.month, now.day);
@@ -290,10 +318,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       );
       if (uploadedUrl == null || uploadedUrl.isEmpty) {
         if (mounted) {
-          AppToast.error(
-            context,
-            message: 'Falha ao enviar foto de perfil.',
-          );
+          AppToast.error(context, message: 'Falha ao enviar foto de perfil.');
         }
         return;
       }
@@ -332,6 +357,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       if (_selectedSex != null) 'sex': _selectedSex,
       if (_selectedObjective != null) 'objective': _selectedObjective,
       if (_avatarUrl != null && _avatarUrl!.isNotEmpty) 'avatarUrl': _avatarUrl,
+      'hidePublicProfileMeals': _hidePublicProfileMeals,
     };
 
     setState(() {
@@ -545,6 +571,16 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     setState(() {
                       _selectedObjective = entry.key;
                       _objectiveController.text = entry.value;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                ProfilePrivacyCard(
+                  mealsVisible: !_hidePublicProfileMeals,
+                  busy: _isSaving,
+                  onMealsVisibleChanged: (visible) {
+                    setState(() {
+                      _hidePublicProfileMeals = !visible;
                     });
                   },
                 ),

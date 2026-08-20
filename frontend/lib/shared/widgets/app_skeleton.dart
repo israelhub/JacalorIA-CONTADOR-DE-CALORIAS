@@ -8,11 +8,15 @@ class AppSkeletonBox extends StatefulWidget {
     this.width,
     required this.height,
     this.borderRadius = AppRadius.md,
+    this.color,
+    this.highlightColor,
   });
 
   final double? width;
   final double height;
   final double borderRadius;
+  final Color? color;
+  final Color? highlightColor;
 
   @override
   State<AppSkeletonBox> createState() => _AppSkeletonBoxState();
@@ -43,8 +47,8 @@ class _AppSkeletonBoxState extends State<AppSkeletonBox>
       animation: _controller,
       builder: (context, child) {
         final color = Color.lerp(
-          AppColors.surfaceAlt,
-          AppColors.borderLight,
+          widget.color ?? AppColors.surfaceAlt,
+          widget.highlightColor ?? AppColors.borderLight,
           _controller.value,
         );
 

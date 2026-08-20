@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import '../../../core/analytics/analytics_service.dart';
 import '../../../core/invite/invite_link_service.dart';
 import '../../../core/notifications/meal_reminder_service.dart';
+import '../../../core/notifications/meal_reminder_home_widget.dart';
 import '../../../core/notifications/in_app_message_store.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_main_bottom_navigation.dart';
 import '../../../shared/widgets/app_page_route.dart';
+import '../../../shared/widgets/prefer_vertical_page_view.dart';
+import '../../auth/service/auth_service.dart';
 import '../../food_analysis/models/food_meal_record.dart';
 import '../../food_analysis/pages/food_capture_page.dart';
 import '../../missions/pages/missions_page.dart';
@@ -16,6 +19,8 @@ import '../../performance/pages/performance_page.dart';
 import '../../social/helpers/social_data_invalidator.dart';
 import '../../social/pages/social_page.dart';
 import '../helpers/home_date_helpers.dart';
+import '../helpers/home_greeting_helpers.dart';
+import '../widgets/home_shell_layout.dart';
 import 'home_page.dart';
 
 class HomeShellPage extends StatefulWidget {
@@ -44,12 +49,38 @@ class HomeShellPage extends StatefulWidget {
   final Widget? missionsPage;
   final Widget? socialPage;
 
+  static HomeShellController? _controller;
+
+  static HomeShellController? get maybeController => _controller;
+
+  static HomeShellController? controllerOf(BuildContext context) {
+    return context.findAncestorStateOfType<_HomeShellPageState>() ??
+        _controller;
+  }
+
+  static void _attach(HomeShellController controller) {
+    _controller = controller;
+  }
+
+  static void _detach(HomeShellController controller) {
+    if (identical(_controller, controller)) {
+      _controller = null;
+    }
+  }
+
   @override
   State<HomeShellPage> createState() => _HomeShellPageState();
 }
 
+abstract class HomeShellController {
+  AppMainBottomTab get activeTab;
+  Future<void> openTab(AppMainBottomTab tab);
+  Future<void> openFoodCapture();
+}
+
 class _HomeShellPageState extends State<HomeShellPage>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver
+    implements HomeShellController {
   static const int _performanceIndex = 0;
   static const int _homeIndex = 1;
   static const int _missionsIndex = 2;
@@ -73,11 +104,22 @@ class _HomeShellPageState extends State<HomeShellPage>
   final GlobalKey _homePageKey = GlobalKey();
   final GlobalKey _missionsPageKey = GlobalKey();
   final GlobalKey _socialPageKey = GlobalKey();
+  final GlobalKey<NavigatorState> _nestedNavigatorKey =
+      GlobalKey<NavigatorState>();
+  late final _ShellNestedNavigatorObserver _nestedNavObserver;
 
   @override
   void initState() {
     super.initState();
+    HomeShellPage._attach(this);
     WidgetsBinding.instance.addObserver(this);
+    _nestedNavObserver = _ShellNestedNavigatorObserver(
+      onChange: () {
+        if (mounted) {
+          setState(() {});
+        }
+      },
+    );
     _currentIndex = _tabToIndex(widget.initialTab);
     _selectedHomeDate = normalizeHomeDate(DateTime.now());
     _pageController = PageController(initialPage: _currentIndex);
@@ -86,12 +128,30 @@ class _HomeShellPageState extends State<HomeShellPage>
     AnalyticsService.instance.trackAppOpen();
     _trackTabOpened(_currentIndex);
     unawaited(MealReminderService.instance.syncScheduledReminders());
+    unawaited(
+      MealReminderHomeWidget.sync(
+        streakDays: readHomeProfileInt(AuthService.globalUser, const [
+          'streakDays',
+          'streak_days',
+        ]),
+      ),
+    );
     unawaited(InAppMessageStore.instance.syncDueMealReminders());
     unawaited(InAppMessageStore.instance.syncRemoteCatalog());
+    InviteLinkService.revision.addListener(_onPendingInviteRevision);
+  }
+
+  void _onPendingInviteRevision() {
+    if (!mounted || !InviteLinkService.hasPending) {
+      return;
+    }
+    unawaited(_goToTab(AppMainBottomTab.social));
   }
 
   @override
   void dispose() {
+    HomeShellPage._detach(this);
+    InviteLinkService.revision.removeListener(_onPendingInviteRevision);
     WidgetsBinding.instance.removeObserver(this);
     unawaited(AnalyticsService.instance.leaveForeground(reason: 'dispose'));
     _pageController.dispose();
@@ -102,7 +162,16 @@ class _HomeShellPageState extends State<HomeShellPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       AnalyticsService.instance.trackAppOpen(properties: {'from': 'resume'});
+      unawaited(AuthService.refreshSession());
       unawaited(MealReminderService.instance.syncScheduledReminders());
+      unawaited(
+        MealReminderHomeWidget.sync(
+          streakDays: readHomeProfileInt(AuthService.globalUser, const [
+            'streakDays',
+            'streak_days',
+          ]),
+        ),
+      );
       unawaited(InAppMessageStore.instance.syncDueMealReminders());
       unawaited(InAppMessageStore.instance.syncRemoteCatalog());
       // Soft-refresh the visible tab after returning to the app
@@ -136,6 +205,9 @@ class _HomeShellPageState extends State<HomeShellPage>
         break;
     }
   }
+
+  @override
+  AppMainBottomTab get activeTab => _activeTab;
 
   AppMainBottomTab get _activeTab {
     if (_currentIndex == _performanceIndex) {
@@ -210,11 +282,25 @@ class _HomeShellPageState extends State<HomeShellPage>
     });
   }
 
+  @override
+  Future<void> openTab(AppMainBottomTab tab) => _goToTab(tab);
+
+  void _popNestedOverlays() {
+    final nested = _nestedNavigatorKey.currentState;
+    if (nested == null || !nested.canPop()) {
+      return;
+    }
+    nested.popUntil((route) => route.isFirst);
+  }
+
   Future<void> _goToTab(AppMainBottomTab tab) async {
+    _popNestedOverlays();
     final nextIndex = _tabToIndex(tab);
     if (nextIndex == _currentIndex) {
       return;
     }
+
+    final isAdjacent = (nextIndex - _currentIndex).abs() == 1;
 
     setState(() {
       _currentIndex = nextIndex;
@@ -224,12 +310,22 @@ class _HomeShellPageState extends State<HomeShellPage>
     });
     _trackTabOpened(nextIndex);
 
+    // Saltos nao adjacentes renderizariam as abas intermediarias durante a
+    // animacao; pular direto evita esse custo.
+    if (!isAdjacent) {
+      _pageController.jumpToPage(nextIndex);
+      return;
+    }
+
     await _pageController.animateToPage(
       nextIndex,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
     );
   }
+
+  @override
+  Future<void> openFoodCapture() => _openFoodCapture();
 
   Future<void> _openFoodCapture() async {
     AnalyticsService.instance.track(
@@ -237,7 +333,9 @@ class _HomeShellPageState extends State<HomeShellPage>
       properties: {'entry': 'center_action'},
     );
     final record = await context.pushSlidePage<FoodMealRecord>(
-      const FoodCapturePage(),
+      FoodCapturePage(
+        recordedAt: resolveMealRecordedAt(selectedDate: _selectedHomeDate),
+      ),
     );
     if (!mounted) {
       return;
@@ -309,35 +407,93 @@ class _HomeShellPageState extends State<HomeShellPage>
     };
   }
 
+  Widget _buildTabsPageView() {
+    return PreferVerticalPageView(
+      controller: _pageController,
+      onPageChanged: (index) {
+        if (!mounted || index == _currentIndex) {
+          return;
+        }
+
+        setState(() {
+          _currentIndex = index;
+          _visitedTabs.add(index);
+          _lastTabRefreshAt.putIfAbsent(index, DateTime.now);
+        });
+        _trackTabOpened(index);
+      },
+      children: List<Widget>.generate(4, _buildTabPage),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      extendBody: true,
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          if (!mounted || index == _currentIndex) {
+    final nestedCanPop = _nestedNavigatorKey.currentState?.canPop() ?? false;
+    final navOverlap =
+        homeShellBottomNavBodyHeight + MediaQuery.viewPaddingOf(context).bottom;
+
+    return HomeShellLayout(
+      navOverlap: navOverlap,
+      child: PopScope(
+        canPop: !nestedCanPop,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) {
             return;
           }
-
-          setState(() {
-            _currentIndex = index;
-            _visitedTabs.add(index);
-            _lastTabRefreshAt.putIfAbsent(index, DateTime.now);
-          });
-          _trackTabOpened(index);
+          _nestedNavigatorKey.currentState?.maybePop();
         },
-        children: List<Widget>.generate(4, _buildTabPage),
-      ),
-      bottomNavigationBar: AppMainBottomNavigation(
-        activeTab: _activeTab,
-        onPerformanceTap: () => _goToTab(AppMainBottomTab.performance),
-        onHomeTap: () => _goToTab(AppMainBottomTab.home),
-        onMissionsTap: () => _goToTab(AppMainBottomTab.missions),
-        onSocialTap: () => _goToTab(AppMainBottomTab.social),
-        onCenterActionTap: _openFoodCapture,
+        child: Scaffold(
+          backgroundColor: AppColors.surface,
+          extendBody: true,
+          body: Navigator(
+            key: _nestedNavigatorKey,
+            observers: <NavigatorObserver>[_nestedNavObserver],
+            onGenerateRoute: (settings) {
+              return PageRouteBuilder<void>(
+                settings: settings,
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return _buildTabsPageView();
+                },
+                transitionDuration: Duration.zero,
+                reverseTransitionDuration: Duration.zero,
+              );
+            },
+          ),
+          bottomNavigationBar: AppMainBottomNavigation(
+            activeTab: _activeTab,
+            onPerformanceTap: () => _goToTab(AppMainBottomTab.performance),
+            onHomeTap: () => _goToTab(AppMainBottomTab.home),
+            onMissionsTap: () => _goToTab(AppMainBottomTab.missions),
+            onSocialTap: () => _goToTab(AppMainBottomTab.social),
+            onCenterActionTap: _openFoodCapture,
+          ),
+        ),
       ),
     );
   }
+}
+
+class _ShellNestedNavigatorObserver extends NavigatorObserver {
+  _ShellNestedNavigatorObserver({required this.onChange});
+
+  final VoidCallback onChange;
+
+  void _notify() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => onChange());
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _notify();
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) => _notify();
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _notify();
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
+      _notify();
 }

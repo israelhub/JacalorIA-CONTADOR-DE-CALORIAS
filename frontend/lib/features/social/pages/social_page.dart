@@ -26,6 +26,7 @@ import 'social_friends_tab_page.dart';
 import 'social_groups_tab_page.dart';
 import 'social_join_group_page.dart';
 import 'social_public_groups_page.dart';
+import 'social_ranking_tab_page.dart';
 import 'social_search_user_page.dart';
 import '../services/social_service.dart';
 import '../widgets/social_qr_scan_sheet.dart';
@@ -37,8 +38,7 @@ class SocialPage extends StatefulWidget {
     SocialService? service,
     this.authService,
     this.refreshVersion = 0,
-  })
-    : service = service ?? const SocialService();
+  }) : service = service ?? const SocialService();
 
   final SocialService service;
   final AuthService? authService;
@@ -50,7 +50,7 @@ class SocialPage extends StatefulWidget {
 
 class _SocialPageState extends State<SocialPage>
     with AutomaticKeepAliveClientMixin {
-  static const Duration _tabTransitionDuration = Duration(milliseconds: 320);
+  static const Duration _tabTransitionDuration = Duration(milliseconds: 180);
   late final SocialPageController _controller;
   bool _processingPendingInvite = false;
 
@@ -66,7 +66,14 @@ class _SocialPageState extends State<SocialPage>
     );
     _controller.addListener(_onControllerChanged);
     SocialDataInvalidator.revision.addListener(_onSocialDataInvalidated);
+    InviteLinkService.revision.addListener(_onPendingInviteRevision);
     _controller.loadAll();
+  }
+
+  void _onPendingInviteRevision() {
+    if (!mounted || !InviteLinkService.hasPending) return;
+    if (_controller.isLoading || _controller.errorMessage != null) return;
+    _processPendingInvite();
   }
 
   @override
@@ -79,6 +86,7 @@ class _SocialPageState extends State<SocialPage>
 
   @override
   void dispose() {
+    InviteLinkService.revision.removeListener(_onPendingInviteRevision);
     SocialDataInvalidator.revision.removeListener(_onSocialDataInvalidated);
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
@@ -124,7 +132,10 @@ class _SocialPageState extends State<SocialPage>
         final detail = await _controller.joinGroupByCode(invite.code);
         if (!mounted) return;
         await context.pushSlidePage(
-          SocialGroupDetailPage(groupId: detail.group.id, initialDetail: detail),
+          SocialGroupDetailPage(
+            groupId: detail.group.id,
+            initialDetail: detail,
+          ),
         );
         if (mounted) await _controller.loadAll();
       } catch (error) {
@@ -190,15 +201,22 @@ class _SocialPageState extends State<SocialPage>
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              AppButton(label: 'Tentar novamente', onPressed: _controller.loadAll),
+              AppButton(
+                label: 'Tentar novamente',
+                onPressed: _controller.loadAll,
+              ),
             ],
           ),
         ),
       );
     }
 
-    final activeGroups = _controller.groups.where((group) => !_isGroupFinished(group)).toList(growable: false);
-    final historyGroups = _controller.groups.where(_isGroupFinished).toList(growable: false);
+    final activeGroups = _controller.groups
+        .where((group) => !_isGroupFinished(group))
+        .toList(growable: false);
+    final historyGroups = _controller.groups
+        .where(_isGroupFinished)
+        .toList(growable: false);
 
     return AppRefreshScrollView(
       onRefresh: () => _controller.loadAll(silent: true),
@@ -210,7 +228,7 @@ class _SocialPageState extends State<SocialPage>
           const SizedBox(height: AppSpacing.lg),
           SocialSegmentedControl(
             selectedIndex: _controller.tabIndex,
-            labels: const ['Amigos', 'Grupos'],
+            labels: const ['Amigos', 'Grupos', 'Ranking'],
             onChanged: _controller.changeTab,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -234,7 +252,8 @@ class _SocialPageState extends State<SocialPage>
             transitionBuilder: (child, animation) {
               final currentKey = ValueKey<int>(_controller.tabIndex);
               final isIncoming = child.key == currentKey;
-              final isForward = _controller.tabIndex > _controller.previousTabIndex;
+              final isForward =
+                  _controller.tabIndex > _controller.previousTabIndex;
               final begin = Offset(isForward ? 0.2 : -0.2, 0);
               final end = Offset(isForward ? -0.2 : 0.2, 0);
               final offsetTween = Tween<Offset>(
@@ -251,22 +270,32 @@ class _SocialPageState extends State<SocialPage>
             },
             child: KeyedSubtree(
               key: ValueKey<int>(_controller.tabIndex),
-              child: _controller.tabIndex == 0
-                  ? SocialFriendsTabPage(
-                      friends: _controller.friends,
-                      onAddFriend: _openAddFriendModal,
-                      pendingRequestCount: _controller.pendingFriendRequestCount,
-                      onOpenRequests: _openFriendRequestsModal,
-                      onOpenFriendProfile: _openFriendProfile,
-                    )
-                  : SocialGroupsTabPage(
-                      activeGroups: activeGroups,
-                      historyGroups: historyGroups,
-                      isGroupFinished: _isGroupFinished,
-                      onCreateGroup: _openCreateGroupSheet,
-                      onJoinGroup: _openJoinGroupDialog,
-                      onOpenGroup: _openGroupDetail,
-                    ),
+              child: switch (_controller.tabIndex) {
+                0 => SocialFriendsTabPage(
+                  friends: _controller.friends,
+                  onAddFriend: _openAddFriendModal,
+                  pendingRequestCount: _controller.pendingFriendRequestCount,
+                  onOpenRequests: _openFriendRequestsModal,
+                  onOpenFriendProfile: _openFriendProfile,
+                ),
+                1 => SocialGroupsTabPage(
+                  activeGroups: activeGroups,
+                  historyGroups: historyGroups,
+                  isGroupFinished: _isGroupFinished,
+                  onCreateGroup: _openCreateGroupSheet,
+                  onJoinGroup: _openJoinGroupDialog,
+                  onOpenGroup: _openGroupDetail,
+                ),
+                _ => SocialRankingTabPage(
+                  period: _controller.xpRankingPeriod,
+                  onPeriodChanged: _controller.changeXpRankingPeriod,
+                  ranking: _controller.xpRanking,
+                  isLoading: _controller.isXpRankingLoading,
+                  errorMessage: _controller.xpRankingErrorMessage,
+                  onRetry: () => _controller.loadXpRanking(),
+                  onOpenProfile: _openRankingProfile,
+                ),
+              },
             ),
           ),
         ],
@@ -309,10 +338,9 @@ class _SocialPageState extends State<SocialPage>
     }
 
     final normalized = _controller.extractInviteCode(value);
-    final isUuid =
-        RegExp(
-          r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
-        ).hasMatch(normalized);
+    final isUuid = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+    ).hasMatch(normalized);
     if (isUuid) {
       await _guardedAction(() => _controller.addFriendById(normalized));
       return;
@@ -324,17 +352,18 @@ class _SocialPageState extends State<SocialPage>
   Future<void> _openJoinGroupDialog() async {
     final result = await context.pushSlidePage<SocialJoinGroupDialogResult>(
       SocialJoinGroupPage(
-        fetchPublicGroups: ({
-          required String query,
-          int? durationDays,
-          String? competitionType,
-        }) {
-          return widget.service.fetchPublicGroups(
-            query: query,
-            durationDays: durationDays,
-            competitionType: competitionType,
-          );
-        },
+        fetchPublicGroups:
+            ({
+              required String query,
+              int? durationDays,
+              String? competitionType,
+            }) {
+              return widget.service.fetchPublicGroups(
+                query: query,
+                durationDays: durationDays,
+                competitionType: competitionType,
+              );
+            },
       ),
     );
     if (result == null) return;
@@ -345,7 +374,10 @@ class _SocialPageState extends State<SocialPage>
         final detail = await widget.service.joinPublicGroup(publicGroupId);
         if (!mounted) return;
         await context.pushSlidePage(
-          SocialGroupDetailPage(groupId: detail.group.id, initialDetail: detail),
+          SocialGroupDetailPage(
+            groupId: detail.group.id,
+            initialDetail: detail,
+          ),
         );
         if (mounted) await _controller.loadAll();
       });
@@ -356,17 +388,18 @@ class _SocialPageState extends State<SocialPage>
       if (!mounted) return;
       final selectedGroupId = await context.pushSlidePage<String>(
         SocialPublicGroupsPage(
-          fetchGroups: ({
-            required String query,
-            int? durationDays,
-            String? competitionType,
-          }) {
-            return widget.service.fetchPublicGroups(
-              query: query,
-              durationDays: durationDays,
-              competitionType: competitionType,
-            );
-          },
+          fetchGroups:
+              ({
+                required String query,
+                int? durationDays,
+                String? competitionType,
+              }) {
+                return widget.service.fetchPublicGroups(
+                  query: query,
+                  durationDays: durationDays,
+                  competitionType: competitionType,
+                );
+              },
         ),
       );
       if (selectedGroupId == null || selectedGroupId.trim().isEmpty) return;
@@ -374,7 +407,10 @@ class _SocialPageState extends State<SocialPage>
         final detail = await widget.service.joinPublicGroup(selectedGroupId);
         if (!mounted) return;
         await context.pushSlidePage(
-          SocialGroupDetailPage(groupId: detail.group.id, initialDetail: detail),
+          SocialGroupDetailPage(
+            groupId: detail.group.id,
+            initialDetail: detail,
+          ),
         );
         if (mounted) await _controller.loadAll();
       });
@@ -425,6 +461,17 @@ class _SocialPageState extends State<SocialPage>
     }
   }
 
+  Future<void> _openRankingProfile(SocialRankingEntry entry) async {
+    if (entry.userId.trim().isEmpty) return;
+    await context.pushSlidePage<void>(
+      SocialFriendProfilePage(
+        friendId: entry.userId,
+        initialFriendName: entry.name,
+        service: widget.service,
+      ),
+    );
+  }
+
   Future<void> _shareFriendInviteLink() async {
     await Share.share(_controller.friendLinkValue());
   }
@@ -434,7 +481,9 @@ class _SocialPageState extends State<SocialPage>
       SocialSearchUserPage(
         searchUsers: _controller.searchUsers,
         onAddUser: (user) async {
-          await _runFriendRequestAction(() => _controller.addFriendById(user.id));
+          await _runFriendRequestAction(
+            () => _controller.addFriendById(user.id),
+          );
         },
       ),
     );
@@ -506,23 +555,122 @@ class _SocialBodySkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      physics: NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.all(AppSpacing.lg),
-      child: Column(
+    final bottomInset =
+        homeShellBottomNavBodyHeight +
+        MediaQuery.viewPaddingOf(context).bottom +
+        AppSpacing.lg;
+
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        bottomInset,
+      ),
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppSkeletonBox(height: AppSpacing.xxl, width: 140),
+          _SocialHeaderSkeleton(),
           SizedBox(height: AppSpacing.lg),
-          AppSkeletonBox(height: 44, borderRadius: AppRadius.lg),
+          _SocialTabsSkeleton(),
           SizedBox(height: AppSpacing.lg),
-          AppSkeletonBox(height: 52, borderRadius: AppRadius.lg),
-          SizedBox(height: AppSpacing.lg),
-          AppSkeletonBox(height: 88, borderRadius: AppRadius.lg),
-          SizedBox(height: AppSpacing.md),
-          AppSkeletonBox(height: 88, borderRadius: AppRadius.lg),
-          SizedBox(height: AppSpacing.md),
-          AppSkeletonBox(height: 88, borderRadius: AppRadius.lg),
+          _SocialFriendsTabSkeleton(),
+        ],
+      ),
+    );
+  }
+}
+
+class _SocialHeaderSkeleton extends StatelessWidget {
+  const _SocialHeaderSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        AppSkeletonBox(height: 28, width: 140),
+        Spacer(),
+        AppSkeletonBox(width: 28, height: 28, borderRadius: AppRadius.md),
+      ],
+    );
+  }
+}
+
+class _SocialTabsSkeleton extends StatelessWidget {
+  const _SocialTabsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
+      ),
+      child: const Row(
+        children: [
+          Expanded(
+            child: AppSkeletonBox(height: 40, borderRadius: AppRadius.pill),
+          ),
+          SizedBox(width: 4),
+          Expanded(
+            child: AppSkeletonBox(height: 40, borderRadius: AppRadius.pill),
+          ),
+          SizedBox(width: 4),
+          Expanded(
+            child: AppSkeletonBox(height: 40, borderRadius: AppRadius.pill),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SocialFriendsTabSkeleton extends StatelessWidget {
+  const _SocialFriendsTabSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppSkeletonBox(height: 48, borderRadius: AppRadius.md),
+        SizedBox(height: AppSpacing.lg),
+        AppSkeletonBox(height: 22, width: 140),
+        SizedBox(height: AppSpacing.sm),
+        _SocialFriendItemSkeleton(),
+        SizedBox(height: AppSpacing.md),
+        _SocialFriendItemSkeleton(),
+        SizedBox(height: AppSpacing.md),
+        _SocialFriendItemSkeleton(),
+      ],
+    );
+  }
+}
+
+class _SocialFriendItemSkeleton extends StatelessWidget {
+  const _SocialFriendItemSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
+      ),
+      child: const Row(
+        children: [
+          AppSkeletonBox(width: 52, height: 52, borderRadius: AppRadius.pill),
+          SizedBox(width: AppSpacing.md),
+          Expanded(child: AppSkeletonBox(height: 18)),
+          SizedBox(width: AppSpacing.sm),
+          AppSkeletonBox(width: 36, height: 18, borderRadius: AppRadius.sm),
         ],
       ),
     );

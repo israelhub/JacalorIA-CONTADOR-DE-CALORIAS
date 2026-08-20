@@ -65,16 +65,20 @@ class _HomeActionsFabState extends State<HomeActionsFab> {
       alignment: Alignment.bottomRight,
       clipBehavior: Clip.none,
       children: [
-        // Host invisível do editor de peso (abre via controller).
-        HomeWeightQuickEditButton(
-          userProfile: widget.userProfile,
-          onWeightUpdated: widget.onWeightUpdated,
-          controller: _weightController,
-          showTrigger: false,
+        Positioned(
+          width: 1,
+          height: 1,
+          right: 0,
+          bottom: 0,
+          child: HomeWeightQuickEditButton(
+            userProfile: widget.userProfile,
+            onWeightUpdated: widget.onWeightUpdated,
+            controller: _weightController,
+            showTrigger: false,
+          ),
         ),
         AppExpandableFab(
           key: const ValueKey('home-actions-fab'),
-          menuWidth: 248,
           closedIcon: Icons.add_rounded,
           openIcon: Icons.close_rounded,
           closedSemanticLabel: 'Abrir ações da home',

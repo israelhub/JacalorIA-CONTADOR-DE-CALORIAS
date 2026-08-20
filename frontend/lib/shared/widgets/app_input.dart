@@ -41,6 +41,7 @@ class AppInput extends StatelessWidget {
       textAlignVertical: textAlignVertical,
       inputFormatters: inputFormatters,
       textCapitalization: textCapitalization,
+      cursorColor: AppColors.brand900,
       style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: hintText,
@@ -227,6 +228,7 @@ class _AppInputFieldState extends State<AppInputField> {
       keyboardType: widget.keyboardType,
       textAlignVertical: TextAlignVertical.center,
       inputFormatters: widget.inputFormatters,
+      cursorColor: AppColors.brand900,
       style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: widget.hint,

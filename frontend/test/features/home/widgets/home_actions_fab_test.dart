@@ -67,8 +67,8 @@ void main() {
 
     expect(
       fab.bottom,
-      lessThanOrEqualTo(nav.top - homeShellFabNavGap + 0.5),
-      reason: 'FAB should clear the nav with a gap. fab=$fab nav=$nav',
+      closeTo(nav.top - homeShellFabNavGap, 1.5),
+      reason: 'FAB should sit just above the nav. fab=$fab nav=$nav',
     );
   });
 

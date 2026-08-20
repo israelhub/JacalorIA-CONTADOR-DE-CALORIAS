@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../models/social_group_models.dart';
 import '../widgets/social_search_result_item.dart';
 
@@ -64,8 +65,9 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
         ),
       ),
       body: SafeArea(
+        bottom: false,
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: homeShellNestedFillPadding(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

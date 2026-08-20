@@ -10,6 +10,16 @@ bool _toBool(dynamic value) {
   return false;
 }
 
+int? _toNullableInt(Object? value) {
+  if (value == null) return null;
+  if (value is num) return value.round();
+  if (value is String) {
+    final parsed = num.tryParse(value.replaceAll(',', '.'));
+    if (parsed != null) return parsed.round();
+  }
+  return null;
+}
+
 class SocialRankingEntry {
   const SocialRankingEntry({
     required this.id,
@@ -23,6 +33,7 @@ class SocialRankingEntry {
     required this.isLeader,
     required this.position,
     required this.subtitle,
+    this.dailyCalorieGoal,
   });
 
   final String id;
@@ -36,6 +47,7 @@ class SocialRankingEntry {
   final bool isLeader;
   final int position;
   final String subtitle;
+  final int? dailyCalorieGoal;
 
   factory SocialRankingEntry.fromJson(Map<String, dynamic> json) {
     return SocialRankingEntry(
@@ -50,6 +62,7 @@ class SocialRankingEntry {
       isLeader: _toBool(json['isLeader']),
       position: socialToInt(json['position']),
       subtitle: json['subtitle']?.toString() ?? '',
+      dailyCalorieGoal: _toNullableInt(json['dailyCalorieGoal']),
     );
   }
 }

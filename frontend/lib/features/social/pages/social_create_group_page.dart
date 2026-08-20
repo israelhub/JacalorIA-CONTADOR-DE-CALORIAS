@@ -4,6 +4,8 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../home/widgets/home_shell_layout.dart';
+import '../../home/widgets/home_shell_overlay_navigation.dart';
 import '../helpers/social_group_helpers.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
@@ -35,12 +37,12 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
     _SocialIconOption('avocado', Icons.favorite_rounded),
   ];
 
-  static const _competitionTypes = <_CompetitionTypeOption>[
-    _CompetitionTypeOption('goal_average', 'Média de meta'),
-    _CompetitionTypeOption('offensive', 'Sequência'),
-    _CompetitionTypeOption('daily_goal', 'Meta diária'),
-    _CompetitionTypeOption('xp', 'XP'),
-    _CompetitionTypeOption('group_streak', 'Sequência dos amigos'),
+  static const _competitionTypeKeys = <String>[
+    'goal_average',
+    'offensive',
+    'daily_goal',
+    'xp',
+    'group_streak',
   ];
 
   final TextEditingController _nameController = TextEditingController();
@@ -61,20 +63,6 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
       return const <int>[0];
     }
     return _durationOptions.where((value) => value > 0).toList(growable: false);
-  }
-
-  String get _competitionDescription {
-    return switch (_selectedCompetitionType) {
-      'offensive' =>
-        'Vence quem mantiver a maior sequência no período do grupo. Todos começam do zero; só contam os dias desde a criação.',
-      'daily_goal' => 'Ganha quem bater mais vezes a própria meta diária.',
-      'goal_average' =>
-        'A média é o total de calorias ÷ dias decorridos do grupo (sobe após 00:00). Ganha quem ficar mais perto da própria meta.',
-      'xp' => 'Pontua as ações saudáveis para ranquear evolução no grupo.',
-      'group_streak' =>
-        'Começa do zero para todos. Conta só os dias desde a criação do grupo; à meia-noite continua se todos os membros ativos cumpriram a ofensiva.',
-      _ => 'Vence quem mantiver a maior sequência no período do grupo.',
-    };
   }
 
   @override
@@ -156,6 +144,8 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
+      extendBody: HomeShellOverlayNavigationBar.isAvailable,
+      bottomNavigationBar: HomeShellOverlayNavigationBar.maybeOf(),
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
@@ -168,12 +158,14 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
         ),
       ),
       body: SafeArea(
+        bottom: false,
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.lg,
             AppSpacing.md,
             AppSpacing.lg,
-            MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
+            MediaQuery.viewInsetsOf(context).bottom +
+                homeShellScrollBottomInset(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,38 +243,24 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (var index = 0; index < _competitionTypes.length; index++) ...[
-                      if (index > 0) const SizedBox(width: AppSpacing.sm),
-                      _CompetitionTypeChip(
-                        label: _competitionTypes[index].label,
-                        selected:
-                            _competitionTypes[index].key == _selectedCompetitionType,
-                        onTap: () {
-                          setState(() {
-                            _selectedCompetitionType = _competitionTypes[index].key;
-                            if (_selectedCompetitionType == 'group_streak') {
-                              _selectedDurationDays = 0;
-                            } else if (_selectedDurationDays == 0) {
-                              _selectedDurationDays = 7;
-                            }
-                          });
-                        },
-                      ),
-                    ],
-                  ],
+              for (var index = 0; index < _competitionTypeKeys.length; index++) ...[
+                if (index > 0) const SizedBox(height: AppSpacing.sm),
+                _CompetitionTypeTile(
+                  typeKey: _competitionTypeKeys[index],
+                  selected:
+                      _competitionTypeKeys[index] == _selectedCompetitionType,
+                  onTap: () {
+                    setState(() {
+                      _selectedCompetitionType = _competitionTypeKeys[index];
+                      if (_selectedCompetitionType == 'group_streak') {
+                        _selectedDurationDays = 0;
+                      } else if (_selectedDurationDays == 0) {
+                        _selectedDurationDays = 7;
+                      }
+                    });
+                  },
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                _competitionDescription,
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
+              ],
               const SizedBox(height: _sectionGap),
               Text(
                 'Grupo público',
@@ -370,13 +348,6 @@ class _SocialIconOption {
   final IconData icon;
 }
 
-class _CompetitionTypeOption {
-  const _CompetitionTypeOption(this.key, this.label);
-
-  final String key;
-  final String label;
-}
-
 class _IconPickerOption extends StatelessWidget {
   const _IconPickerOption({
     required this.icon,
@@ -415,14 +386,14 @@ class _IconPickerOption extends StatelessWidget {
   }
 }
 
-class _CompetitionTypeChip extends StatelessWidget {
-  const _CompetitionTypeChip({
-    required this.label,
+class _CompetitionTypeTile extends StatelessWidget {
+  const _CompetitionTypeTile({
+    required this.typeKey,
     required this.selected,
     required this.onTap,
   });
 
-  final String label;
+  final String typeKey;
   final bool selected;
   final VoidCallback onTap;
 
@@ -433,19 +404,39 @@ class _CompetitionTypeChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
-        height: 30,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        key: ValueKey('social-competition-$typeKey'),
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
         decoration: BoxDecoration(
-          color: selected ? AppColors.action500 : AppColors.surfaceAlt,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: AppTextStyles.captionStrong.copyWith(
-            color: selected ? AppColors.surface : AppColors.textMuted,
-            fontWeight: FontWeight.w700,
+          color: selected
+              ? AppColors.action500.withValues(alpha: 0.12)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: selected
+                ? AppColors.action500
+                : AppColors.performanceCardBorder,
+            width: selected ? 2 : 1.5,
           ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              socialCompetitionLabel(typeKey),
+              style: AppTextStyles.captionStrong.copyWith(
+                color: AppColors.brand900Variant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              socialCompetitionRule(typeKey),
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
         ),
       ),
     );

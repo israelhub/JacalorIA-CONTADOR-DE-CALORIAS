@@ -7,8 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import 'core/analytics/analytics_service.dart';
-import 'core/invite/invite_link_service.dart';
+import 'core/invite/invite_link_bootstrap.dart';
 import 'core/notifications/meal_reminder_service.dart';
+import 'core/notifications/meal_reminder_home_widget.dart';
 import 'core/safe_area/web_safe_area_media_query.dart';
 import 'features/auth/pages/enter_page.dart';
 import 'features/auth/service/auth_service.dart';
@@ -17,7 +18,7 @@ import 'shared/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  InviteLinkService.captureFromUri(Uri.base);
+  await InviteLinkBootstrap.initialize();
   await AuthService.initialize();
   _warmUpAvatarCache();
   unawaited(AnalyticsService.instance.initialize());
@@ -47,6 +48,7 @@ Future<void> _bootstrapMealReminders() async {
     await MealReminderService.instance.syncScheduledReminders(
       requestPermission: false,
     );
+    unawaited(MealReminderHomeWidget.sync());
   } catch (_) {}
 }
 

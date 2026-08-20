@@ -31,6 +31,7 @@ class SocialRankingItem extends StatelessWidget {
       competitionType: competitionType,
       points: entry.points,
       streakDays: entry.streakDays,
+      dailyCalorieGoal: entry.dailyCalorieGoal,
     );
 
     return Material(

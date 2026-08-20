@@ -18,8 +18,11 @@ import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_section_header.dart';
+import '../../../shared/widgets/app_floating_circle_button.dart';
+import '../../home/widgets/home_weight_quick_edit_button.dart';
 import 'social_create_group_page.dart';
 import 'social_friend_profile_page.dart';
+import 'social_group_chat_page.dart';
 import '../widgets/social_invite_group_friends_dialog.dart';
 import '../helpers/social_data_invalidator.dart';
 import '../helpers/social_group_helpers.dart';
@@ -59,6 +62,9 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
   Uint8List? _resultJpgCache;
   Future<Uint8List>? _resultJpgFuture;
   String _lastLoadedDayKey = '';
+  bool _activitiesExpanded = false;
+  bool _isLoadingMoreActivities = false;
+  List<SocialActivityItem> _extraActivities = const [];
 
   @override
   void initState() {
@@ -138,6 +144,9 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
         _resultJpgFuture = null;
       });
       _prewarmResultJpgIfFinished();
+      if (_activitiesExpanded) {
+        unawaited(_loadRemainingActivities(silent: true));
+      }
     } catch (error) {
       if (!mounted) {
         return;
@@ -171,13 +180,104 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
 
   @override
   Widget build(BuildContext context) {
+    final fabBottomInset = homeShellFabBottomInset(context);
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: SafeArea(child: _buildContent()),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: _detail == null
+          ? null
+          : Padding(
+              padding: EdgeInsets.only(bottom: fabBottomInset),
+              child: AppFloatingCircleButton(
+                key: const ValueKey('group-chat-fab'),
+                icon: Icons.chat_bubble_rounded,
+                semanticLabel: 'Abrir chat do grupo',
+                onPressed: _openGroupChat,
+              ),
+            ),
+      body: SafeArea(child: _buildContent(fabBottomInset: fabBottomInset)),
     );
   }
 
-  Widget _buildContent() {
+  void _openGroupChat() {
+    final detail = _detail;
+    if (detail == null) return;
+    context.pushAppearPage(
+      SocialGroupChatPage(
+        groupId: widget.groupId,
+        groupName: detail.group.name,
+        service: widget._service,
+      ),
+      rootNavigator: true,
+    );
+  }
+
+  List<SocialActivityItem> _visibleActivities(SocialGroupDetail detail) {
+    if (_activitiesExpanded) {
+      if (_extraActivities.isEmpty) {
+        return detail.recentActivities;
+      }
+      return _mergeActivities(
+        socialGroupPreviewActivities(detail.recentActivities),
+        _extraActivities,
+      );
+    }
+    return socialGroupPreviewActivities(detail.recentActivities);
+  }
+
+  bool _showActivitiesExpand(SocialGroupDetail detail) {
+    return socialGroupCanExpandActivities(
+      expanded: _activitiesExpanded,
+      hasMoreActivities: detail.hasMoreActivities,
+      loadedCount: detail.recentActivities.length,
+    );
+  }
+
+  List<SocialActivityItem> _mergeActivities(
+    List<SocialActivityItem> preview,
+    List<SocialActivityItem> extra,
+  ) {
+    final seen = preview.map((item) => item.id).toSet();
+    return [
+      ...preview,
+      ...extra.where((item) => seen.add(item.id)),
+    ];
+  }
+
+  Future<void> _loadRemainingActivities({bool silent = false}) async {
+    final detail = _detail;
+    if (detail == null || _isLoadingMoreActivities) return;
+
+    if (detail.recentActivities.length > socialGroupActivityPreviewLimit) {
+      setState(() => _activitiesExpanded = true);
+      return;
+    }
+
+    setState(() => _isLoadingMoreActivities = true);
+    try {
+      final activities = await widget._service.fetchGroupActivities(
+        widget.groupId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _extraActivities = activities;
+        _activitiesExpanded = true;
+        _isLoadingMoreActivities = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoadingMoreActivities = false);
+      if (!silent) {
+        AppToast.show(
+          context,
+          message: error.toString().replaceFirst('Exception: ', ''),
+          isError: true,
+        );
+      }
+    }
+  }
+
+  Widget _buildContent({required double fabBottomInset}) {
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.action500),
@@ -221,11 +321,11 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
 
     return AppRefreshScrollView(
       onRefresh: () => _loadDetail(silent: true),
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
         AppSpacing.lg,
         AppSpacing.lg,
-        AppSpacing.xxxl,
+        fabBottomInset + 56 + AppSpacing.lg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,12 +437,21 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
                           color: AppColors.brand900Variant,
                         ),
                       ),
+                      if (group.rule.trim().isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          group.rule,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                       if (group.description.trim().isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
                           group.description,
                           style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
+                            color: AppColors.textMuted,
                           ),
                         ),
                       ],
@@ -514,10 +623,20 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
           const SizedBox(height: AppSpacing.sm),
           Column(
             children: [
-              for (final activity in detail.recentActivities) ...[
+              for (final activity in _visibleActivities(detail)) ...[
                 SocialActivityItemWidget(activity: activity),
                 const SizedBox(height: AppSpacing.sm),
               ],
+              if (_showActivitiesExpand(detail))
+                AppButton(
+                  key: const ValueKey('group-activities-expand'),
+                  label: _isLoadingMoreActivities ? 'Carregando...' : 'Ver mais',
+                  variant: AppButtonVariant.link,
+                  trailingIcon: Icons.expand_more_rounded,
+                  onPressed: _isLoadingMoreActivities
+                      ? null
+                      : () => unawaited(_loadRemainingActivities()),
+                ),
             ],
           ),
         ],

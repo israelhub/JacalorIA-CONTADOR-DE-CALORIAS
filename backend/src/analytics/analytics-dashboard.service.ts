@@ -37,6 +37,7 @@ export class AnalyticsDashboardService {
       topScreens,
       eventCounts,
       platforms,
+      mealEntryMix,
     ] = await Promise.all([
       this.getOverview(betaStart, betaEnd),
       this.getDauSeries(betaStart, betaEnd),
@@ -47,6 +48,7 @@ export class AnalyticsDashboardService {
       this.getTopScreens(betaStart, betaEnd),
       this.getEventCounts(betaStart, betaEnd),
       this.getPlatformMix(betaStart, betaEnd),
+      this.getMealEntryMix(betaStart, betaEnd),
     ]);
 
     return {
@@ -61,6 +63,7 @@ export class AnalyticsDashboardService {
       topScreens,
       eventCounts,
       platforms,
+      mealEntryMix,
     };
   }
 
@@ -1336,5 +1339,58 @@ export class AnalyticsDashboardService {
       platform: row.platform,
       users: Number(row.users),
     }));
+  }
+
+  private async getMealEntryMix(betaStart: string, betaEnd: string) {
+    const entries = [
+      { entry: 'camera', label: 'Tirar foto' },
+      { entry: 'gallery', label: 'Galeria' },
+      { entry: 'text', label: 'Digitar' },
+      { entry: 'saved_meal', label: 'Refeição salva' },
+    ] as const;
+
+    const rows = await this.sequelize.query<{
+      entry: string;
+      count: string;
+    }>(
+      `
+      SELECT
+        properties->>'entry' AS entry,
+        COUNT(*)::text AS count
+      FROM analytics_events
+      WHERE event_name = 'meal_capture_started'
+        AND occurred_at >= :betaStart
+        AND occurred_at < :betaEnd
+        AND properties->>'entry' IN ('camera', 'gallery', 'text', 'saved_meal')
+      GROUP BY 1
+      `,
+      {
+        replacements: { betaStart, betaEnd },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    const countByEntry = new Map(
+      rows.map((row) => [row.entry, Number(row.count || 0)]),
+    );
+    const total = entries.reduce(
+      (sum, item) => sum + (countByEntry.get(item.entry) || 0),
+      0,
+    );
+    const pct = (count: number) =>
+      total > 0 ? Math.round((1000 * count) / total) / 10 : 0;
+
+    return {
+      total,
+      methods: entries.map((item) => {
+        const count = countByEntry.get(item.entry) || 0;
+        return {
+          entry: item.entry,
+          label: item.label,
+          count,
+          pct: pct(count),
+        };
+      }),
+    };
   }
 }

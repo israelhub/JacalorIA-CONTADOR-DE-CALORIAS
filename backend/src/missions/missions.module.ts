@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from '../auth/models/user.model';
 import { Meal } from '../meals/models/meal.model';
+import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
 import { Mission } from './models/mission.model';
 import { StoreCatalogItem } from './models/store-catalog-item.model';
 import { UserCurrencyTransaction } from './models/user-currency-transaction.model';
@@ -19,6 +20,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
       Mission,
       Meal,
       User,
+      UserWeightEntry,
       UserCurrencyTransaction,
       StoreCatalogItem,
     ]),

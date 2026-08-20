@@ -123,7 +123,7 @@ class MealService {
         ? await SupabaseStorageService.uploadMealPhoto(record.imageBytes!)
         : null;
     final imageUrl = uploadedImageUrl ?? record.imageUrl ?? record.imageAsset;
-    final body = {
+    final body = <String, dynamic>{
       'title': record.title,
       'description': record.description,
       'calories': analysis.totals.calories.round(),
@@ -134,6 +134,8 @@ class MealService {
       'mealType': record.mealType.apiValue,
       'imageUrl': imageUrl,
       'analysisItems': analysis.items.map((i) => i.toJson()).toList(),
+      if (record.createdAt != null)
+        'createdAt': record.createdAt!.toUtc().toIso8601String(),
     };
 
     final response = await http.post(

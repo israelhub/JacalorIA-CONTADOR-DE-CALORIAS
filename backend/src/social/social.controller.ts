@@ -3,6 +3,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AddGroupMembersDto } from './dto/add-group-members.dto';
 import { AddFriendByEmailDto } from './dto/add-friend-by-email.dto';
 import { CreateSocialGroupDto } from './dto/create-social-group.dto';
+import { ReactGroupMessageDto } from './dto/react-group-message.dto';
+import { SendGroupMessageDto } from './dto/send-group-message.dto';
+import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
 import { UpdateSocialGroupDto } from './dto/update-social-group.dto';
 import { SocialService } from './social.service';
 
@@ -64,6 +67,22 @@ export class SocialController {
     });
   }
 
+  @Get('friends/:friendUserId/daily-meals')
+  getPublicProfileDailyMeals(
+    @Req() req: any,
+    @Param('friendUserId') friendUserId: string,
+    @Query('date') date?: string,
+    @Query('groupId') groupId?: string,
+    @Query('viaUserId') viaUserId?: string,
+  ) {
+    return this.socialService.getPublicProfileDailyMeals(
+      req.user.sub,
+      friendUserId,
+      date,
+      { groupId, viaUserId },
+    );
+  }
+
   @Get('friends/:userId/list')
   listUserFriends(
     @Req() req: any,
@@ -80,6 +99,11 @@ export class SocialController {
   @Get('users/search')
   searchUsers(@Req() req: any, @Query('q') query: string) {
     return this.socialService.searchUsers(req.user.sub, query);
+  }
+
+  @Get('xp-ranking')
+  getXpRanking(@Req() req: any, @Query('period') period?: string) {
+    return this.socialService.getXpRanking(req.user.sub, period);
   }
 
   @Get('groups')
@@ -143,6 +167,78 @@ export class SocialController {
   @Delete('groups/:groupId')
   deleteGroup(@Req() req: any, @Param('groupId') groupId: string) {
     return this.socialService.deleteGroup(groupId, req.user.sub);
+  }
+
+  @Get('groups/:groupId/messages')
+  listGroupMessages(
+    @Req() req: any,
+    @Param('groupId') groupId: string,
+    @Query('after') after?: string,
+    @Query('before') before?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.socialService.listGroupMessages(req.user.sub, groupId, {
+      after,
+      before,
+      limit: limit ? Number(limit) : undefined,
+    });
+  }
+
+  @Post('groups/:groupId/messages')
+  sendGroupMessage(
+    @Req() req: any,
+    @Param('groupId') groupId: string,
+    @Body() dto: SendGroupMessageDto,
+  ) {
+    return this.socialService.sendGroupMessage(req.user.sub, groupId, dto);
+  }
+
+  @Post('groups/:groupId/messages/:messageId/reactions')
+  reactToGroupMessage(
+    @Req() req: any,
+    @Param('groupId') groupId: string,
+    @Param('messageId') messageId: string,
+    @Body() dto: ReactGroupMessageDto,
+  ) {
+    return this.socialService.reactToGroupMessage(
+      req.user.sub,
+      groupId,
+      messageId,
+      dto,
+    );
+  }
+
+  @Patch('groups/:groupId/messages/:messageId')
+  editGroupMessage(
+    @Req() req: any,
+    @Param('groupId') groupId: string,
+    @Param('messageId') messageId: string,
+    @Body() dto: UpdateGroupMessageDto,
+  ) {
+    return this.socialService.editGroupMessage(
+      req.user.sub,
+      groupId,
+      messageId,
+      dto,
+    );
+  }
+
+  @Delete('groups/:groupId/messages/:messageId')
+  deleteGroupMessage(
+    @Req() req: any,
+    @Param('groupId') groupId: string,
+    @Param('messageId') messageId: string,
+  ) {
+    return this.socialService.deleteGroupMessage(
+      req.user.sub,
+      groupId,
+      messageId,
+    );
+  }
+
+  @Get('groups/:groupId/activities')
+  listGroupActivities(@Req() req: any, @Param('groupId') groupId: string) {
+    return this.socialService.listGroupActivities(groupId, req.user.sub);
   }
 
   @Get('groups/:groupId')

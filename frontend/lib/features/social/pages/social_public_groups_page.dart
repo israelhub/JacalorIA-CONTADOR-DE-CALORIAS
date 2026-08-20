@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_select_input_field.dart';
 import '../models/social_group_models.dart';
@@ -117,8 +118,9 @@ class _SocialPublicGroupsPageState extends State<SocialPublicGroupsPage> {
         ),
       ),
       body: SafeArea(
+        bottom: false,
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: homeShellNestedFillPadding(context),
           child: Column(
             children: [
               AppInputField(

@@ -13,6 +13,7 @@ import '../../home/services/meal_service.dart';
 import '../helpers/food_review_helpers.dart';
 import '../models/food_analysis_result.dart';
 import '../models/food_meal_record.dart';
+import '../models/saved_meal_template.dart';
 import '../services/food_analysis_service.dart';
 import '../services/meal_template_service.dart';
 import 'food_review_page.dart';
@@ -24,6 +25,7 @@ class FoodMealDetailsPage extends StatefulWidget {
     super.key,
     required this.record,
     this.userProfile,
+    this.readOnly = false,
     MealService mealService = const MealService(),
     FoodAnalysisService analysisService = const FoodAnalysisService(),
     MealTemplateService templateService = const MealTemplateService(),
@@ -33,6 +35,7 @@ class FoodMealDetailsPage extends StatefulWidget {
 
   final FoodMealRecord record;
   final Map<String, dynamic>? userProfile;
+  final bool readOnly;
   final MealService _mealService;
   final FoodAnalysisService _analysisService;
   final MealTemplateService _templateService;
@@ -46,6 +49,8 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
   late FoodMealRecord _record;
   bool _started = false;
   bool _isSavingTemplate = false;
+  bool _isSavedAsTemplate = false;
+  String? _savedTemplateId;
   bool _wasEdited = false;
   bool _isClosing = false;
 
@@ -61,6 +66,9 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
       if (mounted && !_started) {
         _started = true;
         _revealSections();
+        if (!widget.readOnly) {
+          _syncSavedTemplateState();
+        }
       }
     });
   }
@@ -127,278 +135,352 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
         backgroundColor: AppColors.surface,
         appBar: FoodAnalysisPageHeader(
           title: 'Detalhes da refeição',
-          actions: [
-            IconButton(
-              tooltip: 'Salvar para reutilizar',
-              onPressed: _isSavingTemplate ? null : _handleSaveAsTemplate,
-              icon: _isSavingTemplate
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.bookmark_add_outlined),
-            ),
-            IconButton(
-              tooltip: 'Editar refeição',
-              onPressed: _handleEditMeal,
-              icon: const Icon(Icons.edit_outlined),
-            ),
-            IconButton(
-              tooltip: 'Excluir refeição',
-              onPressed: _handleDeleteMeal,
-              icon: const Icon(Icons.delete_outline),
-            ),
-          ],
-        ),
-        body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.sm,
-            AppSpacing.lg,
-            AppSpacing.xxl,
-          ),
-          children: [
-            _RevealSection(
-              visible: _sectionVisible[0],
-              duration: _sectionRevealDuration,
-              child: _MealHeroImage(
-                imageBytes: _record.imageBytes,
-                imageAsset: _record.imageAsset,
-                imageUrl: _record.imageUrl,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _RevealSection(
-              visible: _sectionVisible[1],
-              duration: _sectionRevealDuration,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          mealTitle,
-                          style: AppTextStyles.homeUserName.copyWith(
-                            color: AppColors.textPrimary,
+          actions: widget.readOnly
+              ? const []
+              : [
+                  IconButton(
+                    tooltip: _isSavedAsTemplate
+                        ? 'Remover das refeições salvas'
+                        : 'Salvar para reutilizar',
+                    onPressed: _isSavingTemplate ? null : _handleSaveAsTemplate,
+                    icon: _isSavingTemplate
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            _isSavedAsTemplate
+                                ? Icons.bookmark
+                                : Icons.bookmark_add_outlined,
+                            color: _isSavedAsTemplate
+                                ? AppColors.brand900
+                                : null,
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        _record.timeLabel,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          height: 22 / 14,
-                        ),
-                      ),
-                    ],
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.action500.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      border: Border.all(
-                        color: AppColors.action500.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Text(
-                      _record.mealType.displayLabel,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.brand900,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  IconButton(
+                    tooltip: 'Editar refeição',
+                    onPressed: _handleEditMeal,
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                  IconButton(
+                    tooltip: 'Excluir refeição',
+                    onPressed: _handleDeleteMeal,
+                    icon: const Icon(Icons.delete_outline),
                   ),
                 ],
-              ),
+        ),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.xxl,
             ),
-            const SizedBox(height: AppSpacing.lg),
-            _RevealSection(
-              visible: _sectionVisible[2],
-              duration: _sectionRevealDuration,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(
-                    color: AppColors.foodReviewFieldBorder,
-                    width: 2,
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.foodReviewFieldShadow,
-                      offset: Offset(0, 4),
-                      blurRadius: 0,
-                    ),
-                  ],
+            children: [
+              _RevealSection(
+                visible: _sectionVisible[0],
+                duration: _sectionRevealDuration,
+                child: _MealHeroImage(
+                  imageBytes: _record.imageBytes,
+                  imageAsset: _record.imageAsset,
+                  imageUrl: _record.imageUrl,
                 ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _RevealSection(
+                visible: _sectionVisible[1],
+                duration: _sectionRevealDuration,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '$consumedCalories Calorias consumidas',
-                      style: AppTextStyles.homeSectionTitle.copyWith(
-                        color: AppColors.brand900Variant,
-                        fontSize: 20,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Expanded(
-                          child: MacroProgressIndicator(
-                            label: 'Carboidratos',
-                            consumed: _record.carbs,
-                            goal: goalCarbs,
-                            color: AppColors.homeMacroCarbs,
-                            progressKey: const ValueKey(
-                              'meal-details-macro-carboidratos',
+                          child: Text(
+                            mealTitle,
+                            style: AppTextStyles.homeUserName.copyWith(
+                              color: AppColors.textPrimary,
                             ),
-                            labelStyle: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.brand900Variant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            valueStyle: AppTextStyles.captionStrong.copyWith(
-                              color: AppColors.brand900Variant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            trackColor: AppColors.homeProgressTrack,
-                            barHeight: 10,
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: MacroProgressIndicator(
-                            label: 'Proteinas',
-                            consumed: _record.protein,
-                            goal: goalProtein,
-                            color: AppColors.homeMacroProtein,
-                            progressKey: const ValueKey(
-                              'meal-details-macro-proteinas',
-                            ),
-                            labelStyle: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.brand900Variant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            valueStyle: AppTextStyles.captionStrong.copyWith(
-                              color: AppColors.brand900Variant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            trackColor: AppColors.homeProgressTrack,
-                            barHeight: 10,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: MacroProgressIndicator(
-                            label: 'Gorduras',
-                            consumed: _record.fat,
-                            goal: goalFat,
-                            color: AppColors.homeMacroFat,
-                            progressKey: const ValueKey(
-                              'meal-details-macro-gorduras',
-                            ),
-                            labelStyle: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.brand900Variant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            valueStyle: AppTextStyles.captionStrong.copyWith(
-                              color: AppColors.brand900Variant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            trackColor: AppColors.homeProgressTrack,
-                            barHeight: 10,
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          _record.timeLabel,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            height: 22 / 14,
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.action500.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(
+                          color: AppColors.action500.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Text(
+                        _record.mealType.displayLabel,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.brand900,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _RevealSection(
-              visible: _sectionVisible[3],
-              duration: _sectionRevealDuration,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(
-                    color: AppColors.foodReviewFieldBorder,
-                    width: 2,
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.foodReviewFieldShadow,
-                      offset: Offset(0, 4),
-                      blurRadius: 0,
+              const SizedBox(height: AppSpacing.lg),
+              _RevealSection(
+                visible: _sectionVisible[2],
+                duration: _sectionRevealDuration,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(
+                      color: AppColors.foodReviewFieldBorder,
+                      width: 2,
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Alimentos presentes na refeicao',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.brand900Variant,
-                        fontWeight: FontWeight.w400,
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppColors.foodReviewFieldShadow,
+                        offset: Offset(0, 4),
+                        blurRadius: 0,
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    if (_record.items.isEmpty)
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        'Nenhum alimento encontrado.',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+                        '$consumedCalories Calorias consumidas',
+                        style: AppTextStyles.homeSectionTitle.copyWith(
+                          color: AppColors.brand900Variant,
+                          fontSize: 20,
                         ),
-                      )
-                    else
-                      Column(
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
                         children: [
-                          const SizedBox(height: AppSpacing.xs),
-                          ..._record.items.asMap().entries.expand((entry) {
-                            final index = entry.key;
-                            final item = entry.value;
-
-                            return <Widget>[
-                              FoodMealItemRow(item: item),
-                              if (index != _record.items.length - 1)
-                                const Divider(
-                                  color: AppColors.divider,
-                                  height: AppSpacing.lg,
-                                  thickness: 1,
-                                ),
-                            ];
-                          }),
+                          Expanded(
+                            child: MacroProgressIndicator(
+                              label: 'Carboidratos',
+                              consumed: _record.carbs,
+                              goal: goalCarbs,
+                              color: AppColors.homeMacroCarbs,
+                              progressKey: const ValueKey(
+                                'meal-details-macro-carboidratos',
+                              ),
+                              labelStyle: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.brand900Variant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              valueStyle: AppTextStyles.captionStrong.copyWith(
+                                color: AppColors.brand900Variant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              trackColor: AppColors.homeProgressTrack,
+                              barHeight: 10,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: MacroProgressIndicator(
+                              label: 'Proteinas',
+                              consumed: _record.protein,
+                              goal: goalProtein,
+                              color: AppColors.homeMacroProtein,
+                              progressKey: const ValueKey(
+                                'meal-details-macro-proteinas',
+                              ),
+                              labelStyle: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.brand900Variant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              valueStyle: AppTextStyles.captionStrong.copyWith(
+                                color: AppColors.brand900Variant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              trackColor: AppColors.homeProgressTrack,
+                              barHeight: 10,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: MacroProgressIndicator(
+                              label: 'Gorduras',
+                              consumed: _record.fat,
+                              goal: goalFat,
+                              color: AppColors.homeMacroFat,
+                              progressKey: const ValueKey(
+                                'meal-details-macro-gorduras',
+                              ),
+                              labelStyle: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.brand900Variant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              valueStyle: AppTextStyles.captionStrong.copyWith(
+                                color: AppColors.brand900Variant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              trackColor: AppColors.homeProgressTrack,
+                              barHeight: 10,
+                            ),
+                          ),
                         ],
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.lg),
+              _RevealSection(
+                visible: _sectionVisible[3],
+                duration: _sectionRevealDuration,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(
+                      color: AppColors.foodReviewFieldBorder,
+                      width: 2,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppColors.foodReviewFieldShadow,
+                        offset: Offset(0, 4),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Alimentos presentes na refeicao',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.brand900Variant,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (_record.items.isEmpty)
+                        Text(
+                          'Nenhum alimento encontrado.',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      else
+                        Column(
+                          children: [
+                            const SizedBox(height: AppSpacing.xs),
+                            ..._record.items.asMap().entries.expand((entry) {
+                              final index = entry.key;
+                              final item = entry.value;
+
+                              return <Widget>[
+                                FoodMealItemRow(
+                                  item: item,
+                                  mealProtein: _record.protein,
+                                  mealCarbs: _record.carbs,
+                                  mealFat: _record.fat,
+                                ),
+                                if (index != _record.items.length - 1)
+                                  const Divider(
+                                    color: AppColors.divider,
+                                    height: AppSpacing.lg,
+                                    thickness: 1,
+                                  ),
+                              ];
+                            }),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      ),
     );
+  }
+
+  Future<void> _syncSavedTemplateState() async {
+    try {
+      final templates = await widget._templateService.fetchTemplates();
+      if (!mounted) {
+        return;
+      }
+
+      final match = _findMatchingTemplate(templates);
+      setState(() {
+        _isSavedAsTemplate = match != null;
+        _savedTemplateId = match?.id;
+      });
+    } catch (_) {}
+  }
+
+  SavedMealTemplate? _findMatchingTemplate(List<SavedMealTemplate> templates) {
+    for (final template in templates) {
+      if (_matchesSavedTemplate(template)) {
+        return template;
+      }
+    }
+    return null;
+  }
+
+  bool _matchesSavedTemplate(SavedMealTemplate template) {
+    final sameMacros =
+        template.calories == _record.calories &&
+        template.protein == _record.protein &&
+        template.carbs == _record.carbs &&
+        template.fat == _record.fat;
+    if (!sameMacros) {
+      return false;
+    }
+
+    final sameTitle =
+        template.title.trim().toLowerCase() ==
+        _record.title.trim().toLowerCase();
+    if (!sameTitle) {
+      return false;
+    }
+
+    if (template.items.length != _record.items.length) {
+      return false;
+    }
+
+    for (var index = 0; index < template.items.length; index++) {
+      final savedItem = template.items[index];
+      final mealItem = _record.items[index];
+      if (savedItem.name.trim().toLowerCase() !=
+              mealItem.name.trim().toLowerCase() ||
+          savedItem.grams != mealItem.grams) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   Future<void> _handleSaveAsTemplate() async {
@@ -406,18 +488,64 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
       return;
     }
 
+    if (_isSavedAsTemplate) {
+      await _handleRemoveSavedTemplate();
+      return;
+    }
+
     setState(() => _isSavingTemplate = true);
 
     try {
-      await widget._templateService.saveFromMeal(_record);
+      final saved = await widget._templateService.saveFromMeal(_record);
       if (!mounted) {
         return;
       }
+
+      setState(() {
+        _isSavedAsTemplate = true;
+        _savedTemplateId = saved.id;
+      });
 
       AppToast.success(
         context,
         message: 'Refeição salva. Use-a ao registrar uma nova.',
       );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingTemplate = false);
+      }
+    }
+  }
+
+  Future<void> _handleRemoveSavedTemplate() async {
+    final templateId = (_savedTemplateId ?? '').trim();
+    if (templateId.isEmpty) {
+      return;
+    }
+
+    setState(() => _isSavingTemplate = true);
+
+    try {
+      await widget._templateService.deleteTemplate(templateId: templateId);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isSavedAsTemplate = false;
+        _savedTemplateId = null;
+      });
+
+      AppToast.success(context, message: 'Refeição removida das salvas.');
     } catch (error) {
       if (!mounted) {
         return;
@@ -457,15 +585,16 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
         imageAsset: _record.imageAsset,
         imageUrl: _record.imageUrl,
         analysis: analysis,
-          analysisService: widget._analysisService,
-          mealService: widget._mealService,
-          existingMealId: mealId,
+        analysisService: widget._analysisService,
+        mealService: widget._mealService,
+        existingMealId: mealId,
         initialMealTitle: _record.title,
         initialTimeLabel: _record.timeLabel,
         initialMealType: _record.mealType,
         recordedAt: _record.createdAt,
         showDetailsAfterSave: false,
       ),
+      rootNavigator: true,
     );
 
     if (!mounted || updatedMeal == null) {
@@ -475,7 +604,10 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
     setState(() {
       _record = _mergeEditedRecord(updatedMeal);
       _wasEdited = true;
+      _isSavedAsTemplate = false;
+      _savedTemplateId = null;
     });
+    await _syncSavedTemplateState();
   }
 
   Future<void> _handleDeleteMeal() async {

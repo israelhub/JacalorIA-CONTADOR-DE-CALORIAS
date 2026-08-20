@@ -43,11 +43,13 @@ class ImagePickerAdapter implements FoodImagePicker {
 class FoodCapturePage extends StatefulWidget {
   const FoodCapturePage({
     super.key,
+    this.recordedAt,
     FoodAnalysisService? analysisService,
     FoodImagePicker? imagePicker,
   }) : _analysisService = analysisService ?? const FoodAnalysisService(),
        _imagePicker = imagePicker;
 
+  final DateTime? recordedAt;
   final FoodAnalysisService _analysisService;
   final FoodImagePicker? _imagePicker;
 
@@ -313,12 +315,17 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
     }
 
     final meal = await context.pushSlidePage<FoodMealRecord>(
-      const SavedMealsPage(),
+      SavedMealsPage(recordedAt: widget.recordedAt),
     );
 
     if (!mounted || meal == null) {
       return;
     }
+
+    AnalyticsService.instance.track(
+      'meal_capture_started',
+      properties: {'entry': 'saved_meal'},
+    );
 
     Navigator.of(context).pop(meal);
   }
@@ -327,6 +334,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
     final typedText = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      enableDrag: false,
       showDragHandle: true,
       backgroundColor: AppColors.surface,
       builder: (context) => const _ManualFoodEntrySheet(),
@@ -335,6 +343,11 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
     if (!mounted || typedText == null || typedText.trim().isEmpty) {
       return;
     }
+
+    AnalyticsService.instance.track(
+      'meal_capture_started',
+      properties: {'entry': 'text'},
+    );
 
     final aiManualAnalysis = await _pushAnalysisLoadingPage(
       imageBytes: null,
@@ -576,6 +589,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
         imageBytes: imageBytes,
         analysis: analysis,
         analysisService: widget._analysisService,
+        recordedAt: widget.recordedAt,
       ),
     );
   }
@@ -912,21 +926,35 @@ class _ManualFoodEntrySheet extends StatefulWidget {
 }
 
 class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
+  static const String _entryHint = 'Arroz branco cozido 120g, feijão preto cozido 100g e frango grelhado 150g';
+
   static const String _entryInstructions =
-      'Escreva um alimento por linha.\n'
-      'Simples: Nome - quantidade\n'
-      'Ex.: Arroz - 120 g\n'
+      'Escreva os alimentos com seus preparos e quantidade que você consumiu.\n'
       '\n'
-      'Com tabela nutricional (prioridade):\n'
+      'Ex.: Arroz branco cozido - 120 g\n'
+      '\n'
+      'Com tabela nutricional (opcional):\n'
       'Alimento - porção da tabela - kcal - quanto consumiu\n'
       'Ex.: Whey - 100 g - 380 kcal - consumi 30 g';
 
   final TextEditingController _manualEntryController = TextEditingController();
+  final FocusNode _manualEntryFocusNode = FocusNode();
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _manualEntryFocusNode.requestFocus();
+      }
+    });
+  }
 
   @override
   void dispose() {
     _manualEntryController.dispose();
+    _manualEntryFocusNode.dispose();
     super.dispose();
   }
 
@@ -967,30 +995,41 @@ class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
             ),
             const SizedBox(height: AppSpacing.md),
             Container(
+              height: 168,
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(color: AppColors.foodReviewFieldBorder),
                 boxShadow: AppShadows.foodReviewField,
               ),
+              clipBehavior: Clip.antiAlias,
               child: TextField(
                 key: const ValueKey('manual-food-entry-field'),
                 controller: _manualEntryController,
-                minLines: 6,
-                maxLines: 10,
+                focusNode: _manualEntryFocusNode,
+                expands: true,
+                maxLines: null,
+                minLines: null,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
                 textAlign: TextAlign.left,
                 textAlignVertical: TextAlignVertical.top,
                 textCapitalization: TextCapitalization.sentences,
+                enableInteractiveSelection: true,
+                cursorColor: AppColors.brand900,
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
-                  hintText: _entryInstructions,
+                  hintText: _entryHint,
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                   ),
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
                   contentPadding: const EdgeInsets.all(AppSpacing.md),
+                  isDense: true,
                 ),
                 onChanged: (_) {
                   if (_error != null) {
@@ -1027,8 +1066,7 @@ class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
 
     if (text.isEmpty) {
       setState(() {
-        _error =
-            'Digite os alimentos. Ex.: Arroz - 120 g  ou  Whey - 100 g - 380 kcal - consumi 30 g';
+        _error = 'Digite o que você comeu para continuar.';
       });
       return;
     }
