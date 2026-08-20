@@ -13,7 +13,7 @@ class JacaEmojiPicker extends StatelessWidget {
   final ValueChanged<JacaEmojiItem> onSelected;
   final Set<String> ownedIds;
 
-  static const double _tileSize = 52;
+  static const int _columns = 5;
   static const double _gap = AppSpacing.sm;
 
   @override
@@ -32,30 +32,33 @@ class JacaEmojiPicker extends StatelessWidget {
           top: BorderSide(color: AppColors.performanceCardBorder),
         ),
       ),
-      child: Wrap(
-        spacing: _gap,
-        runSpacing: _gap,
-        children: [
-          for (final emoji in visible)
-            Semantics(
-              button: true,
-              label: emoji.label,
-              child: InkWell(
-                key: ValueKey('jaca-emoji-${emoji.id}'),
-                onTap: () => onSelected(emoji),
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                child: SizedBox(
-                  width: _tileSize,
-                  height: _tileSize,
-                  child: Image.asset(
-                    emoji.assetPath,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
-                ),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: visible.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: _columns,
+          crossAxisSpacing: _gap,
+          mainAxisSpacing: _gap,
+          childAspectRatio: 1,
+        ),
+        itemBuilder: (context, index) {
+          final emoji = visible[index];
+          return Semantics(
+            button: true,
+            label: emoji.label,
+            child: InkWell(
+              key: ValueKey('jaca-emoji-${emoji.id}'),
+              onTap: () => onSelected(emoji),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: Image.asset(
+                emoji.assetPath,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
               ),
             ),
-        ],
+          );
+        },
       ),
     );
   }

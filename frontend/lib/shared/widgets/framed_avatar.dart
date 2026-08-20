@@ -35,60 +35,63 @@ class FramedAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final resolvedSize = _resolveSquareSize(constraints);
-        final frame = AvatarFrameCatalog.byId(frameId);
-        final hasFrame = frame?.assetPath != null;
-        final avatarSize = hasFrame
-            ? resolvedSize * _effectiveFramedAvatarScale(frameId)
-            : resolvedSize * unframedAvatarScale;
-        final avatar = _AvatarCircle(
-          size: avatarSize,
-          avatarUrl: avatarUrl,
-          avatarBytes: avatarBytes,
-          fallbackText: fallbackText,
-          backgroundColor: backgroundColor,
-        );
-        // No web (Safari/iOS) o resize via cacheWidth remistura alpha e
-        // recria halo de "fundo nao cortado" nas molduras glossy.
-        final frameCacheDimension = kIsWeb
-            ? null
-            : (resolvedSize * MediaQuery.devicePixelRatioOf(context)).round();
+    return SizedBox.square(
+      dimension: size,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final resolvedSize = _resolveSquareSize(constraints);
+          final frame = AvatarFrameCatalog.byId(frameId);
+          final hasFrame = frame?.assetPath != null;
+          final avatarSize = hasFrame
+              ? resolvedSize * _effectiveFramedAvatarScale(frameId)
+              : resolvedSize * unframedAvatarScale;
+          final avatar = _AvatarCircle(
+            size: avatarSize,
+            avatarUrl: avatarUrl,
+            avatarBytes: avatarBytes,
+            fallbackText: fallbackText,
+            backgroundColor: backgroundColor,
+          );
+          // No web (Safari/iOS) o resize via cacheWidth remistura alpha e
+          // recria halo de "fundo nao cortado" nas molduras glossy.
+          final frameCacheDimension = kIsWeb
+              ? null
+              : (resolvedSize * MediaQuery.devicePixelRatioOf(context)).round();
 
-        // Center: pai apertado nao estica a PNG. Sem expand: a foto fica no furo.
-        final content = Center(
-          child: SizedBox.square(
-            dimension: resolvedSize,
-            child: Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                avatar,
-                if (hasFrame)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: Image.asset(
-                        frame!.assetPath!,
-                        fit: BoxFit.contain,
-                        cacheWidth: frameCacheDimension,
-                        cacheHeight: frameCacheDimension,
-                        filterQuality: FilterQuality.medium,
-                        isAntiAlias: true,
+          // Center: pai apertado nao estica a PNG. Sem expand: a foto fica no furo.
+          final content = Center(
+            child: SizedBox.square(
+              dimension: resolvedSize,
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  avatar,
+                  if (hasFrame)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Image.asset(
+                          frame!.assetPath!,
+                          fit: BoxFit.contain,
+                          cacheWidth: frameCacheDimension,
+                          cacheHeight: frameCacheDimension,
+                          filterQuality: FilterQuality.medium,
+                          isAntiAlias: true,
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
+          );
 
-        if (onTap == null) {
-          return content;
-        }
+          if (onTap == null) {
+            return content;
+          }
 
-        return _PressableAvatar(onTap: onTap!, child: content);
-      },
+          return _PressableAvatar(onTap: onTap!, child: content);
+        },
+      ),
     );
   }
 
@@ -253,6 +256,9 @@ class _AvatarCircle extends StatelessWidget {
   }
 
   int? _cacheDimension(BuildContext context) {
+    if (kIsWeb) {
+      return null;
+    }
     final dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
     final dimension = (size * dpr).round();
     return dimension > 0 ? dimension : null;
