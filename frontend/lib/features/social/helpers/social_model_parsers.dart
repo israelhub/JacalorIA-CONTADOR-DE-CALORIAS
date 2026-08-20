@@ -23,3 +23,28 @@ String socialFormatAverageCalories(num value) {
   }
   return rounded.toStringAsFixed(1);
 }
+
+String? socialReadAvatarUrl(Map<String, dynamic> json) {
+  for (final key in const ['avatarUrl', 'avatar_url']) {
+    final value = json[key]?.toString().trim();
+    if (value != null && value.isNotEmpty) {
+      return value;
+    }
+  }
+  return null;
+}
+
+String? socialReadAvatarFrameId(Map<String, dynamic> json) {
+  for (final key in const [
+    'avatarFrameId',
+    'equippedAvatarFrameId',
+    'avatar_frame_id',
+    'equipped_avatar_frame_id',
+  ]) {
+    final value = json[key]?.toString().trim();
+    if (value != null && value.isNotEmpty) {
+      return value;
+    }
+  }
+  return null;
+}

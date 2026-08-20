@@ -1,4 +1,5 @@
 import 'jaca_emoji_catalog.dart';
+import '../helpers/social_model_parsers.dart';
 
 class SocialGroupChatReplyTo {
   const SocialGroupChatReplyTo({
@@ -170,8 +171,15 @@ class SocialGroupChatMessage {
       editedAt: DateTime.tryParse(json['editedAt']?.toString() ?? ''),
       isDeleted: json['isDeleted'] == true,
       senderName: json['senderName']?.toString() ?? 'Sem nome',
-      senderAvatarUrl: json['senderAvatarUrl']?.toString(),
-      senderAvatarFrameId: json['senderAvatarFrameId']?.toString(),
+      senderAvatarUrl: socialReadAvatarUrl({
+        'avatarUrl': json['senderAvatarUrl'],
+        'avatar_url': json['sender_avatar_url'],
+      }),
+      senderAvatarFrameId: socialReadAvatarFrameId({
+        'avatarFrameId': json['senderAvatarFrameId'],
+        'equippedAvatarFrameId': json['senderAvatarFrameId'],
+        'avatar_frame_id': json['sender_avatar_frame_id'],
+      }),
       isCurrentUser: json['isCurrentUser'] == true,
       replyTo: replyJson is Map<String, dynamic>
           ? SocialGroupChatReplyTo.fromJson(replyJson)

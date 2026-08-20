@@ -19,8 +19,8 @@ class SocialFriend {
     return SocialFriend(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? 'Sem nome',
-      avatarUrl: json['avatarUrl']?.toString(),
-      avatarFrameId: json['avatarFrameId']?.toString(),
+      avatarUrl: socialReadAvatarUrl(json),
+      avatarFrameId: socialReadAvatarFrameId(json),
       streakDays: socialToInt(json['streakDays']),
     );
   }
