@@ -1,11 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/helpers/profile_value_helpers.dart';
+import '../../../../shared/widgets/app_network_image.dart';
 import '../../../../shared/widgets/app_page_route.dart';
-import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/macro_progress_indicator.dart';
@@ -744,18 +743,13 @@ class _MealHeroImage extends StatelessWidget {
     }
 
     if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return Image(
-        image: CachedNetworkImageProvider(imageUrl!),
+      return AppNetworkImage(
+        url: imageUrl!,
         fit: BoxFit.cover,
         width: double.infinity,
-        gaplessPlayback: true,
-        frameBuilder: (_, child, frame, wasSyncLoaded) {
-          if (wasSyncLoaded || frame != null) {
-            return child;
-          }
-          return const AppSkeletonBox(height: 250, borderRadius: 0);
-        },
-        errorBuilder: (_, __, ___) => _buildMissingImage(),
+        height: 250,
+        borderRadius: AppRadius.md,
+        error: _buildMissingImage(),
       );
     }
 

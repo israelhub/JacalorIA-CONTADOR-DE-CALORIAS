@@ -13,6 +13,11 @@ class MealService {
   const MealService();
 
   static String get _baseUrl => ApiConfig.baseUrl;
+  static final Map<String, String> _mealImageUrlById = <String, String>{};
+
+  static void clearImageUrlCache() {
+    _mealImageUrlById.clear();
+  }
 
   Map<String, String> _buildHeaders({bool withJsonContentType = false}) {
     final headers = <String, String>{};
@@ -63,7 +68,8 @@ class MealService {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) {
+      return _mergeMealImageUrls(
+        data.map((json) {
         final imageUrl = json['imageUrl'] as String?;
         final isNetwork =
             imageUrl != null &&
@@ -97,7 +103,8 @@ class MealService {
           items: items,
           status: (json['status'] as String? ?? 'active').trim().toLowerCase(),
         );
-      }).toList();
+      }).toList(),
+      );
     }
     return [];
   }
@@ -196,5 +203,26 @@ class MealService {
     if (response.statusCode != 204) {
       throw Exception('Failed to delete meal');
     }
+  }
+
+  List<FoodMealRecord> _mergeMealImageUrls(List<FoodMealRecord> meals) {
+    return meals.map((meal) {
+      final id = meal.id?.trim() ?? '';
+      final url = meal.imageUrl?.trim();
+      if (id.isNotEmpty && url != null && url.isNotEmpty) {
+        _mealImageUrlById[id] = url;
+      }
+      if (url != null && url.isNotEmpty) {
+        return meal;
+      }
+      if (id.isEmpty) {
+        return meal;
+      }
+      final cached = _mealImageUrlById[id];
+      if (cached == null || cached.isEmpty) {
+        return meal;
+      }
+      return meal.copyWith(imageUrl: cached);
+    }).toList(growable: false);
   }
 }

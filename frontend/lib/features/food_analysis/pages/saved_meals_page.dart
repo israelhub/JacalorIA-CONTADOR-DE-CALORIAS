@@ -1,7 +1,7 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_network_image.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -299,11 +299,10 @@ class _SavedMealCard extends StatelessWidget {
                   border: Border.all(color: AppColors.brand300),
                 ),
                 child: template.imageUrl != null
-                    ? Image(
-                        image: CachedNetworkImageProvider(template.imageUrl!),
+                    ? AppNetworkImage(
+                        url: template.imageUrl!,
                         fit: BoxFit.cover,
-                        gaplessPlayback: true,
-                        errorBuilder: (_, __, ___) => const ColoredBox(
+                        error: const ColoredBox(
                           color: AppColors.homeMetaCardSurface,
                           child: Icon(
                             Icons.restaurant_outlined,

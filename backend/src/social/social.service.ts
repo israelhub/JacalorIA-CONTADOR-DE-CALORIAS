@@ -1716,6 +1716,7 @@ export class SocialService {
       group.members ?? [],
       offensiveDayKeysByUserId,
     );
+    const memberUserById = this.buildMemberUserLookup(group.members ?? []);
 
     return {
       group: {
@@ -1735,12 +1736,13 @@ export class SocialService {
       },
       ranking: ranked.map(({ member, position }) => {
         const plain = member as SocialGroupMember & { dailyCalorieGoal?: number };
+        const user = this.resolveMemberUser(member, memberUserById);
         return {
           id: member.id,
           userId: member.userId,
-          name: member.user?.name ?? 'Sem nome',
-          avatarUrl: member.user?.avatarUrl ?? null,
-          avatarFrameId: member.user?.equippedAvatarFrameId ?? null,
+          name: user?.name ?? 'Sem nome',
+          avatarUrl: this.readUserAvatarUrl(user),
+          avatarFrameId: this.readUserAvatarFrameId(user),
           points: member.points,
           streakDays: member.streakDays,
           dailyCalorieGoal:
@@ -1789,8 +1791,8 @@ export class SocialService {
       isEdited: Boolean(message.editedAt),
       isDeleted,
       senderName: message.user?.name ?? 'Sem nome',
-      senderAvatarUrl: message.user?.avatarUrl ?? null,
-      senderAvatarFrameId: message.user?.equippedAvatarFrameId ?? null,
+      senderAvatarUrl: this.readUserAvatarUrl(message.user),
+      senderAvatarFrameId: this.readUserAvatarFrameId(message.user),
       isCurrentUser: message.userId === currentUserId,
       replyTo: replyTo
         ? {
@@ -2559,6 +2561,38 @@ export class SocialService {
       return member.toJSON() as Record<string, unknown>;
     }
     return { ...(member as unknown as Record<string, unknown>) };
+  }
+
+  private buildMemberUserLookup(members: SocialGroupMember[]) {
+    const map = new Map<string, User>();
+    for (const member of members) {
+      if (member.userId && member.user) {
+        map.set(member.userId, member.user);
+      }
+    }
+    return map;
+  }
+
+  private resolveMemberUser(
+    member: SocialGroupMember,
+    userById: Map<string, User>,
+  ): User | null {
+    if (member.user) {
+      return member.user;
+    }
+    return userById.get(member.userId) ?? null;
+  }
+
+  private readUserAvatarUrl(user: User | null | undefined): string | null {
+    if (!user) return null;
+    const url = user.avatarUrl?.trim();
+    return url ? url : null;
+  }
+
+  private readUserAvatarFrameId(user: User | null | undefined): string | null {
+    if (!user) return null;
+    const frameId = user.equippedAvatarFrameId?.trim();
+    return frameId ? frameId : null;
   }
 
   private getPrimaryScore(member: SocialGroupMember, competitionType: string) {
