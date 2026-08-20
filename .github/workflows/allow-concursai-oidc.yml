@@ -1,0 +1,24 @@
+name: Allow ConcursAI OIDC deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  update-trust:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Allow concursai repo on deploy role
+        run: |
+          aws iam update-assume-role-policy \
+            --role-name jacaloria-github-deploy \
+            --policy-document file://infra/aws/concursai-trust-policy.json
