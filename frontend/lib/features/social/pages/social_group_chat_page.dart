@@ -406,9 +406,6 @@ class _SocialGroupChatPageState extends State<SocialGroupChatPage> {
     if (_isSending) return;
     final picked = await _imagePicker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 1600,
-      maxHeight: 1600,
-      imageQuality: 85,
     );
     if (picked == null) return;
 

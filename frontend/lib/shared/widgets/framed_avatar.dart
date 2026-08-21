@@ -275,7 +275,6 @@ class _AvatarCircle extends StatelessWidget {
           width: size,
           height: size,
           memCacheWidth: _cacheDimension(context),
-          memCacheHeight: _cacheDimension(context),
           placeholder: (_, __) => AppSkeletonBox(
             width: size,
             height: size,

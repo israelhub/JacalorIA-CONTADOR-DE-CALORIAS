@@ -34,8 +34,6 @@ class HomeMealCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final thumbnailSize = AppSpacing.huge + AppSpacing.xs;
-    final cacheDimension =
-        (thumbnailSize * MediaQuery.devicePixelRatioOf(context)).round();
 
     return Material(
       color: Colors.transparent,
@@ -68,8 +66,6 @@ class HomeMealCard extends StatelessWidget {
                     ? Image.memory(
                         imageBytes!,
                         fit: BoxFit.cover,
-                        cacheWidth: cacheDimension,
-                        cacheHeight: cacheDimension,
                       )
                     : imageUrl != null
                     ? AppNetworkImage(
@@ -77,7 +73,6 @@ class HomeMealCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         width: thumbnailSize,
                         height: thumbnailSize,
-                        cacheDimension: cacheDimension,
                         error: const ColoredBox(
                           color: AppColors.homeMetaCardSurface,
                           child: Icon(
@@ -93,8 +88,6 @@ class HomeMealCard extends StatelessWidget {
                             return Image.asset(
                               asset,
                               fit: BoxFit.cover,
-                              cacheWidth: cacheDimension,
-                              cacheHeight: cacheDimension,
                             );
                           }
 
