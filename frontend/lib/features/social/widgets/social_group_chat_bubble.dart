@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_anchored_menu.dart';
+import '../../../shared/widgets/app_network_image.dart';
 import '../../../shared/widgets/framed_avatar.dart';
 import '../helpers/social_group_helpers.dart';
 import '../models/jaca_emoji_catalog.dart';
@@ -305,10 +306,12 @@ class SocialGroupChatBubble extends StatelessWidget {
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 248, maxHeight: 312),
-            child: CachedNetworkImage(
-              imageUrl: url,
+            child: AppNetworkImage(
+              url: url,
               fit: BoxFit.cover,
-              placeholder: (_, __) => const SizedBox(
+              width: 248,
+              height: 312,
+              placeholder: const SizedBox(
                 width: 176,
                 height: 132,
                 child: Center(
@@ -318,8 +321,10 @@ class SocialGroupChatBubble extends StatelessWidget {
                   ),
                 ),
               ),
-              errorWidget: (_, __, ___) =>
-                  _textBubble('Não foi possível carregar a imagem', isMine),
+              error: _textBubble(
+                'Não foi possível carregar a imagem',
+                isMine,
+              ),
             ),
           ),
         ),

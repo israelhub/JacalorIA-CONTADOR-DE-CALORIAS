@@ -198,8 +198,8 @@
     document.getElementById("retentionCards").innerHTML = `
       <div class="ret-card">
         <span class="ret-label">
-          Dia seguinte
-          ${tipBadge("D1", "D1 = Day 1. Voltou no dia seguinte. Só quem já passou do dia 1. Exclui is_dev.")}
+          Após 1 dia
+          ${tipBadge("D1", "D1+. Conta quem abriu no dia seguinte ou depois. Só coorte madura (já passou do dia 1). Exclui is_dev.")}
         </span>
         <strong>${r.d1.pct}%</strong>
         <small>${r.d1.users} de ${denom(r.d1)} pessoas</small>

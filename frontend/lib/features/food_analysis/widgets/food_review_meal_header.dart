@@ -111,6 +111,7 @@ class _FoodReviewMealHeaderState extends State<FoodReviewMealHeader> {
                     widget.imageBytes!,
                     fit: BoxFit.cover,
                     width: double.infinity,
+                    height: double.infinity,
                   )
                 : hasNetworkImage
                 ? AppNetworkImage(

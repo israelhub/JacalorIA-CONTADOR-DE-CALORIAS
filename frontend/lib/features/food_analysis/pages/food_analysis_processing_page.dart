@@ -413,7 +413,7 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
   Widget _buildPreviewImage() {
     final bytes = widget.imageBytes;
     if (bytes != null) {
-      return Image.memory(bytes, fit: BoxFit.cover, width: double.infinity);
+      return Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, height: double.infinity);
     }
 
     final imageUrl = (widget.imageUrl ?? '').trim();

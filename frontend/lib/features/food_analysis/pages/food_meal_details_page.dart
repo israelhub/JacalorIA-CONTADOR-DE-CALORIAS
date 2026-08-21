@@ -739,6 +739,7 @@ class _MealHeroImage extends StatelessWidget {
         imageBytes!,
         fit: BoxFit.cover,
         width: double.infinity,
+        height: double.infinity,
       );
     }
 

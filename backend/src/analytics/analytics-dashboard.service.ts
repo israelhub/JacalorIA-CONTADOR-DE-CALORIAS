@@ -1054,7 +1054,7 @@ export class AnalyticsDashboardService {
           WHERE c.signup_day + 1 <= (SELECT d FROM today)
             AND EXISTS (
               SELECT 1 FROM activity a
-              WHERE a.user_id = c.user_id AND a.activity_day = c.signup_day + 1
+              WHERE a.user_id = c.user_id AND a.activity_day >= c.signup_day + 1
             )
         )::text AS retained_d1,
         COUNT(*) FILTER (

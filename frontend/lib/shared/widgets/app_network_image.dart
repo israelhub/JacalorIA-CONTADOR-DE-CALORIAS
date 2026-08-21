@@ -1,8 +1,58 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import 'app_skeleton.dart';
+
+class AppImageCacheManager {
+  AppImageCacheManager._();
+
+  static const key = 'jacaloriaImageCache';
+
+  static final CacheManager instance = CacheManager(
+    Config(
+      key,
+      stalePeriod: const Duration(days: 14),
+      maxNrOfCacheObjects: 400,
+    ),
+  );
+}
+
+class MemCacheSize {
+  const MemCacheSize({this.width, this.height});
+
+  final int? width;
+  final int? height;
+}
+
+MemCacheSize resolveAspectSafeMemCache({
+  double? width,
+  double? height,
+  required double devicePixelRatio,
+}) {
+  final dpr = devicePixelRatio <= 0 ? 2.0 : devicePixelRatio;
+  final w = _finitePositivePixels(width, dpr);
+  final h = _finitePositivePixels(height, dpr);
+  if (w == null && h == null) {
+    return const MemCacheSize();
+  }
+  if (w != null && h != null) {
+    if (w >= h) {
+      return MemCacheSize(width: w);
+    }
+    return MemCacheSize(height: h);
+  }
+  return MemCacheSize(width: w, height: h);
+}
+
+int? _finitePositivePixels(double? logical, double dpr) {
+  if (logical == null || !logical.isFinite || logical <= 0) {
+    return null;
+  }
+  final px = (logical * dpr).round();
+  return px > 0 ? px : null;
+}
 
 class AppNetworkImage extends StatelessWidget {
   const AppNetworkImage({
@@ -11,7 +61,6 @@ class AppNetworkImage extends StatelessWidget {
     this.fit = BoxFit.cover,
     this.width,
     this.height,
-    this.cacheDimension,
     this.borderRadius = 0,
     this.placeholder,
     this.error,
@@ -21,7 +70,6 @@ class AppNetworkImage extends StatelessWidget {
   final BoxFit fit;
   final double? width;
   final double? height;
-  final int? cacheDimension;
   final double borderRadius;
   final Widget? placeholder;
   final Widget? error;
@@ -60,14 +108,25 @@ class AppNetworkImage extends StatelessWidget {
       );
     }
 
+    final memCache = resolveAspectSafeMemCache(
+      width: width,
+      height: height,
+      devicePixelRatio: MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0,
+    );
+
     return CachedNetworkImage(
       key: cacheKey,
       imageUrl: imageUrl,
+      cacheKey: imageUrl,
+      cacheManager: AppImageCacheManager.instance,
       fit: fit,
       width: width,
       height: height,
-      memCacheWidth: cacheDimension,
-      memCacheHeight: cacheDimension,
+      memCacheWidth: memCache.width,
+      memCacheHeight: memCache.height,
+      maxWidthDiskCache: memCache.width,
+      maxHeightDiskCache: memCache.height,
+      fadeInDuration: const Duration(milliseconds: 150),
       placeholder: (_, __) => loading,
       errorWidget: (_, __, ___) => fallback,
     );

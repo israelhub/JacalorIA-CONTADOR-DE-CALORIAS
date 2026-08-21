@@ -31,12 +31,7 @@ class ImagePickerAdapter implements FoodImagePicker {
 
   @override
   Future<XFile?> pickImage(ImageSource source) {
-    return _picker.pickImage(
-      source: source,
-      imageQuality: 85,
-      maxWidth: 1600,
-      maxHeight: 1600,
-    );
+    return _picker.pickImage(source: source);
   }
 }
 
@@ -195,7 +190,14 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          CameraPreview(controller),
+          FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: controller.value.aspectRatio,
+              height: 1,
+              child: CameraPreview(controller),
+            ),
+          ),
           Positioned(
             top: AppSpacing.md,
             right: AppSpacing.md,
@@ -257,8 +259,9 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
       final controller = CameraController(
         selectedCamera,
-        ResolutionPreset.medium,
+        ResolutionPreset.high,
         enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
       );
       await controller.initialize();
 
