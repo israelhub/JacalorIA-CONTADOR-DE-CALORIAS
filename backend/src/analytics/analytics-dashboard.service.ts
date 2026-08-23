@@ -1349,30 +1349,53 @@ export class AnalyticsDashboardService {
       { entry: 'saved_meal', label: 'Refeição salva' },
     ] as const;
 
-    const rows = await this.sequelize.query<{
-      entry: string;
-      count: string;
-    }>(
-      `
-      SELECT
-        properties->>'entry' AS entry,
-        COUNT(*)::text AS count
-      FROM analytics_events
-      WHERE event_name = 'meal_capture_started'
-        AND occurred_at >= :betaStart
-        AND occurred_at < :betaEnd
-        AND properties->>'entry' IN ('camera', 'gallery', 'text', 'saved_meal')
-      GROUP BY 1
-      `,
-      {
-        replacements: { betaStart, betaEnd },
-        type: QueryTypes.SELECT,
-      },
-    );
+    const [rows, manualRows] = await Promise.all([
+      this.sequelize.query<{
+        entry: string;
+        count: string;
+      }>(
+        `
+        SELECT
+          properties->>'entry' AS entry,
+          COUNT(*)::text AS count
+        FROM analytics_events
+        WHERE event_name = 'meal_capture_started'
+          AND occurred_at >= :betaStart
+          AND occurred_at < :betaEnd
+          AND properties->>'entry' IN ('camera', 'gallery', 'text', 'saved_meal')
+        GROUP BY 1
+        `,
+        {
+          replacements: { betaStart, betaEnd },
+          type: QueryTypes.SELECT,
+        },
+      ),
+      this.sequelize.query<{ count: string }>(
+        `
+        SELECT COUNT(*)::text AS count
+        FROM analytics_events
+        WHERE event_name = 'ai_analyze_requested'
+          AND properties->>'source' = 'server'
+          AND properties->>'has_manual_text' = 'true'
+          AND occurred_at >= :betaStart
+          AND occurred_at < :betaEnd
+        `,
+        {
+          replacements: { betaStart, betaEnd },
+          type: QueryTypes.SELECT,
+        },
+      ),
+    ]);
 
     const countByEntry = new Map(
       rows.map((row) => [row.entry, Number(row.count || 0)]),
     );
+    // Digitar: clientes antigos nao mandavam entry=text; usa analise manual no servidor.
+    countByEntry.set(
+      'text',
+      Math.max(countByEntry.get('text') || 0, Number(manualRows[0]?.count || 0)),
+    );
+
     const total = entries.reduce(
       (sum, item) => sum + (countByEntry.get(item.entry) || 0),
       0,

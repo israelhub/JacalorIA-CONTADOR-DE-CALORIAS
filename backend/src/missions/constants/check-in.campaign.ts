@@ -52,15 +52,15 @@ export const AUGUST_2026_CHECK_IN_CAMPAIGN: CheckInCampaignDefinition = {
     day('2026-08-19', 5, [{ kind: 'gold', amount: 30 }]),
     day('2026-08-20', 6, [{ kind: 'gold', amount: 35 }]),
     day('2026-08-21', 7, [{ kind: 'gold', amount: 40 }]),
-    day('2026-08-22', 8, [
-      { kind: 'gold', amount: 15 },
-      { kind: 'frame', itemKey: 'aug_sunset_ring' },
-    ]),
+    day('2026-08-22', 8, [{ kind: 'gold', amount: 45 }]),
     day('2026-08-23', 9, [
       { kind: 'gold', amount: 15 },
       { kind: 'background', itemKey: 'aug_dusk_glow' },
     ]),
-    day('2026-08-24', 10, [{ kind: 'gold', amount: 45 }]),
+    day('2026-08-24', 10, [
+      { kind: 'gold', amount: 15 },
+      { kind: 'frame', itemKey: 'aug_sunset_ring' },
+    ]),
     day('2026-08-25', 11, [{ kind: 'gold', amount: 50 }]),
     day('2026-08-26', 12, [
       { kind: 'gold', amount: 10 },

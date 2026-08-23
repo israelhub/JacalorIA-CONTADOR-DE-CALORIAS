@@ -434,16 +434,19 @@
 
   function doughnutChart(id, labels, values, options = {}) {
     const ctx = document.getElementById(id);
+    const pairs = labels
+      .map((label, i) => ({ label, value: Number(values[i]) || 0 }))
+      .filter((row) => row.value > 0);
     charts[id] = new Chart(ctx, {
       type: "doughnut",
       data: {
-        labels,
+        labels: pairs.map((row) => row.label),
         datasets: [
           {
-            data: values,
+            data: pairs.map((row) => row.value),
             backgroundColor: ["#0f5132", "#166534", "#22c55e", "#86efac", "#dcfce7"],
             borderWidth: 0,
-            hoverOffset: 4,
+            hoverOffset: options.hoverOffset ?? 4,
           },
         ],
       },
@@ -451,6 +454,9 @@
         responsive: true,
         maintainAspectRatio: false,
         cutout: "62%",
+        layout: {
+          padding: options.padding ?? 0,
+        },
         plugins: {
           legend: options.hideLegend
             ? { display: false }
@@ -515,7 +521,7 @@
         "mealEntryChart",
         mealMethods.map((d) => d.label),
         mealMethods.map((d) => d.count),
-        { hideLegend: true },
+        { hideLegend: true, hoverOffset: 0, padding: 6 },
       );
     }
   }
