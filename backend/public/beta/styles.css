@@ -757,11 +757,19 @@ code {
 
 .meal-entry-layout {
   display: grid;
-  grid-template-columns: minmax(180px, 280px) 1fr;
+  grid-template-columns: minmax(140px, 200px) 1fr;
   gap: 16px;
   align-items: center;
   flex: 1 1 auto;
   min-height: 0;
+}
+
+.meal-entry-layout .chart-box {
+  height: 168px;
+  max-width: 200px;
+  flex: none;
+  overflow: hidden;
+  margin-inline: auto;
 }
 
 .meal-entry-list {
@@ -1199,6 +1207,11 @@ th .tip {
 
   .meal-entry-layout {
     grid-template-columns: 1fr;
+  }
+
+  .meal-entry-layout .chart-box {
+    height: 150px;
+    max-width: 180px;
   }
 
   .table-wrap-scroll {

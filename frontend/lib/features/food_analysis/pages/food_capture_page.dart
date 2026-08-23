@@ -1,6 +1,7 @@
-import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import 'package:image_picker/image_picker.dart';
@@ -187,17 +188,12 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
     final controller = _cameraController!;
     return _CameraShell(
+      // No web, ClipRRect + HtmlElementView da camera fica preto.
+      clipContent: !kIsWeb,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: controller.value.aspectRatio,
-              height: 1,
-              child: CameraPreview(controller),
-            ),
-          ),
+          _CameraLivePreview(controller: controller),
           Positioned(
             top: AppSpacing.md,
             right: AppSpacing.md,
@@ -259,9 +255,11 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
       final controller = CameraController(
         selectedCamera,
-        ResolutionPreset.high,
+        kIsWeb ? ResolutionPreset.medium : ResolutionPreset.high,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
+        imageFormatGroup: kIsWeb
+            ? ImageFormatGroup.unknown
+            : ImageFormatGroup.jpeg,
       );
       await controller.initialize();
 
@@ -351,6 +349,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       'meal_capture_started',
       properties: {'entry': 'text'},
     );
+    unawaited(AnalyticsService.instance.flush());
 
     final aiManualAnalysis = await _pushAnalysisLoadingPage(
       imageBytes: null,
@@ -887,36 +886,89 @@ class _FlashToggleButton extends StatelessWidget {
   }
 }
 
+class _CameraLivePreview extends StatelessWidget {
+  const _CameraLivePreview({required this.controller});
+
+  final CameraController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    if (kIsWeb) {
+      // HtmlElementView: ClipRRect/FittedBox/Transform deixam a preview preta.
+      // buildPreview() + CSS object-fit:cover preenche sem distorcer.
+      return ColoredBox(
+        color: Colors.black,
+        child: SizedBox.expand(child: controller.buildPreview()),
+      );
+    }
+
+    return ValueListenableBuilder<CameraValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        if (!value.isInitialized) {
+          return const ColoredBox(color: Colors.black);
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // So width (altura solta): AspectRatio interno nao recebe
+            // constraints apertadas erradas, que achatariam a textura.
+            return ClipRect(
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  clipBehavior: Clip.hardEdge,
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    child: CameraPreview(controller),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
 class _CameraShell extends StatelessWidget {
-  const _CameraShell({required this.child});
+  const _CameraShell({required this.child, this.clipContent = true});
 
   final Widget child;
+  final bool clipContent;
 
   static const double _radius = 32;
 
   @override
   Widget build(BuildContext context) {
+    final content = ColoredBox(
+      color: Colors.black,
+      child: DefaultTextStyle(
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.surface,
+        ),
+        child: IconTheme(
+          data: const IconThemeData(color: AppColors.action500),
+          child: child,
+        ),
+      ),
+    );
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(_radius),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(_radius),
-        child: ColoredBox(
-          color: Colors.black,
-          child: DefaultTextStyle(
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.surface,
-            ),
-            child: IconTheme(
-              data: const IconThemeData(color: AppColors.action500),
-              child: child,
-            ),
-          ),
-        ),
-      ),
+      child: clipContent
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(_radius),
+              child: content,
+            )
+          : content,
     );
   }
 }
