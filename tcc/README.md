@@ -2,15 +2,6 @@
 
 Texto pronto para colar no TCC: `capitulo-4-2-metodologia-de-software.md`.
 
-Figuras (PNG e PDF) em `figuras/`:
+O capítulo descreve a abordagem DSR/ADR, as etapas de desenvolvimento, a arquitetura, a *stack* tecnológica (Tabela 7) e o fluxo de reconhecimento alimentar com IA e TACO. Requisitos, diagramas e especificações detalhadas não são reproduzidos neste texto — apenas se registra que o trabalho foi dividido nessas etapas.
 
-| Arquivo | Legenda sugerida |
-| --- | --- |
-| `figura-dsr-adr` | Figura 1 — Integração entre DSR e ADR |
-| `figura-etapas-desenvolvimento` | Figura 2 — Etapas do desenvolvimento |
-| `figura-casos-de-uso` | Figura 3 — Casos de uso |
-| `figura-arquitetura-logica` | Figura 4 — Arquitetura lógica |
-| `figura-arquitetura-implantacao` | Figura 5 — Arquitetura de implantação |
-| `figura-fluxo-reconhecimento` | Figura 6 — Fluxo de reconhecimento alimentar com IA e TACO |
-
-Para regenerar as figuras: `python3 tcc/gerar_figuras.py`
+Referências novas a incluir na lista do TCC: Hevner et al. (2004), Lacerda et al. (2013), NEPA/UNICAMP (2011), Peffers et al. (2007), Schacht, Morana e Maedche (2015) e Sein et al. (2011).
