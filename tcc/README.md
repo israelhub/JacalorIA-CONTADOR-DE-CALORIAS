@@ -13,4 +13,4 @@ Figuras (PNG e PDF) em `figuras/`:
 | `figura-arquitetura-implantacao` | Figura 5 — Arquitetura de implantação |
 | `figura-fluxo-reconhecimento` | Figura 6 — Fluxo de reconhecimento alimentar com IA e TACO |
 
-Para regenerar as figuras: `python3 docs/tcc/gerar_figuras.py`
+Para regenerar as figuras: `python3 tcc/gerar_figuras.py`
