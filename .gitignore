@@ -97,4 +97,5 @@ artifacts
 docs/*
 !docs/*.puml
 !docs/*.svg
+!docs/*.png
 .cursor/
