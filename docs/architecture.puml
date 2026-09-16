@@ -1,0 +1,88 @@
+' Jacaloria — arquitetura de runtime (fonte: infra/cloudformation, backend/, frontend/)
+' Preview: extensão PlantUML, IntelliJ, ou https://www.plantuml.com/plantuml/uml
+@startuml Jacaloria - Arquitetura de runtime
+title Jacaloria — Arquitetura de runtime
+caption jacaloria.online · CloudFront na mesma origem (SPA + /api + /beta)
+
+skinparam shadowing false
+skinparam roundCorner 14
+skinparam defaultFontSize 13
+skinparam ArrowColor #1E293B
+skinparam ArrowThickness 1.4
+skinparam nodesep 40
+skinparam ranksep 50
+
+skinparam rectangle {
+  BorderColor #0F172A
+  FontColor #0F172A
+}
+skinparam package {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #334155
+  FontStyle bold
+  FontSize 12
+}
+skinparam database {
+  BackgroundColor #F3E8FF
+  BorderColor #7C3AED
+  FontColor #0F172A
+}
+skinparam actor {
+  BackgroundColor #E2E8F0
+  BorderColor #0F172A
+}
+
+actor "Usuário" as user
+
+package "Clientes Flutter" as clientes #ECFDF3 {
+  rectangle "**Web (PWA)**\nbuild em S3" as web #BBF7D0
+  rectangle "**Android / iOS**\ncâmera, Google Sign-In\nnotificações, widget" as mobile #BBF7D0
+}
+
+package "Edge AWS — CloudFront + ACM (us-east-1)" as edge #FFF7ED {
+  rectangle "**CloudFront HTTPS**\njacaloria.online / www\n\n/*  =>  S3 (SPA, fallback index.html)\n/api/*  =>  Elastic Beanstalk (sem cache)\n/beta*  =>  Elastic Beanstalk" as cf #FDBA74
+}
+
+package "Origens AWS" as aws #FEFCE8 {
+  rectangle "**S3 privado**\nFlutter Web + OAC SigV4\n.well-known (App Links)" as s3 #FEF08A
+  rectangle "**Elastic Beanstalk**\nDocker Node 22 · t3.micro\nNestJS :3000 · nginx 120s\n\nAuth · Meals · AI · Social\nMissions · Performance\nNotifications · Analytics\nSupport · Health · Mail" as eb #FACC15
+  rectangle "**ECR**\njacaloria-backend" as ecr #FDE68A
+}
+
+package "Dados (Supabase sa-east-1)" as data #F5F3FF {
+  database "**PostgreSQL**\nSequelize + pooler SSL\nTACO 4ª edição (RAG)" as pg
+  rectangle "**Storage**\navatars · meals · group-chat" as storage #DDD6FE
+}
+
+package "Serviços externos" as ext #F1F5F9 {
+  rectangle "**Gemini**\nvisão + fallbacks flash-lite" as gemini #E2E8F0
+  rectangle "**Google Identity**\nSign-In / tokeninfo" as google #E2E8F0
+  rectangle "**SMTP**\nNodemailer" as smtp #E2E8F0
+}
+
+package "CI/CD" as cicd #F8FAFC {
+  rectangle "**GitHub Actions** (push main)\nOIDC => IAM deploy role\nfront: flutter build web => S3 + invalidação\nback: docker => ECR => Dockerrun EB" as gha #CBD5E1
+}
+
+user --> web
+user --> mobile
+
+web -down-> cf : HTTPS
+mobile -down-> cf : HTTPS /api
+mobile -down-> storage : upload de fotos
+
+cf -down-> s3 : GET estáticos
+cf -down-> eb : /api e /beta
+
+eb -down-> pg : SQL
+eb -down-> gemini : análise do prato
+eb -down-> google : OAuth
+eb -down-> smtp : e-mail
+
+gha -down-> ecr
+ecr -down-> eb : imagem
+gha -down-> s3 : sync web
+gha -down-> cf : invalidação
+
+@enduml
