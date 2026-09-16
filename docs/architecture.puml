@@ -1,88 +1,38 @@
-' Jacaloria — arquitetura de runtime (fonte: infra/cloudformation, backend/, frontend/)
-' Preview: extensão PlantUML, IntelliJ, ou https://www.plantuml.com/plantuml/uml
-@startuml Jacaloria - Arquitetura de runtime
-title Jacaloria — Arquitetura de runtime
-caption jacaloria.online · CloudFront na mesma origem (SPA + /api + /beta)
+' Jacaloria — arquitetura em 4 camadas
+' Preview: https://www.plantuml.com/plantuml
+@startuml Jacaloria - Arquitetura
+title Jacaloria — Arquitetura
+caption Mesma origem HTTPS: jacaloria.online
+footer Deploy: GitHub Actions (OIDC) publica a API (Docker, ECR, Elastic Beanstalk) e o Flutter Web (S3 + invalidação CloudFront)
 
 skinparam shadowing false
-skinparam roundCorner 14
-skinparam defaultFontSize 13
-skinparam ArrowColor #1E293B
-skinparam ArrowThickness 1.4
-skinparam nodesep 40
-skinparam ranksep 50
+skinparam roundCorner 18
+skinparam defaultFontSize 15
+skinparam defaultTextAlignment center
+skinparam ArrowColor #0F172A
+skinparam ArrowThickness 2
+skinparam ArrowFontSize 14
+skinparam ranksep 45
+skinparam linetype ortho
 
 skinparam rectangle {
   BorderColor #0F172A
   FontColor #0F172A
-}
-skinparam package {
-  BackgroundColor #F8FAFC
-  BorderColor #64748B
-  FontColor #334155
-  FontStyle bold
-  FontSize 12
-}
-skinparam database {
-  BackgroundColor #F3E8FF
-  BorderColor #7C3AED
-  FontColor #0F172A
-}
-skinparam actor {
-  BackgroundColor #E2E8F0
-  BorderColor #0F172A
+  FontSize 15
 }
 
-actor "Usuário" as user
+top to bottom direction
 
-package "Clientes Flutter" as clientes #ECFDF3 {
-  rectangle "**Web (PWA)**\nbuild em S3" as web #BBF7D0
-  rectangle "**Android / iOS**\ncâmera, Google Sign-In\nnotificações, widget" as mobile #BBF7D0
-}
+rectangle "**1. Clientes**\n\nFlutter Web (PWA)        ·        Flutter Android / iOS\ncâmera · Google Sign-In · notificações · widget" as clientes #BBF7D0
 
-package "Edge AWS — CloudFront + ACM (us-east-1)" as edge #FFF7ED {
-  rectangle "**CloudFront HTTPS**\njacaloria.online / www\n\n/*  =>  S3 (SPA, fallback index.html)\n/api/*  =>  Elastic Beanstalk (sem cache)\n/beta*  =>  Elastic Beanstalk" as cf #FDBA74
-}
+rectangle "**2. CloudFront + ACM**\nhttps://jacaloria.online\n\nsite (SPA)          =>  S3\nAPI e dashboard     =>  NestJS" as edge #FDBA74
 
-package "Origens AWS" as aws #FEFCE8 {
-  rectangle "**S3 privado**\nFlutter Web + OAC SigV4\n.well-known (App Links)" as s3 #FEF08A
-  rectangle "**Elastic Beanstalk**\nDocker Node 22 · t3.micro\nNestJS :3000 · nginx 120s\n\nAuth · Meals · AI · Social\nMissions · Performance\nNotifications · Analytics\nSupport · Health · Mail" as eb #FACC15
-  rectangle "**ECR**\njacaloria-backend" as ecr #FDE68A
-}
+rectangle "**3. Origens AWS**\n\n**S3** — Flutter Web estático (privado)\n**Elastic Beanstalk** — API NestJS (Docker :3000)\nAuth, Meals, AI, Social, Missions, Performance, Notifications" as aws #FDE68A
 
-package "Dados (Supabase sa-east-1)" as data #F5F3FF {
-  database "**PostgreSQL**\nSequelize + pooler SSL\nTACO 4ª edição (RAG)" as pg
-  rectangle "**Storage**\navatars · meals · group-chat" as storage #DDD6FE
-}
+rectangle "**4. Dados e serviços**\n\n**Postgres** (Supabase + TACO)     **Storage** (fotos)     **Gemini** (visão)\n**Google Identity** (Sign-In)     **SMTP** (e-mail)" as deps #EDE9FE
 
-package "Serviços externos" as ext #F1F5F9 {
-  rectangle "**Gemini**\nvisão + fallbacks flash-lite" as gemini #E2E8F0
-  rectangle "**Google Identity**\nSign-In / tokeninfo" as google #E2E8F0
-  rectangle "**SMTP**\nNodemailer" as smtp #E2E8F0
-}
-
-package "CI/CD" as cicd #F8FAFC {
-  rectangle "**GitHub Actions** (push main)\nOIDC => IAM deploy role\nfront: flutter build web => S3 + invalidação\nback: docker => ECR => Dockerrun EB" as gha #CBD5E1
-}
-
-user --> web
-user --> mobile
-
-web -down-> cf : HTTPS
-mobile -down-> cf : HTTPS /api
-mobile -down-> storage : upload de fotos
-
-cf -down-> s3 : GET estáticos
-cf -down-> eb : /api e /beta
-
-eb -down-> pg : SQL
-eb -down-> gemini : análise do prato
-eb -down-> google : OAuth
-eb -down-> smtp : e-mail
-
-gha -down-> ecr
-ecr -down-> eb : imagem
-gha -down-> s3 : sync web
-gha -down-> cf : invalidação
+clientes -down-> edge : HTTPS
+edge -down-> aws
+aws -down-> deps
 
 @enduml
