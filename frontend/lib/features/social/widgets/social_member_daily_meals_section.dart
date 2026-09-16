@@ -7,6 +7,7 @@ import '../../food_analysis/models/food_meal_record.dart';
 import '../../food_analysis/pages/food_meal_details_page.dart';
 import '../../home/helpers/home_date_helpers.dart';
 import '../../home/widgets/home_meal_card.dart';
+import '../helpers/social_model_parsers.dart';
 import '../models/social_member_daily_meals.dart';
 import '../services/social_service.dart';
 
@@ -72,7 +73,10 @@ class _SocialMemberDailyMealsSectionState
       });
     } catch (error) {
       if (!mounted) return;
-      final message = error.toString().replaceFirst('Exception: ', '');
+      final message = socialFriendlyError(
+        error,
+        fallback: 'Não foi possível carregar refeições do perfil.',
+      );
       final shouldHide = message.toLowerCase().contains('não encontrado') ||
           message.toLowerCase().contains('nao encontrado');
       setState(() {

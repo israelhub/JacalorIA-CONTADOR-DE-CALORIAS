@@ -77,6 +77,7 @@ class FramedAvatar extends StatelessWidget {
                           cacheHeight: frameCacheDimension,
                           filterQuality: FilterQuality.medium,
                           isAntiAlias: true,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                         ),
                       ),
                     ),

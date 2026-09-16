@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../food_analysis/helpers/image_optimizer.dart';
 import '../../../../shared/services/supabase_storage_service.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -309,12 +310,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
     try {
       final avatarBytes = await picked.readAsBytes();
-      final fileName = picked.name.trim().toLowerCase();
-      final dotIndex = fileName.lastIndexOf('.');
-      final extension = dotIndex > -1 ? fileName.substring(dotIndex) : null;
+      final optimized = await optimizeForAvatar(avatarBytes);
       final uploadedUrl = await SupabaseStorageService.uploadAvatarBytes(
-        avatarBytes,
-        extension: extension,
+        optimized.bytes,
+        extension: '.jpg',
       );
       if (uploadedUrl == null || uploadedUrl.isEmpty) {
         if (mounted) {
