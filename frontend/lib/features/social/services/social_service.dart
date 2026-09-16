@@ -183,7 +183,10 @@ class SocialService {
           queryParameters: queryParameters.isEmpty ? null : queryParameters,
         );
     final response = await http.get(uri, headers: _headers());
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final body = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Não foi possível carregar o perfil. Tente de novo.',
+    );
     if (response.statusCode == 200) {
       final profile = SocialFriendProfile.fromJson(body);
       _friendProfileSeed[_friendProfileKey(
@@ -216,7 +219,10 @@ class SocialService {
           queryParameters: queryParameters.isEmpty ? null : queryParameters,
         );
     final response = await http.get(uri, headers: _headers());
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final body = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Não foi possível carregar a lista de amigos.',
+    );
     if (response.statusCode == 200) {
       return (body['friends'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
@@ -473,7 +479,10 @@ class SocialService {
       '$_baseUrl/social/groups/${groupId.trim()}/members/${memberUserId.trim()}/daily-meals',
     ).replace(queryParameters: queryParameters.isEmpty ? null : queryParameters);
     final response = await http.get(uri, headers: _headers());
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final body = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Não foi possível carregar refeições do membro.',
+    );
     if (response.statusCode == 200) {
       return SocialMemberDailyMeals.fromJson(body);
     }
@@ -508,7 +517,10 @@ class SocialService {
           queryParameters: queryParameters.isEmpty ? null : queryParameters,
         );
     final response = await http.get(uri, headers: _headers());
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final body = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Não foi possível carregar refeições do perfil.',
+    );
     if (response.statusCode == 200) {
       return SocialMemberDailyMeals.fromJson(body);
     }
@@ -668,9 +680,7 @@ class SocialService {
       throw Exception(fallbackError);
     }
     if (trimmed.startsWith('<')) {
-      throw Exception(
-        'A API não reconheceu esta ação. Reinicie o backend local ou publique a versão mais recente.',
-      );
+      throw Exception(fallbackError);
     }
     try {
       final decoded = jsonDecode(rawBody);

@@ -7,6 +7,7 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/avatar_profile_preview.dart';
 import '../../profile/helpers/profile_date_helpers.dart';
 import '../../profile/widgets/profile_achievements_card.dart';
+import '../helpers/social_model_parsers.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
 import '../widgets/social_member_daily_meals_section.dart';
@@ -85,7 +86,10 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
         return;
       }
       setState(() {
-        _error = error.toString().replaceFirst('Exception: ', '');
+        _error = socialFriendlyError(
+          error,
+          fallback: 'Não foi possível carregar o perfil. Tente de novo.',
+        );
         _isLoading = false;
       });
     }

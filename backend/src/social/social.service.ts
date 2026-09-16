@@ -1633,18 +1633,27 @@ export class SocialService {
    * reference_key, então o total vem da contagem de chaves distintas.
    */
   private async countCompletedMissions(userId: string) {
-    const rows = await this.userCurrencyTransactionModel.findAll({
-      where: { userId, sourceType: 'mission_reward' },
-      attributes: ['referenceKey'],
-    });
+    const sequelize = this.userCurrencyTransactionModel.sequelize;
+    if (!sequelize) {
+      return 0;
+    }
 
-    const referenceKeys = new Set(
-      rows
-        .map((row) => row.referenceKey?.trim() ?? '')
-        .filter((key) => key.length > 0),
+    const rows = await sequelize.query<{ count: string }>(
+      `
+      SELECT COUNT(DISTINCT reference_key)::text AS count
+      FROM user_currency_transactions
+      WHERE user_id = :userId
+        AND source_type = 'mission_reward'
+        AND reference_key IS NOT NULL
+        AND btrim(reference_key) <> ''
+      `,
+      {
+        replacements: { userId },
+        type: QueryTypes.SELECT,
+      },
     );
 
-    return referenceKeys.size;
+    return parseNumber(rows[0]?.count);
   }
 
   private countOwnedCosmetics(

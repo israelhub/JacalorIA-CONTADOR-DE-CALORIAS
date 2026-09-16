@@ -24,6 +24,23 @@ String socialFormatAverageCalories(num value) {
   return rounded.toStringAsFixed(1);
 }
 
+String socialFriendlyError(Object error, {String fallback = 'Algo deu errado.'}) {
+  final raw = error.toString().replaceFirst('Exception: ', '').trim();
+  if (raw.isEmpty) {
+    return fallback;
+  }
+
+  final normalized = raw.toLowerCase();
+  if (normalized.contains('doctype') ||
+      normalized.contains('formatexception') ||
+      normalized.contains('unexpected character') ||
+      raw.trimLeft().startsWith('<')) {
+    return fallback;
+  }
+
+  return raw;
+}
+
 String? socialReadAvatarUrl(Map<String, dynamic> json) {
   for (final key in const ['avatarUrl', 'avatar_url']) {
     final value = json[key]?.toString().trim();
