@@ -228,14 +228,14 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+
+      - name: Aceitar licenças do Android SDK
+        run: yes | flutter doctor --android-licenses
 
       - name: Instalar dependencias
         working-directory: frontend
