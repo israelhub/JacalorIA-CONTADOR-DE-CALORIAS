@@ -24,6 +24,34 @@ void main() {
       expect(result.dailyCarbsGoal, 224);
       expect(result.dailyFatGoal, 65);
     });
+
+    test('perder peso cruzando IMC 30 não dispara a meta para cima', () {
+      NutritionGoalResult goalAt(double weight) {
+        return calculateNutritionGoals(
+          NutritionGoalInput(
+            weight: weight,
+            height: 170,
+            age: 52,
+            sex: 'Feminino',
+            objective: 'loseWeight',
+            activityLevel: 'moderate',
+          ),
+        );
+      }
+
+      final previous = goalAt(87.8);
+      final current = goalAt(86.2);
+
+      expect(current.dailyCalorieGoal, lessThanOrEqualTo(previous.dailyCalorieGoal + 20));
+      expect(current.dailyCalorieGoal, inInclusiveRange(1550, 1700));
+
+      final justAbove30 = goalAt(86.7);
+      final justBelow30 = goalAt(86.6);
+      expect(
+        (justAbove30.dailyCalorieGoal - justBelow30.dailyCalorieGoal).abs(),
+        lessThanOrEqualTo(15),
+      );
+    });
   });
 
   group('calculateAgeFromBirthDate', () {

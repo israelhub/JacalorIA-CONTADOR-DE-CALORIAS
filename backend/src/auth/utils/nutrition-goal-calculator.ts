@@ -204,18 +204,20 @@ function resolveLossDeficitPercent(
   bmi: number,
   activityLevel?: string | null,
 ): number {
-  let percent = 0.2;
+  // Degraus originais: 30% (≥40), 27% (≥35), 25% (≥30), 22% (≥27), 18%.
+  // Interpolados para a meta não saltar ao cruzar um limiar de IMC.
+  let percent = 0.18;
 
   if (bmi >= 40) {
     percent = 0.3;
   } else if (bmi >= 35) {
-    percent = 0.27;
+    percent = lerp(0.27, 0.3, (bmi - 35) / 5);
   } else if (bmi >= 30) {
-    percent = 0.25;
+    percent = lerp(0.25, 0.27, (bmi - 30) / 5);
   } else if (bmi >= 27) {
-    percent = 0.22;
-  } else {
-    percent = 0.18;
+    percent = lerp(0.22, 0.25, (bmi - 27) / 3);
+  } else if (bmi >= 22) {
+    percent = lerp(0.18, 0.22, (bmi - 22) / 5);
   }
 
   const normalizedActivity = (activityLevel ?? '').toLowerCase();
@@ -263,10 +265,24 @@ function resolveMetabolicWeightKg(
   }
 
   const bmi = weightKg / (heightM * heightM);
-  if (bmi < 30) {
+  const adjustedWeightKg = resolveAdjustedWeightKg(weightKg, heightM);
+
+  // IMC ≥ 30: peso ajustado (IBW + 25% do excesso) para não inflar o TDEE.
+  // IMC ≤ 27: peso real. Entre 27 e 30 interpola — senão cruzar obesidade
+  // (ex.: 87,8 → 86,2 kg / 1,70 m) sobe a meta de uma vez.
+  if (bmi >= 30) {
+    return adjustedWeightKg;
+  }
+
+  if (bmi <= 27) {
     return weightKg;
   }
 
+  const fadeToActual = (30 - bmi) / 3;
+  return lerp(adjustedWeightKg, weightKg, fadeToActual);
+}
+
+function resolveAdjustedWeightKg(weightKg: number, heightM: number): number {
   const idealWeightKg = 24.9 * (heightM * heightM);
   const adjustedWeightKg = idealWeightKg + ((weightKg - idealWeightKg) * 0.25);
   return Math.max(idealWeightKg, Math.min(weightKg, adjustedWeightKg));
@@ -369,6 +385,10 @@ function resolveMacroDistribution(objective: Objective): {
   }
 
   return { protein: 0.25, fat: 0.3 };
+}
+
+function lerp(from: number, to: number, t: number): number {
+  return from + (to - from) * clamp(t, 0, 1);
 }
 
 function clamp(value: number, min: number, max: number): number {
