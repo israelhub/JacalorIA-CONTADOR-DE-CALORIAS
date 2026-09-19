@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   buildMatchableFood,
+  DEFAULT_FOOD_MATCH_THRESHOLD,
   findBestFoodMatch,
   hasWordBoundaryMatch,
 } from './food-match.util';
 
-const MATCH_THRESHOLD = 0.58;
+const MATCH_THRESHOLD = DEFAULT_FOOD_MATCH_THRESHOLD;
 
 const CATALOG = [
   buildMatchableFood({
@@ -76,6 +77,26 @@ const CATALOG = [
   buildMatchableFood({
     description: 'Coxinha de frango, frita',
     category: 'Carnes e derivados',
+  }),
+  buildMatchableFood({
+    description: 'Empada, de frango',
+    category: 'Carnes e derivados',
+  }),
+  buildMatchableFood({
+    description: 'Biscoito salgado, cream cracker',
+    category: 'Produtos açucarados',
+  }),
+  buildMatchableFood({
+    description: 'Biscoito, água e sal',
+    category: 'Produtos açucarados',
+  }),
+  buildMatchableFood({
+    description: 'Arroz, tipo 1, cozido',
+    category: 'Cereais e derivados',
+  }),
+  buildMatchableFood({
+    description: 'Sal, refinado',
+    category: 'Miscelâneas',
   }),
   buildMatchableFood({
     description: 'Ovo, de galinha, inteiro, frito',
@@ -226,5 +247,69 @@ describe('food-match.util', () => {
     const result = match('grão de bico cru');
     assert.ok(result);
     assert.equal(result.food.description, 'Grão-de-bico, cru');
+  });
+
+  it('água de coco casa com Coco, água de (não Água)', () => {
+    const result = match('água de coco');
+    assert.ok(result);
+    assert.equal(result.food.description, 'Coco, água de');
+  });
+
+  it('bolacha de água e sal casa com biscoito água e sal (não Água/Sal)', () => {
+    for (const query of [
+      'bolacha de água e sal',
+      'bolacha de agua e sal',
+      'biscoito de água e sal',
+    ]) {
+      const result = match(query);
+      assert.ok(result, query);
+      assert.equal(result.food.description, 'Biscoito, água e sal');
+    }
+  });
+
+  it('bolacha sozinha não casa com Água', () => {
+    const result = match('bolacha de água e sal caseira da vovó');
+    assert.equal(result, null);
+  });
+
+  it('sem linha lexical água e sal, bolacha não cai em Água nem cream cracker', () => {
+    const catalog = CATALOG.filter(
+      (food) => !food.description.toLowerCase().includes('água e sal'),
+    );
+    const result = findBestFoodMatch(
+      'bolacha de água e sal',
+      catalog,
+      MATCH_THRESHOLD,
+    );
+    assert.equal(result, null);
+  });
+
+  it('empadão da Margareth não casa com frango nem empada', () => {
+    for (const query of [
+      'empadão da margareth',
+      'Empadão da Margareth',
+      'Empadão da Margareth de frango',
+      'empadão de frango',
+    ]) {
+      const result = match(query);
+      assert.equal(result, null, query);
+    }
+  });
+
+  it('coxinha de frango casa com coxinha (não peito de frango)', () => {
+    const result = match('coxinha de frango');
+    assert.ok(result);
+    assert.equal(result.food.description, 'Coxinha de frango, frita');
+  });
+
+  it('arroz branco cozido casa com arroz tipo 1 cozido', () => {
+    const result = match('arroz branco cozido');
+    assert.ok(result);
+    assert.equal(result.food.description, 'Arroz, tipo 1, cozido');
+  });
+
+  it('prato composto não casa com o ingrediente (arroz carreteiro)', () => {
+    const result = match('arroz carreteiro');
+    assert.equal(result, null);
   });
 });
