@@ -1016,8 +1016,8 @@ export class AnalyticsDashboardService {
       retained_d1: string;
       mature_d7: string;
       retained_d7: string;
-      mature_d14: string;
-      retained_d14: string;
+      mature_d30: string;
+      retained_d30: string;
     }>(
       `
       WITH cohort AS (
@@ -1068,15 +1068,15 @@ export class AnalyticsDashboardService {
             )
         )::text AS retained_d7,
         COUNT(*) FILTER (
-          WHERE c.signup_day + 14 <= (SELECT d FROM today)
-        )::text AS mature_d14,
+          WHERE c.signup_day + 30 <= (SELECT d FROM today)
+        )::text AS mature_d30,
         COUNT(*) FILTER (
-          WHERE c.signup_day + 14 <= (SELECT d FROM today)
+          WHERE c.signup_day + 30 <= (SELECT d FROM today)
             AND EXISTS (
               SELECT 1 FROM activity a
-              WHERE a.user_id = c.user_id AND a.activity_day >= c.signup_day + 14
+              WHERE a.user_id = c.user_id AND a.activity_day >= c.signup_day + 30
             )
-        )::text AS retained_d14
+        )::text AS retained_d30
       FROM cohort c
       `,
       {
@@ -1093,14 +1093,14 @@ export class AnalyticsDashboardService {
     const d1Cohort = Number(row?.mature_d1 ?? 0);
     const d7Users = Number(row?.retained_d7 ?? 0);
     const d7Cohort = Number(row?.mature_d7 ?? 0);
-    const d14Users = Number(row?.retained_d14 ?? 0);
-    const d14Cohort = Number(row?.mature_d14 ?? 0);
+    const d30Users = Number(row?.retained_d30 ?? 0);
+    const d30Cohort = Number(row?.mature_d30 ?? 0);
 
     return {
       cohortSize: Number(row?.cohort_size ?? 0),
       d1: { users: d1Users, cohortSize: d1Cohort, pct: pct(d1Users, d1Cohort) },
       d7: { users: d7Users, cohortSize: d7Cohort, pct: pct(d7Users, d7Cohort) },
-      d14: { users: d14Users, cohortSize: d14Cohort, pct: pct(d14Users, d14Cohort) },
+      d30: { users: d30Users, cohortSize: d30Cohort, pct: pct(d30Users, d30Cohort) },
     };
   }
 
