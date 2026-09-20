@@ -214,11 +214,11 @@
       </div>
       <div class="ret-card">
         <span class="ret-label">
-          Após 14 dias
-          ${tipBadge("D14", "D14+. Conta quem abriu no 14º dia ou depois. Só coorte madura. Exclui is_dev.")}
+          Após 1 mês
+          ${tipBadge("D30", "D30+. Conta quem abriu no 30º dia ou depois. Só coorte madura. Exclui is_dev.")}
         </span>
-        <strong>${r.d14.pct}%</strong>
-        <small>${r.d14.users} de ${denom(r.d14)} pessoas</small>
+        <strong>${r.d30.pct}%</strong>
+        <small>${r.d30.users} de ${denom(r.d30)} pessoas</small>
       </div>
     `;
   }
