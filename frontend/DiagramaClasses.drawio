@@ -866,7 +866,7 @@
         <mxCell id="e277" edge="1" parent="1" source="c143" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c132" value="*  1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e278" edge="1" parent="1" source="c132" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c143" value="1  * deliveries">
+        <mxCell id="e278" edge="1" parent="1" source="c132" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c143" value="1  * entregas">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e279" edge="1" parent="1" source="c250" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c4" value="*  1">
@@ -879,7 +879,7 @@
         <mxCell id="e280" edge="1" parent="1" source="c260" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c4" value="*  1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e281" edge="1" parent="1" source="c161" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c4" value="*  1 owner">
+        <mxCell id="e281" edge="1" parent="1" source="c161" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c4" value="*  1 dono">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e282" edge="1" parent="1" source="c161" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c179" value="1  *">
@@ -902,7 +902,7 @@
         <mxCell id="e287" edge="1" parent="1" source="c190" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c4" value="*  1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e289" edge="1" parent="1" source="c190" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c190" value="*  0..1 replyTo">
+        <mxCell id="e289" edge="1" parent="1" source="c190" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c190" value="*  0..1 respondeA">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e290" edge="1" parent="1" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" value="*  1">
@@ -922,7 +922,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e294" edge="1" parent="1" source="f229" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="c4" value="*  1 userLow/High">
+        <mxCell id="e294" edge="1" parent="1" source="f229" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="c4" value="*  1 userLowId/userHighId">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="30" y="1260" />
@@ -930,7 +930,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e295" edge="1" parent="1" source="c232" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c4" value="*  1 requester/recipient">
+        <mxCell id="e295" edge="1" parent="1" source="c232" style="endArrow=open;html=1;endSize=10;startArrow=none;rounded=0;" target="c4" value="*  1 solicitante/destinatário">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="300" y="1180" />
@@ -947,10 +947,10 @@
             <mxPoint x="220" y="740" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e297" edge="1" parent="1" source="c110" style="endArrow=open;html=1;endSize=10;dashed=1;dashPattern=8 4;rounded=0;" target="c4" value="*  1 «logical»">
+        <mxCell id="e297" edge="1" parent="1" source="c110" style="endArrow=open;html=1;endSize=10;dashed=1;dashPattern=8 4;rounded=0;" target="c4" value="*  1 «lógico»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e298" edge="1" parent="1" source="c4" style="endArrow=open;html=1;endSize=10;dashed=1;dashPattern=8 4;rounded=0;" target="c99" value="itemKey / JSONB">
+        <mxCell id="e298" edge="1" parent="1" source="c4" style="endArrow=open;html=1;endSize=10;dashed=1;dashPattern=8 4;rounded=0;" target="c99" value="via itemKey / JSONB">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
