@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Jacaloria-agent">
+  <diagram id="CasosDeUsoJacaloria" name="Casos de Uso">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1700" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+<mxCell id="t1" value="Jacaloria — Diagrama de Casos de Uso" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=1;fontSize=18;" vertex="1" parent="1"><mxGeometry x="200" y="16" width="520" height="28" as="geometry"/></mxCell>
+<mxCell id="sys2" value="Sistema Jacaloria" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;dashed=1;dashPattern=8 8;fillColor=none;strokeColor=#666666;" vertex="1" parent="1"><mxGeometry x="180" y="56" width="1700" height="1580" as="geometry"/></mxCell>
+<mxCell id="a3" value="Visitante" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1"><mxGeometry x="40" y="260" width="40" height="70" as="geometry"/></mxCell>
+<mxCell id="a4" value="Usuário" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1"><mxGeometry x="40" y="700" width="40" height="70" as="geometry"/></mxCell>
+<mxCell id="a5" value="Sistema / IA
+(Gemini + TACO)" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1"><mxGeometry x="40" y="1140" width="40" height="70" as="geometry"/></mxCell>
+<mxCell id="a6" value="Operador Beta" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1"><mxGeometry x="40" y="1480" width="40" height="70" as="geometry"/></mxCell>
+<mxCell id="p7" value="Autenticação" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;" vertex="1" parent="1"><mxGeometry x="220" y="80" width="380" height="380" as="geometry"/></mxCell>
+<mxCell id="u8" value="Cadastrar conta" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p7"><mxGeometry x="20" y="40" width="155" height="48" as="geometry"/></mxCell>
+<mxCell id="u9" value="Confirmar e-mail" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p7"><mxGeometry x="200" y="40" width="155" height="48" as="geometry"/></mxCell>
+<mxCell id="u10" value="Fazer login" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p7"><mxGeometry x="20" y="110" width="155" height="48" as="geometry"/></mxCell>
+<mxCell id="u11" value="Entrar com Google" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p7"><mxGeometry x="200" y="110" width="155" height="48" as="geometry"/></mxCell>
+<mxCell id="u12" value="Recuperar senha" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p7"><mxGeometry x="20" y="180" width="155" height="48" as="geometry"/></mxCell>
+<mxCell id="u13" value="Redefinir senha" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p7"><mxGeometry x="200" y="180" width="155" height="48" as="geometry"/></mxCell>
+<mxCell id="u14" value="Consultar termos" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p7"><mxGeometry x="20" y="250" width="155" height="48" as="geometry"/></mxCell>
+<mxCell id="u15" value="Sair da conta" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p7"><mxGeometry x="200" y="250" width="155" height="48" as="geometry"/></mxCell>
+<mxCell id="u16" value="Ver perfil" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p7"><mxGeometry x="110" y="310" width="155" height="48" as="geometry"/></mxCell>
+<mxCell id="e17" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a3" target="u8"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e18" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a3" target="u9"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e19" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a3" target="u10"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e20" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a3" target="u11"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e21" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a3" target="u12"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e22" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a3" target="u13"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e23" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a3" target="u14"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e24" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u15"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e25" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u16"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="p26" value="Onboarding" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;" vertex="1" parent="1"><mxGeometry x="640" y="80" width="360" height="240" as="geometry"/></mxCell>
+<mxCell id="u27" value="Completar dados pessoais" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p26"><mxGeometry x="20" y="40" width="160" height="48" as="geometry"/></mxCell>
+<mxCell id="u28" value="Escolher objetivo" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p26"><mxGeometry x="200" y="40" width="140" height="48" as="geometry"/></mxCell>
+<mxCell id="u29" value="Escolher atividade
+e finalizar" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p26"><mxGeometry x="20" y="110" width="160" height="48" as="geometry"/></mxCell>
+<mxCell id="u30" value="Calcular metas
+calóricas/macros" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p26"><mxGeometry x="200" y="110" width="140" height="48" as="geometry"/></mxCell>
+<mxCell id="e31" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u27"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e32" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u28"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e33" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u29"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e34" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a5" target="u30"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e35" value="«include»" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" edge="1" parent="1" source="u29" target="u30"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="p36" value="Refeições e IA" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;" vertex="1" parent="1"><mxGeometry x="1040" y="80" width="420" height="540" as="geometry"/></mxCell>
+<mxCell id="u37" value="Ver home do dia" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p36"><mxGeometry x="20" y="40" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u38" value="Capturar / escolher foto" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p36"><mxGeometry x="220" y="40" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u39" value="Descrever refeição
+por texto" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p36"><mxGeometry x="20" y="110" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u40" value="Analisar alimento
+(visão/texto)" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p36"><mxGeometry x="220" y="110" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u41" value="Processar com Gemini" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p36"><mxGeometry x="20" y="190" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u42" value="Enriquecer via RAG TACO" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p36"><mxGeometry x="220" y="190" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u43" value="Revisar itens e macros" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p36"><mxGeometry x="20" y="270" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u44" value="Confirmar e salvar
+refeição" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p36"><mxGeometry x="220" y="270" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u45" value="Editar / excluir refeição" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p36"><mxGeometry x="20" y="350" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u46" value="Salvar / reutilizar
+template" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p36"><mxGeometry x="220" y="350" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u47" value="Usar cache de análise" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p36"><mxGeometry x="120" y="430" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="e48" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u37"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e49" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u38"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e50" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u39"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e51" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u40"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e52" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u43"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e53" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u44"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e54" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u45"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e55" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u46"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e56" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a5" target="u40"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e57" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a5" target="u41"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e58" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a5" target="u42"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e59" value="«include»" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" edge="1" parent="1" source="u40" target="u41"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e60" value="«include»" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" edge="1" parent="1" source="u40" target="u42"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e61" value="«include»" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" edge="1" parent="1" source="u38" target="u40"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e62" value="«include»" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" edge="1" parent="1" source="u39" target="u40"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e63" value="«include»" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" edge="1" parent="1" source="u44" target="u43"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e64" value="«extend»" style="startArrow=open;html=1;startSize=12;endArrow=none;dashed=1;dashPattern=8 4;rounded=0;" edge="1" parent="1" source="u47" target="u40"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="p65" value="Metas e desempenho" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;" vertex="1" parent="1"><mxGeometry x="1500" y="80" width="340" height="300" as="geometry"/></mxCell>
+<mxCell id="u66" value="Ver desempenho mensal" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p65"><mxGeometry x="20" y="40" width="140" height="48" as="geometry"/></mxCell>
+<mxCell id="u67" value="Registrar / ver peso" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p65"><mxGeometry x="180" y="40" width="140" height="48" as="geometry"/></mxCell>
+<mxCell id="u68" value="Ajustar metas diárias" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p65"><mxGeometry x="20" y="120" width="140" height="48" as="geometry"/></mxCell>
+<mxCell id="u69" value="Editar perfil e avatar" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p65"><mxGeometry x="180" y="120" width="140" height="48" as="geometry"/></mxCell>
+<mxCell id="u70" value="Configurar privacidade" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p65"><mxGeometry x="90" y="200" width="150" height="48" as="geometry"/></mxCell>
+<mxCell id="e71" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u66"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e72" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u67"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e73" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u68"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e74" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u69"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e75" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u70"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="p76" value="Missões e loja" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;" vertex="1" parent="1"><mxGeometry x="220" y="500" width="400" height="380" as="geometry"/></mxCell>
+<mxCell id="u77" value="Ver missões e progresso" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p76"><mxGeometry x="20" y="40" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u78" value="Creditar gold/XP
+de missão" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p76"><mxGeometry x="210" y="40" width="160" height="48" as="geometry"/></mxCell>
+<mxCell id="u79" value="Resgatar check-in diário" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p76"><mxGeometry x="20" y="120" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u80" value="Abrir loja / catálogo" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p76"><mxGeometry x="210" y="120" width="160" height="48" as="geometry"/></mxCell>
+<mxCell id="u81" value="Comprar cosmético
+ou bloqueador" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p76"><mxGeometry x="20" y="200" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u82" value="Equipar cosméticos" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p76"><mxGeometry x="210" y="200" width="160" height="48" as="geometry"/></mxCell>
+<mxCell id="u83" value="Ver extrato de ouro" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p76"><mxGeometry x="20" y="280" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u84" value="Aplicar bloqueador
+de streak" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p76"><mxGeometry x="210" y="280" width="160" height="48" as="geometry"/></mxCell>
+<mxCell id="e85" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u77"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e86" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u79"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e87" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u80"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e88" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u81"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e89" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u82"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e90" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u83"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e91" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a5" target="u78"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e92" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a5" target="u84"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e93" value="«include»" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" edge="1" parent="1" source="u77" target="u78"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e94" value="«extend»" style="startArrow=open;html=1;startSize=12;endArrow=none;dashed=1;dashPattern=8 4;rounded=0;" edge="1" parent="1" source="u84" target="u44"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="p95" value="Social" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;" vertex="1" parent="1"><mxGeometry x="660" y="500" width="420" height="460" as="geometry"/></mxCell>
+<mxCell id="u96" value="Gerenciar amigos
+e pedidos" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p95"><mxGeometry x="20" y="40" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u97" value="Ver perfil de amigo" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p95"><mxGeometry x="220" y="40" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u98" value="Ver ranking de XP" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p95"><mxGeometry x="20" y="120" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u99" value="Criar / editar grupo" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p95"><mxGeometry x="220" y="120" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u100" value="Entrar em grupo
+(código/público)" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p95"><mxGeometry x="20" y="200" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u101" value="Gerenciar membros" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p95"><mxGeometry x="220" y="200" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u102" value="Conversar no chat
+do grupo" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p95"><mxGeometry x="20" y="280" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u103" value="Reagir a mensagem" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p95"><mxGeometry x="220" y="280" width="170" height="48" as="geometry"/></mxCell>
+<mxCell id="u104" value="Ver atividades
+e ranking do grupo" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p95"><mxGeometry x="110" y="360" width="180" height="48" as="geometry"/></mxCell>
+<mxCell id="e105" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u96"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e106" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u97"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e107" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u98"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e108" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u99"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e109" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u100"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e110" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u101"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e111" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u102"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e112" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u103"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e113" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u104"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="p114" value="Notificações" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;" vertex="1" parent="1"><mxGeometry x="1120" y="500" width="340" height="260" as="geometry"/></mxCell>
+<mxCell id="u115" value="Ver inbox in-app" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p114"><mxGeometry x="20" y="40" width="140" height="48" as="geometry"/></mxCell>
+<mxCell id="u116" value="Marcar lida /
+dispensar" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p114"><mxGeometry x="180" y="40" width="140" height="48" as="geometry"/></mxCell>
+<mxCell id="u117" value="Configurar lembretes
+de refeição" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p114"><mxGeometry x="20" y="120" width="140" height="48" as="geometry"/></mxCell>
+<mxCell id="u118" value="Disparar lembrete local" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p114"><mxGeometry x="180" y="120" width="140" height="48" as="geometry"/></mxCell>
+<mxCell id="e119" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u115"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e120" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u116"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e121" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u117"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e122" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a5" target="u118"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e123" value="«include»" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" edge="1" parent="1" source="u117" target="u118"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="p124" value="Suporte" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;" vertex="1" parent="1"><mxGeometry x="1500" y="500" width="280" height="140" as="geometry"/></mxCell>
+<mxCell id="u125" value="Enviar bug / sugestão" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p124"><mxGeometry x="50" y="50" width="180" height="50" as="geometry"/></mxCell>
+<mxCell id="e126" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a4" target="u125"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="p127" value="Painel Beta" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=28;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;" vertex="1" parent="1"><mxGeometry x="1120" y="800" width="360" height="220" as="geometry"/></mxCell>
+<mxCell id="u128" value="Consultar dashboard
+e performance" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p127"><mxGeometry x="20" y="40" width="150" height="50" as="geometry"/></mxCell>
+<mxCell id="u129" value="Enviar broadcast
+(inbox/e-mail)" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p127"><mxGeometry x="190" y="40" width="150" height="50" as="geometry"/></mxCell>
+<mxCell id="u130" value="Listar broadcasts" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="p127"><mxGeometry x="100" y="120" width="150" height="50" as="geometry"/></mxCell>
+<mxCell id="e131" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a6" target="u128"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e132" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a6" target="u129"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="e133" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" edge="1" parent="1" source="a6" target="u130"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="note134" value="Notas: progresso de missões/streak/inventário são calculados (sem tabelas dedicadas). Dev local (profile/dev) omitido. Economia = gold interno (sem IAP). Fonte: Flutter + NestJS." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=6;" vertex="1" parent="1"><mxGeometry x="220" y="1480" width="560" height="80" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
