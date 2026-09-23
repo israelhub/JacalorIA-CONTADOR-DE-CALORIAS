@@ -1146,7 +1146,7 @@
 <mxCell id="c381" parent="r379" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;spacingLeft=6;" value="created_at | updated_at" vertex="1">
   <mxGeometry height="30" width="244" x="36" as="geometry" />
 </mxCell>
-<mxCell id="note382" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;" value="Jacaloria DER — schema Sequelize real<br>Omitido: auth.*/storage.* Supabase; user_missions; check_ins; sessions; user_inventory; streaks<br>FK~ = FK lógica (sem @ForeignKey). store_catalog ↔ users via item_key / JSONB inventário." vertex="1">
+<mxCell id="note382" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;" value="Jacaloria DER — schema Sequelize real&lt;br&gt;Omitido: auth.*/storage.* Supabase; user_missions; check_ins; sessions; user_inventory; streaks&lt;br&gt;FK~ = FK lógica (sem @ForeignKey). store_catalog ↔ users via item_key / JSONB inventário." vertex="1">
   <mxGeometry x="40" y="1080" width="520" height="70" as="geometry" />
 </mxCell>
 <mxCell id="e383" edge="1" parent="1" source="r2" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;dashed=1;dashPattern=8 8;" target="r36" value="">
