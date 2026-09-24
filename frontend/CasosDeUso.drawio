@@ -52,11 +52,8 @@
         <mxCell id="CasosDeUsoUsuario_u16" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Inserir refeição através de texto" vertex="1">
           <mxGeometry height="44" width="160" x="180" y="92" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoUsuario_u17" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Analisar alimento…&#xa;(→ pág. IA)" vertex="1">
-          <mxGeometry height="44" width="150" x="12" y="148" as="geometry" />
-        </mxCell>
         <mxCell id="CasosDeUsoUsuario_u18" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Ver / revisar alimento&#xa;analisado" vertex="1">
-          <mxGeometry height="44" width="160" x="180" y="148" as="geometry" />
+          <mxGeometry height="44" width="160" x="12" y="148" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u19" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Confirmar e salvar&#xa;refeição" vertex="1">
           <mxGeometry height="44" width="150" x="12" y="204" as="geometry" />
@@ -91,10 +88,10 @@
         <mxCell id="CasosDeUsoUsuario_e28" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u20">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoUsuario_e29" edge="1" parent="1" source="CasosDeUsoUsuario_u15" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u17" value="«include»">
+        <mxCell id="CasosDeUsoUsuario_e29" edge="1" parent="1" source="CasosDeUsoUsuario_u15" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u18" value="«include»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoUsuario_e30" edge="1" parent="1" source="CasosDeUsoUsuario_u16" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u17" value="«include»">
+        <mxCell id="CasosDeUsoUsuario_e30" edge="1" parent="1" source="CasosDeUsoUsuario_u16" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u18" value="«include»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_e31" edge="1" parent="1" source="CasosDeUsoUsuario_u19" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u18" value="«include»">
@@ -157,9 +154,6 @@
         <mxCell id="CasosDeUsoUsuario_u53" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver missões e progresso" vertex="1">
           <mxGeometry height="44" width="150" x="12" y="36" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoUsuario_u54" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Creditar gold/XP…&#xa;(→ pág. Sistema)" vertex="1">
-          <mxGeometry height="44" width="160" x="180" y="36" as="geometry" />
-        </mxCell>
         <mxCell id="CasosDeUsoUsuario_u55" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Resgatar check-in diário" vertex="1">
           <mxGeometry height="44" width="150" x="12" y="92" as="geometry" />
         </mxCell>
@@ -173,7 +167,7 @@
           <mxGeometry height="44" width="160" x="180" y="148" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u59" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver extrato de ouro" vertex="1">
-          <mxGeometry height="44" width="160" x="180" y="204" as="geometry" />
+          <mxGeometry height="44" width="160" x="90" y="204" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_e60" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u53">
           <mxGeometry relative="1" as="geometry" />
@@ -191,9 +185,6 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_e65" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u59">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="CasosDeUsoUsuario_e66" edge="1" parent="1" source="CasosDeUsoUsuario_u53" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u54" value="«include»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_p67" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Social" vertex="1">
@@ -265,7 +256,7 @@
         <mxCell id="CasosDeUsoUsuario_e89" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u85">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoUsuario_e91" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u84"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="CasosDeUsoUsuario_u92" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver gold atual" vertex="1"><mxGeometry height="44" width="150" x="12" y="204" as="geometry" /></mxCell><mxCell id="CasosDeUsoUsuario_e93" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u92"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="CasosDeUsoUsuario_e94" edge="1" parent="1" source="CasosDeUsoUsuario_u55" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u54" value="«include»"><mxGeometry relative="1" as="geometry" /></mxCell></root>
+        <mxCell id="CasosDeUsoUsuario_e91" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u84"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="CasosDeUsoUsuario_u92" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver gold atual" vertex="1"><mxGeometry height="44" width="160" x="180" y="36" as="geometry" /></mxCell><mxCell id="CasosDeUsoUsuario_e93" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u92"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="CasosDeUsoUsuario_n95" parent="1" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=6;" value="Análise de alimento é feita pela IA (pág. IA). Aqui o Usuário só captura/descreve e vê/revisa o resultado." vertex="1"><mxGeometry x="-330" y="210" width="280" height="52" as="geometry" /></mxCell><mxCell id="CasosDeUsoUsuario_n96" parent="1" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=6;" value="Gold/XP são creditados pelo Sistema (pág. Sistema) ao concluir missão/check-in. Usuário só vê saldo e extrato." vertex="1"><mxGeometry x="250" y="420" width="300" height="52" as="geometry" /></mxCell></root>
     </mxGraphModel>
   </diagram>
   <diagram id="CasosDeUsoVisitante" name="Visitante">
