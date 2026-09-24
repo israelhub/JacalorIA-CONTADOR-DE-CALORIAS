@@ -1,11 +1,11 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent" pages="5">
   <diagram id="CasosDeUsoUsuario" name="Usuário">
-    <mxGraphModel dx="2336" dy="1658" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
+    <mxGraphModel dx="3235" dy="2282" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="CasosDeUsoUsuario_t1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=1;fontSize=16;" value="Jacaloria — Casos de Uso · Ator: Usuário (1/5)" vertex="1">
-          <mxGeometry height="28" width="980" x="-100" y="-230" as="geometry" />
+          <mxGeometry height="28" width="360" x="-100" y="-230" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_a2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Usuário" vertex="1">
           <mxGeometry height="70" width="40" x="40" y="300" as="geometry" />
