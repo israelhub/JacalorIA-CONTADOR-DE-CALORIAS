@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent" pages="5">
   <diagram id="CasosDeUsoUsuario" name="Usuário">
-    <mxGraphModel dx="2167" dy="1541" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
+    <mxGraphModel dx="2336" dy="1658" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -22,7 +22,7 @@
         <mxCell id="CasosDeUsoUsuario_u6" parent="CasosDeUsoUsuario_p3" style="ellipse;whiteSpace=wrap;html=1;" value="Escolher atividade&#xa;e finalizar" vertex="1">
           <mxGeometry height="44" width="130" x="12" y="92" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoUsuario_u7" parent="CasosDeUsoUsuario_p3" style="ellipse;whiteSpace=wrap;html=1;" value="Calcular metas…&#xa;(→ pág. Sistema)" vertex="1">
+        <mxCell id="CasosDeUsoUsuario_u7" parent="CasosDeUsoUsuario_p3" style="ellipse;whiteSpace=wrap;html=1;" value="Visualizar sua meta" vertex="1">
           <mxGeometry height="44" width="130" x="156" y="92" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_e8" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u4">
@@ -59,13 +59,13 @@
           <mxGeometry height="44" width="150" x="12" y="204" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u20" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Editar / excluir refeição" vertex="1">
-          <mxGeometry height="44" width="160" x="180" y="204" as="geometry" />
+          <mxGeometry height="44" width="160" x="180" y="148" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u33" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Salvar refeição para reutilizar" vertex="1">
-          <mxGeometry height="44" width="150" x="12" y="260" as="geometry" />
+          <mxGeometry height="44" width="150" x="105" y="260" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u34" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Listar / usar refeição salva" vertex="1">
-          <mxGeometry height="44" width="160" x="180" y="260" as="geometry" />
+          <mxGeometry height="44" width="160" x="180" y="204" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_e21" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u13">
           <mxGeometry relative="1" as="geometry" />
@@ -104,7 +104,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_p37" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Metas e desempenho" vertex="1">
-          <mxGeometry height="250" width="300" x="140" y="-120" as="geometry" />
+          <mxGeometry height="260" width="300" x="140" y="-120" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u38" parent="CasosDeUsoUsuario_p37" style="ellipse;whiteSpace=wrap;html=1;" value="Ver desempenho mensal" vertex="1">
           <mxGeometry height="44" width="130" x="12" y="36" as="geometry" />
@@ -149,7 +149,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_p52" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Missões e loja" vertex="1">
-          <mxGeometry height="250" width="360" x="250" y="160" as="geometry" />
+          <mxGeometry height="260" width="360" x="250" y="160" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u53" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver missões e progresso" vertex="1">
           <mxGeometry height="44" width="150" x="12" y="36" as="geometry" />
@@ -168,6 +168,9 @@
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u59" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver extrato de ouro" vertex="1">
           <mxGeometry height="44" width="160" x="90" y="204" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u92" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver gold atual" vertex="1">
+          <mxGeometry height="44" width="160" x="180" y="36" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_e60" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u53">
           <mxGeometry relative="1" as="geometry" />
@@ -241,7 +244,7 @@
         <mxCell id="CasosDeUsoUsuario_u84" parent="CasosDeUsoUsuario_p80" style="ellipse;whiteSpace=wrap;html=1;" value="Ver / receber lembrete&#xa;disparado" vertex="1">
           <mxGeometry height="44" width="130" x="156" y="92" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoUsuario_u85" parent="CasosDeUsoUsuario_p80" style="ellipse;whiteSpace=wrap;html=1;" value="Enviar bug / sugestão" vertex="1">
+        <mxCell id="CasosDeUsoUsuario_u85" parent="CasosDeUsoUsuario_p80" style="ellipse;whiteSpace=wrap;html=1;" value="Enviar ocorrencia de bug / sugestão" vertex="1">
           <mxGeometry height="44" width="160" x="70" y="140" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_e86" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u81">
@@ -256,7 +259,13 @@
         <mxCell id="CasosDeUsoUsuario_e89" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u85">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoUsuario_e91" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u84"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="CasosDeUsoUsuario_u92" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver gold atual" vertex="1"><mxGeometry height="44" width="160" x="180" y="36" as="geometry" /></mxCell><mxCell id="CasosDeUsoUsuario_e93" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u92"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="CasosDeUsoUsuario_n95" parent="1" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=6;" value="Análise de alimento é feita pela IA (pág. IA). Aqui o Usuário só captura/descreve e vê/revisa o resultado." vertex="1"><mxGeometry x="-330" y="210" width="280" height="52" as="geometry" /></mxCell><mxCell id="CasosDeUsoUsuario_n96" parent="1" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=6;" value="Gold/XP são creditados pelo Sistema (pág. Sistema) ao concluir missão/check-in. Usuário só vê saldo e extrato." vertex="1"><mxGeometry x="250" y="420" width="300" height="52" as="geometry" /></mxCell></root>
+        <mxCell id="CasosDeUsoUsuario_e91" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u84">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e93" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u92">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
     </mxGraphModel>
   </diagram>
   <diagram id="CasosDeUsoVisitante" name="Visitante">
@@ -490,7 +499,22 @@
         <mxCell id="CasosDeUsoSistema_n30" value="Página 4/5 — Sistema: calcular metas, creditar gold/XP, disparar lembrete, streak, JWT, analytics. Missões/check-in e configurar lembrete (contexto) «include» ações do Sistema. Ver/receber lembrete e ver gold/extrato são do Usuário (pág. 1)." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=6;" vertex="1" parent="1">
           <mxGeometry x="160" y="490" width="880" height="60" as="geometry" />
         </mxCell>
-      <mxCell id="CasosDeUsoSistema_u31" parent="CasosDeUsoSistema_p17" style="ellipse;whiteSpace=wrap;html=1;" value="Resgatar check-in&#xa;diário" vertex="1"><mxGeometry height="44" width="170" x="30" y="240" as="geometry" /></mxCell><mxCell id="CasosDeUsoSistema_e32" edge="1" parent="1" source="CasosDeUsoSistema_a3" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoSistema_u31"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="CasosDeUsoSistema_e33" edge="1" parent="1" source="CasosDeUsoSistema_u31" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoSistema_u6" value="«include»"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="CasosDeUsoSistema_u34" parent="CasosDeUsoSistema_p17" style="ellipse;whiteSpace=wrap;html=1;" value="Ver / receber lembrete&#xa;disparado" vertex="1"><mxGeometry height="44" width="170" x="230" y="240" as="geometry" /></mxCell><mxCell id="CasosDeUsoSistema_e35" edge="1" parent="1" source="CasosDeUsoSistema_a3" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoSistema_u34"><mxGeometry relative="1" as="geometry" /></mxCell></root>
+        <mxCell id="CasosDeUsoSistema_u31" parent="CasosDeUsoSistema_p17" style="ellipse;whiteSpace=wrap;html=1;" value="Resgatar check-in&#xa;diário" vertex="1">
+          <mxGeometry height="44" width="170" x="30" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoSistema_e32" edge="1" parent="1" source="CasosDeUsoSistema_a3" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoSistema_u31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoSistema_e33" edge="1" parent="1" source="CasosDeUsoSistema_u31" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoSistema_u6" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoSistema_u34" parent="CasosDeUsoSistema_p17" style="ellipse;whiteSpace=wrap;html=1;" value="Ver / receber lembrete&#xa;disparado" vertex="1">
+          <mxGeometry height="44" width="170" x="230" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoSistema_e35" edge="1" parent="1" source="CasosDeUsoSistema_a3" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoSistema_u34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
     </mxGraphModel>
   </diagram>
   <diagram id="CasosDeUsoIA" name="IA">
@@ -579,7 +603,10 @@
         <mxCell id="CasosDeUsoIA_n29" value="Página 5/5 — IA faz «Analisar alimento» (Gemini + RAG TACO; cache «extend»). Usuário só captura/descreve e vê/revisa o resultado — sem associação direta a Analisar. Foto/texto «include» Analisar; revisão pode «include» Recalcular." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=6;" vertex="1" parent="1">
           <mxGeometry x="160" y="500" width="700" height="56" as="geometry" />
         </mxCell>
-      <mxCell id="CasosDeUsoIA_e30" edge="1" parent="1" source="CasosDeUsoIA_u12" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoIA_u11" value="«include»"><mxGeometry relative="1" as="geometry" /></mxCell></root>
+        <mxCell id="CasosDeUsoIA_e30" edge="1" parent="1" source="CasosDeUsoIA_u12" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoIA_u11" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
     </mxGraphModel>
   </diagram>
 </mxfile>
