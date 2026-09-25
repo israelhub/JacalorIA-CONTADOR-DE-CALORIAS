@@ -350,42 +350,15 @@
       </root>
     </mxGraphModel>
   </diagram>
-    <diagram id="CasosDeUsoIA" name="IA">
-    <mxGraphModel dx="1535" dy="887" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
+  <diagram id="CasosDeUsoIA" name="IA">
+    <mxGraphModel dx="1174" dy="815" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="CasosDeUsoIA_t1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=1;fontSize=16;" value="Jacaloria — Casos de Uso · Ator: IA — Gemini + RAG TACO (5/5)" vertex="1">
-          <mxGeometry height="28" width="980" x="60" y="16" as="geometry" />
-        </mxCell>
         <mxCell id="CasosDeUsoIA_a2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="IA&#xa;(Gemini + TACO)" vertex="1">
           <mxGeometry height="70" width="40" x="40" y="260" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoIA_p4" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Análise de alimento" vertex="1">
-          <mxGeometry height="340" width="700" x="160" y="80" as="geometry" />
-        </mxCell>
-        <mxCell id="CasosDeUsoIA_u7" parent="CasosDeUsoIA_p4" style="ellipse;whiteSpace=wrap;html=1;" value="Analisar alimento&#xa;(visão/texto)" vertex="1">
-          <mxGeometry height="44" width="220" x="240" y="40" as="geometry" />
-        </mxCell>
-        <mxCell id="CasosDeUsoIA_u8" parent="CasosDeUsoIA_p4" style="ellipse;whiteSpace=wrap;html=1;" value="Processar com Gemini&#xa;(visão / LLM)" vertex="1">
-          <mxGeometry height="44" width="200" x="30" y="140" as="geometry" />
-        </mxCell>
-        <mxCell id="CasosDeUsoIA_u9" parent="CasosDeUsoIA_p4" style="ellipse;whiteSpace=wrap;html=1;" value="Enriquecer via&#xa;RAG TACO" vertex="1">
-          <mxGeometry height="44" width="200" x="250" y="140" as="geometry" />
-        </mxCell>
-        <mxCell id="CasosDeUsoIA_u10" parent="CasosDeUsoIA_p4" style="ellipse;whiteSpace=wrap;html=1;" value="Usar cache de análise&#xa;(content_hash)" vertex="1">
-          <mxGeometry height="44" width="180" x="490" y="140" as="geometry" />
-        </mxCell>
-        <mxCell id="CasosDeUsoIA_u11" parent="CasosDeUsoIA_p4" style="ellipse;whiteSpace=wrap;html=1;" value="Recalcular análise&#xa;após editar itens" vertex="1">
-          <mxGeometry height="44" width="220" x="240" y="240" as="geometry" />
-        </mxCell>
         <mxCell id="CasosDeUsoIA_e18" edge="1" parent="1" source="CasosDeUsoIA_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoIA_u7">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="CasosDeUsoIA_e19" edge="1" parent="1" source="CasosDeUsoIA_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoIA_u8">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="CasosDeUsoIA_e20" edge="1" parent="1" source="CasosDeUsoIA_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoIA_u9">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoIA_e21" edge="1" parent="1" source="CasosDeUsoIA_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoIA_u10">
@@ -394,20 +367,17 @@
         <mxCell id="CasosDeUsoIA_e22" edge="1" parent="1" source="CasosDeUsoIA_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoIA_u11">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoIA_e25" edge="1" parent="1" source="CasosDeUsoIA_u7" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoIA_u8" value="«include»">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="CasosDeUsoIA_e26" edge="1" parent="1" source="CasosDeUsoIA_u7" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoIA_u9" value="«include»">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="CasosDeUsoIA_e27" edge="1" parent="1" source="CasosDeUsoIA_u11" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoIA_u7" value="«include»">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
         <mxCell id="CasosDeUsoIA_e28" edge="1" parent="1" source="CasosDeUsoIA_u10" style="startArrow=open;html=1;startSize=12;endArrow=none;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoIA_u7" value="«extend»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoIA_n29" parent="1" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=6;" value="Disparo vem da pág. Usuário (foto/texto → ver/revisar). Nesta página só a IA: Analisar inclui Gemini + RAG TACO; cache «extend»; Recalcular inclui Analisar." vertex="1">
-          <mxGeometry height="56" width="700" x="160" y="440" as="geometry" />
+        <mxCell id="CasosDeUsoIA_u7" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Analisa alimento" vertex="1">
+          <mxGeometry height="44" width="220" x="190" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoIA_u10" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Usar cache de análise&#xa;(content_hash)" vertex="1">
+          <mxGeometry height="44" width="180" x="210" y="286" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoIA_u11" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Recalcular análise&#xa;após editar itens" vertex="1">
+          <mxGeometry height="44" width="220" x="190" y="390" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
