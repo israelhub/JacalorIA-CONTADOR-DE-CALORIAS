@@ -1,0 +1,385 @@
+<mxfile host="app.diagrams.net" agent="Jacaloria-agent" pages="4">
+  <diagram id="CasosDeUsoUsuario" name="Usuário">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="CasosDeUsoUsuario_a2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Usuário" vertex="1">
+          <mxGeometry height="70" width="40" x="40" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_p3" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Onboarding" vertex="1">
+          <mxGeometry height="150" width="300" x="-170" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u4" parent="CasosDeUsoUsuario_p3" style="ellipse;whiteSpace=wrap;html=1;" value="Completar dados pessoais" vertex="1">
+          <mxGeometry height="44" width="130" x="12" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u5" parent="CasosDeUsoUsuario_p3" style="ellipse;whiteSpace=wrap;html=1;" value="Escolher objetivo" vertex="1">
+          <mxGeometry height="44" width="130" x="156" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u6" parent="CasosDeUsoUsuario_p3" style="ellipse;whiteSpace=wrap;html=1;" value="Escolher atividade&#xa;e finalizar" vertex="1">
+          <mxGeometry height="44" width="130" x="12" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u7" parent="CasosDeUsoUsuario_p3" style="ellipse;whiteSpace=wrap;html=1;" value="Visualizar sua meta" vertex="1">
+          <mxGeometry height="44" width="130" x="156" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e8" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e9" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e10" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e11" edge="1" parent="1" source="CasosDeUsoUsuario_u6" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u7" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_p12" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Refeições" vertex="1">
+          <mxGeometry height="340" width="360" x="-360" y="-140" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u13" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Ver refeições do dia" vertex="1">
+          <mxGeometry height="44" width="150" x="12" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u14" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Navegar abas do app" vertex="1">
+          <mxGeometry height="44" width="160" x="180" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u15" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Capturar / escolher foto de refeiçao" vertex="1">
+          <mxGeometry height="44" width="150" x="12" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u16" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Inserir refeição através de texto" vertex="1">
+          <mxGeometry height="44" width="160" x="180" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u18" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Ver / revisar alimento&#xa;analisado" vertex="1">
+          <mxGeometry height="44" width="160" x="12" y="148" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u19" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Confirmar e salvar&#xa;refeição" vertex="1">
+          <mxGeometry height="44" width="150" x="12" y="204" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u20" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Editar / excluir refeição" vertex="1">
+          <mxGeometry height="44" width="160" x="180" y="148" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u33" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Salvar refeição para reutilizar" vertex="1">
+          <mxGeometry height="44" width="150" x="105" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u34" parent="CasosDeUsoUsuario_p12" style="ellipse;whiteSpace=wrap;html=1;" value="Listar / usar refeição salva" vertex="1">
+          <mxGeometry height="44" width="160" x="180" y="204" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e21" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e22" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e23" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e24" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e26" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e27" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e28" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e29" edge="1" parent="1" source="CasosDeUsoUsuario_u15" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u18" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e30" edge="1" parent="1" source="CasosDeUsoUsuario_u16" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u18" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e31" edge="1" parent="1" source="CasosDeUsoUsuario_u19" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u18" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e35" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e36" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_p37" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Metas e desempenho" vertex="1">
+          <mxGeometry height="100" width="300" x="100" y="-140" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u38" parent="CasosDeUsoUsuario_p37" style="ellipse;whiteSpace=wrap;html=1;" value="Ver desempenho mensal" vertex="1">
+          <mxGeometry height="44" width="130" x="12" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u39" parent="CasosDeUsoUsuario_p37" style="ellipse;whiteSpace=wrap;html=1;" value="Registrar / ver peso" vertex="1">
+          <mxGeometry height="44" width="130" x="156" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_p97" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Conta / Perfil" vertex="1">
+          <mxGeometry height="150" width="300" x="220" y="-20" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u41" parent="CasosDeUsoUsuario_p97" style="ellipse;whiteSpace=wrap;html=1;" value="Editar perfil e avatar" vertex="1">
+          <mxGeometry height="44" width="130" x="156" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u42" parent="CasosDeUsoUsuario_p97" style="ellipse;whiteSpace=wrap;html=1;" value="Configurar privacidade" vertex="1">
+          <mxGeometry height="44" width="130" x="12" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u43" parent="CasosDeUsoUsuario_p97" style="ellipse;whiteSpace=wrap;html=1;" value="Ver perfil autenticado" vertex="1">
+          <mxGeometry height="44" width="130" x="12" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u44" parent="CasosDeUsoUsuario_p97" style="ellipse;whiteSpace=wrap;html=1;" value="Sair da conta" vertex="1">
+          <mxGeometry height="44" width="130" x="156" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e45" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u38">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e46" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u39">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e48" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e49" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e50" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u43">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e51" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u44">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_p52" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Missões e loja" vertex="1">
+          <mxGeometry height="260" width="360" x="250" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u53" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver missões e progresso" vertex="1">
+          <mxGeometry height="44" width="150" x="12" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u55" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Resgatar check-in diário" vertex="1">
+          <mxGeometry height="44" width="150" x="12" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u56" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Abrir loja / catálogo" vertex="1">
+          <mxGeometry height="44" width="160" x="180" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u57" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Comprar cosmético&#xa;ou bloqueador" vertex="1">
+          <mxGeometry height="44" width="150" x="12" y="148" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u58" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Equipar cosméticos" vertex="1">
+          <mxGeometry height="44" width="160" x="180" y="148" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u59" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver extrato de ouro" vertex="1">
+          <mxGeometry height="44" width="160" x="90" y="204" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u92" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver gold atual" vertex="1">
+          <mxGeometry height="44" width="160" x="180" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e60" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u53">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e61" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u55">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e62" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u56">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e63" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u57">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e64" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u58">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e65" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u59">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_p67" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Social" vertex="1">
+          <mxGeometry height="370" width="240" x="-450" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u68" parent="CasosDeUsoUsuario_p67" style="ellipse;whiteSpace=wrap;html=1;" value="Gerenciar amigos&#xa;e pedidos" vertex="1">
+          <mxGeometry height="44" width="200" x="20" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u69" parent="CasosDeUsoUsuario_p67" style="ellipse;whiteSpace=wrap;html=1;" value="Ver perfil de amigo" vertex="1">
+          <mxGeometry height="44" width="200" x="20" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u70" parent="CasosDeUsoUsuario_p67" style="ellipse;whiteSpace=wrap;html=1;" value="Ver ranking de XP" vertex="1">
+          <mxGeometry height="44" width="200" x="20" y="148" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u71" parent="CasosDeUsoUsuario_p67" style="ellipse;whiteSpace=wrap;html=1;" value="Criar / editar grupo" vertex="1">
+          <mxGeometry height="44" width="200" x="20" y="204" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u72" parent="CasosDeUsoUsuario_p67" style="ellipse;whiteSpace=wrap;html=1;" value="Entrar em grupo" vertex="1">
+          <mxGeometry height="44" width="200" x="20" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u73" parent="CasosDeUsoUsuario_p67" style="ellipse;whiteSpace=wrap;html=1;" value="Chat / reagir no grupo" vertex="1">
+          <mxGeometry height="44" width="200" x="20" y="316" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e74" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u68">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e75" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u69">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e76" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u70">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e77" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u71">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e78" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u72">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e79" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u73">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_p80" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Notificações e suporte" vertex="1">
+          <mxGeometry height="192" width="300" x="170" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u81" parent="CasosDeUsoUsuario_p80" style="ellipse;whiteSpace=wrap;html=1;" value="Ver inbox in-app" vertex="1">
+          <mxGeometry height="44" width="130" x="12" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u82" parent="CasosDeUsoUsuario_p80" style="ellipse;whiteSpace=wrap;html=1;" value="Marcar lida / dispensar" vertex="1">
+          <mxGeometry height="44" width="130" x="156" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u83" parent="CasosDeUsoUsuario_p80" style="ellipse;whiteSpace=wrap;html=1;" value="Configurar lembretes" vertex="1">
+          <mxGeometry height="44" width="130" x="12" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u84" parent="CasosDeUsoUsuario_p80" style="ellipse;whiteSpace=wrap;html=1;" value="Ver / receber lembrete&#xa;disparado" vertex="1">
+          <mxGeometry height="44" width="130" x="156" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_u85" parent="CasosDeUsoUsuario_p80" style="ellipse;whiteSpace=wrap;html=1;" value="Enviar ocorrencia de bug / sugestão" vertex="1">
+          <mxGeometry height="44" width="160" x="70" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e86" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u81">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e87" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u82">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e88" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u83">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e89" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u85">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e91" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u84">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_e93" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u92">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="CasosDeUsoVisitante" name="Visitante">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="CasosDeUsoVisitante_a2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Visitante" vertex="1">
+          <mxGeometry height="70" width="40" x="80" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_e16" edge="1" parent="1" source="CasosDeUsoVisitante_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoVisitante_u5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_e18" edge="1" parent="1" source="CasosDeUsoVisitante_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoVisitante_u7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_e19" edge="1" parent="1" source="CasosDeUsoVisitante_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoVisitante_u8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_e22" edge="1" parent="1" source="CasosDeUsoVisitante_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoVisitante_u11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_e23" edge="1" parent="1" source="CasosDeUsoVisitante_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoVisitante_u12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_e25" edge="1" parent="1" source="CasosDeUsoVisitante_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoVisitante_u14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_u5" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Cadastrar conta" vertex="1">
+          <mxGeometry height="44" width="170" x="-180" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_u7" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Fazer login" vertex="1">
+          <mxGeometry height="44" width="170" x="-200" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_u8" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Entrar com Google" vertex="1">
+          <mxGeometry height="44" width="170" x="-170" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_u11" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Redefinir senha" vertex="1">
+          <mxGeometry height="44" width="170" x="210" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_u12" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Consultar termos&#xa;e condições" vertex="1">
+          <mxGeometry height="44" width="160" x="220" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoVisitante_u14" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Enviar bug / sugestão" vertex="1">
+          <mxGeometry height="44" width="200" x="210" y="280" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="CasosDeUsoOperadorBeta" name="Operador Beta">
+    <mxGraphModel dx="1535" dy="887" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="CasosDeUsoOperadorBeta_a2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Admin" vertex="1">
+          <mxGeometry height="70" width="40" x="80" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_e9" edge="1" parent="1" source="CasosDeUsoOperadorBeta_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoOperadorBeta_u4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_e10" edge="1" parent="1" source="CasosDeUsoOperadorBeta_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoOperadorBeta_u5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_e11" edge="1" parent="1" source="CasosDeUsoOperadorBeta_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoOperadorBeta_u6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_e12" edge="1" parent="1" source="CasosDeUsoOperadorBeta_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoOperadorBeta_u7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_e13" edge="1" parent="1" source="CasosDeUsoOperadorBeta_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoOperadorBeta_u8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_u4" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Acessar painel beta" vertex="1">
+          <mxGeometry height="44" width="220" x="260" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_u5" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Consultar dashboard&#xa;de analytics" vertex="1">
+          <mxGeometry height="44" width="220" x="250" y="216" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_u6" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Consultar performance&#xa;/ métricas" vertex="1">
+          <mxGeometry height="44" width="220" x="250" y="283" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_u7" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Enviar broadcast&#xa;(inbox / e-mail / both)" vertex="1">
+          <mxGeometry height="44" width="220" x="250" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_u8" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Listar broadcasts&#xa;anteriores" vertex="1">
+          <mxGeometry height="44" width="220" x="250" y="356" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="CasosDeUsoIA" name="IA">
+    <mxGraphModel dx="1174" dy="815" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="CasosDeUsoIA_a2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="IA&#xa;(Gemini + TACO)" vertex="1">
+          <mxGeometry height="70" width="40" x="40" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoIA_e18" edge="1" parent="1" source="CasosDeUsoIA_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoIA_u7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoIA_e21" edge="1" parent="1" source="CasosDeUsoIA_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoIA_u10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoIA_e22" edge="1" parent="1" source="CasosDeUsoIA_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoIA_u11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoIA_e28" edge="1" parent="1" source="CasosDeUsoIA_u10" style="startArrow=open;html=1;startSize=12;endArrow=none;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoIA_u7" value="«extend»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoIA_u7" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Analisa alimento" vertex="1">
+          <mxGeometry height="44" width="220" x="190" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoIA_u10" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Usar cache de análise&#xa;(content_hash)" vertex="1">
+          <mxGeometry height="44" width="180" x="210" y="286" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoIA_u11" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Recalcular análise&#xa;após editar itens" vertex="1">
+          <mxGeometry height="44" width="220" x="190" y="390" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,91 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="ywVO-bWktK3kyQ00CWKy">
+    <mxGraphModel dx="1598" dy="959" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <UserObject label="" mermaidData="{&#xa;  &quot;data&quot;: &quot;flowchart TB\n  subgraph Cliente\n    Flutter[\&quot;Flutter&lt;br/&gt;Web e Android\&quot;]\n  end\n\n  subgraph AWS_API[\&quot;AWS · API\&quot;]\n    CloudFront[\&quot;CloudFront&lt;br/&gt;Edge AWS\&quot;]\n    S3[\&quot;S3\&quot;]\n    NestJS[\&quot;NestJS&lt;br/&gt;Elastic Beanstalk\&quot;]\n    Auth[\&quot;Autenticação JWT&lt;br/&gt;Login Google · SMTP\&quot;]\n  end\n\n  subgraph Dados_IA[\&quot;Dados · IA\&quot;]\n    Analise[\&quot;Análise IA&lt;br/&gt;POST /ai/food/analyze\&quot;]\n    Gemini[\&quot;Google Gemini&lt;br/&gt;Visão e identificação\&quot;]\n    Taco[\&quot;TACO RAG&lt;br/&gt;taco_4a_edicao\&quot;]\n    Postgres[\&quot;Postgres&lt;br/&gt;Supabase · Sequelize\&quot;]\n    Storage[\&quot;Armazenamento de refeições&lt;br/&gt;e avatares\&quot;]\n  end\n\n  Flutter --&gt;|HTTPS| CloudFront\n  CloudFront --&gt;|S3| S3\n  CloudFront --&gt;|Roteamento /api| NestJS\n  NestJS --&gt; Auth\n  NestJS --&gt; Analise\n  Analise --&gt; Gemini\n  Analise --&gt; Taco\n  NestJS --&gt;|Grava dados| Postgres\n  Flutter -.-&gt;|Upload direto| Storage\n\n\n  class Flutter cliente\n  class NestJS,Auth api\n  class Analise,Gemini ia\n  class Postgres,Taco dados\n  class CloudFront edge\n  class S3,Storage storage\n\n  linkStyle 7 stroke:#db2777,stroke-width:2px&quot;,&#xa;  &quot;config&quot;: null&#xa;}" id="24">
+          <mxCell connectable="0" parent="1" style="group;transparentBounds=1;editIcon=1;lockedGroup=0;groupPadding=10;" vertex="1">
+            <mxGeometry as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(51, 51, 51), rgb(204, 204, 204));&quot;&gt;&amp;nbsp; &amp;nbsp;AWS&lt;/span&gt;&lt;/div&gt;" mermaidId="n:AWS_API" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="AWS · API" id="4">
+          <mxCell parent="24" style="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;align=left;container=0;" vertex="1">
+            <mxGeometry height="310" width="821.85" x="175.75" y="180" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="rmc8GGcGMe3RogfwyrIA-47" edge="1" parent="24" source="5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;endArrow=open;endFill=0;" target="6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rmc8GGcGMe3RogfwyrIA-48" connectable="0" parent="rmc8GGcGMe3RogfwyrIA-47" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Usa" vertex="1">
+          <mxGeometry relative="1" x="0.1361" y="2" as="geometry">
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <UserObject label="S3" mermaidId="n:S3" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="S3" id="6">
+          <mxCell parent="24" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="73" width="166.75645161290325" x="770.0014631887639" y="230" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="&amp;nbsp; &amp;nbsp;Dados · IA" mermaidId="n:Dados_IA" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Dados · IA" id="9">
+          <mxCell parent="24" style="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;align=left;" vertex="1">
+            <mxGeometry height="190" width="821.85" x="175.75" y="600" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Supabase" mermaidId="n:Dados_IA" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Dados · IA" id="rmc8GGcGMe3RogfwyrIA-37">
+          <mxCell parent="9" style="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="102.36" width="213.07222222222222" x="304.3888888888889" y="47.64" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Postgres" mermaidId="n:Storage" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Armazenamento de refeições&#xa;e avatares" id="rmc8GGcGMe3RogfwyrIA-38">
+          <mxCell parent="rmc8GGcGMe3RogfwyrIA-37" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="47.11281506300964" width="197.62955925925925" x="7.548844444444444" y="38.20456109710897" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Armazenamento de refeições&#xa;e avatares" mermaidId="n:Storage" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Armazenamento de refeições&#xa;e avatares" id="14">
+          <mxCell parent="9" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="102.36" width="224.59841481481482" x="53.257909259259264" y="47.639999999999986" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="OAuth Google" mermaidId="n:Auth" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Autenticação JWT&#xa;Login Google · SMTP" id="8">
+          <mxCell parent="24" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="44.74193548387097" width="212.07189668054826" x="180.00196009026968" y="519.9951612903226" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="SMTP" mermaidId="n:Auth" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Autenticação JWT&#xa;Login Google · SMTP" id="rmc8GGcGMe3RogfwyrIA-28">
+          <mxCell parent="24" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="44.74193548387097" width="212.07189668054826" x="469.71674684037384" y="519.9951612903226" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Elastic Beanstalk" mermaidId="n:Dados_IA" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Dados · IA" id="rmc8GGcGMe3RogfwyrIA-49">
+          <mxCell parent="24" style="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="95.24" width="271.46" x="440.02" y="350" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="NestJS" mermaidId="n:Storage" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Armazenamento de refeições&#xa;e avatares" id="rmc8GGcGMe3RogfwyrIA-50">
+          <mxCell parent="rmc8GGcGMe3RogfwyrIA-49" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="43.835722026192244" width="251.7856133333333" x="9.617439999999998" y="35.54711214232765" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="CloudFront" mermaidId="n:CloudFront" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="CloudFront&#xa;Edge AWS" id="5">
+          <mxCell parent="24" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="73" width="271.45729032258066" x="440.024435483871" y="230" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Google Gemini" mermaidId="n:Gemini" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Google Gemini&#xa;Visão e identificação" id="11">
+          <mxCell parent="24" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="43.84" width="198.12" x="754.32" y="520" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="Usuário Web" mermaidId="n:Flutter" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Flutter&#xa;Web e Android" id="3">
+          <mxCell parent="1" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="73" width="263.7381974248927" x="443.88090128755357" y="50" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="rmc8GGcGMe3RogfwyrIA-25" edge="1" parent="1" source="3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
