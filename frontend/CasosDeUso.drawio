@@ -433,9 +433,6 @@
         <mxCell id="CasosDeUsoIA_e28" edge="1" parent="1" source="CasosDeUsoIA_u10" style="startArrow=open;html=1;startSize=12;endArrow=none;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoIA_u7" value="«extend»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoIA_n29" parent="1" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;spacingLeft=6;" value="Página 5/5 — IA faz «Analisar alimento» (Gemini + RAG TACO; cache «extend»). Usuário só captura/descreve e vê/revisa o resultado — sem associação direta a Analisar. Foto/texto «include» Analisar; revisão pode «include» Recalcular." vertex="1">
-          <mxGeometry height="56" width="700" x="520" y="660" as="geometry" />
-        </mxCell>
         <mxCell id="CasosDeUsoIA_e30" edge="1" parent="1" source="CasosDeUsoIA_u12" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoIA_u11" value="«include»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
