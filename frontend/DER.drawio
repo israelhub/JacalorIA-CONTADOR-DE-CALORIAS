@@ -1209,7 +1209,7 @@
     <mxPoint x="100" y="100" as="targetPoint" />
   </mxGeometry>
 </mxCell>
-<mxCell id="e393" edge="1" parent="1" source="r2" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;" target="r255" value="owner">
+<mxCell id="e393" edge="1" parent="1" source="r2" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;" target="r255" value="dono">
   <mxGeometry height="100" relative="1" width="100" as="geometry">
     <mxPoint x="0" y="0" as="sourcePoint" />
     <mxPoint x="100" y="100" as="targetPoint" />
@@ -1239,7 +1239,7 @@
     <mxPoint x="100" y="100" as="targetPoint" />
   </mxGeometry>
 </mxCell>
-<mxCell id="e398" edge="1" parent="1" source="r287" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;dashed=1;dashPattern=8 8;" target="r296" value="reply">
+<mxCell id="e398" edge="1" parent="1" source="r287" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;dashed=1;dashPattern=8 8;" target="r296" value="respondeA">
   <mxGeometry height="100" relative="1" width="100" as="geometry">
     <mxPoint x="0" y="0" as="sourcePoint" />
     <mxPoint x="100" y="100" as="targetPoint" />
@@ -1269,25 +1269,25 @@
     <mxPoint x="100" y="100" as="targetPoint" />
   </mxGeometry>
 </mxCell>
-<mxCell id="e403" edge="1" parent="1" source="r2" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;" target="r341" value="low">
+<mxCell id="e403" edge="1" parent="1" source="r2" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;" target="r341" value="baixo">
   <mxGeometry height="100" relative="1" width="100" as="geometry">
     <mxPoint x="0" y="0" as="sourcePoint" />
     <mxPoint x="100" y="100" as="targetPoint" />
   </mxGeometry>
 </mxCell>
-<mxCell id="e404" edge="1" parent="1" source="r2" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;" target="r344" value="high">
+<mxCell id="e404" edge="1" parent="1" source="r2" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;" target="r344" value="alto">
   <mxGeometry height="100" relative="1" width="100" as="geometry">
     <mxPoint x="0" y="0" as="sourcePoint" />
     <mxPoint x="100" y="100" as="targetPoint" />
   </mxGeometry>
 </mxCell>
-<mxCell id="e405" edge="1" parent="1" source="r2" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;" target="r354" value="requester">
+<mxCell id="e405" edge="1" parent="1" source="r2" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;" target="r354" value="solicitante">
   <mxGeometry height="100" relative="1" width="100" as="geometry">
     <mxPoint x="0" y="0" as="sourcePoint" />
     <mxPoint x="100" y="100" as="targetPoint" />
   </mxGeometry>
 </mxCell>
-<mxCell id="e406" edge="1" parent="1" source="r2" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;" target="r357" value="recipient">
+<mxCell id="e406" edge="1" parent="1" source="r2" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;" target="r357" value="destinatário">
   <mxGeometry height="100" relative="1" width="100" as="geometry">
     <mxPoint x="0" y="0" as="sourcePoint" />
     <mxPoint x="100" y="100" as="targetPoint" />
@@ -1299,7 +1299,7 @@
     <mxPoint x="100" y="100" as="targetPoint" />
   </mxGeometry>
 </mxCell>
-<mxCell id="e408" edge="1" parent="1" source="r144" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;dashed=1;dashPattern=8 8;" target="r2" value="item_key / JSONB">
+<mxCell id="e408" edge="1" parent="1" source="r144" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERzeroToMany;startArrow=ERone;endFill=1;startFill=0;dashed=1;dashPattern=8 8;" target="r2" value="via item_key / JSONB">
   <mxGeometry height="100" relative="1" width="100" as="geometry">
     <mxPoint x="0" y="0" as="sourcePoint" />
     <mxPoint x="100" y="100" as="targetPoint" />
