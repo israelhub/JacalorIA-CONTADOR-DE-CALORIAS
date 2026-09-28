@@ -31,8 +31,16 @@ import {
   CurrencyCode,
   UserCurrencyTransaction,
 } from './models/user-currency-transaction.model';
+import { StorePurchase } from './models/store-purchase.model';
+import { UserMission } from './models/user-mission.model';
 import { StoreCatalogService } from './store-catalog.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import {
+  buildMissionRewardReferenceKey,
+  buildStorePurchaseReferenceKey,
+  mergeOwnedItemKeys,
+  resolveUserMissionStatus,
+} from './utils/user-mission-purchase.util';
 
 type DailyTotals = {
   calories: number;
@@ -99,6 +107,10 @@ export class MissionsService implements OnModuleInit {
     private readonly userModel: typeof User,
     @InjectModel(UserCurrencyTransaction)
     private readonly userCurrencyTransactionModel: typeof UserCurrencyTransaction,
+    @InjectModel(UserMission)
+    private readonly userMissionModel: typeof UserMission,
+    @InjectModel(StorePurchase)
+    private readonly storePurchaseModel: typeof StorePurchase,
     private readonly streakService: StreakService,
     private readonly storeCatalogService: StoreCatalogService,
     private readonly analyticsService: AnalyticsService,
@@ -427,6 +439,8 @@ export class MissionsService implements OnModuleInit {
       };
     });
 
+    await this.syncUserMissionProgress(userId, missionItems, now);
+
     const sections = this.sectionOrder(isWeekendEvent, now)
       .map((section) => ({
         id: section.id,
@@ -613,9 +627,19 @@ export class MissionsService implements OnModuleInit {
       throw new BadRequestException('Usuário não encontrado.');
     }
 
-    const purchasedFrames = new Set(this.normalizeIdList(user.purchasedAvatarFrameIds));
-    const purchasedBackgrounds = new Set(this.normalizeIdList(user.purchasedAvatarBackgroundIds));
-    const purchasedJacaEmojis = new Set(this.normalizeIdList(user.purchasedJacaEmojiIds));
+    const purchasedFrames = new Set(
+      await this.loadOwnedItemKeys(userId, 'avatar_frame', user.purchasedAvatarFrameIds),
+    );
+    const purchasedBackgrounds = new Set(
+      await this.loadOwnedItemKeys(
+        userId,
+        'avatar_background',
+        user.purchasedAvatarBackgroundIds,
+      ),
+    );
+    const purchasedJacaEmojis = new Set(
+      await this.loadOwnedItemKeys(userId, 'jaca_emoji', user.purchasedJacaEmojiIds),
+    );
     const equippedFrameId = this.normalizeOptionalId(user.equippedAvatarFrameId);
     const equippedBackgroundId = this.normalizeOptionalId(user.equippedAvatarBackgroundId);
     const equippedBlockerId =
@@ -807,6 +831,32 @@ export class MissionsService implements OnModuleInit {
         { transaction },
       );
 
+      const ledgerRow = await this.userCurrencyTransactionModel.findOne({
+        where: {
+          userId,
+          referenceKey: `avatar_frame_purchase:${normalizedFrameId}`,
+        },
+        attributes: ['id'],
+        transaction,
+      });
+
+      await this.recordStorePurchase(
+        {
+          userId,
+          itemKey: normalizedFrameId,
+          category: 'avatar_frame',
+          quantity: 1,
+          priceGold,
+          currencyTransactionId: ledgerRow?.id ?? null,
+          acquireSource: 'purchase',
+          referenceKey: buildStorePurchaseReferenceKey({
+            sourceType: 'avatar_frame_purchase',
+            itemKey: normalizedFrameId,
+          }),
+        },
+        transaction,
+      );
+
       purchased.add(normalizedFrameId);
       await user.update(
         {
@@ -931,6 +981,32 @@ export class MissionsService implements OnModuleInit {
         { transaction },
       );
 
+      const ledgerRow = await this.userCurrencyTransactionModel.findOne({
+        where: {
+          userId,
+          referenceKey: `avatar_background_purchase:${normalizedBackgroundId}`,
+        },
+        attributes: ['id'],
+        transaction,
+      });
+
+      await this.recordStorePurchase(
+        {
+          userId,
+          itemKey: normalizedBackgroundId,
+          category: 'avatar_background',
+          quantity: 1,
+          priceGold,
+          currencyTransactionId: ledgerRow?.id ?? null,
+          acquireSource: 'purchase',
+          referenceKey: buildStorePurchaseReferenceKey({
+            sourceType: 'avatar_background_purchase',
+            itemKey: normalizedBackgroundId,
+          }),
+        },
+        transaction,
+      );
+
       purchased.add(normalizedBackgroundId);
       await user.update(
         {
@@ -1002,7 +1078,14 @@ export class MissionsService implements OnModuleInit {
         throw new BadRequestException('Usuário não encontrado.');
       }
 
-      const purchased = new Set(this.normalizeIdList(user.purchasedJacaEmojiIds));
+      const purchased = new Set(
+        await this.loadOwnedItemKeys(
+          userId,
+          'jaca_emoji',
+          user.purchasedJacaEmojiIds,
+          transaction,
+        ),
+      );
 
       if (purchased.has(normalizedEmojiId)) {
         const wallet = await this.getWalletSnapshot(userId, transaction);
@@ -1042,6 +1125,32 @@ export class MissionsService implements OnModuleInit {
           },
         },
         { transaction },
+      );
+
+      const ledgerRow = await this.userCurrencyTransactionModel.findOne({
+        where: {
+          userId,
+          referenceKey: `jaca_emoji_purchase:${normalizedEmojiId}`,
+        },
+        attributes: ['id'],
+        transaction,
+      });
+
+      await this.recordStorePurchase(
+        {
+          userId,
+          itemKey: normalizedEmojiId,
+          category: 'jaca_emoji',
+          quantity: 1,
+          priceGold,
+          currencyTransactionId: ledgerRow?.id ?? null,
+          acquireSource: 'purchase',
+          referenceKey: buildStorePurchaseReferenceKey({
+            sourceType: 'jaca_emoji_purchase',
+            itemKey: normalizedEmojiId,
+          }),
+        },
+        transaction,
       );
 
       purchased.add(normalizedEmojiId);
@@ -1151,6 +1260,20 @@ export class MissionsService implements OnModuleInit {
           },
         },
         { transaction },
+      );
+
+      await this.recordStorePurchase(
+        {
+          userId,
+          itemKey: normalizedBlockerId,
+          category: 'offensive_blocker',
+          quantity: normalizedQuantity,
+          priceGold: totalPriceGold,
+          currencyTransactionId: null,
+          acquireSource: 'purchase',
+          referenceKey: null,
+        },
+        transaction,
       );
 
       const nextInventory = currentInventory + normalizedQuantity;
@@ -1430,6 +1553,19 @@ export class MissionsService implements OnModuleInit {
         user.purchasedAvatarFrameIds = Array.from(purchasedFrames).sort();
         user.equippedAvatarFrameId = reward.itemKey;
         frameGranted = reward.itemKey;
+        await this.recordStorePurchase(
+          {
+            userId,
+            itemKey: reward.itemKey,
+            category: 'avatar_frame',
+            quantity: 1,
+            priceGold: 0,
+            currencyTransactionId: null,
+            acquireSource: 'check_in',
+            referenceKey: `${referenceKey}:frame:${reward.itemKey}`,
+          },
+          transaction,
+        );
         continue;
       }
 
@@ -1448,6 +1584,19 @@ export class MissionsService implements OnModuleInit {
       user.purchasedAvatarBackgroundIds = Array.from(purchasedBackgrounds).sort();
       user.equippedAvatarBackgroundId = reward.itemKey;
       backgroundGranted = reward.itemKey;
+      await this.recordStorePurchase(
+        {
+          userId,
+          itemKey: reward.itemKey,
+          category: 'avatar_background',
+          quantity: 1,
+          priceGold: 0,
+          currencyTransactionId: null,
+          acquireSource: 'check_in',
+          referenceKey: `${referenceKey}:background:${reward.itemKey}`,
+        },
+        transaction,
+      );
     }
 
     const totalGold = goldGranted + consolacaoGold;
@@ -1703,7 +1852,7 @@ export class MissionsService implements OnModuleInit {
 
     for (const mission of completedMissions) {
       const periodKey = this.buildMissionPeriodKey(mission.type, referenceDate);
-      const referenceKey = `mission_reward:${mission.key}:${periodKey}`;
+      const referenceKey = buildMissionRewardReferenceKey(mission.key, periodKey);
       const sourceId = mission.key;
 
       if (parseNumber(mission.rewardGold) > 0) {
@@ -1768,10 +1917,19 @@ export class MissionsService implements OnModuleInit {
 
     for (const mission of completedMissions) {
       const periodKey = this.buildMissionPeriodKey(mission.type, referenceDate);
-      const referenceKey = `mission_reward:${mission.key}:${periodKey}`;
+      const referenceKey = buildMissionRewardReferenceKey(mission.key, periodKey);
       if (!newlyAwardedKeys.includes(referenceKey)) {
         continue;
       }
+      await this.markUserMissionRewardCredited({
+        userId,
+        missionId: mission.id,
+        missionKey: mission.key,
+        periodKey,
+        progressCurrent: mission.progressCurrent,
+        progressTarget: mission.progressTarget,
+        creditedAt: referenceDate,
+      });
       await this.analyticsService.trackSafe(userId, {
         eventName: 'mission_reward_earned',
         properties: {
@@ -1815,6 +1973,166 @@ export class MissionsService implements OnModuleInit {
     return rawList
       .map((value) => value?.toString().trim() ?? '')
       .filter((value) => value.length > 0);
+  }
+
+  private async syncUserMissionProgress(
+    userId: string,
+    missionItems: MissionItemPayload[],
+    referenceDate: Date,
+  ): Promise<void> {
+    for (const mission of missionItems) {
+      const periodKey = this.buildMissionPeriodKey(mission.type, referenceDate);
+      const existing = await this.userMissionModel.findOne({
+        where: {
+          userId,
+          missionId: mission.id,
+          periodKey,
+        },
+      });
+
+      const alreadyCompleted = existing?.status === 'completed';
+      if (alreadyCompleted && mission.progressCurrent < mission.progressTarget) {
+        // Conclusão já registrada prevalece sobre recálculo parcial do período.
+        mission.progressCurrent = mission.progressTarget;
+        mission.progressLabel = `${mission.progressTarget}/${mission.progressTarget}`;
+        mission.progressPercent = 100;
+      }
+
+      const status = resolveUserMissionStatus({
+        progressCurrent: mission.progressCurrent,
+        progressTarget: mission.progressTarget,
+        alreadyCompleted,
+      });
+      const progressCurrent = Math.max(
+        mission.progressCurrent,
+        alreadyCompleted ? mission.progressTarget : 0,
+      );
+      const completedAt =
+        status === 'completed'
+          ? existing?.completedAt ?? referenceDate
+          : existing?.completedAt ?? null;
+
+      if (existing) {
+        await existing.update({
+          missionKey: mission.key,
+          status,
+          progressCurrent,
+          progressTarget: mission.progressTarget,
+          completedAt,
+        });
+        continue;
+      }
+
+      await this.userMissionModel.create({
+        userId,
+        missionId: mission.id,
+        missionKey: mission.key,
+        periodKey,
+        status,
+        progressCurrent,
+        progressTarget: mission.progressTarget,
+        completedAt,
+      });
+    }
+  }
+
+  private async markUserMissionRewardCredited(params: {
+    userId: string;
+    missionId: string;
+    missionKey: string;
+    periodKey: string;
+    progressCurrent: number;
+    progressTarget: number;
+    creditedAt: Date;
+  }): Promise<void> {
+    const existing = await this.userMissionModel.findOne({
+      where: {
+        userId: params.userId,
+        missionId: params.missionId,
+        periodKey: params.periodKey,
+      },
+    });
+
+    const payload = {
+      status: 'completed' as const,
+      progressCurrent: Math.max(params.progressCurrent, params.progressTarget),
+      progressTarget: params.progressTarget,
+      completedAt: existing?.completedAt ?? params.creditedAt,
+      rewardCreditedAt: existing?.rewardCreditedAt ?? params.creditedAt,
+      missionKey: params.missionKey,
+    };
+
+    if (existing) {
+      await existing.update(payload);
+      return;
+    }
+
+    await this.userMissionModel.create({
+      userId: params.userId,
+      missionId: params.missionId,
+      missionKey: params.missionKey,
+      periodKey: params.periodKey,
+      ...payload,
+    });
+  }
+
+  private async loadOwnedItemKeys(
+    userId: string,
+    category: string,
+    fallbackJson: unknown,
+    transaction?: Transaction,
+  ): Promise<string[]> {
+    const rows = await this.storePurchaseModel.findAll({
+      where: { userId, category },
+      attributes: ['itemKey'],
+      transaction,
+    });
+    const fromTable = rows.map((row) => row.itemKey);
+    return mergeOwnedItemKeys(fromTable, this.normalizeIdList(fallbackJson));
+  }
+
+  private async recordStorePurchase(
+    params: {
+      userId: string;
+      itemKey: string;
+      category: string;
+      quantity: number;
+      priceGold: number;
+      currencyTransactionId: string | null;
+      acquireSource: 'purchase' | 'check_in' | 'migration';
+      referenceKey: string | null;
+    },
+    transaction?: Transaction,
+  ): Promise<void> {
+    const catalogItem = await this.storeCatalogService.findByKey(params.itemKey);
+    const payload = {
+      userId: params.userId,
+      catalogItemId: catalogItem?.id ?? null,
+      itemKey: params.itemKey,
+      category: params.category,
+      quantity: params.quantity,
+      priceGold: params.priceGold,
+      currencyTransactionId: params.currencyTransactionId,
+      acquireSource: params.acquireSource,
+      referenceKey: params.referenceKey,
+      purchasedAt: new Date(),
+    };
+
+    if (params.referenceKey) {
+      const existing = await this.storePurchaseModel.findOne({
+        where: {
+          userId: params.userId,
+          referenceKey: params.referenceKey,
+        },
+        attributes: ['id'],
+        transaction,
+      });
+      if (existing) {
+        return;
+      }
+    }
+
+    await this.storePurchaseModel.create(payload, { transaction });
   }
 
   private async ensurePurchasedAvatarFramesSynced(userId: string): Promise<void> {
@@ -1900,9 +2218,15 @@ export class MissionsService implements OnModuleInit {
       user.id,
       transaction,
     );
+    const purchaseTableIds = await this.loadOwnedItemKeys(
+      user.id,
+      'avatar_frame',
+      [],
+      transaction,
+    );
     const purchased = this.buildPurchasedAvatarFrameSet(
       user.purchasedAvatarFrameIds,
-      transactionOwnedIds,
+      [...transactionOwnedIds, ...purchaseTableIds],
     );
     const equippedId = this.normalizeOptionalId(user.equippedAvatarFrameId);
     const sanitizedEquipped =
@@ -1971,9 +2295,15 @@ export class MissionsService implements OnModuleInit {
       user.id,
       transaction,
     );
+    const purchaseTableIds = await this.loadOwnedItemKeys(
+      user.id,
+      'avatar_background',
+      [],
+      transaction,
+    );
     const purchased = this.buildPurchasedAvatarBackgroundSet(
       user.purchasedAvatarBackgroundIds,
-      transactionOwnedIds,
+      [...transactionOwnedIds, ...purchaseTableIds],
     );
     const equippedId = this.normalizeOptionalId(user.equippedAvatarBackgroundId);
     const sanitizedEquipped =
