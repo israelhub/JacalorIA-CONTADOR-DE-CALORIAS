@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="3018" dy="776" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1580" math="0" shadow="0">
+    <mxGraphModel dx="2319" dy="291" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1580" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -8,7 +8,7 @@
           <mxGeometry height="690" width="280" x="40" y="90" as="geometry" />
         </mxCell>
         <mxCell id="c4" parent="p3" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;" value="Usuario" vertex="1">
-          <mxGeometry height="634" width="230" x="24" y="40" as="geometry" />
+          <mxGeometry height="626" width="230" x="24" y="40" as="geometry" />
         </mxCell>
         <mxCell id="f5" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ id: string" vertex="1">
           <mxGeometry height="16" width="230" y="26" as="geometry" />
@@ -86,40 +86,40 @@
           <mxGeometry height="16" width="230" y="410" as="geometry" />
         </mxCell>
         <mxCell id="f74" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ atualizadoEm: Date" vertex="1">
-          <mxGeometry height="24" width="230" y="426" as="geometry" />
+          <mxGeometry height="16" width="230" y="426" as="geometry" />
         </mxCell>
         <mxCell id="f30" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ idBloqueadorOfensivaEquipado: string | null" vertex="1">
-          <mxGeometry height="16" width="230" y="450" as="geometry" />
+          <mxGeometry height="16" width="230" y="442" as="geometry" />
         </mxCell>
         <mxCell id="f31" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ qtdBloqueadorOfensivaInventario: number" vertex="1">
-          <mxGeometry height="16" width="230" y="466" as="geometry" />
+          <mxGeometry height="16" width="230" y="458" as="geometry" />
         </mxCell>
         <mxCell id="f32" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ chavesDiasBloqueadorSequencia: string[]" vertex="1">
-          <mxGeometry height="16" width="230" y="482" as="geometry" />
+          <mxGeometry height="16" width="230" y="474" as="geometry" />
         </mxCell>
         <mxCell id="f33" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ ocultarGuiaMissoes: boolean" vertex="1">
-          <mxGeometry height="16" width="230" y="498" as="geometry" />
+          <mxGeometry height="16" width="230" y="490" as="geometry" />
         </mxCell>
         <mxCell id="f34" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ ocultarGuiaSocial: boolean" vertex="1">
-          <mxGeometry height="16" width="230" y="514" as="geometry" />
+          <mxGeometry height="16" width="230" y="506" as="geometry" />
         </mxCell>
         <mxCell id="f35" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ ocultarGuia: boolean | null" vertex="1">
-          <mxGeometry height="16" width="230" y="530" as="geometry" />
+          <mxGeometry height="16" width="230" y="522" as="geometry" />
         </mxCell>
         <mxCell id="f36" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ ocultarRefeicoesPerfilPublico: boolean" vertex="1">
-          <mxGeometry height="16" width="230" y="546" as="geometry" />
+          <mxGeometry height="16" width="230" y="538" as="geometry" />
         </mxCell>
         <mxCell id="f37" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ ultimoAcessoEm: Date | null" vertex="1">
-          <mxGeometry height="16" width="230" y="562" as="geometry" />
+          <mxGeometry height="16" width="230" y="554" as="geometry" />
         </mxCell>
         <mxCell id="f38" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ ehDev: boolean" vertex="1">
-          <mxGeometry height="16" width="230" y="578" as="geometry" />
+          <mxGeometry height="16" width="230" y="570" as="geometry" />
         </mxCell>
         <mxCell id="f39" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ criadoEm: Date" vertex="1">
-          <mxGeometry height="16" width="230" y="594" as="geometry" />
+          <mxGeometry height="16" width="230" y="586" as="geometry" />
         </mxCell>
         <mxCell id="f40" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ atualizadoEm: Date" vertex="1">
-          <mxGeometry height="24" width="230" y="610" as="geometry" />
+          <mxGeometry height="24" width="230" y="602" as="geometry" />
         </mxCell>
         <mxCell id="p41" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#e8e8e8;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="refeicoes / templates-refeicao" vertex="1">
           <mxGeometry height="400" width="520" x="360" y="90" as="geometry" />
