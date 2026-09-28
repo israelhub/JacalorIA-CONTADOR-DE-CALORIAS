@@ -1,11 +1,11 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="3857" dy="1358" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1580" math="0" shadow="0">
+    <mxGraphModel dx="3018" dy="776" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1580" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="p3" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#e8e8e8;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="auth" vertex="1">
-          <mxGeometry height="658" width="280" x="40" y="90" as="geometry" />
+          <mxGeometry height="690" width="280" x="40" y="90" as="geometry" />
         </mxCell>
         <mxCell id="c4" parent="p3" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;" value="User" vertex="1">
           <mxGeometry height="634" width="230" x="24" y="40" as="geometry" />
@@ -13,7 +13,7 @@
         <mxCell id="f5" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ id: string" vertex="1">
           <mxGeometry height="16" width="230" y="26" as="geometry" />
         </mxCell>
-        <mxCell id="f6" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ name: string | null" vertex="1">
+        <mxCell id="f6" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ name: string" vertex="1">
           <mxGeometry height="16" width="230" y="42" as="geometry" />
         </mxCell>
         <mxCell id="f7" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ email: string" vertex="1">
@@ -43,28 +43,28 @@
         <mxCell id="f15" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ dailyFatGoal: number" vertex="1">
           <mxGeometry height="16" width="230" y="186" as="geometry" />
         </mxCell>
-        <mxCell id="f16" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ birthDate: string | null" vertex="1">
+        <mxCell id="f16" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ birthDate: string" vertex="1">
           <mxGeometry height="16" width="230" y="202" as="geometry" />
         </mxCell>
-        <mxCell id="f17" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ weight: number | null" vertex="1">
+        <mxCell id="f17" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ weight: number&amp;nbsp;" vertex="1">
           <mxGeometry height="16" width="230" y="218" as="geometry" />
         </mxCell>
-        <mxCell id="f18" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ height: number | null" vertex="1">
+        <mxCell id="f18" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ height: number" vertex="1">
           <mxGeometry height="16" width="230" y="234" as="geometry" />
         </mxCell>
-        <mxCell id="f19" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ weightUnit: string | null" vertex="1">
+        <mxCell id="f19" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ weightUnit: string" vertex="1">
           <mxGeometry height="16" width="230" y="250" as="geometry" />
         </mxCell>
-        <mxCell id="f20" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ heightUnit: string | null" vertex="1">
+        <mxCell id="f20" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ heightUnit: string" vertex="1">
           <mxGeometry height="16" width="230" y="266" as="geometry" />
         </mxCell>
-        <mxCell id="f21" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ sex: string | null" vertex="1">
+        <mxCell id="f21" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ sex: string" vertex="1">
           <mxGeometry height="16" width="230" y="282" as="geometry" />
         </mxCell>
-        <mxCell id="f22" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ objective: string | null" vertex="1">
+        <mxCell id="f22" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ objective: string" vertex="1">
           <mxGeometry height="16" width="230" y="298" as="geometry" />
         </mxCell>
-        <mxCell id="f23" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ activityLevel: string | null" vertex="1">
+        <mxCell id="f23" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ activityLevel: string" vertex="1">
           <mxGeometry height="16" width="230" y="314" as="geometry" />
         </mxCell>
         <mxCell id="f24" parent="c4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+ avatarUrl: string | null" vertex="1">
