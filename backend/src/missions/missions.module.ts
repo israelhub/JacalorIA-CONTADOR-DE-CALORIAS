@@ -5,7 +5,9 @@ import { Meal } from '../meals/models/meal.model';
 import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
 import { Mission } from './models/mission.model';
 import { StoreCatalogItem } from './models/store-catalog-item.model';
+import { StorePurchase } from './models/store-purchase.model';
 import { UserCurrencyTransaction } from './models/user-currency-transaction.model';
+import { UserMission } from './models/user-mission.model';
 import { MissionsController } from './missions.controller';
 import { MissionsService } from './missions.service';
 import { StoreCatalogService } from './store-catalog.service';
@@ -22,7 +24,9 @@ import { AnalyticsModule } from '../analytics/analytics.module';
       User,
       UserWeightEntry,
       UserCurrencyTransaction,
+      UserMission,
       StoreCatalogItem,
+      StorePurchase,
     ]),
   ],
   controllers: [MissionsController],
