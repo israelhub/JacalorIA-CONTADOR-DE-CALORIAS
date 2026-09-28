@@ -7,7 +7,9 @@ import { MealTemplate } from '../meal-templates/models/meal-template.model';
 import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
 import { Mission } from '../missions/models/mission.model';
 import { StoreCatalogItem } from '../missions/models/store-catalog-item.model';
+import { StorePurchase } from '../missions/models/store-purchase.model';
 import { UserCurrencyTransaction } from '../missions/models/user-currency-transaction.model';
+import { UserMission } from '../missions/models/user-mission.model';
 import { SocialFriendLink } from '../social/models/social-friend-link.model';
 import { SocialFriendRequest } from '../social/models/social-friend-request.model';
 import { SocialFriendship } from '../social/models/social-friendship.model';
@@ -70,7 +72,9 @@ import { UserNotification } from '../notifications/models/user-notification.mode
             UserWeightEntry,
             Mission,
             StoreCatalogItem,
+            StorePurchase,
             UserCurrencyTransaction,
+            UserMission,
             SocialGroup,
             SocialGroupMember,
             SocialGroupActivity,

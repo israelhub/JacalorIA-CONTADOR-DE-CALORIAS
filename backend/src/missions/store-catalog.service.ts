@@ -86,6 +86,19 @@ export class StoreCatalogService implements OnModuleInit {
     });
   }
 
+  async findByKey(itemKey: string): Promise<StoreCatalogItem | null> {
+    await this.ensureSeeded();
+
+    const normalized = itemKey.trim();
+    if (!normalized) {
+      return null;
+    }
+
+    return this.storeCatalogItemModel.findOne({
+      where: { itemKey: normalized },
+    });
+  }
+
   async getActivePriceGold(itemKey: string): Promise<number | null> {
     const item = await this.findActiveByKey(itemKey);
     return item?.priceGold ?? null;
