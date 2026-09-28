@@ -199,7 +199,7 @@
       <div class="ret-card">
         <span class="ret-label">
           Após 1 dia
-          ${tipBadge("D1", "D1+. Conta quem abriu no dia seguinte ou depois. Só coorte madura (já passou do dia 1). Exclui is_dev.")}
+          ${tipBadge("D1", "D1+. Conta quem abriu no dia seguinte ou depois. Só coorte madura (já passou do dia 1). Exclui is_dev e testers fora da amostra.")}
         </span>
         <strong>${r.d1.pct}%</strong>
         <small>${r.d1.users} de ${denom(r.d1)} pessoas</small>
@@ -207,7 +207,7 @@
       <div class="ret-card">
         <span class="ret-label">
           Após 7 dias
-          ${tipBadge("D7", "D7+. Conta quem abriu no 7º dia ou depois. Só coorte madura (já passou do dia 7). Exclui is_dev.")}
+          ${tipBadge("D7", "D7+. Conta quem abriu no 7º dia ou depois. Só coorte madura (já passou do dia 7). Exclui is_dev e testers fora da amostra.")}
         </span>
         <strong>${r.d7.pct}%</strong>
         <small>${r.d7.users} de ${denom(r.d7)} pessoas</small>
@@ -215,7 +215,7 @@
       <div class="ret-card">
         <span class="ret-label">
           Após 1 mês
-          ${tipBadge("D30", "D30+. Conta quem abriu no 30º dia ou depois. Só coorte madura. Exclui is_dev.")}
+          ${tipBadge("D30", "D30+. Conta quem abriu no 30º dia ou depois. Só coorte madura. Exclui is_dev e testers fora da amostra.")}
         </span>
         <strong>${r.d30.pct}%</strong>
         <small>${r.d30.users} de ${denom(r.d30)} pessoas</small>
