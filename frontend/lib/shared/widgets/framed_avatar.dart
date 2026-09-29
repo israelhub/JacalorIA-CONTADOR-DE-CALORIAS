@@ -1,0 +1,338 @@
+import 'dart:math' as math;
+import 'dart:typed_data';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+
+import '../../features/avatar_frames/models/avatar_frame_catalog.dart';
+import '../theme/app_theme.dart';
+import 'app_skeleton.dart';
+
+class FramedAvatar extends StatelessWidget {
+  const FramedAvatar({
+    super.key,
+    required this.size,
+    this.avatarUrl,
+    this.avatarBytes,
+    this.frameId,
+    this.fallbackText,
+    this.onTap,
+    this.backgroundColor = AppColors.surfaceAlt,
+    this.framedAvatarScale = 0.74,
+    this.unframedAvatarScale = 0.9,
+  });
+
+  final double size;
+  final String? avatarUrl;
+  final Uint8List? avatarBytes;
+  final String? frameId;
+  final String? fallbackText;
+  final VoidCallback? onTap;
+  final Color backgroundColor;
+  final double framedAvatarScale;
+  final double unframedAvatarScale;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: size,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final resolvedSize = _resolveSquareSize(constraints);
+          final frame = AvatarFrameCatalog.byId(frameId);
+          final hasFrame = frame?.assetPath != null;
+          final avatarSize = hasFrame
+              ? resolvedSize * _effectiveFramedAvatarScale(frameId)
+              : resolvedSize * unframedAvatarScale;
+          final avatar = _AvatarCircle(
+            size: avatarSize,
+            avatarUrl: avatarUrl,
+            avatarBytes: avatarBytes,
+            fallbackText: fallbackText,
+            backgroundColor: backgroundColor,
+          );
+          // No web (Safari/iOS) o resize via cacheWidth remistura alpha e
+          // recria halo de "fundo nao cortado" nas molduras glossy.
+          final frameCacheDimension = kIsWeb
+              ? null
+              : (resolvedSize * MediaQuery.devicePixelRatioOf(context)).round();
+
+          // Center: pai apertado nao estica a PNG. Sem expand: a foto fica no furo.
+          final content = Center(
+            child: SizedBox.square(
+              dimension: resolvedSize,
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  avatar,
+                  if (hasFrame)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Image.asset(
+                          frame!.assetPath!,
+                          fit: BoxFit.contain,
+                          cacheWidth: frameCacheDimension,
+                          cacheHeight: frameCacheDimension,
+                          filterQuality: FilterQuality.medium,
+                          isAntiAlias: true,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+
+          if (onTap == null) {
+            return content;
+          }
+
+          return _PressableAvatar(onTap: onTap!, child: content);
+        },
+      ),
+    );
+  }
+
+  /// Keeps the avatar square when parents force tighter, non-square bounds
+  /// (e.g. store grid tiles on small screens).
+  double _resolveSquareSize(BoxConstraints constraints) {
+    var resolved = size;
+    if (constraints.maxWidth.isFinite) {
+      resolved = math.min(resolved, constraints.maxWidth);
+    }
+    if (constraints.maxHeight.isFinite) {
+      resolved = math.min(resolved, constraints.maxHeight);
+    }
+    return math.max(0, resolved);
+  }
+
+  double _effectiveFramedAvatarScale(String? id) {
+    switch (id?.trim()) {
+      case 'cat_ears_soft':
+      case 'fox_autumn_tail':
+      case 'panda_bamboo':
+        return 0.8;
+      case 'gator_tail_fin':
+      case 'fruit_ring':
+        return 0.86;
+      case 'fire_streak':
+      case 'royal_gold':
+      case 'soft_pink':
+      case 'soft_blue':
+      case 'aug_sunset_ring':
+      case 'aug_mint_leaf':
+        return 0.8;
+      default:
+        return framedAvatarScale;
+    }
+  }
+}
+
+class _PressableAvatar extends StatefulWidget {
+  const _PressableAvatar({required this.onTap, required this.child});
+
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  State<_PressableAvatar> createState() => _PressableAvatarState();
+}
+
+class _PressableAvatarState extends State<_PressableAvatar> {
+  bool _isPressed = false;
+  bool _isHovered = false;
+
+  void _setPressed(bool value) {
+    if (_isPressed == value) {
+      return;
+    }
+    setState(() {
+      _isPressed = value;
+    });
+  }
+
+  void _setHovered(bool value) {
+    if (_isHovered == value) {
+      return;
+    }
+    setState(() {
+      _isHovered = value;
+    });
+  }
+
+  Future<void> _handleTap() async {
+    _setPressed(true);
+    widget.onTap();
+    await Future<void>.delayed(const Duration(milliseconds: 90));
+    if (!mounted) {
+      return;
+    }
+    _setPressed(false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => _setHovered(true),
+      onExit: (_) => _setHovered(false),
+      child: GestureDetector(
+        onTapDown: (_) => _setPressed(true),
+        onTapCancel: () => _setPressed(false),
+        onTapUp: (_) {},
+        onTap: _handleTap,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.97 : (_isHovered ? 1.02 : 1),
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOut,
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarCircle extends StatelessWidget {
+  const _AvatarCircle({
+    required this.size,
+    required this.avatarUrl,
+    required this.avatarBytes,
+    required this.fallbackText,
+    required this.backgroundColor,
+  });
+
+  final double size;
+  final String? avatarUrl;
+  final Uint8List? avatarBytes;
+  final String? fallbackText;
+  final Color backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = _resolveAvatarUrl(avatarUrl);
+    final initial = fallbackText?.trim().isNotEmpty == true
+        ? fallbackText!.trim()[0].toUpperCase()
+        : null;
+
+    final fallback = _FallbackAvatar(
+      initial: initial,
+      backgroundColor: backgroundColor,
+    );
+
+    Widget buildImage(Widget image) {
+      return ClipOval(
+        child: SizedBox.square(dimension: size, child: image),
+      );
+    }
+
+    if (avatarBytes != null && avatarBytes!.isNotEmpty) {
+      return buildImage(
+        Image(
+          key: ValueKey('avatar-bytes-${avatarBytes!.length}'),
+          image: MemoryImage(avatarBytes!),
+          fit: BoxFit.cover,
+          width: size,
+          height: size,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => fallback,
+        ),
+      );
+    }
+
+    if (imageUrl != null) {
+      final cacheKey = ValueKey('avatar-$imageUrl');
+      if (kIsWeb) {
+        return buildImage(
+          Image.network(
+            key: cacheKey,
+            imageUrl,
+            fit: BoxFit.cover,
+            width: size,
+            height: size,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => fallback,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) {
+                return child;
+              }
+              return AppSkeletonBox(
+                width: size,
+                height: size,
+                borderRadius: size / 2,
+              );
+            },
+          ),
+        );
+      }
+
+      return buildImage(
+        CachedNetworkImage(
+          key: cacheKey,
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          width: size,
+          height: size,
+          memCacheWidth: _cacheDimension(context),
+          placeholder: (_, __) => AppSkeletonBox(
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+          ),
+          errorWidget: (_, __, ___) => fallback,
+        ),
+      );
+    }
+
+    return buildImage(fallback);
+  }
+
+  int? _cacheDimension(BuildContext context) {
+    if (kIsWeb) {
+      return null;
+    }
+    final dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
+    final dimension = (size * dpr).round();
+    return dimension > 0 ? dimension : null;
+  }
+
+  String? _resolveAvatarUrl(String? raw) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+
+    final uri = Uri.tryParse(value);
+    if (uri == null || !uri.hasScheme) {
+      return null;
+    }
+
+    return value;
+  }
+}
+
+class _FallbackAvatar extends StatelessWidget {
+  const _FallbackAvatar({required this.initial, required this.backgroundColor});
+
+  final String? initial;
+  final Color backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: backgroundColor,
+      child: Center(
+        child: initial == null
+            ? const Icon(Icons.person, color: AppColors.textSecondary)
+            : Text(
+                initial!,
+                style: AppTextStyles.homeMealTitle.copyWith(
+                  color: AppColors.brand900Variant,
+                ),
+              ),
+      ),
+    );
+  }
+}

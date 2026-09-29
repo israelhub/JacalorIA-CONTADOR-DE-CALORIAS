@@ -12,27 +12,204 @@
     * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
 
     This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
+    the `--base-href` argument provided by `flutter build`.
   -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <!-- Prefer fresh entry documents after each deploy (CDN/browser). -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="description" content="JacalorIA — contador de calorias com IA">
+  <meta name="theme-color" content="#1E513E">
+  <!--
+    viewport-fit=cover unlocks env(safe-area-inset-*).
+    Flutter Web strips this tag at runtime — we put it back below.
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
-  <!-- iOS meta tags & icons -->
+  <!--
+    iOS home-screen: use opaque status bar ("black"), NOT black-translucent.
+    Translucent mode makes Flutter Web size the canvas wrong on standalone PWAs
+    (misaligned taps + bottom nav floating above the home indicator).
+    Opaque mode lays the page out below the status bar — no height hacks needed.
+  -->
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="jacaloria">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="apple-mobile-web-app-title" content="JacalorIA">
+  <link rel="apple-touch-icon" href="icons/Icon-192.webp">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/webp" href="favicon.webp"/>
 
-  <title>jacaloria</title>
+  <title>JacalorIA</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overscroll-behavior: none;
+      background-color: #FFFFFF;
+    }
+  </style>
+  <script>
+    // Convites: tenta abrir o app nativo no Android quando App Links ainda nao verificaram.
+    (function () {
+      try {
+        var path = (location.pathname || '').replace(/\/+$/, '') || '/';
+        var params = new URLSearchParams(location.search || '');
+        var code = (params.get('code') || '').trim();
+        var inviteParam = (params.get('invite') || '').trim().toLowerCase();
+        var kind = null;
+
+        if (path === '/friend' || path.indexOf('/friend/') === 0) {
+          kind = 'friend';
+        } else if (path === '/group' || path.indexOf('/group/') === 0) {
+          kind = 'group';
+        } else if (inviteParam === 'friend' || inviteParam === 'group') {
+          kind = inviteParam;
+        }
+
+        if (!kind || !code) return;
+        if (sessionStorage.getItem('jacaloria_native_open_tried')) return;
+        sessionStorage.setItem('jacaloria_native_open_tried', '1');
+
+        var ua = navigator.userAgent || '';
+        if (!/Android/i.test(ua)) return;
+
+        var httpsUrl = location.href;
+        var intentUrl =
+          'intent://' +
+          location.host +
+          path +
+          location.search +
+          '#Intent;scheme=https;package=com.jacaloria.app;' +
+          'action=android.intent.action.VIEW;' +
+          'category=android.intent.category.BROWSABLE;' +
+          'category=android.intent.category.DEFAULT;' +
+          'S.browser_fallback_url=' +
+          encodeURIComponent(httpsUrl) +
+          ';end';
+
+        location.replace(intentUrl);
+
+        setTimeout(function () {
+          if (document.visibilityState === 'hidden') return;
+          location.replace(
+            'jacaloria://' +
+              kind +
+              '?code=' +
+              encodeURIComponent(code.toUpperCase()),
+          );
+        }, 1200);
+      } catch (_) {}
+    })();
+  </script>
+  <script>
+    // Flutter replaces <meta name="viewport"> without viewport-fit=cover.
+    // Put it back so env(safe-area-inset-bottom) reflects the home indicator.
+    (function () {
+      function ensureViewportFitCover() {
+        var meta = document.querySelector('meta[name="viewport"]');
+        if (!meta) return;
+        var content = meta.getAttribute('content') || '';
+        if (content.indexOf('viewport-fit=cover') !== -1) return;
+        meta.setAttribute('content', content + ', viewport-fit=cover');
+        try {
+          window.dispatchEvent(new Event('jacaloria-safe-area'));
+        } catch (_) {}
+      }
+
+      ensureViewportFitCover();
+      if (document.head) {
+        new MutationObserver(ensureViewportFitCover).observe(document.head, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['content'],
+        });
+      }
+    })();
+  </script>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // One-shot escape from older deploys / stale service workers.
+    (function () {
+      var FLAG = 'jacaloria_force_uncache_v6';
+      try {
+        if (localStorage.getItem(FLAG)) return;
+        localStorage.setItem(FLAG, '1');
+      } catch (_) {
+        return;
+      }
+
+      var tasks = [];
+      if ('serviceWorker' in navigator) {
+        tasks.push(
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all(regs.map(function (reg) { return reg.unregister(); }));
+          }),
+        );
+      }
+      if ('caches' in window) {
+        tasks.push(
+          caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+          }),
+        );
+      }
+      Promise.all(tasks).then(function () {
+        try {
+          if (sessionStorage.getItem(FLAG + '_reloaded')) return;
+          sessionStorage.setItem(FLAG + '_reloaded', '1');
+        } catch (_) {}
+        window.location.reload();
+      });
+    })();
+  </script>
+
+  <!--
+    CSS safe-area probe. Flutter Web MediaQuery.padding is often 0 on mobile
+    browsers; Dart reads these paddings and applies only what is needed.
+  -->
+  <div id="flt-safe-area-probe" aria-hidden="true" style="
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    visibility: hidden;
+    pointer-events: none;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+  "></div>
+
+  <script>
+    (function () {
+      function injectBootstrap(version) {
+        var script = document.createElement('script');
+        script.src = 'flutter_bootstrap.js?v=' + encodeURIComponent(version);
+        script.async = true;
+        document.body.appendChild(script);
+      }
+
+      fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) {
+          var version = (data && (data.version || data.build_number)) || String(Date.now());
+          injectBootstrap(version);
+        })
+        .catch(function () {
+          injectBootstrap(String(Date.now()));
+        });
+    })();
+  </script>
 </body>
 </html>
