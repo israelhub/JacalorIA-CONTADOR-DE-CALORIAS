@@ -4,6 +4,7 @@
 *.pyc
 *.swp
 .DS_Store
+tmp_pdf_extract.txt
 .atom/
 .build/
 .buildlog/
@@ -18,10 +19,7 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+/.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -44,7 +42,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-/.github/
+/.github/*
+!/.github/workflows/
+!/.github/workflows/**
 
 # Flutter app dentro de /frontend
 /frontend/.dart_tool/
@@ -54,6 +54,10 @@ app.*.map.json
 /frontend/build/
 /frontend/coverage/
 /frontend/.github/
+
+# Node backend
+/backend/node_modules/
+/backend/.github/
 
 # Logs temporarios
 /frontend/*.log
@@ -68,3 +72,27 @@ app.*.map.json
 /frontend/windows/flutter/generated_plugins.cmake
 /frontend/macos/Flutter/GeneratedPluginRegistrant.swift
 /frontend/**/.last_build_id
+
+# Environment and local secrets
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+
+# Node build output
+node_modules/
+dist/
+*.tsbuildinfo
+*.js.map
+.tools/ngrok/ngrok.exe
+scripts/flutter_mobile_with_ngrok.ps1
+.gitignore
+scripts/generate_mascot_mobile_webp.ps1
+scripts/flutter_web_with_google.ps1
+/testes/
+/.tools/
+/scripts/
+.specify
+artifacts
+docs
+.cursor/

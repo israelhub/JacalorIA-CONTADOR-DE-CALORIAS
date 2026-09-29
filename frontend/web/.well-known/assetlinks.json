@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.jacaloria.app",
+      "sha256_cert_fingerprints": [
+        "68783176B4FA22355B380FF4AE2E99D446CD5D3877D08C05565B16C211E6F267"
+      ]
+    }
+  }
+]

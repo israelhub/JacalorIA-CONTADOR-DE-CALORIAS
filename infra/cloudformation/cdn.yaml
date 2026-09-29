@@ -1,0 +1,229 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Jacaloria - CDN: bucket S3 privado com o Flutter Web + distribuicao CloudFront unica.
+  Rota padrao serve o front (S3); rota /api/* faz proxy para o backend no Elastic Beanstalk.
+  Assim tudo fica sob HTTPS e na mesma origem (sem CORS e sem mixed-content).
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: jacaloria
+  BackendOriginDomain:
+    Type: String
+    Description: Dominio (sem https://) do ambiente Elastic Beanstalk, ex jacaloria-backend-env.eba-xxxx.sa-east-1.elasticbeanstalk.com
+  CustomDomainName:
+    Type: String
+    Default: jacaloria.online
+    Description: Dominio customizado (apex) apontando para o CloudFront
+  WwwDomainName:
+    Type: String
+    Default: www.jacaloria.online
+    Description: Subdominio www apontando para o CloudFront
+  AcmCertificateArn:
+    Type: String
+    Default: 'arn:aws:acm:us-east-1:942226532350:certificate/c48ca261-9e69-4ccb-8a7c-6ac3c6e828cd'
+    Description: Certificado ACM em us-east-1 para o dominio customizado
+
+Resources:
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ProjectName}-web-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${ProjectName}-web-oac'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub '${ProjectName} - front (S3) + api (/api/* -> Elastic Beanstalk)'
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_All
+        Aliases:
+          - !Ref CustomDomainName
+          - !Ref WwwDomainName
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AcmCertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+          - Id: s3-frontend
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+          - Id: eb-backend
+            DomainName: !Ref BackendOriginDomain
+            CustomOriginConfig:
+              OriginProtocolPolicy: http-only
+              HTTPPort: 80
+              # Analise de comida (Gemini + fallbacks) pode passar de 30s.
+              # Default do CloudFront e 30s — sem isso o edge devolve 504 HTML
+              # e o app quebra com "Unrecognized token '<'" / connection abort.
+              # Max sem pedir quota AWS: 120s. Nest TOTAL_TIMEOUT deve ficar abaixo.
+              OriginReadTimeout: 120
+              OriginKeepaliveTimeout: 60
+              OriginSSLProtocols:
+                - TLSv1.2
+        DefaultCacheBehavior:
+          TargetOriginId: s3-frontend
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          # Managed-CachingOptimized
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        # SPA fallback: so vale para erros do origin S3 (front). Respostas
+        # 403/404 do /api/* tambem sao reescritas — o Nest deve preferir 400/422
+        # com JSON em rotas de API; 502/504 do gateway nao entram aqui.
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+        CacheBehaviors:
+          # SPA entrypoints: never cache so clients see new builds after deploy.
+          - PathPattern: /index.html
+            TargetOriginId: s3-frontend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            # Managed-CachingDisabled
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          - PathPattern: /version.json
+            TargetOriginId: s3-frontend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          - PathPattern: /.well-known/*
+            TargetOriginId: s3-frontend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          - PathPattern: /flutter_bootstrap.js
+            TargetOriginId: s3-frontend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          - PathPattern: /flutter_service_worker.js
+            TargetOriginId: s3-frontend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          - PathPattern: /flutter.js
+            TargetOriginId: s3-frontend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          - PathPattern: /main.dart.js
+            TargetOriginId: s3-frontend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          - PathPattern: /main.dart.wasm
+            TargetOriginId: s3-frontend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          - PathPattern: /main.dart.mjs
+            TargetOriginId: s3-frontend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          - PathPattern: /api/*
+            TargetOriginId: eb-backend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            # Managed-CachingDisabled
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            # Managed-AllViewerExceptHostHeader
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+          # Dashboard beta (Nest serve public/beta)
+          - PathPattern: /beta*
+            TargetOriginId: eb-backend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+          - PathPattern: /beta/*
+            TargetOriginId: eb-backend
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub '${FrontendBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}'
+
+Outputs:
+  FrontendBucketName:
+    Value: !Ref FrontendBucket
+  DistributionId:
+    Value: !Ref Distribution
+  DistributionDomainName:
+    Description: Dominio CloudFront padrao
+    Value: !GetAtt Distribution.DomainName
+  AppUrl:
+    Value: !Sub 'https://${CustomDomainName}'
+  ApiBaseUrl:
+    Value: !Sub 'https://${CustomDomainName}/api'

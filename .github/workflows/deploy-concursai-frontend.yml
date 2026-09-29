@@ -1,0 +1,93 @@
+name: Deploy ConcursAI frontend
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [deploy-concursai-web]
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: concursai-web-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy-frontend:
+    name: Build ConcursAI web -> S3 + CloudFront
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ConcursAI
+        uses: actions/checkout@v4
+        with:
+          repository: israelhub/concursai
+          ref: main
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      - name: Build web
+        run: |
+          flutter build web --release \
+            --pwa-strategy=none \
+            --dart-define=API_BASE_URL=/api
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Gravar version.json do deploy
+        run: |
+          printf '%s\n' "{\"version\":\"${{ github.sha }}\",\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" \
+            > build/web/version.json
+
+      - name: Sync para o S3
+        run: |
+          BUCKET="${{ vars.S3_BUCKET }}"
+          WEB_DIR="build/web"
+
+          aws s3 sync "$WEB_DIR" "s3://$BUCKET" --delete \
+            --exclude "assets/*" \
+            --exclude "canvaskit/*" \
+            --cache-control "no-cache,must-revalidate"
+
+          if [ -d "$WEB_DIR/assets" ]; then
+            aws s3 sync "$WEB_DIR/assets" "s3://$BUCKET/assets" --delete \
+              --exclude "fonts/*" \
+              --cache-control "public,max-age=604800"
+          fi
+
+          if [ -d "$WEB_DIR/assets/fonts" ]; then
+            aws s3 sync "$WEB_DIR/assets/fonts" "s3://$BUCKET/assets/fonts" --delete \
+              --cache-control "no-cache,must-revalidate"
+          fi
+
+          if [ -d "$WEB_DIR/canvaskit" ]; then
+            aws s3 sync "$WEB_DIR/canvaskit" "s3://$BUCKET/canvaskit" \
+              --cache-control "public,max-age=31536000,immutable"
+          fi
+
+      - name: Invalidar cache do CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths \
+            "/index.html" \
+            "/flutter_bootstrap.js" \
+            "/flutter_service_worker.js" \
+            "/flutter.js" \
+            "/version.json" \
+            "/manifest.json" \
+            "/main.dart.js" \
+            "/main.dart.wasm" \
+            "/main.dart.mjs" \
+            "/assets/*" \
+            "/*" >/dev/null

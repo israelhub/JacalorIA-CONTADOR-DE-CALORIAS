@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS user_meal_reminder_settings (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  master_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  reminders JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

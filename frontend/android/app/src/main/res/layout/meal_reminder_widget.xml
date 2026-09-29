@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/meal_reminder_widget_background"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingTop="12dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="12dp">
+
+    <ImageView
+        android:id="@+id/widget_jaca"
+        android:layout_width="104dp"
+        android:layout_height="104dp"
+        android:contentDescription="@string/meal_reminder_widget_jaca"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_jaca" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/widget_streak_chip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/meal_reminder_widget_streak_chip"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="10dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="6dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:contentDescription="@null"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_widget_fire" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:baselineAligned="true"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/widget_streak_days"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:text="0"
+                    android:textColor="#C45A12"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_streak_unit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:includeFontPadding="false"
+                    android:text="@string/meal_reminder_widget_streak_unit_placeholder"
+                    android:textColor="#C45A12"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:lineSpacingExtra="1dp"
+            android:maxLines="2"
+            android:text="@string/meal_reminder_widget_title_placeholder"
+            android:textColor="#1E513E"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:lineSpacingExtra="1dp"
+            android:maxLines="2"
+            android:text="@string/meal_reminder_widget_body_placeholder"
+            android:textColor="#4D6559"
+            android:textSize="13sp" />
+    </LinearLayout>
+</LinearLayout>

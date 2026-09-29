@@ -15,7 +15,7 @@ class EnterMascot extends StatelessWidget {
         child: Transform.translate(
           offset: const Offset(AppSpacing.xxl, 0),
           child: Image.asset(
-            'assets/images/jacaTelaCadastro.png',
+            'assets/images/jacaTelaCadastro.webp',
             width: 204,
             height: 320,
             fit: BoxFit.contain,

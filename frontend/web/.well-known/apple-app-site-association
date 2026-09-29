@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.jacaloria.app",
+        "paths": ["/friend", "/friend/*", "/group", "/group/*"]
+      }
+    ]
+  }
+}

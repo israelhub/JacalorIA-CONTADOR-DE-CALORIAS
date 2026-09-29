@@ -1,19 +1,33 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../helpers/auth_helpers.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_input.dart';
+import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/or_divider.dart';
+import '../../legal/pages/terms_page.dart';
+import '../../support/pages/support_page.dart';
 
 class SignUpForm extends StatefulWidget {
   const SignUpForm({
     super.key,
     this.onCreateAccountPressed,
+    this.onContinueWithGooglePressed,
     this.onLoginPressed,
+    this.isLoading = false,
   });
 
-  final VoidCallback? onCreateAccountPressed;
+  final Future<bool> Function({
+    required String name,
+    required String email,
+    required String password,
+  })?
+  onCreateAccountPressed;
+  final VoidCallback? onContinueWithGooglePressed;
   final VoidCallback? onLoginPressed;
+  final bool isLoading;
 
   @override
   State<SignUpForm> createState() => _SignUpFormState();
@@ -25,9 +39,20 @@ class _SignUpFormState extends State<SignUpForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  late final TapGestureRecognizer _termsTapRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsTapRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        context.pushSlidePage(const TermsPage());
+      };
+  }
 
   @override
   void dispose() {
+    _termsTapRecognizer.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -39,7 +64,11 @@ class _SignUpFormState extends State<SignUpForm> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    widget.onCreateAccountPressed?.call();
+    widget.onCreateAccountPressed?.call(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
   }
 
   @override
@@ -49,10 +78,11 @@ class _SignUpFormState extends State<SignUpForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _SignUpTextField(
+          AppInputField(
             label: 'Nome',
             hint: 'Digite seu nome',
             controller: _nameController,
+            enabled: !widget.isLoading,
             validator: (value) {
               if ((value ?? '').trim().isEmpty) {
                 return 'Informe seu nome';
@@ -61,10 +91,11 @@ class _SignUpFormState extends State<SignUpForm> {
             },
           ),
           const SizedBox(height: AppSpacing.lg),
-          _SignUpTextField(
+          AppInputField(
             label: 'E-mail',
             hint: 'Digite seu email',
             controller: _emailController,
+            enabled: !widget.isLoading,
             validator: (value) {
               if (!AuthHelpers.isValidEmail((value ?? '').trim())) {
                 return 'Informe um e-mail válido';
@@ -73,24 +104,26 @@ class _SignUpFormState extends State<SignUpForm> {
             },
           ),
           const SizedBox(height: AppSpacing.lg),
-          _SignUpTextField(
+          AppInputField(
             label: 'Senha',
             hint: 'Digite sua senha',
             obscureText: true,
             controller: _passwordController,
+            enabled: !widget.isLoading,
             validator: (value) {
               if (!AuthHelpers.isValidPassword((value ?? '').trim())) {
-                return 'A senha deve ter ao menos 6 dígitos';
+                return AuthHelpers.passwordRequirementsMessage;
               }
               return null;
             },
           ),
           const SizedBox(height: AppSpacing.lg),
-          _SignUpTextField(
+          AppInputField(
             label: 'Confirmar senha',
             hint: 'Confirme sua senha',
             obscureText: true,
             controller: _confirmPasswordController,
+            enabled: !widget.isLoading,
             validator: (value) {
               if ((value ?? '') != _passwordController.text) {
                 return 'As senhas não conferem';
@@ -102,17 +135,39 @@ class _SignUpFormState extends State<SignUpForm> {
           SizedBox(
             height: AppSpacing.huge + AppSpacing.xs,
             child: AppButton(
-              label: 'Criar conta',
-              onPressed: _submit,
+              label: widget.isLoading ? 'Criando conta...' : 'Criar conta',
+              onPressed: widget.isLoading ? null : _submit,
               variant: AppButtonVariant.primary,
             ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text.rich(
+            TextSpan(
+              text: 'Ao se cadastrar, você concorda com os ',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textMuted,
+              ),
+              children: [
+                TextSpan(
+                  text: 'Termos e Condições',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.action500,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  recognizer: _termsTapRecognizer,
+                ),
+              ],
+            ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.lg),
           const OrDivider(),
           const SizedBox(height: AppSpacing.lg),
           AppButton(
             label: 'Continuar com Google',
-            onPressed: () {},
+            onPressed: widget.isLoading
+                ? null
+                : widget.onContinueWithGooglePressed,
             variant: AppButtonVariant.google,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -126,11 +181,13 @@ class _SignUpFormState extends State<SignUpForm> {
                 ),
               ),
               TextButton(
-                onPressed: widget.onLoginPressed ?? () {
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-                  }
-                },
+                onPressed:
+                    widget.onLoginPressed ??
+                    () {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
+                    },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.action500,
                   padding: const EdgeInsets.only(left: AppSpacing.xs),
@@ -141,117 +198,37 @@ class _SignUpFormState extends State<SignUpForm> {
               ),
             ],
           ),
+          const SizedBox(height: AppSpacing.lg),
+          Center(
+            child: TextButton(
+              onPressed: widget.isLoading
+                  ? null
+                  : () {
+                      context.pushSlidePage(
+                        SupportPage(
+                          initialEmail: _emailController.text.trim(),
+                        ),
+                      );
+                    },
+              style: TextButton.styleFrom(
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: AppSpacing.xs,
+                ),
+              ),
+              child: Text(
+                'Algum problema? Contate o suporte',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.action500,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
-
-class _SignUpTextField extends StatelessWidget {
-  const _SignUpTextField({
-    required this.label,
-    required this.hint,
-    required this.controller,
-    this.obscureText = false,
-    this.validator,
-  });
-
-  final String label;
-  final String hint;
-  final TextEditingController controller;
-  final bool obscureText;
-  final String? Function(String?)? validator;
-
-  @override
-  Widget build(BuildContext context) {
-    return FormField<String>(
-      initialValue: controller.text,
-      validator: validator,
-      builder: (state) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: const Border(
-                  top: BorderSide(
-                    color: AppColors.borderLight,
-                    width: AppSpacing.xs / 4,
-                  ),
-                  left: BorderSide(
-                    color: AppColors.borderLight,
-                    width: AppSpacing.xs / 4,
-                  ),
-                  right: BorderSide(
-                    color: AppColors.borderLight,
-                    width: AppSpacing.xs / 4,
-                  ),
-                  bottom: BorderSide(
-                    color: AppColors.borderLight,
-                    width: AppSpacing.xs / 2,
-                  ),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.shadowButtonAlt,
-                    offset: Offset(0, AppSpacing.xs / 2),
-                    blurRadius: 0,
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.md - (AppSpacing.xs / 4)),
-                child: TextField(
-                  controller: controller,
-                  obscureText: obscureText,
-                  style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
-                  onChanged: state.didChange,
-                  decoration: InputDecoration(
-                    hintText: hint,
-                    hintStyle: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.md,
-                    ),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                  ),
-                ),
-              ),
-            ),
-            if (state.hasError)
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.md,
-                  top: AppSpacing.xs,
-                ),
-                child: Text(
-                  state.errorText!,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textError,
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-
-

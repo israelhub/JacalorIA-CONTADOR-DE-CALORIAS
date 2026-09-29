@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/app_page_route.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../home/pages/home_page.dart';
+import '../../home/pages/home_shell_page.dart';
 import '../../onboarding/pages/activity_level_page.dart';
 import '../../onboarding/pages/objective_page.dart';
 import '../../onboarding/pages/personal_data_page.dart';
@@ -20,12 +21,12 @@ class _PageShortcut {
 class EnterPagesShortcutButton extends StatelessWidget {
   const EnterPagesShortcutButton({super.key});
 
-  static const List<_PageShortcut> _pageShortcuts = [
+  static final List<_PageShortcut> _pageShortcuts = [
     _PageShortcut(label: 'Criar conta', builder: SignUpPage.new),
     _PageShortcut(label: 'Login', builder: LoginPage.new),
     _PageShortcut(
       label: 'Confirmação de e-mail',
-      builder: EmailConfirmationPage.new,
+      builder: () => const EmailConfirmationPage(email: 'teste@jacaloria.app'),
     ),
     _PageShortcut(label: 'Boas-vindas', builder: WelcomePage.new),
     _PageShortcut(label: 'Dados pessoais', builder: PersonalDataPage.new),
@@ -34,7 +35,7 @@ class EnterPagesShortcutButton extends StatelessWidget {
       label: 'Nível de atividade física',
       builder: ActivityLevelPage.new,
     ),
-    _PageShortcut(label: 'Home', builder: HomePage.new),
+    _PageShortcut(label: 'Home', builder: HomeShellPage.new),
   ];
 
   void _openPagesQuickAccess(BuildContext context) {
@@ -87,11 +88,7 @@ class EnterPagesShortcutButton extends StatelessWidget {
                         ),
                         onTap: () {
                           Navigator.of(sheetContext).pop();
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => shortcut.builder(),
-                            ),
-                          );
+                          context.pushSlidePage(shortcut.builder());
                         },
                       );
                     },
@@ -110,7 +107,7 @@ class EnterPagesShortcutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: TextButton.icon(
         key: const ValueKey('enter-pages-shortcut-button'),
         onPressed: () => _openPagesQuickAccess(context),

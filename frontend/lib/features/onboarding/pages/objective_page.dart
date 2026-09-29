@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/app_page_route.dart';
 
+import '../../../core/analytics/analytics_service.dart';
 import 'activity_level_page.dart';
 import '../widgets/onboarding_select_option_button.dart';
 import '../widgets/onboarding_step_header.dart';
@@ -9,7 +11,9 @@ import '../../../shared/widgets/app_button.dart';
 enum ObjectiveType { loseWeight, gainMass, maintainWeight }
 
 class ObjectivePage extends StatefulWidget {
-  const ObjectivePage({super.key});
+  const ObjectivePage({super.key, this.onboardingData = const {}});
+
+  final Map<String, dynamic> onboardingData;
 
   @override
   State<ObjectivePage> createState() => _ObjectivePageState();
@@ -19,12 +23,18 @@ class _ObjectivePageState extends State<ObjectivePage> {
   ObjectiveType _selectedObjective = ObjectiveType.loseWeight;
 
   @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.trackScreen('onboarding_objective');
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -94,10 +104,18 @@ class _ObjectivePageState extends State<ObjectivePage> {
                 child: AppButton(
                   label: 'Avançar',
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ActivityLevelPage(),
-                      ),
+                    final data = Map<String, dynamic>.from(
+                      widget.onboardingData,
+                    );
+                    data['objective'] = _selectedObjective.name;
+
+                    AnalyticsService.instance.track(
+                      'onboarding_step_completed',
+                      properties: {'step': 'objective'},
+                    );
+
+                    context.pushSlidePage(
+                      ActivityLevelPage(onboardingData: data),
                     );
                   },
                   variant: AppButtonVariant.primary,

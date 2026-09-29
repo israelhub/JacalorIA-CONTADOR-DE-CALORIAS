@@ -1,0 +1,678 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../../../core/invite/invite_link_service.dart';
+import '../../auth/service/auth_service.dart';
+import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_floating_circle_button.dart';
+import '../../../shared/widgets/app_guide_card.dart';
+import '../../../shared/widgets/app_page_header.dart';
+import '../../../shared/widgets/app_refresh_scroll_view.dart';
+import '../../../shared/widgets/app_page_route.dart';
+import '../../../shared/widgets/app_skeleton.dart';
+import '../../../shared/widgets/app_toast.dart';
+import '../../home/widgets/home_weight_quick_edit_button.dart';
+import '../controllers/social_page_controller.dart';
+import '../helpers/social_data_invalidator.dart';
+import '../models/social_group_models.dart';
+import 'social_add_friend_page.dart';
+import 'social_create_group_page.dart';
+import 'social_friend_profile_page.dart';
+import 'social_friend_requests_page.dart';
+import 'social_group_detail_page.dart';
+import 'social_friends_tab_page.dart';
+import 'social_groups_tab_page.dart';
+import 'social_join_group_page.dart';
+import 'social_public_groups_page.dart';
+import 'social_ranking_tab_page.dart';
+import 'social_search_user_page.dart';
+import '../services/social_service.dart';
+import '../widgets/social_qr_scan_sheet.dart';
+import '../widgets/social_segmented_control.dart';
+
+class SocialPage extends StatefulWidget {
+  const SocialPage({
+    super.key,
+    SocialService? service,
+    this.authService,
+    this.refreshVersion = 0,
+  }) : service = service ?? const SocialService();
+
+  final SocialService service;
+  final AuthService? authService;
+  final int refreshVersion;
+
+  @override
+  State<SocialPage> createState() => _SocialPageState();
+}
+
+class _SocialPageState extends State<SocialPage>
+    with AutomaticKeepAliveClientMixin {
+  static const Duration _tabTransitionDuration = Duration(milliseconds: 180);
+  late final SocialPageController _controller;
+  bool _processingPendingInvite = false;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = SocialPageController(
+      service: widget.service,
+      authService: widget.authService ?? AuthService(),
+    );
+    _controller.addListener(_onControllerChanged);
+    SocialDataInvalidator.revision.addListener(_onSocialDataInvalidated);
+    InviteLinkService.revision.addListener(_onPendingInviteRevision);
+    _controller.loadAll();
+  }
+
+  void _onPendingInviteRevision() {
+    if (!mounted || !InviteLinkService.hasPending) return;
+    if (_controller.isLoading || _controller.errorMessage != null) return;
+    _processPendingInvite();
+  }
+
+  @override
+  void didUpdateWidget(covariant SocialPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.refreshVersion != oldWidget.refreshVersion) {
+      _reloadSocial(silent: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    InviteLinkService.revision.removeListener(_onPendingInviteRevision);
+    SocialDataInvalidator.revision.removeListener(_onSocialDataInvalidated);
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onSocialDataInvalidated() {
+    if (!mounted) return;
+    _reloadSocial(silent: true);
+  }
+
+  Future<void> _reloadSocial({bool silent = false}) async {
+    await _controller.loadAll(silent: silent);
+  }
+
+  void _onControllerChanged() {
+    if (!mounted || _processingPendingInvite) return;
+    if (_controller.isLoading || _controller.errorMessage != null) return;
+    if (!InviteLinkService.hasPending) return;
+    _processPendingInvite();
+  }
+
+  Future<void> _processPendingInvite() async {
+    final invite = InviteLinkService.take();
+    if (invite == null || _processingPendingInvite) return;
+
+    _processingPendingInvite = true;
+    try {
+      if (invite.kind == InviteLinkKind.friend) {
+        _controller.changeTab(0);
+        try {
+          await _controller.addFriendByLink(invite.code);
+          if (!mounted) return;
+          AppToast.success(context, message: 'Pedido de amizade enviado');
+        } catch (error) {
+          _showError(error);
+        }
+        return;
+      }
+
+      _controller.changeTab(1);
+      try {
+        final detail = await _controller.joinGroupByCode(invite.code);
+        if (!mounted) return;
+        await context.pushSlidePage(
+          SocialGroupDetailPage(
+            groupId: detail.group.id,
+            initialDetail: detail,
+          ),
+        );
+        if (mounted) await _controller.loadAll();
+      } catch (error) {
+        _showError(error);
+      }
+    } finally {
+      _processingPendingInvite = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final bottomInset = homeShellFabBottomInset(context);
+        final showRequestsFab =
+            !_controller.isLoading &&
+            _controller.errorMessage == null &&
+            _controller.tabIndex == 0 &&
+            _controller.pendingFriendRequestCount > 0;
+
+        return Scaffold(
+          backgroundColor: AppColors.surface,
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          floatingActionButton: showRequestsFab
+              ? Padding(
+                  padding: EdgeInsets.only(bottom: bottomInset),
+                  child: AppFloatingCircleButton(
+                    key: const ValueKey('friend-requests-button'),
+                    icon: Icons.notifications_rounded,
+                    semanticLabel:
+                        'Abrir solicitações de amizade, ${_controller.pendingFriendRequestCount} pendentes',
+                    badgeCount: _controller.pendingFriendRequestCount,
+                    onPressed: _openFriendRequestsModal,
+                  ),
+                )
+              : null,
+          body: SafeArea(child: _buildContent()),
+        );
+      },
+    );
+  }
+
+  Widget _buildContent() {
+    if (_controller.isLoading) {
+      return const _SocialBodySkeleton();
+    }
+
+    if (_controller.errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _controller.errorMessage!,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppButton(
+                label: 'Tentar novamente',
+                onPressed: _controller.loadAll,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final activeGroups = _controller.groups
+        .where((group) => !_isGroupFinished(group))
+        .toList(growable: false);
+    final historyGroups = _controller.groups
+        .where(_isGroupFinished)
+        .toList(growable: false);
+
+    return AppRefreshScrollView(
+      onRefresh: () => _controller.loadAll(silent: true),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppPageHeader(title: 'Social', icon: Icons.groups_2_rounded),
+          const SizedBox(height: AppSpacing.lg),
+          SocialSegmentedControl(
+            selectedIndex: _controller.tabIndex,
+            labels: const ['Amigos', 'Grupos', 'Ranking'],
+            onChanged: _controller.changeTab,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          if (_controller.showIntro) ...[
+            AppGuideCard(
+              title: 'Conte calorias com seus amigos',
+              description:
+                  'Adicione amigos por e-mail ou link. Crie grupos e compartilhe links de entrada.',
+              icon: Icons.emoji_events_rounded,
+              onClose: _controller.hideIntro,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+          AnimatedSwitcher(
+            duration: _tabTransitionDuration,
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            layoutBuilder: (currentChild, previousChildren) {
+              return currentChild ?? const SizedBox.shrink();
+            },
+            transitionBuilder: (child, animation) {
+              final currentKey = ValueKey<int>(_controller.tabIndex);
+              final isIncoming = child.key == currentKey;
+              final isForward =
+                  _controller.tabIndex > _controller.previousTabIndex;
+              final begin = Offset(isForward ? 0.2 : -0.2, 0);
+              final end = Offset(isForward ? -0.2 : 0.2, 0);
+              final offsetTween = Tween<Offset>(
+                begin: isIncoming ? begin : Offset.zero,
+                end: isIncoming ? Offset.zero : end,
+              );
+
+              return ClipRect(
+                child: SlideTransition(
+                  position: offsetTween.animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey<int>(_controller.tabIndex),
+              child: switch (_controller.tabIndex) {
+                0 => SocialFriendsTabPage(
+                  friends: _controller.friends,
+                  onAddFriend: _openAddFriendModal,
+                  pendingRequestCount: _controller.pendingFriendRequestCount,
+                  onOpenRequests: _openFriendRequestsModal,
+                  onOpenFriendProfile: _openFriendProfile,
+                ),
+                1 => SocialGroupsTabPage(
+                  activeGroups: activeGroups,
+                  historyGroups: historyGroups,
+                  isGroupFinished: _isGroupFinished,
+                  onCreateGroup: _openCreateGroupSheet,
+                  onJoinGroup: _openJoinGroupDialog,
+                  onOpenGroup: _openGroupDetail,
+                ),
+                _ => SocialRankingTabPage(
+                  period: _controller.xpRankingPeriod,
+                  onPeriodChanged: _controller.changeXpRankingPeriod,
+                  ranking: _controller.xpRanking,
+                  isLoading: _controller.isXpRankingLoading,
+                  errorMessage: _controller.xpRankingErrorMessage,
+                  onRetry: () => _controller.loadXpRanking(),
+                  onOpenProfile: _openRankingProfile,
+                ),
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openAddFriendModal() async {
+    final qrPayload = _controller.friendLinkValue();
+    await context.pushSlidePage<void>(
+      SocialAddFriendPage(
+        userName: _controller.currentUserName,
+        userAvatarUrl: _controller.currentUserAvatarUrl,
+        userAvatarFrameId: _controller.currentUserAvatarFrameId,
+        qrPayload: qrPayload,
+        onCopyId: _copyShareableFriendId,
+        onSearchUser: _openSearchUserPage,
+        onScanQr: () async {
+          final value = await _scanQrCode();
+          if (value == null || value.trim().isEmpty) return;
+          if (!mounted) return;
+          Navigator.of(context).pop();
+          if (!mounted) return;
+          await _submitFriendLookup(value);
+        },
+        onShareLink: _shareFriendInviteLink,
+      ),
+    );
+  }
+
+  Future<void> _submitFriendLookup(String value) async {
+    if (value.isEmpty) {
+      _showError(Exception('Informe um e-mail ou código de convite'));
+      return;
+    }
+
+    if (value.contains('@')) {
+      await _guardedAction(() => _controller.addFriendByEmail(value));
+      return;
+    }
+
+    final normalized = _controller.extractInviteCode(value);
+    final isUuid = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+    ).hasMatch(normalized);
+    if (isUuid) {
+      await _guardedAction(() => _controller.addFriendById(normalized));
+      return;
+    }
+
+    await _guardedAction(() => _controller.addFriendByLink(normalized));
+  }
+
+  Future<void> _openJoinGroupDialog() async {
+    final result = await context.pushSlidePage<SocialJoinGroupDialogResult>(
+      SocialJoinGroupPage(
+        fetchPublicGroups:
+            ({
+              required String query,
+              int? durationDays,
+              String? competitionType,
+            }) {
+              return widget.service.fetchPublicGroups(
+                query: query,
+                durationDays: durationDays,
+                competitionType: competitionType,
+              );
+            },
+      ),
+    );
+    if (result == null) return;
+
+    final publicGroupId = result.publicGroupId?.trim() ?? '';
+    if (publicGroupId.isNotEmpty) {
+      await _guardedAction(() async {
+        final detail = await widget.service.joinPublicGroup(publicGroupId);
+        if (!mounted) return;
+        await context.pushSlidePage(
+          SocialGroupDetailPage(
+            groupId: detail.group.id,
+            initialDetail: detail,
+          ),
+        );
+        if (mounted) await _controller.loadAll();
+      });
+      return;
+    }
+
+    if (result.openPublicGroups) {
+      if (!mounted) return;
+      final selectedGroupId = await context.pushSlidePage<String>(
+        SocialPublicGroupsPage(
+          fetchGroups:
+              ({
+                required String query,
+                int? durationDays,
+                String? competitionType,
+              }) {
+                return widget.service.fetchPublicGroups(
+                  query: query,
+                  durationDays: durationDays,
+                  competitionType: competitionType,
+                );
+              },
+        ),
+      );
+      if (selectedGroupId == null || selectedGroupId.trim().isEmpty) return;
+      await _guardedAction(() async {
+        final detail = await widget.service.joinPublicGroup(selectedGroupId);
+        if (!mounted) return;
+        await context.pushSlidePage(
+          SocialGroupDetailPage(
+            groupId: detail.group.id,
+            initialDetail: detail,
+          ),
+        );
+        if (mounted) await _controller.loadAll();
+      });
+      return;
+    }
+
+    final code = result.code?.trim() ?? '';
+    if (code.isEmpty) return;
+    await _guardedAction(() async {
+      final detail = await _controller.joinGroupByCode(code);
+      if (!mounted) return;
+      await context.pushSlidePage(
+        SocialGroupDetailPage(groupId: detail.group.id, initialDetail: detail),
+      );
+      if (mounted) await _controller.loadAll();
+    });
+  }
+
+  Future<void> _openCreateGroupSheet() async {
+    final result = await context.pushSlidePage<SocialGroupDetail>(
+      SocialCreateGroupPage(service: widget.service),
+    );
+
+    if (result == null || !mounted) return;
+    await context.pushSlidePage(
+      SocialGroupDetailPage(groupId: result.group.id, initialDetail: result),
+    );
+    if (mounted) await _controller.loadAll();
+  }
+
+  Future<void> _openGroupDetail(String groupId) async {
+    await context.pushSlidePage(SocialGroupDetailPage(groupId: groupId));
+    if (mounted) await _controller.loadAll();
+  }
+
+  bool _isGroupFinished(SocialGroupSummary group) => group.isFinished;
+
+  Future<void> _openFriendProfile(SocialFriend friend) async {
+    final removed = await context.pushSlidePage<bool>(
+      SocialFriendProfilePage(
+        friendId: friend.id,
+        initialFriendName: friend.name,
+        service: widget.service,
+      ),
+    );
+    if (removed == true && mounted) {
+      await _controller.loadAll();
+    }
+  }
+
+  Future<void> _openRankingProfile(SocialRankingEntry entry) async {
+    if (entry.userId.trim().isEmpty) return;
+    await context.pushSlidePage<void>(
+      SocialFriendProfilePage(
+        friendId: entry.userId,
+        initialFriendName: entry.name,
+        service: widget.service,
+      ),
+    );
+  }
+
+  Future<void> _shareFriendInviteLink() async {
+    await Share.share(_controller.friendLinkValue());
+  }
+
+  Future<void> _openSearchUserPage() async {
+    await context.pushSlidePage<void>(
+      SocialSearchUserPage(
+        searchUsers: _controller.searchUsers,
+        onAddUser: (user) async {
+          await _runFriendRequestAction(
+            () => _controller.addFriendById(user.id),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _openFriendRequestsModal() async {
+    await context.pushSlidePage<void>(
+      SocialFriendRequestsPage(
+        requests: _controller.pendingFriendRequests,
+        onAccept: (request) => _runFriendRequestAction(
+          () => _controller.acceptFriendRequest(request.id),
+        ),
+        onReject: (request) => _runFriendRequestAction(
+          () => _controller.rejectFriendRequest(request.id),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _runFriendRequestAction(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (error) {
+      _showError(error);
+      rethrow;
+    }
+  }
+
+  Future<void> _copyShareableFriendId() async {
+    final shareableId = _controller.shareableFriendId;
+    if (shareableId.isEmpty) {
+      _showError(Exception('ID de amizade indisponível no momento'));
+      return;
+    }
+
+    await Clipboard.setData(ClipboardData(text: shareableId));
+    if (!mounted) return;
+    AppToast.success(context, message: 'ID copiado');
+  }
+
+  Future<String?> _scanQrCode() {
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const SocialQrScanSheet(),
+    );
+  }
+
+  Future<void> _guardedAction(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (error) {
+      _showError(error);
+    }
+  }
+
+  void _showError(Object error) {
+    if (!mounted) return;
+    AppToast.error(
+      context,
+      message: error.toString().replaceFirst('Exception: ', ''),
+    );
+  }
+}
+
+class _SocialBodySkeleton extends StatelessWidget {
+  const _SocialBodySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset =
+        homeShellBottomNavBodyHeight +
+        MediaQuery.viewPaddingOf(context).bottom +
+        AppSpacing.lg;
+
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        bottomInset,
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SocialHeaderSkeleton(),
+          SizedBox(height: AppSpacing.lg),
+          _SocialTabsSkeleton(),
+          SizedBox(height: AppSpacing.lg),
+          _SocialFriendsTabSkeleton(),
+        ],
+      ),
+    );
+  }
+}
+
+class _SocialHeaderSkeleton extends StatelessWidget {
+  const _SocialHeaderSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        AppSkeletonBox(height: 28, width: 140),
+        Spacer(),
+        AppSkeletonBox(width: 28, height: 28, borderRadius: AppRadius.md),
+      ],
+    );
+  }
+}
+
+class _SocialTabsSkeleton extends StatelessWidget {
+  const _SocialTabsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
+      ),
+      child: const Row(
+        children: [
+          Expanded(
+            child: AppSkeletonBox(height: 40, borderRadius: AppRadius.pill),
+          ),
+          SizedBox(width: 4),
+          Expanded(
+            child: AppSkeletonBox(height: 40, borderRadius: AppRadius.pill),
+          ),
+          SizedBox(width: 4),
+          Expanded(
+            child: AppSkeletonBox(height: 40, borderRadius: AppRadius.pill),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SocialFriendsTabSkeleton extends StatelessWidget {
+  const _SocialFriendsTabSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppSkeletonBox(height: 48, borderRadius: AppRadius.md),
+        SizedBox(height: AppSpacing.lg),
+        AppSkeletonBox(height: 22, width: 140),
+        SizedBox(height: AppSpacing.sm),
+        _SocialFriendItemSkeleton(),
+        SizedBox(height: AppSpacing.md),
+        _SocialFriendItemSkeleton(),
+        SizedBox(height: AppSpacing.md),
+        _SocialFriendItemSkeleton(),
+      ],
+    );
+  }
+}
+
+class _SocialFriendItemSkeleton extends StatelessWidget {
+  const _SocialFriendItemSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
+      ),
+      child: const Row(
+        children: [
+          AppSkeletonBox(width: 52, height: 52, borderRadius: AppRadius.pill),
+          SizedBox(width: AppSpacing.md),
+          Expanded(child: AppSkeletonBox(height: 18)),
+          SizedBox(width: AppSpacing.sm),
+          AppSkeletonBox(width: 36, height: 18, borderRadius: AppRadius.sm),
+        ],
+      ),
+    );
+  }
+}

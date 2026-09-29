@@ -4,6 +4,12 @@ import 'package:jacaloria/features/home/pages/home_page.dart';
 import 'package:jacaloria/features/onboarding/pages/activity_level_page.dart';
 import 'package:jacaloria/features/onboarding/widgets/onboarding_step_header.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
+import 'package:jacaloria/features/auth/service/auth_service.dart';
+
+class _FakeAuthService extends AuthService {
+  @override
+  Future<void> updateProfile(Map<String, dynamic> data) async {}
+}
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
 
@@ -13,7 +19,9 @@ Future<void> _pumpActivityLevelPage(WidgetTester tester) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
-  await tester.pumpWidget(_wrap(const ActivityLevelPage()));
+  await tester.pumpWidget(
+    _wrap(ActivityLevelPage(authService: _FakeAuthService())),
+  );
 }
 
 void main() {

@@ -1,95 +1,900 @@
-import 'dart:math' as math;
+import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../avatar_frames/models/avatar_background_catalog.dart';
+import '../../avatar_frames/models/avatar_frame_catalog.dart';
+import '../../../shared/widgets/app_page_route.dart';
 
+import '../../food_analysis/models/food_meal_record.dart';
+import '../../food_analysis/pages/food_capture_page.dart';
+import '../../food_analysis/pages/food_meal_details_page.dart';
+import '../../auth/pages/login_page.dart';
+import '../helpers/home_daily_goal_day_lock.dart';
+import '../helpers/home_date_helpers.dart';
+import '../helpers/home_goal_helpers.dart';
+import '../helpers/home_greeting_helpers.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_dashed_action_button.dart';
+import '../../../shared/widgets/app_refresh_scroll_view.dart';
+import '../services/meal_service.dart';
+import '../widgets/home_daily_goal_with_mascot.dart';
+import '../../../shared/widgets/app_date_picker.dart';
+import '../../../shared/widgets/app_skeleton.dart';
+import '../../../shared/widgets/framed_avatar.dart';
 import '../widgets/home_meal_card.dart';
+import '../widgets/home_actions_fab.dart';
+import '../widgets/home_weight_quick_edit_button.dart';
+import '../../../core/notifications/meal_reminder_home_widget.dart';
+import '../../auth/service/auth_service.dart';
+import '../../profile/pages/profile_page.dart';
+import '../../social/helpers/social_data_invalidator.dart';
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+class HomePage extends StatefulWidget {
+  HomePage({
+    super.key,
+    MealService? mealService,
+    AuthService? authService,
+    this.initialSelectedDate,
+    this.onSelectedDateChanged,
+    this.mealSyncVersion = 0,
+    this.pendingSavedMeal,
+  }) : _mealService = mealService ?? const MealService(),
+       _authService = authService ?? AuthService();
 
   static const _mealAsset =
       'assets/images/smiling green cartoon crocodile@2x.webp';
+  static const _mascotIdleVideoAsset =
+      'assets/videos/jaca_video_padrao_mobile_fast.webp';
+  static const _mascotSadVideoAsset =
+      'assets/videos/jaca_triste_mobile_fast.webp';
+  static const _mascotScaredVideoAsset =
+      'assets/videos/jaca_assustado_mobile_fast.webp';
+  static const _mascotCelebrationVideoAsset =
+      'assets/videos/jaca_feliz_mobile_fast.webp';
   static const _mealCardHeight =
       AppSpacing.huge + AppSpacing.xxxl + AppSpacing.md - 1;
+  static const _newAccountFirstHomeAccessKeyPrefix =
+      'new_account_first_home_access_';
+
+  final MealService _mealService;
+  final AuthService _authService;
+  final DateTime? initialSelectedDate;
+  final ValueChanged<DateTime>? onSelectedDateChanged;
+  final int mealSyncVersion;
+  final FoodMealRecord? pendingSavedMeal;
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage>
+    with AutomaticKeepAliveClientMixin {
+  final List<FoodMealRecord> _records = <FoodMealRecord>[];
+  final Set<String> _loadedDateKeys = <String>{};
+  Map<String, dynamic>? _userProfile;
+  HomeDailyGoalDaySnapshot? _dayGoalSnapshot;
+  bool _isDataLoading = true;
+  bool _playMascotCelebration = false;
+  bool _isFirstHomeAccess = false;
+  late DateTime _selectedDate;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  /// Meta/objetivo do dia (congelados na virada) quando a data selecionada é hoje.
+  Map<String, dynamic>? get _goalUserProfile => applyHomeDailyGoalDaySnapshot(
+    profile: _userProfile,
+    snapshot: _dayGoalSnapshot,
+    selectedDate: _selectedDate,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = normalizeHomeDate(
+      widget.initialSelectedDate ?? DateTime.now(),
+    );
+    // Paint header immediately from session cache; meals still load below.
+    final cachedUser = AuthService.globalUser;
+    if (cachedUser != null && cachedUser.isNotEmpty) {
+      _userProfile = Map<String, dynamic>.from(cachedUser);
+    }
+    _loadInitialData();
+  }
+
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.mealSyncVersion != oldWidget.mealSyncVersion &&
+        widget.pendingSavedMeal != null) {
+      _applySavedMeal(widget.pendingSavedMeal!);
+      return;
+    }
+
+    if (widget.initialSelectedDate != oldWidget.initialSelectedDate &&
+        widget.initialSelectedDate != null) {
+      final normalized = normalizeHomeDate(widget.initialSelectedDate!);
+      if (isSameHomeDate(_selectedDate, normalized)) {
+        return;
+      }
+
+      _selectedDate = normalized;
+      // Calendário só atualizava a data; sem este fetch a Home ficava vazia.
+      _loadMealsForDate(normalized);
+    }
+  }
+
+  Future<void> _redirectToLoginPage({String? errorMessage}) async {
+    await AuthService.signOut();
+    if (!mounted) {
+      return;
+    }
+
+    context.pushAndRemoveUntilSlidePage(
+      LoginPage(initialErrorMessage: errorMessage),
+      (route) => false,
+    );
+  }
+
+  String _dateKey(DateTime date) {
+    final normalized = normalizeHomeDate(date);
+    final year = normalized.year.toString().padLeft(4, '0');
+    final month = normalized.month.toString().padLeft(2, '0');
+    final day = normalized.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  DateTime _startOfNextDay(DateTime date) {
+    final normalized = normalizeHomeDate(date);
+    return DateTime(normalized.year, normalized.month, normalized.day + 1);
+  }
+
+  Future<void> _loadInitialData({bool forceRefreshDayGoal = false}) async {
+    if (AuthService.globalToken == null || AuthService.globalToken!.isEmpty) {
+      await _redirectToLoginPage(
+        errorMessage: 'Sessão inválida. Faça login novamente.',
+      );
+      return;
+    }
+
+    try {
+      final results = await Future.wait([
+        widget._mealService.fetchMeals(
+          startDate: _selectedDate,
+          endDate: _startOfNextDay(_selectedDate),
+        ),
+        widget._authService.fetchProfile(forceRefresh: forceRefreshDayGoal),
+      ]);
+      final meals = results[0] as List<FoodMealRecord>;
+      final profile = results[1] as Map<String, dynamic>;
+      var isFirstHomeAccess = false;
+      try {
+        isFirstHomeAccess = await _consumeNewAccountFirstHomeAccess(profile);
+      } catch (_) {
+        isFirstHomeAccess = false;
+      }
+
+      HomeDailyGoalDaySnapshot? dayGoalSnapshot;
+      try {
+        dayGoalSnapshot = await resolveHomeDailyGoalDaySnapshot(
+          profile: profile.isNotEmpty ? profile : null,
+          forceRefresh: forceRefreshDayGoal,
+        );
+      } catch (_) {
+        dayGoalSnapshot = null;
+      }
+
+      if (mounted) {
+        setState(() {
+          _records.clear();
+          _records.addAll(meals);
+          _loadedDateKeys.add(_dateKey(_selectedDate));
+          _userProfile = profile.isNotEmpty ? profile : null;
+          _dayGoalSnapshot = dayGoalSnapshot;
+          _isFirstHomeAccess = isFirstHomeAccess;
+          _isDataLoading = false;
+        });
+
+        if (widget.pendingSavedMeal != null) {
+          _applySavedMeal(widget.pendingSavedMeal!);
+        }
+
+        _scheduleHomeImagePrecache(meals, profile);
+        unawaited(
+          MealReminderHomeWidget.sync(
+            streakDays: readHomeProfileInt(profile, const [
+              'streakDays',
+              'streak_days',
+            ]),
+          ),
+        );
+      }
+    } catch (e) {
+      if (e.toString().contains('Sessão inválida')) {
+        await _redirectToLoginPage(
+          errorMessage: 'Sessão inválida. Faça login novamente.',
+        );
+        return;
+      }
+
+      await _redirectToLoginPage(errorMessage: e.toString());
+      return;
+    }
+  }
+
+  Future<void> _refreshData() async {
+    if (AuthService.globalToken == null || AuthService.globalToken!.isEmpty) {
+      return;
+    }
+
+    _loadedDateKeys.remove(_dateKey(_selectedDate));
+    final mealsFuture = _loadMealsForDate(_selectedDate);
+
+    try {
+      final profile = await widget._authService.fetchProfile(
+        forceRefresh: true,
+      );
+      HomeDailyGoalDaySnapshot? dayGoalSnapshot;
+      try {
+        dayGoalSnapshot = await resolveHomeDailyGoalDaySnapshot(
+          profile: profile.isNotEmpty ? profile : null,
+        );
+      } catch (_) {
+        dayGoalSnapshot = null;
+      }
+      if (mounted) {
+        setState(() {
+          _userProfile = profile.isNotEmpty ? profile : null;
+          _dayGoalSnapshot = dayGoalSnapshot;
+        });
+      }
+    } catch (_) {}
+
+    await mealsFuture;
+  }
+
+  Future<void> _loadMealsForDate(DateTime date) async {
+    final normalizedDate = normalizeHomeDate(date);
+    final dateKey = _dateKey(normalizedDate);
+    if (_loadedDateKeys.contains(dateKey)) {
+      return;
+    }
+
+    try {
+      final meals = await widget._mealService.fetchMeals(
+        startDate: normalizedDate,
+        endDate: _startOfNextDay(normalizedDate),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _records.removeWhere((record) {
+          final createdAt = record.createdAt;
+          return createdAt != null && isSameHomeDate(createdAt, normalizedDate);
+        });
+        _records.addAll(meals);
+        _records.sort((a, b) {
+          final aCreated = a.createdAt;
+          final bCreated = b.createdAt;
+          if (aCreated == null && bCreated == null) {
+            return 0;
+          }
+          if (aCreated == null) {
+            return 1;
+          }
+          if (bCreated == null) {
+            return -1;
+          }
+          return bCreated.compareTo(aCreated);
+        });
+        _loadedDateKeys.add(dateKey);
+      });
+
+      _scheduleHomeImagePrecache(meals, _userProfile);
+    } catch (_) {}
+  }
+
+  void _scheduleHomeImagePrecache(
+    List<FoodMealRecord> meals,
+    Map<String, dynamic>? profile,
+  ) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_precacheHomeImages(meals, profile));
+    });
+  }
+
+  Future<void> _precacheHomeImages(
+    List<FoodMealRecord> meals,
+    Map<String, dynamic>? profile,
+  ) async {
+    if (!mounted) {
+      return;
+    }
+
+    final providers = <ImageProvider<Object>>[
+      const AssetImage(HomePage._mealAsset),
+    ];
+
+    final equippedFrameAsset = AvatarFrameCatalog.byId(
+      AvatarFrameCatalog.equippedIdFromProfile(profile),
+    )?.assetPath;
+    if (equippedFrameAsset != null && equippedFrameAsset.isNotEmpty) {
+      providers.add(AssetImage(equippedFrameAsset));
+    }
+
+    final backgroundAsset = AvatarBackgroundCatalog.assetPathForId(
+      AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(profile),
+    );
+    if (backgroundAsset != null && backgroundAsset.isNotEmpty) {
+      providers.add(AssetImage(backgroundAsset));
+    }
+
+    final avatarUrl =
+        profile?['avatarUrl'] as String? ?? profile?['avatar_url'] as String?;
+    if (avatarUrl != null &&
+        avatarUrl.isNotEmpty &&
+        avatarUrl.startsWith('http')) {
+      providers.add(CachedNetworkImageProvider(avatarUrl));
+    }
+
+    // Decode only images likely to be visible above the fold. Preloading every
+    // meal and every store frame competes with navigation animations on web.
+    for (final meal in meals.take(4)) {
+      if (meal.imageBytes != null) {
+        providers.add(MemoryImage(meal.imageBytes!));
+        continue;
+      }
+
+      final imageUrl = meal.imageUrl;
+      if (imageUrl != null &&
+          imageUrl.isNotEmpty &&
+          imageUrl.startsWith('http')) {
+        providers.add(CachedNetworkImageProvider(imageUrl));
+        continue;
+      }
+
+      final imageAsset = meal.imageAsset;
+      if (imageAsset != null && imageAsset.startsWith('assets/')) {
+        providers.add(AssetImage(imageAsset));
+      }
+    }
+
+    for (final provider in providers) {
+      try {
+        await precacheImage(provider, context);
+      } catch (_) {}
+    }
+  }
+
+  Future<bool> _consumeNewAccountFirstHomeAccess(
+    Map<String, dynamic> profile,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawUserId =
+        profile['id'] ?? profile['email'] ?? profile['name'] ?? 'unknown-user';
+    final userId = rawUserId.toString().trim();
+    final storageKey = '${HomePage._newAccountFirstHomeAccessKeyPrefix}$userId';
+    final isNewAccountFirstAccess = prefs.getBool(storageKey) ?? false;
+
+    if (isNewAccountFirstAccess) {
+      await prefs.remove(storageKey);
+    }
+
+    return isNewAccountFirstAccess;
+  }
+
+  String _resolveIdleMascotAsset({required DateTime date}) {
+    final normalizedDate = normalizeHomeDate(date);
+    final selectedDateRecords = _records
+        .where((record) {
+          if (record.status.trim().toLowerCase() == 'deleted') {
+            return false;
+          }
+          final createdAt = record.createdAt;
+          return createdAt != null && isSameHomeDate(createdAt, normalizedDate);
+        })
+        .toList(growable: false);
+
+    final goalProfile = applyHomeDailyGoalDaySnapshot(
+      profile: _userProfile,
+      snapshot: _dayGoalSnapshot,
+      selectedDate: normalizedDate,
+    );
+    final goalCalories = readHomeProfileInt(goalProfile, const [
+      'daily_calorie_goal',
+      'dailyCalorieGoal',
+    ], fallback: 2000);
+    final consumedCalories = selectedDateRecords.fold<int>(
+      0,
+      (sum, record) => sum + record.calories,
+    );
+
+    final emotion = resolveHomeMascotEmotionForProfile(
+      consumedCalories: consumedCalories,
+      goalCalories: goalCalories,
+      userProfile: goalProfile,
+      hasMeals: selectedDateRecords.isNotEmpty,
+      isFirstHomeAccess: _isFirstHomeAccess,
+    );
+
+    switch (emotion) {
+      case HomeMascotEmotion.sad:
+        return HomePage._mascotSadVideoAsset;
+      case HomeMascotEmotion.scared:
+        return HomePage._mascotScaredVideoAsset;
+      case HomeMascotEmotion.happy:
+        return HomePage._mascotCelebrationVideoAsset;
+      case HomeMascotEmotion.idle:
+        return HomePage._mascotIdleVideoAsset;
+    }
+  }
+
+  bool _hasCalorieGoalReachedForDate({
+    required DateTime date,
+    FoodMealRecord? extraRecord,
+  }) {
+    final normalizedDate = normalizeHomeDate(date);
+    final dailyRecords = _records
+        .where((record) {
+          if (record.status.trim().toLowerCase() == 'deleted') {
+            return false;
+          }
+          final createdAt = record.createdAt;
+          return createdAt != null && isSameHomeDate(createdAt, normalizedDate);
+        })
+        .toList(growable: false);
+
+    var consumedCalories = dailyRecords.fold<int>(
+      0,
+      (sum, record) => sum + record.calories,
+    );
+
+    if (extraRecord != null) {
+      consumedCalories += extraRecord.calories;
+    }
+
+    final goalProfile = applyHomeDailyGoalDaySnapshot(
+      profile: _userProfile,
+      snapshot: _dayGoalSnapshot,
+      selectedDate: normalizedDate,
+    );
+    final goalCalories = readHomeProfileInt(goalProfile, const [
+      'daily_calorie_goal',
+      'dailyCalorieGoal',
+    ], fallback: 2000);
+
+    return hasReachedCalorieGoalForProfile(
+      consumedCalories: consumedCalories,
+      goalCalories: goalCalories,
+      userProfile: goalProfile,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const _HomeBody();
+    super.build(context);
+    if (_isDataLoading) {
+      return const _HomeBodySkeleton();
+    }
+
+    return _HomeBody(
+      records: _records,
+      userProfile: _userProfile,
+      goalUserProfile: _goalUserProfile,
+      onAddMealPressed: _openFoodCapture,
+      onAvatarTap: _openProfile,
+      onWeightUpdated: _onWeightUpdated,
+      onMealTap: _openMealDetails,
+      onRefresh: _refreshData,
+      selectedDate: _selectedDate,
+      onSelectedDateTap: _pickSelectedDate,
+      playMascotCelebration: _playMascotCelebration,
+      idleMascotVideoAsset: _resolveIdleMascotAsset(date: _selectedDate),
+      mascotCelebrationVideoAsset: HomePage._mascotCelebrationVideoAsset,
+      onMascotCelebrationCompleted: _handleMascotCelebrationCompleted,
+    );
+  }
+
+  void _handleMascotCelebrationCompleted() {
+    if (!_playMascotCelebration || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _playMascotCelebration = false;
+    });
+  }
+
+  Future<void> _pickSelectedDate() async {
+    final pickedDate = await showAppDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+
+    if (pickedDate == null) {
+      return;
+    }
+
+    await _setSelectedDate(pickedDate);
+  }
+
+  Future<void> _setSelectedDate(DateTime date) async {
+    final normalized = normalizeHomeDate(date);
+    if (isSameHomeDate(_selectedDate, normalized)) {
+      return;
+    }
+
+    setState(() {
+      _selectedDate = normalized;
+    });
+
+    await _loadMealsForDate(normalized);
+    widget.onSelectedDateChanged?.call(normalized);
+  }
+
+  Future<void> _openProfile() async {
+    final hasUpdatedProfile = await context.pushSlidePage<bool>(
+      ProfilePage(initialProfile: _userProfile),
+    );
+
+    if (hasUpdatedProfile == true && mounted) {
+      await _loadInitialData(forceRefreshDayGoal: true);
+    }
+  }
+
+  Future<void> _onWeightUpdated(Map<String, dynamic> updatedProfile) async {
+    if (!mounted) {
+      return;
+    }
+
+    final mergedProfile = <String, dynamic>{
+      ...?_userProfile,
+      ...updatedProfile,
+      if (updatedProfile['weightUnit'] != null)
+        'weight_unit': updatedProfile['weightUnit'],
+    };
+
+    HomeDailyGoalDaySnapshot? dayGoalSnapshot;
+    try {
+      dayGoalSnapshot = await resolveHomeDailyGoalDaySnapshot(
+        profile: mergedProfile,
+        forceRefresh: true,
+      );
+    } catch (_) {
+      dayGoalSnapshot = _dayGoalSnapshot;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _userProfile = mergedProfile;
+      _dayGoalSnapshot = dayGoalSnapshot;
+    });
+  }
+
+  Future<void> _openFoodCapture() async {
+    final record = await context.pushSlidePage<FoodMealRecord>(
+      FoodCapturePage(
+        recordedAt: resolveMealRecordedAt(selectedDate: _selectedDate),
+      ),
+      rootNavigator: true,
+    );
+
+    if (record == null || !mounted) {
+      return;
+    }
+
+    _applySavedMeal(record);
+  }
+
+  void _applySavedMeal(FoodMealRecord record) {
+    final recordDate = normalizeHomeDate(record.createdAt ?? DateTime.now());
+    final recordId = (record.id ?? '').trim();
+    final isDeleted = record.status.trim().toLowerCase() == 'deleted';
+
+    if (isDeleted) {
+      setState(() {
+        if (recordId.isNotEmpty) {
+          _records.removeWhere((item) => (item.id ?? '').trim() == recordId);
+        }
+        _isDataLoading = false;
+      });
+      SocialDataInvalidator.markDirty();
+      return;
+    }
+
+    final shouldPlayCelebration = _hasCalorieGoalReachedForDate(
+      date: recordDate,
+      extraRecord: record,
+    );
+
+    setState(() {
+      _selectedDate = recordDate;
+      _playMascotCelebration = shouldPlayCelebration;
+      _isDataLoading = false;
+
+      if (recordId.isNotEmpty) {
+        _records.removeWhere((item) => (item.id ?? '').trim() == recordId);
+      }
+
+      _records.insert(0, record);
+      _loadedDateKeys.add(_dateKey(recordDate));
+    });
+
+    SocialDataInvalidator.markDirty();
+    widget.onSelectedDateChanged?.call(recordDate);
+  }
+
+  Future<void> _openMealDetails(FoodMealRecord record) async {
+    final updatedRecord = await context.pushSlidePage<FoodMealRecord>(
+      FoodMealDetailsPage(record: record, userProfile: _userProfile),
+    );
+
+    if (!mounted || updatedRecord == null) {
+      return;
+    }
+
+    final updatedId = (updatedRecord.id ?? '').trim();
+
+    setState(() {
+      final index = updatedId.isEmpty
+          ? -1
+          : _records.indexWhere((item) => (item.id ?? '').trim() == updatedId);
+
+      if (updatedRecord.status == 'deleted') {
+        if (index >= 0) {
+          _records.removeAt(index);
+        }
+        return;
+      }
+
+      if (index >= 0) {
+        _records[index] = updatedRecord;
+      } else {
+        _records.insert(0, updatedRecord);
+      }
+    });
+
+    SocialDataInvalidator.markDirty();
   }
 }
 
-class _HomeBody extends StatelessWidget {
-  const _HomeBody();
+class _HomeBodySkeleton extends StatelessWidget {
+  const _HomeBodySkeleton();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xxl,
-                      ),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: AppSpacing.xxl),
-                          _Header(mascotAsset: HomePage._mealAsset),
-                          const SizedBox(height: AppSpacing.xxxl),
-                          _DailyGoalWithMascot(
-                            mascotAsset: HomePage._mealAsset,
-                          ),
-                          const SizedBox(height: AppSpacing.xl),
-                          const _MealsHeader(),
-                          const SizedBox(height: AppSpacing.sm),
-                          const _AddMealAction(),
-                          const SizedBox(height: AppSpacing.lg),
-                          HomeMealCard(
-                            cardKey: const ValueKey('home-meal-card-0'),
-                            title: 'Lanche da tarde',
-                            description: 'Maca e mix de castanhas',
-                            kcal: '180 kcal',
-                            time: '15:00',
-                            imageAsset: HomePage._mealAsset,
-                            height: HomePage._mealCardHeight,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          HomeMealCard(
-                            cardKey: const ValueKey('home-meal-card-1'),
-                            title: 'Almoco',
-                            description: 'Frango grelhado, arroz e salada',
-                            kcal: '580 kcal',
-                            time: '12:15',
-                            imageAsset: HomePage._mealAsset,
-                            height: HomePage._mealCardHeight,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          HomeMealCard(
-                            cardKey: const ValueKey('home-meal-card-2'),
-                            title: 'Cafe da manha',
-                            description: 'Aveia, banana e mel',
-                            kcal: '320 kcal',
-                            time: '07:30',
-                            imageAsset: HomePage._mealAsset,
-                            height: HomePage._mealCardHeight,
-                          ),
-                          const SizedBox(height: AppSpacing.xxxl),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Column(
+              children: [
+                const SizedBox(height: AppSpacing.xxl),
+                const _HomeHeaderSkeleton(),
+                const SizedBox(height: AppSpacing.xxxl),
+                const _HomeGoalSkeleton(),
+                const SizedBox(height: AppSpacing.xl),
+                const _MealsHeaderSkeleton(),
+                const SizedBox(height: AppSpacing.sm),
+                const _AddMealActionSkeleton(),
+                const SizedBox(height: AppSpacing.lg),
+                const _MealCardSkeleton(),
+                const SizedBox(height: AppSpacing.lg),
+                const _MealCardSkeleton(),
+                const SizedBox(height: AppSpacing.lg),
+                const _MealCardSkeleton(),
+                const SizedBox(height: AppSpacing.xxxl),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeHeaderSkeleton extends StatelessWidget {
+  const _HomeHeaderSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: const [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppSkeletonBox(height: AppSpacing.lg, width: 140),
+              SizedBox(height: AppSpacing.sm),
+              AppSkeletonBox(height: AppSpacing.xxl, width: 120),
+            ],
+          ),
+        ),
+        AppSkeletonBox(
+          width: AppSpacing.huge + AppSpacing.xs,
+          height: AppSpacing.huge + AppSpacing.xs,
+          borderRadius: AppRadius.pill,
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeGoalSkeleton extends StatelessWidget {
+  const _HomeGoalSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const AppSkeletonBox(height: 190, borderRadius: AppRadius.lg);
+  }
+}
+
+class _MealsHeaderSkeleton extends StatelessWidget {
+  const _MealsHeaderSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        Expanded(child: AppSkeletonBox(height: AppSpacing.lg)),
+        SizedBox(width: AppSpacing.md),
+        AppSkeletonBox(height: AppSpacing.md, width: 90),
+      ],
+    );
+  }
+}
+
+class _AddMealActionSkeleton extends StatelessWidget {
+  const _AddMealActionSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const AppSkeletonBox(
+      height: HomePage._mealCardHeight,
+      borderRadius: AppRadius.lg,
+    );
+  }
+}
+
+class _MealCardSkeleton extends StatelessWidget {
+  const _MealCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const AppSkeletonBox(
+      height: HomePage._mealCardHeight,
+      borderRadius: AppRadius.lg,
+    );
+  }
+}
+
+class _HomeBody extends StatelessWidget {
+  const _HomeBody({
+    required this.records,
+    required this.onAddMealPressed,
+    required this.onMealTap,
+    required this.onRefresh,
+    required this.selectedDate,
+    required this.onSelectedDateTap,
+    required this.playMascotCelebration,
+    required this.idleMascotVideoAsset,
+    required this.mascotCelebrationVideoAsset,
+    required this.onMascotCelebrationCompleted,
+    this.userProfile,
+    this.goalUserProfile,
+    this.onAvatarTap,
+    this.onWeightUpdated,
+  });
+
+  final List<FoodMealRecord> records;
+  final VoidCallback onAddMealPressed;
+  final Future<void> Function(FoodMealRecord record) onMealTap;
+  final Future<void> Function() onRefresh;
+  final DateTime selectedDate;
+  final VoidCallback onSelectedDateTap;
+  final bool playMascotCelebration;
+  final String idleMascotVideoAsset;
+  final String mascotCelebrationVideoAsset;
+  final VoidCallback onMascotCelebrationCompleted;
+  final Map<String, dynamic>? userProfile;
+  final Map<String, dynamic>? goalUserProfile;
+  final VoidCallback? onAvatarTap;
+  final ValueChanged<Map<String, dynamic>>? onWeightUpdated;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = homeShellFabBottomInset(context);
+    final dayRecords = records
+        .where((record) {
+          if (record.status.trim().toLowerCase() == 'deleted') {
+            return false;
+          }
+          final createdAt = record.createdAt;
+          if (createdAt == null) {
+            return true;
+          }
+
+          return isSameHomeDate(createdAt, selectedDate);
+        })
+        .toList(growable: false);
+
+    return Scaffold(
+      backgroundColor: AppColors.surface,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: onWeightUpdated == null
+          ? null
+          : Padding(
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: HomeActionsFab(
+                userProfile: userProfile,
+                onWeightUpdated: onWeightUpdated!,
               ),
             ),
-            const _BottomNavigation(),
-          ],
+      body: SafeArea(
+        child: AppRefreshScrollView(
+          onRefresh: onRefresh,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.xxl,
+            AppSpacing.lg,
+            // SafeArea already clears the bottom nav; only reserve
+            // space so the last meal isn't hidden under the FAB.
+            56 + homeShellFabNavGap,
+          ),
+          child: Column(
+            children: [
+              _Header(userProfile: userProfile, onAvatarTap: onAvatarTap),
+              const SizedBox(height: AppSpacing.xxxl),
+              HomeDailyGoalWithMascot(
+                mascotAsset: HomePage._mealAsset,
+                idleMascotVideoAsset: idleMascotVideoAsset,
+                mascotVideoAsset: mascotCelebrationVideoAsset,
+                playMascotVideo: playMascotCelebration,
+                onMascotVideoCompleted: onMascotCelebrationCompleted,
+                records: records,
+                selectedDate: selectedDate,
+                userProfile: goalUserProfile ?? userProfile,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              _MealsHeader(
+                selectedDate: selectedDate,
+                onTap: onSelectedDateTap,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _AddMealAction(onTap: onAddMealPressed),
+              for (final (index, record) in dayRecords.indexed) ...[
+                const SizedBox(height: AppSpacing.lg),
+                HomeMealCard(
+                  cardKey: ValueKey('home-meal-card-$index'),
+                  title: record.title,
+                  description: record.description,
+                  kcal: record.kcalLabel,
+                  time: record.timeLabel,
+                  imageAsset: record.imageAsset,
+                  imageBytes: record.imageBytes,
+                  imageUrl: record.imageUrl,
+                  height: HomePage._mealCardHeight,
+                  onTap: () => onMealTap(record),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -97,12 +902,25 @@ class _HomeBody extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.mascotAsset});
-
-  final String mascotAsset;
+  const _Header({this.userProfile, this.onAvatarTap});
+  final Map<String, dynamic>? userProfile;
+  final VoidCallback? onAvatarTap;
 
   @override
   Widget build(BuildContext context) {
+    final rawName = userProfile?['name'] as String? ?? '';
+    final trimmedName = rawName.trim();
+    final firstName = trimmedName.isEmpty
+        ? ''
+        : trimmedName.split(RegExp(r'\s+')).first;
+    final avatarUrl =
+        userProfile?['avatarUrl'] as String? ??
+        userProfile?['avatar_url'] as String?;
+    final avatarFrameId =
+        userProfile?['equippedAvatarFrameId'] as String? ??
+        userProfile?['equipped_avatar_frame_id'] as String?;
+    final greeting = homeGreetingFor(DateTime.now());
+
     return Row(
       children: [
         Expanded(
@@ -110,13 +928,14 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Bom dia, ☀️',
+                '${greeting.emoji} ${greeting.label}',
                 style: AppTextStyles.homeHello.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
+              const SizedBox(height: AppSpacing.xs),
               Text(
-                'Jon',
+                firstName,
                 style: AppTextStyles.homeUserName.copyWith(
                   color: AppColors.brand900Variant,
                 ),
@@ -124,302 +943,14 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        ClipOval(
-          child: SizedBox(
-            width: AppSpacing.huge + AppSpacing.xs,
-            height: AppSpacing.huge + AppSpacing.xs,
-            child: Image.asset(mascotAsset, fit: BoxFit.cover),
+        GestureDetector(
+          onTap: onAvatarTap,
+          child: FramedAvatar(
+            size: AppSpacing.huge + AppSpacing.md,
+            avatarUrl: avatarUrl,
+            frameId: avatarFrameId,
+            fallbackText: trimmedName,
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DailyGoalWithMascot extends StatelessWidget {
-  const _DailyGoalWithMascot({required this.mascotAsset});
-
-  final String mascotAsset;
-
-  static const double _mascotOffsetY = -137;
-
-  static const double _mascotSize = 200;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
-      children: [
-        const _DailyGoalCard(key: ValueKey('home-daily-goal-card')),
-        Positioned(
-          top: _mascotOffsetY,
-          child: SizedBox(
-            key: const ValueKey('home-mascot-overlay'),
-            width: _mascotSize,
-            height: _mascotSize,
-            child: Image.asset(mascotAsset, fit: BoxFit.contain),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DailyGoalCard extends StatelessWidget {
-  const _DailyGoalCard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.homeMetaCardSurface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.homeMetaCardBorder, width: 1.5),
-        boxShadow: AppShadows.homeMetaCard,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Meta diaria de calorias',
-            style: AppTextStyles.label.copyWith(
-              color: AppColors.brand900Variant,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          const Row(
-            children: [
-              _ProgressRing(),
-              SizedBox(width: AppSpacing.lg),
-              Expanded(child: _GoalStats()),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressRing extends StatelessWidget {
-  const _ProgressRing();
-
-  @override
-  Widget build(BuildContext context) {
-    const consumedCalories = 1080;
-    const totalCalories = 2000;
-    final remainingCalories = totalCalories - consumedCalories;
-
-    return SizedBox(
-      width: 88,
-      height: 88,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: 88,
-            height: 88,
-            child: CircularProgressIndicator(
-              value: consumedCalories / totalCalories,
-              strokeWidth: 10,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.action500,
-              ),
-              backgroundColor: AppColors.homeProgressTrack,
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$remainingCalories',
-                key: const ValueKey('home-calorie-ring-value'),
-                style: AppTextStyles.statValue.copyWith(
-                  color: AppColors.brand900Variant,
-                ),
-              ),
-              Text(
-                'kcal',
-                style: AppTextStyles.micro.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GoalStats extends StatelessWidget {
-  const _GoalStats();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: const [
-            Expanded(
-              child: _StatColumn(label: 'Meta', value: '2.000'),
-            ),
-            Expanded(
-              child: _StatColumn(label: 'Consumido', value: '1.080'),
-            ),
-            Expanded(
-              child: _StatColumn(
-                label: 'Restante',
-                value: '920',
-                highlight: true,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        const _MacroSection(),
-      ],
-    );
-  }
-}
-
-class _StatColumn extends StatelessWidget {
-  const _StatColumn({
-    required this.label,
-    required this.value,
-    this.highlight = false,
-  });
-
-  final String label;
-  final String value;
-  final bool highlight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.captionStrong.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w400,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            style: AppTextStyles.statValue.copyWith(
-              color: highlight
-                  ? AppColors.action500
-                  : AppColors.brand900Variant,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MacroSection extends StatelessWidget {
-  const _MacroSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: const [
-        Expanded(
-          child: _MacroProgressItem(
-            label: 'Proteina',
-            consumed: 78,
-            goal: 120,
-            color: AppColors.homeMacroProtein,
-            progressKey: ValueKey('home-macro-progress-proteina'),
-          ),
-        ),
-        SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _MacroProgressItem(
-            label: 'Carboidratos',
-            consumed: 156,
-            goal: 200,
-            color: AppColors.homeMacroCarbs,
-            progressKey: ValueKey('home-macro-progress-carboidratos'),
-          ),
-        ),
-        SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _MacroProgressItem(
-            label: 'Gordura',
-            consumed: 40,
-            goal: 60,
-            color: AppColors.homeMacroFat,
-            progressKey: ValueKey('home-macro-progress-gordura'),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MacroProgressItem extends StatelessWidget {
-  const _MacroProgressItem({
-    required this.label,
-    required this.consumed,
-    required this.goal,
-    required this.color,
-    required this.progressKey,
-  });
-
-  final String label;
-  final int consumed;
-  final int goal;
-  final Color color;
-  final Key progressKey;
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = goal == 0 ? 0.0 : (consumed / goal).clamp(0.0, 1.0);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.captionStrong.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w400,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.sm / 2),
-          child: SizedBox(
-            height: AppSpacing.xs + 2,
-            child: LinearProgressIndicator(
-              key: progressKey,
-              value: progress,
-              backgroundColor: AppColors.homeProgressTrack,
-              color: color,
-              minHeight: AppSpacing.xs + 2,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          '${consumed}g/${goal}g',
-          style: AppTextStyles.micro.copyWith(color: AppColors.textSecondary),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -427,7 +958,10 @@ class _MacroProgressItem extends StatelessWidget {
 }
 
 class _MealsHeader extends StatelessWidget {
-  const _MealsHeader();
+  const _MealsHeader({required this.selectedDate, required this.onTap});
+
+  final DateTime selectedDate;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -435,16 +969,28 @@ class _MealsHeader extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            'Refeicoes de hoje',
+            'Refeições do dia',
             style: AppTextStyles.homeSectionTitle.copyWith(
               color: AppColors.brand900Variant,
             ),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        Text(
-          '15 mar',
-          style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
+            child: Text(
+              formatHomeDateLabel(selectedDate),
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -452,244 +998,31 @@ class _MealsHeader extends StatelessWidget {
 }
 
 class _AddMealAction extends StatelessWidget {
-  const _AddMealAction();
+  const _AddMealAction({required this.onTap});
+
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
+    return AppDashedActionButton(
+      label: 'Adicionar refeição',
+      onTap: onTap,
       height: HomePage._mealCardHeight,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg - AppSpacing.xs),
-      ),
-      child: CustomPaint(
-        painter: _DashedBorderPainter(
-          color: AppColors.homeDashedBorder,
-          borderRadius: AppRadius.lg - AppSpacing.xs,
+      borderRadius: AppRadius.lg - AppSpacing.xs,
+      labelStyle: AppTextStyles.homeAction.copyWith(color: AppColors.action500),
+      leading: Container(
+        width: AppSpacing.xxl + AppSpacing.xs,
+        height: AppSpacing.xxl + AppSpacing.xs,
+        decoration: const BoxDecoration(
+          color: AppColors.action500,
+          shape: BoxShape.circle,
         ),
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: AppSpacing.xxl + AppSpacing.xs,
-                height: AppSpacing.xxl + AppSpacing.xs,
-                decoration: const BoxDecoration(
-                  color: AppColors.action500,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '+',
-                  style: AppTextStyles.buttonMedium.copyWith(
-                    color: AppColors.surface,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Text(
-                'Adicionar refeição',
-                style: AppTextStyles.homeAction.copyWith(
-                  color: AppColors.action500,
-                ),
-              ),
-            ],
-          ),
+        alignment: Alignment.center,
+        child: Text(
+          '+',
+          style: AppTextStyles.buttonMedium.copyWith(color: AppColors.surface),
         ),
       ),
-    );
-  }
-}
-
-class _DashedBorderPainter extends CustomPainter {
-  const _DashedBorderPainter({required this.color, required this.borderRadius});
-
-  final Color color;
-  final double borderRadius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const dashWidth = 8.0;
-    const dashSpace = 6.0;
-    final radius = Radius.circular(borderRadius);
-    final rect = RRect.fromRectAndRadius(Offset.zero & size, radius);
-    final path = Path()..addRRect(rect);
-
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    for (final metric in path.computeMetrics()) {
-      var distance = 0.0;
-      while (distance < metric.length) {
-        final next = math.min(distance + dashWidth, metric.length);
-        canvas.drawPath(metric.extractPath(distance, next), paint);
-        distance += dashWidth + dashSpace;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _BottomNavigation extends StatelessWidget {
-  const _BottomNavigation();
-
-  static const String _calendarIconAsset = 'assets/icons/calendar.svg';
-  static const String _homeIconAsset = 'assets/icons/home.svg';
-  static const String _missionIconAsset = 'assets/icons/mission.svg';
-  static const String _profileIconAsset = 'assets/icons/profile.svg';
-  static const double _surfaceHeight = 56;
-  static const double _cameraButtonSize = AppSpacing.huge + AppSpacing.xl;
-  static const double _cameraOverlap = AppSpacing.lg;
-  static const double _contentHorizontalPadding = AppSpacing.sm;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: _surfaceHeight + _cameraOverlap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
-        children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              key: const ValueKey('home-bottom-nav-surface'),
-              height: _surfaceHeight,
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
-                border: Border(
-                  top: BorderSide(color: AppColors.borderBrandAlt),
-                ),
-              ),
-              child: Padding(
-                key: const ValueKey('home-bottom-nav-content'),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: _contentHorizontalPadding,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Center(
-                        child: _BottomItem(
-                          label: 'Calendário',
-                          iconAsset: _calendarIconAsset,
-                          color: AppColors.divider,
-                          keyLabel: const ValueKey(
-                            'home-bottom-label-calendario',
-                          ),
-                          keyIcon: const ValueKey(
-                            'home-bottom-icon-calendario',
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: _BottomItem(
-                          label: 'Inicio',
-                          iconAsset: _homeIconAsset,
-                          color: AppColors.action500,
-                          keyLabel: const ValueKey('home-bottom-label-inicio'),
-                          keyIcon: const ValueKey('home-bottom-icon-inicio'),
-                        ),
-                      ),
-                    ),
-                    const Expanded(child: SizedBox()),
-                    Expanded(
-                      child: Center(
-                        child: _BottomItem(
-                          label: 'Missões',
-                          iconAsset: _missionIconAsset,
-                          color: AppColors.divider,
-                          keyLabel: const ValueKey('home-bottom-label-missoes'),
-                          keyIcon: const ValueKey('home-bottom-icon-missoes'),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: _BottomItem(
-                          label: 'Social',
-                          iconAsset: _profileIconAsset,
-                          color: AppColors.divider,
-                          keyLabel: const ValueKey('home-bottom-label-social'),
-                          keyIcon: const ValueKey('home-bottom-icon-social'),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 0,
-            child: Container(
-              key: const ValueKey('home-bottom-camera-button'),
-              width: _cameraButtonSize,
-              height: _cameraButtonSize,
-              decoration: BoxDecoration(
-                color: AppColors.action500,
-                shape: BoxShape.circle,
-                boxShadow: AppShadows.homeActionCircle,
-              ),
-              child: const Icon(
-                Icons.camera_alt_outlined,
-                color: AppColors.surface,
-                size: AppSpacing.xxxl,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomItem extends StatelessWidget {
-  const _BottomItem({
-    required this.label,
-    required this.iconAsset,
-    required this.color,
-    required this.keyLabel,
-    required this.keyIcon,
-  });
-
-  final String label;
-  final String iconAsset;
-  final Color color;
-  final Key keyLabel;
-  final Key keyIcon;
-
-  static const double _iconSize = AppSpacing.xxl + AppSpacing.xs;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SvgPicture.asset(
-          iconAsset,
-          key: keyIcon,
-          width: _iconSize,
-          height: _iconSize,
-          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        ),
-        const SizedBox(height: 1),
-        Text(
-          label,
-          key: keyLabel,
-          style: AppTextStyles.homeBottomNav.copyWith(color: color, height: 1),
-        ),
-      ],
     );
   }
 }

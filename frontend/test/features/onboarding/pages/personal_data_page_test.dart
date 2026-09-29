@@ -27,12 +27,15 @@ void main() {
       expect(find.text('Peso'), findsOneWidget);
       expect(find.text('Altura'), findsOneWidget);
       expect(find.text('Sexo'), findsOneWidget);
+      expect(find.text('kg'), findsOneWidget);
+      expect(find.text('cm'), findsOneWidget);
       expect(find.text('Avançar'), findsOneWidget);
       expect(find.byType(OnboardingStepHeader), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
       expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
-      expect(find.byType(OnboardingInputField), findsNWidgets(4));
+      expect(find.byKey(const ValueKey('personal-weight-unit-selector')), findsOneWidget);
+      expect(find.byKey(const ValueKey('personal-height-unit-selector')), findsOneWidget);
+      expect(find.byType(OnboardingInputField), findsOneWidget);
     });
 
     testWidgets('abre calendário ao tocar no campo de data', (tester) async {
@@ -67,6 +70,20 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(ObjectivePage), findsOneWidget);
+    });
+
+    testWidgets('permite alterar a unidade de peso', (tester) async {
+      await _pumpPersonalDataPage(tester);
+
+      await tester.tap(
+        find.byKey(const ValueKey('personal-weight-unit-selector')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('lb').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('lb'), findsOneWidget);
     });
 
     testWidgets('botão avançar ocupa toda a largura disponível do formulário', (

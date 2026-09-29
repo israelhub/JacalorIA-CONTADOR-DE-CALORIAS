@@ -1,24 +1,553 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../core/config/api_config.dart';
+import '../../../core/notifications/meal_reminder_home_widget.dart';
 
 class AuthService {
-  static const String _baseUrl = '';
+  static const Duration _apiTimeout = Duration(seconds: 90);
+  static const int _maxAttempts = 3;
+  static const Duration _profileCacheTtl = Duration(seconds: 45);
 
-  Future<void> signInWithGoogle() async {
-    throw UnimplementedError('signInWithGoogle ainda não implementado');
+  static Map<String, dynamic>? _cachedProfile;
+  static DateTime? _cachedProfileAt;
+  static Future<Map<String, dynamic>>? _inflightProfileFetch;
+
+  static String get _baseUrl => ApiConfig.baseUrl;
+  static const String _googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue:
+        '618330390967-emagf9ea3j4l5kaeroi2s1bs527ugc0i.apps.googleusercontent.com',
+  );
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: const ['email', 'openid'],
+    clientId: (kIsWeb || defaultTargetPlatform == TargetPlatform.android)
+        ? _googleWebClientId
+        : null,
+  );
+
+  static Future<void> initialize() async {
+    final prefs = await SharedPreferences.getInstance();
+    globalToken = prefs.getString('auth_token');
+    final userJson = prefs.getString('auth_user');
+    if (userJson != null) {
+      try {
+        globalUser = jsonDecode(userJson) as Map<String, dynamic>;
+      } catch (_) {}
+    }
+
+    if (globalToken != null && globalToken!.isNotEmpty) {
+      await refreshSession();
+    }
+
+    unawaited(warmupBackend());
   }
 
-  Future<void> createAccount({
+  static Future<bool> refreshSession() async {
+    final currentToken = globalToken;
+    if (currentToken == null || currentToken.isEmpty) {
+      return false;
+    }
+
+    try {
+      final uri = Uri.parse('$_baseUrl/auth/refresh');
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $currentToken',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        final nextToken = body['token'];
+        if (nextToken is String && nextToken.isNotEmpty) {
+          globalToken = nextToken;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('auth_token', nextToken);
+
+          final rawUser = body['user'];
+          if (rawUser is Map) {
+            globalUser = Map<String, dynamic>.from(rawUser);
+            await prefs.setString('auth_user', jsonEncode(globalUser));
+          }
+          return true;
+        }
+      }
+
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        await signOut();
+        return false;
+      }
+    } catch (_) {
+      return globalToken != null && globalToken!.isNotEmpty;
+    }
+
+    return globalToken != null && globalToken!.isNotEmpty;
+  }
+
+  static Future<void> warmupBackend() async {
+    if (!_isRemoteBackend) {
+      return;
+    }
+
+    try {
+      await http
+          .get(Uri.parse('$_baseUrl/health'))
+          .timeout(const Duration(seconds: 120));
+    } catch (_) {}
+  }
+
+  static bool get _isRemoteBackend {
+    final baseUrl = _baseUrl.toLowerCase();
+    return baseUrl.startsWith('https://') &&
+        !baseUrl.contains('localhost') &&
+        !baseUrl.contains('127.0.0.1');
+  }
+
+  Future<http.Response> _sendWithRetry(
+    Future<http.Response> Function() request, {
+    required String timeoutMessage,
+  }) async {
+    Object? lastError;
+
+    for (var attempt = 1; attempt <= _maxAttempts; attempt++) {
+      try {
+        return await request().timeout(
+          _apiTimeout,
+          onTimeout: () => throw TimeoutException(timeoutMessage),
+        );
+      } on TimeoutException catch (error) {
+        lastError = error;
+        if (attempt == _maxAttempts) {
+          rethrow;
+        }
+      } on http.ClientException catch (error) {
+        lastError = error;
+        if (attempt == _maxAttempts) {
+          rethrow;
+        }
+      }
+
+      await Future<void>.delayed(Duration(seconds: attempt * 2));
+    }
+
+    throw lastError ?? TimeoutException(timeoutMessage);
+  }
+
+  bool _isSuccessStatus(int statusCode) {
+    return statusCode == 200 || statusCode == 201;
+  }
+
+  Future<Map<String, dynamic>> signInWithGoogle() async {
+    try {
+      if (kIsWeb && _googleWebClientId.isEmpty) {
+        throw Exception(
+          'GOOGLE_WEB_CLIENT_ID nao configurado. Rode com --dart-define=GOOGLE_WEB_CLIENT_ID=<seu_client_id_web>',
+        );
+      }
+
+      final silentAccount = await _googleSignIn.signInSilently();
+      final account = silentAccount ?? await _googleSignIn.signIn();
+      if (account == null) {
+        throw Exception('Login com Google cancelado.');
+      }
+
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+      final accessToken = auth.accessToken;
+      if ((idToken == null || idToken.isEmpty) &&
+          (accessToken == null || accessToken.isEmpty)) {
+        throw Exception('Nao foi possivel obter credenciais do Google.');
+      }
+
+      final uri = Uri.parse('$_baseUrl/auth/google');
+      final response = await _sendWithRetry(
+        () => http.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            if (idToken != null && idToken.isNotEmpty) 'idToken': idToken,
+            if (accessToken != null && accessToken.isNotEmpty)
+              'accessToken': accessToken,
+          }),
+        ),
+        timeoutMessage: 'Timeout no login Google',
+      );
+
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      if (kDebugMode) {
+        debugPrint(
+          '[GoogleSignIn] /auth/google status=${response.statusCode} body=$body',
+        );
+      }
+
+      if (_isSuccessStatus(response.statusCode)) {
+        return body;
+      }
+
+      throw Exception(
+        _friendlyGoogleSignInMessage(
+          _extractMessage(body, 'Falha no login com Google'),
+        ),
+      );
+    } catch (e) {
+      throw Exception(_friendlyGoogleSignInMessage(e.toString()));
+    }
+  }
+
+  Future<Map<String, dynamic>> createAccount({
+    required String name,
     required String email,
     required String password,
   }) async {
     final uri = Uri.parse('$_baseUrl/auth/register');
-    await http.post(uri, body: {'email': email, 'password': password});
-    throw UnimplementedError('createAccount ainda não implementado');
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'name': name, 'email': email, 'password': password}),
+      ),
+      timeoutMessage: 'Timeout ao criar conta',
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (_isSuccessStatus(response.statusCode)) {
+      return body;
+    }
+
+    throw Exception(_extractMessage(body, 'Erro ao criar conta'));
   }
 
-  Future<void> signIn({required String email, required String password}) async {
+  Future<Map<String, dynamic>> signIn({
+    required String email,
+    required String password,
+  }) async {
     final uri = Uri.parse('$_baseUrl/auth/login');
-    await http.post(uri, body: {'email': email, 'password': password});
-    throw UnimplementedError('signIn ainda não implementado');
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      ),
+      timeoutMessage: 'Timeout ao entrar',
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (_isSuccessStatus(response.statusCode)) {
+      return body;
+    }
+
+    throw Exception(_extractMessage(body, 'Credenciais invalidas'));
+  }
+
+  Future<Map<String, dynamic>> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/auth/email/verify');
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'code': code}),
+      ),
+      timeoutMessage: 'Timeout ao confirmar email',
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (_isSuccessStatus(response.statusCode)) {
+      return body;
+    }
+
+    throw Exception(_extractMessage(body, 'Codigo invalido'));
+  }
+
+  Future<Map<String, dynamic>> resendCode({required String email}) async {
+    final uri = Uri.parse('$_baseUrl/auth/email/resend-code');
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      ),
+      timeoutMessage: 'Timeout ao reenviar codigo',
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (_isSuccessStatus(response.statusCode)) {
+      return body;
+    }
+
+    throw Exception(_extractMessage(body, 'Erro ao reenviar codigo'));
+  }
+
+  Future<Map<String, dynamic>> forgotPassword({required String email}) async {
+    final uri = Uri.parse('$_baseUrl/auth/password/forgot');
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      ),
+      timeoutMessage: 'Timeout ao solicitar reset',
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (_isSuccessStatus(response.statusCode)) {
+      return body;
+    }
+
+    throw Exception(_extractMessage(body, 'Erro ao solicitar reset'));
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/auth/password/reset');
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'code': code,
+          'newPassword': newPassword,
+        }),
+      ),
+      timeoutMessage: 'Timeout ao redefinir senha',
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (_isSuccessStatus(response.statusCode)) {
+      return body;
+    }
+
+    throw Exception(_extractMessage(body, 'Erro ao redefinir senha'));
+  }
+
+  Future<Map<String, dynamic>> validateResetCode({
+    required String email,
+    required String code,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/auth/password/validate-code');
+    final response = await _sendWithRetry(
+      () => http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'code': code}),
+      ),
+      timeoutMessage: 'Timeout ao validar codigo',
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (_isSuccessStatus(response.statusCode)) {
+      return body;
+    }
+
+    throw Exception(_extractMessage(body, 'Codigo invalido ou expirado'));
+  }
+
+  static String? globalToken;
+  static Map<String, dynamic>? globalUser;
+
+  String _extractMessage(Map<String, dynamic> body, String fallback) {
+    final message = body['message'];
+    if (message is List && message.isNotEmpty) {
+      return message.first.toString();
+    }
+    if (message is String && message.isNotEmpty) {
+      return message;
+    }
+    return fallback;
+  }
+
+  String _friendlyGoogleSignInMessage(String raw) {
+    final message = raw.replaceFirst('Exception: ', '').trim();
+    final lower = message.toLowerCase();
+
+    if (lower.contains('people api has not been used') ||
+        lower.contains('service_disabled') ||
+        lower.contains('permission_denied') ||
+        lower.contains('people.googleapis.com')) {
+      return 'Login Google bloqueado na configuracao do projeto. Ative a People API no Google Cloud e tente novamente.';
+    }
+
+    if (lower.contains('google_web_client_id nao configurado')) {
+      return 'Login Google indisponivel no momento. Contate o suporte.';
+    }
+
+    if (lower.contains('cancelado')) {
+      return 'Login com Google cancelado.';
+    }
+
+    if (lower.contains('timeout')) {
+      return 'Servidor demorou para responder. Aguarde alguns segundos e tente novamente.';
+    }
+
+    if (lower.contains('access token google invalido')) {
+      return 'Token Google expirado ou invalido. Tente entrar novamente.';
+    }
+
+    if (lower.contains('access token google ausente')) {
+      return 'Nao foi possivel obter token do Google. Tente novamente.';
+    }
+
+    if (lower.contains('apiexception: 10') ||
+        lower.contains('api10') ||
+        lower.contains('sign_in_failed')) {
+      return 'Falha na configuracao do Google Login no Android (ApiException 10). Verifique package name, SHA-1/SHA-256 e OAuth Client ID.';
+    }
+
+    if (lower.contains('conta google sem email valido') ||
+        lower.contains('email do google nao verificado')) {
+      return 'Sua conta Google precisa ter email valido e verificado.';
+    }
+
+    if (message.isNotEmpty) {
+      return message;
+    }
+
+    return 'Nao foi possivel entrar com Google. Tente novamente.';
+  }
+
+  Map<String, String> _getHeaders() {
+    final token = _requireToken();
+
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    headers['Authorization'] = 'Bearer $token';
+
+    return headers;
+  }
+
+  String _requireToken() {
+    final token = globalToken;
+    if (token == null || token.isEmpty) {
+      throw Exception('Sessao invalida. Faca login novamente.');
+    }
+
+    return token;
+  }
+
+  Future<Map<String, dynamic>> fetchProfile({bool forceRefresh = false}) async {
+    if (!forceRefresh) {
+      final cached = _cachedProfile;
+      final cachedAt = _cachedProfileAt;
+      if (cached != null &&
+          cachedAt != null &&
+          DateTime.now().difference(cachedAt) < _profileCacheTtl) {
+        return Map<String, dynamic>.from(cached);
+      }
+
+      final inflight = _inflightProfileFetch;
+      if (inflight != null) {
+        return Map<String, dynamic>.from(await inflight);
+      }
+    }
+
+    final request = _fetchProfileFromNetwork();
+    _inflightProfileFetch = request;
+    try {
+      final profile = await request;
+      _cachedProfile = profile;
+      _cachedProfileAt = DateTime.now();
+      globalUser = profile;
+      return Map<String, dynamic>.from(profile);
+    } finally {
+      if (identical(_inflightProfileFetch, request)) {
+        _inflightProfileFetch = null;
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> _fetchProfileFromNetwork() async {
+    final token = _requireToken();
+    final uri = Uri.parse('$_baseUrl/auth/profile');
+    final headers = <String, String>{'Authorization': 'Bearer $token'};
+
+    final response = await _sendWithRetry(
+      () => http.get(uri, headers: headers),
+      timeoutMessage: 'Timeout ao buscar perfil',
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode == 200) {
+      final profile = body.containsKey('id')
+          ? body
+          : (body['user'] as Map<String, dynamic>? ?? body);
+      return Map<String, dynamic>.from(profile);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('Sessao invalida. Faca login novamente.');
+    } else {
+      throw Exception(_extractMessage(body, 'Erro ao buscar perfil'));
+    }
+  }
+
+  static void invalidateProfileCache() {
+    _cachedProfile = null;
+    _cachedProfileAt = null;
+    _inflightProfileFetch = null;
+  }
+
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    final uri = Uri.parse('$_baseUrl/auth/profile');
+    final headers = _getHeaders();
+
+    final response = await _sendWithRetry(
+      () => http.patch(uri, headers: headers, body: jsonEncode(data)),
+      timeoutMessage: 'Timeout ao atualizar perfil',
+    );
+
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('Sessao invalida. Faca login novamente.');
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode != 200) {
+      throw Exception(_extractMessage(body, 'Erro ao atualizar perfil'));
+    }
+
+    // O PATCH devolve o usuário atualizado, mas sem os campos computados
+    // (streak, xp, missões) que só o GET /profile agrega. Mescla no snapshot
+    // atual para manter o cache quente e evitar um GET redundante ao voltar.
+    final updated = body.containsKey('id')
+        ? body
+        : (body['user'] as Map<String, dynamic>? ?? body);
+    final base = _cachedProfile ?? globalUser ?? const <String, dynamic>{};
+    final merged = <String, dynamic>{...base, ...updated};
+    _cachedProfile = merged;
+    _cachedProfileAt = DateTime.now();
+    _inflightProfileFetch = null;
+    globalUser = merged;
+    return Map<String, dynamic>.from(merged);
+  }
+
+  static Future<void> signOut() async {
+    globalToken = null;
+    globalUser = null;
+    invalidateProfileCache();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    await prefs.remove('auth_user');
+    unawaited(MealReminderHomeWidget.clear());
   }
 }
