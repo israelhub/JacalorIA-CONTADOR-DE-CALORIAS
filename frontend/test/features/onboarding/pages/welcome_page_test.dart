@@ -47,7 +47,7 @@ void main() {
       );
       expect(
         (logoImage.image as AssetImage).assetName,
-        'assets/images/nome.png',
+        'assets/images/nome.webp',
       );
 
       final jacaImage = tester.widget<Image>(
@@ -55,7 +55,7 @@ void main() {
       );
       expect(
         (jacaImage.image as AssetImage).assetName,
-        'assets/images/Jaca_acenando_v2.png',
+        'assets/images/Jaca_acenando_v2.webp',
       );
 
       final mascotBox = tester.widget<SizedBox>(

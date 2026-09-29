@@ -10,7 +10,7 @@ class EnterHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(
         top: AppSpacing.huge,
-        left: AppSpacing.xxl,
+        left: AppSpacing.lg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,6 +1,49 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jacaloria/features/auth/controllers/auth_controller.dart';
 import 'package:jacaloria/features/auth/pages/login_page.dart';
+
+class _FakeAuthController extends AuthController {
+  _FakeAuthController(this._success, this._errorMessage);
+
+  final bool _success;
+  final String? _errorMessage;
+
+  @override
+  Future<bool> signIn({required String email, required String password}) async {
+    error = _errorMessage;
+    notifyListeners();
+    return _success;
+  }
+}
+
+class _FakeLoadingAuthController extends AuthController {
+  final Completer<bool> _completer = Completer<bool>();
+
+  void finish([bool value = false]) {
+    if (!_completer.isCompleted) {
+      _completer.complete(value);
+    }
+  }
+
+  @override
+  Future<bool> signIn({required String email, required String password}) async {
+    _setLoading(true);
+    error = null;
+    try {
+      return await _completer.future;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void _setLoading(bool value) {
+    isLoading = value;
+    notifyListeners();
+  }
+}
 
 void main() {
   group('LoginPage', () {
@@ -21,6 +64,50 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: LoginPage()));
 
       expect(find.byKey(const ValueKey('signup-link')), findsOneWidget);
+    });
+
+    testWidgets('exibe mensagem quando login falha', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LoginPage(
+            authController: _FakeAuthController(false, 'Credenciais inválidas'),
+          ),
+        ),
+      );
+
+      await tester.enterText(
+        find.byType(TextField).at(0),
+        'teste@jacaloria.app',
+      );
+      await tester.enterText(find.byType(TextField).at(1), 'senha123');
+      await tester.tap(find.text('Entrar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Credenciais inválidas'), findsOneWidget);
+    });
+
+    testWidgets('troca botão para Entrando… após submeter login', (
+      WidgetTester tester,
+    ) async {
+      final authController = _FakeLoadingAuthController();
+      await tester.pumpWidget(
+        MaterialApp(home: LoginPage(authController: authController)),
+      );
+
+      await tester.enterText(
+        find.byType(TextField).at(0),
+        'teste@jacaloria.app',
+      );
+      await tester.enterText(find.byType(TextField).at(1), 'senha123');
+      await tester.tap(find.text('Entrar'));
+      await tester.pump();
+
+      expect(find.text('Entrando…'), findsOneWidget);
+
+      authController.finish(false);
+      await tester.pumpAndSettle();
     });
   });
 }
