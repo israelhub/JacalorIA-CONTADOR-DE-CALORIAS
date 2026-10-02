@@ -1,0 +1,15 @@
+# 4.2.3.6 Fluxo da tela de perfil
+
+> Texto pronto para colar no TCC. A numeração continua a da seção 4.2.3.5 (Social). Ajuste se o Perfil ocupar outra posição no documento.
+
+O fluxo da tela de Perfil será desenvolvido com o objetivo de concentrar a identidade do usuário, seus dados pessoais, as conquistas obtidas na aplicação e as configurações que acompanham o uso cotidiano, como personalização visual, privacidade, lembretes de refeição e canal de suporte.
+
+Na área de visualização, o usuário poderá acompanhar um resumo da própria conta. A tela apresentará a foto de perfil, o nome, a quantidade de amigos e os elementos visuais já equipados, como moldura e fundo. Também serão exibidos indicadores relacionados à utilização da aplicação, entre eles a quantidade de dias de sequência, o prato favorito, o período do dia em que o usuário mais registra refeições e o total de pontos de experiência (XP) acumulados. Em seguida, serão apresentadas informações adicionais cadastradas, como data de nascimento, sexo, objetivo alimentar, nível de atividade física, peso, altura e tempo de existência da conta. A área de Conquistas reunirá medalhas referentes às missões completadas, à maior sequência já alcançada e aos visuais adquiridos na loja, permitindo que o usuário visualize o próprio progresso de forma consolidada.
+
+Na área de edição de dados pessoais, o usuário poderá atualizar as informações utilizadas pela aplicação. Será possível alterar a foto de perfil, o nome, a data de nascimento, o peso, a altura, o nível de atividade física, o sexo e o objetivo, podendo este último corresponder a emagrecer, manter o peso ou ganhar massa. Esses dados alimentarão o cálculo da meta diária de calorias e macronutrientes. Nessa mesma área, o usuário poderá definir se as refeições do dia serão exibidas no perfil público, controlando o que outras pessoas visualizam ao acessar sua conta na área Social, como o prato favorito, as conquistas e a sequência de utilização.
+
+Na área de personalização, o usuário poderá adquirir e equipar itens da loja por meio do ouro obtido nas missões. Estarão disponíveis molduras de avatar, fundos, figurinhas e bloqueadores de sequência. Os itens equipados passarão a compor a aparência do perfil, visível tanto para o próprio usuário quanto para amigos e participantes de grupos. Os bloqueadores poderão ser utilizados para preservar a sequência de utilização em um dia sem registro, evitando que uma falha pontual interrompa o progresso acumulado.
+
+A tela também disponibilizará o acesso aos lembretes de refeição, nos quais o usuário poderá criar, editar, ativar ou remover avisos em horários definidos, a fim de não esquecer de registrar as refeições. Haverá, ainda, um canal de suporte para o envio de relatos de problemas ou de sugestões de melhoria. Por fim, será possível encerrar a sessão da conta.
+
+Dessa forma, o fluxo da tela de Perfil reunirá recursos para visualizar o progresso individual, manter os dados cadastrais atualizados, personalizar a identidade visual, configurar lembretes e gerenciar a privacidade, proporcionando um espaço de acompanhamento e configuração da conta dentro do aplicativo.
