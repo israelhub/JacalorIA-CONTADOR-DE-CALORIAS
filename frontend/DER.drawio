@@ -833,7 +833,7 @@
             <mxRectangle height="28" width="172" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20182" parent="r20179" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(breakfast|lunch|dinner|free)" vertex="1">
+        <mxCell id="c20182" parent="r20179" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(cafe_da_manha|almoco|jantar|livre)" vertex="1">
           <mxGeometry height="28" width="180" x="220" as="geometry">
             <mxRectangle height="28" width="180" as="alternateBounds" />
           </mxGeometry>
@@ -887,7 +887,7 @@
             <mxRectangle height="28" width="172" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20194" parent="r20191" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(active|deleted)" vertex="1">
+        <mxCell id="c20194" parent="r20191" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(ativo|excluido)" vertex="1">
           <mxGeometry height="28" width="180" x="220" as="geometry">
             <mxRectangle height="28" width="180" as="alternateBounds" />
           </mxGeometry>
@@ -1142,7 +1142,7 @@
             <mxRectangle height="28" width="172" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20249" parent="r20246" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(active|deleted)" vertex="1">
+        <mxCell id="c20249" parent="r20246" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(ativo|excluido)" vertex="1">
           <mxGeometry height="28" width="180" x="220" as="geometry">
             <mxRectangle height="28" width="180" as="alternateBounds" />
           </mxGeometry>
@@ -1421,7 +1421,7 @@
             <mxRectangle height="28" width="150" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20310" parent="r20307" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(avatar_frame|avatar_background|offensive_blocker|streak_restore|jaca_emoji)" vertex="1">
+        <mxCell id="c20310" parent="r20307" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(moldura_avatar|fundo_avatar|bloqueador_ofensiva|restaurar_sequencia|emoji_jaca)" vertex="1">
           <mxGeometry height="28" width="401" x="198" as="geometry">
             <mxRectangle height="28" width="401" as="alternateBounds" />
           </mxGeometry>
@@ -1589,7 +1589,7 @@
             <mxRectangle height="28" width="172" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20349" parent="r20346" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(gold|xp)" vertex="1">
+        <mxCell id="c20349" parent="r20346" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(ouro|xp)" vertex="1">
           <mxGeometry height="28" width="180" x="220" as="geometry">
             <mxRectangle height="28" width="180" as="alternateBounds" />
           </mxGeometry>
@@ -1865,7 +1865,7 @@
             <mxRectangle height="28" width="172" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20423" parent="r20420" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(bug|suggestion)" vertex="1">
+        <mxCell id="c20423" parent="r20420" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(erro|sugestao)" vertex="1">
           <mxGeometry height="28" width="180" x="220" as="geometry">
             <mxRectangle height="28" width="180" as="alternateBounds" />
           </mxGeometry>
@@ -1994,7 +1994,7 @@
             <mxRectangle height="28" width="172" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20456" parent="r20453" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(text|image|emoji)" vertex="1">
+        <mxCell id="c20456" parent="r20453" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(texto|imagem|emoji)" vertex="1">
           <mxGeometry height="28" width="202" x="220" as="geometry">
             <mxRectangle height="28" width="202" as="alternateBounds" />
           </mxGeometry>
@@ -2381,7 +2381,7 @@
             <mxRectangle height="28" width="172" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20564" parent="r20561" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(pending|accepted|rejected)" vertex="1">
+        <mxCell id="c20564" parent="r20561" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(pendente|aceito|rejeitado)" vertex="1">
           <mxGeometry height="28" width="180" x="220" as="geometry">
             <mxRectangle height="28" width="180" as="alternateBounds" />
           </mxGeometry>
@@ -2651,7 +2651,7 @@
             <mxRectangle height="28" width="96" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20613" parent="r20610" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(&#39;goal_average&#39;,&#39;offensive&#39;,&#39;daily_goal&#39;,&#39;xp&#39;,&#39;group_streak&#39;)" vertex="1">
+        <mxCell id="c20613" parent="r20610" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(media_meta|ofensiva|meta_diaria|xp|sequencia_grupo)" vertex="1">
           <mxGeometry height="28" width="297" x="144" as="geometry">
             <mxRectangle height="28" width="297" as="alternateBounds" />
           </mxGeometry>
@@ -3128,7 +3128,7 @@
             <mxRectangle height="28" width="172" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20764" parent="r20761" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(inbox|email|both)" vertex="1">
+        <mxCell id="c20764" parent="r20761" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(caixa_entrada|email|ambos)" vertex="1">
           <mxGeometry height="28" width="180" x="220" as="geometry">
             <mxRectangle height="28" width="180" as="alternateBounds" />
           </mxGeometry>
@@ -3275,7 +3275,7 @@
             <mxRectangle height="28" width="172" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20683" parent="r20680" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(daily|weekly|monthly|weekend)" vertex="1">
+        <mxCell id="c20683" parent="r20680" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(diaria|semanal|mensal|fim_de_semana)" vertex="1">
           <mxGeometry height="28" width="192" x="220" as="geometry">
             <mxRectangle height="28" width="192" as="alternateBounds" />
           </mxGeometry>
@@ -3834,7 +3834,7 @@
             <mxRectangle height="28" width="190" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20822" parent="r20820" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(in_progress|completed)" vertex="1">
+        <mxCell id="c20822" parent="r20820" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(em_andamento|concluido)" vertex="1">
           <mxGeometry height="28" width="192" x="238" as="geometry">
             <mxRectangle height="28" width="192" as="alternateBounds" />
           </mxGeometry>
@@ -4035,7 +4035,7 @@
             <mxRectangle height="28" width="190" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c20882" parent="r20880" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(purchase|check_in|migration)" vertex="1">
+        <mxCell id="c20882" parent="r20880" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;verticalAlign=middle;fontSize=10;fontColor=#555555;whiteSpace=nowrap;spacingLeft=6;spacingRight=4;" value="ENUM(compra|check_in|migracao)" vertex="1">
           <mxGeometry height="28" width="192" x="238" as="geometry">
             <mxRectangle height="28" width="192" as="alternateBounds" />
           </mxGeometry>
