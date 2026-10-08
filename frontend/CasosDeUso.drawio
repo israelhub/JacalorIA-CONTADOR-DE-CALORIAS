@@ -19,9 +19,6 @@
         <mxCell id="CasosDeUsoUsuario_u6" parent="CasosDeUsoUsuario_p3" style="ellipse;whiteSpace=wrap;html=1;" value="Escolher nível de atividade fisical" vertex="1">
           <mxGeometry height="44" width="130" x="339" y="148" as="geometry" />
         </mxCell>
-        <mxCell id="7vMUrAh5ptDHBIzm-4S1-8" parent="CasosDeUsoUsuario_p3" style="ellipse;whiteSpace=wrap;html=1;" value="Completar onboarding" vertex="1">
-          <mxGeometry height="44" width="130" x="189" y="72" as="geometry" />
-        </mxCell>
         <mxCell id="CasosDeUsoUsuario_u7" parent="CasosDeUsoUsuario_p3" style="ellipse;whiteSpace=wrap;html=1;" value="Visualizar meta diária de calorias" vertex="1">
           <mxGeometry height="44" width="130" x="426" y="72" as="geometry" />
         </mxCell>
@@ -31,16 +28,19 @@
         <mxCell id="CasosDeUsoUsuario_inc_obj_dados" edge="1" parent="CasosDeUsoUsuario_p3" source="7vMUrAh5ptDHBIzm-4S1-8" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;endFill=0;startArrow=none;startFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="CasosDeUsoUsuario_u4" value="«include»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="7vMUrAh5ptDHBIzm-4S1-9" edge="1" parent="CasosDeUsoUsuario_p3" source="7vMUrAh5ptDHBIzm-4S1-8" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;endFill=0;startArrow=none;startFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="CasosDeUsoUsuario_u5" value="«include»">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="129" y="136" as="sourcePoint" />
-            <mxPoint x="78" y="188" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
         <mxCell id="CasosDeUsoUsuario_inc_ativ_obj" edge="1" parent="CasosDeUsoUsuario_p3" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;startArrow=none;startFill=0;endFill=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="CasosDeUsoUsuario_u6" value="«include»">
           <mxGeometry relative="1" x="0.019" as="geometry">
             <mxPoint as="offset" />
             <mxPoint x="254" y="116.83000000000004" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7vMUrAh5ptDHBIzm-4S1-8" parent="CasosDeUsoUsuario_p3" style="ellipse;whiteSpace=wrap;html=1;" value="Completar onboarding" vertex="1">
+          <mxGeometry height="44" width="130" x="189" y="72" as="geometry" />
+        </mxCell>
+        <mxCell id="7vMUrAh5ptDHBIzm-4S1-9" edge="1" parent="CasosDeUsoUsuario_p3" source="7vMUrAh5ptDHBIzm-4S1-8" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;endFill=0;startArrow=none;startFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="CasosDeUsoUsuario_u5" value="«include»">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="129" y="136" as="sourcePoint" />
+            <mxPoint x="78" y="188" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_e8" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeWidth=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="7vMUrAh5ptDHBIzm-4S1-8">
@@ -321,7 +321,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="CasosDeUsoVisitante" name="Visitante">
-    <mxGraphModel dx="978" dy="679" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
+    <mxGraphModel grid="0" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
