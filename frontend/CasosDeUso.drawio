@@ -34,6 +34,12 @@
         <mxCell id="CasosDeUsoUsuario_e11" edge="1" parent="1" source="CasosDeUsoUsuario_u6" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u7" value="«include»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
+        <mxCell id="CasosDeUsoUsuario_inc_obj_dados" edge="1" parent="1" source="CasosDeUsoUsuario_u5" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u4" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_inc_ativ_obj" edge="1" parent="1" source="CasosDeUsoUsuario_u6" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u5" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="CasosDeUsoUsuario_p12" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Refeições" vertex="1">
           <mxGeometry height="344" width="396" x="-416" y="-126" as="geometry" />
         </mxCell>
@@ -166,6 +172,12 @@
         <mxCell id="CasosDeUsoUsuario_e65" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u59">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
+        <mxCell id="CasosDeUsoUsuario_inc_comprar_loja" edge="1" parent="1" source="CasosDeUsoUsuario_u57" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u56" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_inc_equipar_loja" edge="1" parent="1" source="CasosDeUsoUsuario_u58" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u56" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="CasosDeUsoUsuario_p67" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Social" vertex="1">
           <mxGeometry height="407" width="240" x="-437" y="250" as="geometry" />
         </mxCell>
@@ -203,6 +215,9 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_e79" edge="1" parent="1" source="CasosDeUsoUsuario_a2" style="endArrow=none;html=1;rounded=0;strokeWidth=1;" target="CasosDeUsoUsuario_u73">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_inc_chat_entrar" edge="1" parent="1" source="CasosDeUsoUsuario_u73" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoUsuario_u72" value="«include»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_p80" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Notificações e suporte" vertex="1">
@@ -373,6 +388,74 @@
         <mxCell id="HwSy9f12XDJ0Hc4nRAkZ-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Filtrar dados por data" vertex="1">
           <mxGeometry height="44" width="220" x="559" y="335" as="geometry" />
         </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_inc_eng_token" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u4" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_inc_srv_token" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u5" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_inc_ia_token" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u6" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_inc_list_token" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u8" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="220" y="370" />
+              <mxPoint x="220" y="100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_inc_env_token" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u7" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="200" y="436" />
+              <mxPoint x="200" y="100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_inc_sug_token" edge="1" parent="1" source="ZKKZlpJyUhgnFBG3ox6S-2" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="180" y="502" />
+              <mxPoint x="180" y="100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_inc_bug_token" edge="1" parent="1" source="ZKKZlpJyUhgnFBG3ox6S-3" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="160" y="570" />
+              <mxPoint x="160" y="100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_inc_sair_token" edge="1" parent="1" source="HwSy9f12XDJ0Hc4nRAkZ-1" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="140" y="635" />
+              <mxPoint x="140" y="100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_inc_eng_filtro" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u4" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="HwSy9f12XDJ0Hc4nRAkZ-2" value="«include»">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="520" y="164" />
+              <mxPoint x="520" y="357" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_inc_srv_filtro" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u5" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="HwSy9f12XDJ0Hc4nRAkZ-2" value="«include»">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="540" y="231" />
+              <mxPoint x="540" y="357" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="CasosDeUsoOperadorBeta_inc_ia_filtro" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u6" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="HwSy9f12XDJ0Hc4nRAkZ-2" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
@@ -407,6 +490,9 @@
         </mxCell>
         <mxCell id="C7coqnuB62zCEEFmLYZ1-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Visualiza tabela taco" vertex="1">
           <mxGeometry height="44" width="180" x="423" y="237" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoIA_inc_taco_analisa" edge="1" parent="1" source="C7coqnuB62zCEEFmLYZ1-1" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="CasosDeUsoIA_u7" value="«include»">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
