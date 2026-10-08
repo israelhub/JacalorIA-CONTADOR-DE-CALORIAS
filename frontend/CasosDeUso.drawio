@@ -397,43 +397,48 @@
         <mxCell id="CasosDeUsoOperadorBeta_inc_ia_token" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u6" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoOperadorBeta_inc_list_token" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u8" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+        <mxCell id="CasosDeUsoOperadorBeta_inc_list_token" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u8" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="220" y="370" />
-              <mxPoint x="220" y="100" />
+              <mxPoint x="820" y="370" />
+              <mxPoint x="820" y="50" />
+              <mxPoint x="370" y="50" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="CasosDeUsoOperadorBeta_inc_env_token" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u7" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+        <mxCell id="CasosDeUsoOperadorBeta_inc_env_token" edge="1" parent="1" source="CasosDeUsoOperadorBeta_u7" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="200" y="436" />
-              <mxPoint x="200" y="100" />
+              <mxPoint x="840" y="436" />
+              <mxPoint x="840" y="40" />
+              <mxPoint x="370" y="40" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="CasosDeUsoOperadorBeta_inc_sug_token" edge="1" parent="1" source="ZKKZlpJyUhgnFBG3ox6S-2" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+        <mxCell id="CasosDeUsoOperadorBeta_inc_sug_token" edge="1" parent="1" source="ZKKZlpJyUhgnFBG3ox6S-2" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="180" y="502" />
-              <mxPoint x="180" y="100" />
+              <mxPoint x="860" y="502" />
+              <mxPoint x="860" y="30" />
+              <mxPoint x="370" y="30" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="CasosDeUsoOperadorBeta_inc_bug_token" edge="1" parent="1" source="ZKKZlpJyUhgnFBG3ox6S-3" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+        <mxCell id="CasosDeUsoOperadorBeta_inc_bug_token" edge="1" parent="1" source="ZKKZlpJyUhgnFBG3ox6S-3" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="160" y="570" />
-              <mxPoint x="160" y="100" />
+              <mxPoint x="880" y="570" />
+              <mxPoint x="880" y="20" />
+              <mxPoint x="370" y="20" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="CasosDeUsoOperadorBeta_inc_sair_token" edge="1" parent="1" source="HwSy9f12XDJ0Hc4nRAkZ-1" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
+        <mxCell id="CasosDeUsoOperadorBeta_inc_sair_token" edge="1" parent="1" source="HwSy9f12XDJ0Hc4nRAkZ-1" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;edgeStyle=orthogonalEdgeStyle;" target="ZKKZlpJyUhgnFBG3ox6S-1" value="«include»">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="140" y="635" />
-              <mxPoint x="140" y="100" />
+              <mxPoint x="900" y="635" />
+              <mxPoint x="900" y="10" />
+              <mxPoint x="370" y="10" />
             </Array>
           </mxGeometry>
         </mxCell>
