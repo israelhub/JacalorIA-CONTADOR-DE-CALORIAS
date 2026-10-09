@@ -17,7 +17,7 @@
         <mxCell id="rmc8GGcGMe3RogfwyrIA-47" edge="1" parent="24" source="5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;endArrow=open;endFill=0;" target="6">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="rmc8GGcGMe3RogfwyrIA-48" connectable="0" parent="rmc8GGcGMe3RogfwyrIA-47" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Usa" vertex="1">
+        <mxCell id="rmc8GGcGMe3RogfwyrIA-48" connectable="0" parent="rmc8GGcGMe3RogfwyrIA-47" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Assets" vertex="1">
           <mxGeometry relative="1" x="0.1361" y="2" as="geometry">
             <mxPoint x="-1" as="offset" />
           </mxGeometry>
@@ -77,13 +77,76 @@
             <mxGeometry height="43.84" width="198.12" x="754.32" y="520" as="geometry" />
           </mxCell>
         </UserObject>
+        <mxCell id="edge-cf-nestjs" edge="1" parent="24" source="5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" target="rmc8GGcGMe3RogfwyrIA-50">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-cf-nestjs-lbl" connectable="0" parent="edge-cf-nestjs" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="/api" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-nestjs-oauth" edge="1" parent="24" source="rmc8GGcGMe3RogfwyrIA-50" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" target="8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-nestjs-oauth-lbl" connectable="0" parent="edge-nestjs-oauth" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="OAuth" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-nestjs-smtp" edge="1" parent="24" source="rmc8GGcGMe3RogfwyrIA-50" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" target="rmc8GGcGMe3RogfwyrIA-28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-nestjs-smtp-lbl" connectable="0" parent="edge-nestjs-smtp" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="E-mail" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-nestjs-gemini" edge="1" parent="24" source="rmc8GGcGMe3RogfwyrIA-50" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" target="11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-nestjs-gemini-lbl" connectable="0" parent="edge-nestjs-gemini" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Análise IA" vertex="1">
+          <mxGeometry relative="1" x="-0.15" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-nestjs-postgres" edge="1" parent="24" source="rmc8GGcGMe3RogfwyrIA-50" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" target="rmc8GGcGMe3RogfwyrIA-38">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="640" y="500" />
+              <mxPoint x="640" y="580" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-nestjs-postgres-lbl" connectable="0" parent="edge-nestjs-postgres" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="SQL" vertex="1">
+          <mxGeometry relative="1" x="0.1" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
         <UserObject label="Usuário Web" mermaidId="n:Flutter" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Flutter&#xa;Web e Android" id="3">
           <mxCell parent="1" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
             <mxGeometry height="73" width="263.7381974248927" x="443.88090128755357" y="50" as="geometry" />
           </mxCell>
         </UserObject>
-        <mxCell id="rmc8GGcGMe3RogfwyrIA-25" edge="1" parent="1" source="3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="5">
+        <mxCell id="rmc8GGcGMe3RogfwyrIA-25" edge="1" parent="1" source="3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" target="5">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-user-cf-lbl" connectable="0" parent="rmc8GGcGMe3RogfwyrIA-25" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="HTTPS" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-user-storage" edge="1" parent="1" source="3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;endArrow=open;endFill=0;strokeColor=#db2777;strokeWidth=2;" target="14">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="120" y="86" />
+              <mxPoint x="120" y="600" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-user-storage-lbl" connectable="0" parent="edge-user-storage" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Upload direto" vertex="1">
+          <mxGeometry relative="1" x="-0.2" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
