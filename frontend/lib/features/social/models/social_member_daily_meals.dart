@@ -10,6 +10,7 @@ class SocialMemberDailyMeals {
     required this.endsAt,
     required this.totalCalories,
     required this.meals,
+    this.dailyCalorieGoal = 2000,
     this.isPrivate = false,
   });
 
@@ -20,6 +21,7 @@ class SocialMemberDailyMeals {
   final String? startsAt;
   final String? endsAt;
   final int totalCalories;
+  final int dailyCalorieGoal;
   final List<FoodMealRecord> meals;
 
   factory SocialMemberDailyMeals.fromJson(Map<String, dynamic> json) {
@@ -31,10 +33,18 @@ class SocialMemberDailyMeals {
       startsAt: json['startsAt']?.toString(),
       endsAt: json['endsAt']?.toString(),
       totalCalories: socialToInt(json['totalCalories']),
+      dailyCalorieGoal: _goalOrFallback(
+        json['dailyCalorieGoal'] ?? json['daily_calorie_goal'],
+      ),
       meals: (json['meals'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(FoodMealRecord.fromJson)
           .toList(growable: false),
     );
   }
+}
+
+int _goalOrFallback(Object? value) {
+  final parsed = socialToInt(value);
+  return parsed > 0 ? parsed : 2000;
 }

@@ -7,8 +7,10 @@ import '../../home/pages/home_shell_page.dart';
 import '../../onboarding/pages/welcome_page.dart';
 import '../service/auth_service.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_ambient_page_glow.dart';
 import 'email_confirmation_page.dart';
 import 'login_page.dart';
+import '../widgets/auth_form_card.dart';
 import '../widgets/sign_up_form.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -93,35 +95,41 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: AppSpacing.xxl),
-              Image(
-                image: const AssetImage('assets/images/logo.webp'),
-                height: AppSpacing.huge * 4 + AppSpacing.xl,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-              AnimatedBuilder(
-                animation: _authController,
-                builder: (context, _) {
-                  return SignUpForm(
-                    onCreateAccountPressed: _handleCreateAccount,
-                    onContinueWithGooglePressed: _handleGoogleSignIn,
-                    isLoading: _authController.isLoading,
-                    onLoginPressed: () {
-                      context.pushSlidePage(const LoginPage());
+      backgroundColor: AppColors.pageBackground,
+      body: AppAmbientPageBody(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.pageHorizontal,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: AppSpacing.xxl),
+                Image(
+                  image: const AssetImage('assets/images/logo.webp'),
+                  height: AppSpacing.huge * 4 + AppSpacing.xl,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                AuthFormCard(
+                  child: AnimatedBuilder(
+                    animation: _authController,
+                    builder: (context, _) {
+                      return SignUpForm(
+                        onCreateAccountPressed: _handleCreateAccount,
+                        onContinueWithGooglePressed: _handleGoogleSignIn,
+                        isLoading: _authController.isLoading,
+                        onLoginPressed: () {
+                          context.pushSlidePage(const LoginPage());
+                        },
+                      );
                     },
-                  );
-                },
-              ),
-              const SizedBox(height: AppSpacing.xl),
-            ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+              ],
+            ),
           ),
         ),
       ),

@@ -7,6 +7,7 @@ class SocialFriendProfile {
     required this.avatarUrl,
     required this.avatarFrameId,
     required this.avatarBackgroundId,
+    this.profileReactionEmojiId,
     required this.streakDays,
     required this.longestStreakDays,
     required this.missionsCompleted,
@@ -29,6 +30,7 @@ class SocialFriendProfile {
   final String? avatarUrl;
   final String? avatarFrameId;
   final String? avatarBackgroundId;
+  final String? profileReactionEmojiId;
   final int streakDays;
   final int longestStreakDays;
   final int missionsCompleted;
@@ -61,6 +63,11 @@ class SocialFriendProfile {
           json['avatar_background_id']?.toString() ??
           json['equippedAvatarBackgroundId']?.toString() ??
           json['equipped_avatar_background_id']?.toString(),
+      profileReactionEmojiId:
+          json['profileReactionEmojiId']?.toString() ??
+          json['profile_reaction_emoji_id']?.toString() ??
+          json['equippedProfileReactionEmojiId']?.toString() ??
+          json['equipped_profile_reaction_emoji_id']?.toString(),
       streakDays: socialToInt(json['streakDays']),
       longestStreakDays: socialToInt(
         json['longestStreakDays'] ?? json['longest_streak_days'],
@@ -83,21 +90,18 @@ class SocialFriendProfile {
       ),
       isFriend: json['isFriend'] == true,
       isSelf: json['isSelf'] == true,
-      friendRequestStatus:
-          json['friendRequestStatus']?.toString() ?? 'none',
+      friendRequestStatus: json['friendRequestStatus']?.toString() ?? 'none',
     );
   }
 
-  SocialFriendProfile copyWith({
-    bool? isFriend,
-    String? friendRequestStatus,
-  }) {
+  SocialFriendProfile copyWith({bool? isFriend, String? friendRequestStatus}) {
     return SocialFriendProfile(
       id: id,
       name: name,
       avatarUrl: avatarUrl,
       avatarFrameId: avatarFrameId,
       avatarBackgroundId: avatarBackgroundId,
+      profileReactionEmojiId: profileReactionEmojiId,
       streakDays: streakDays,
       longestStreakDays: longestStreakDays,
       missionsCompleted: missionsCompleted,

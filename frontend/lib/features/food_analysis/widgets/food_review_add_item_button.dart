@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_dashed_action_button.dart';
 import 'food_review_item_row.dart';
 
 class FoodReviewAddItemButton extends StatelessWidget {
@@ -11,18 +10,43 @@ class FoodReviewAddItemButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppDashedActionButton(
-      label: 'Adicionar novo alimento',
-      onTap: onTap,
-      height: foodReviewControlHeight,
-      labelStyle: AppTextStyles.bodyLarge.copyWith(
-        color: AppColors.action500,
-        fontWeight: FontWeight.w700,
-      ),
-      trailing: const Icon(
-        Icons.arrow_forward,
-        color: AppColors.action500,
-        size: 24,
+    final radius = BorderRadius.circular(AppRadius.lg - AppSpacing.xs);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const ValueKey('food-review-add-item-button'),
+        onTap: onTap,
+        borderRadius: radius,
+        child: Container(
+          width: double.infinity,
+          height: foodReviewControlHeight + AppSpacing.sm,
+          decoration: BoxDecoration(
+            color: AppColors.insetSurface,
+            borderRadius: radius,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.add_rounded,
+                size: 22,
+                color: AppColors.action500,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Flexible(
+                child: Text(
+                  'Adicionar novo alimento',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.homeAction.copyWith(
+                    color: AppColors.action500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

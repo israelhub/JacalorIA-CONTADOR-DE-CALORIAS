@@ -7,20 +7,30 @@ import '../helpers/weight_history_chart_helpers.dart';
 import '../models/weight_history.dart';
 
 class WeightHistoryChart extends StatelessWidget {
-  const WeightHistoryChart({super.key, required this.points, this.startDate});
+  const WeightHistoryChart({
+    super.key,
+    required this.points,
+    this.startDate,
+    this.applyBodyWeightFilter = true,
+    this.emptyLabel = 'Sem registros de peso no período.',
+  });
 
   final List<WeightHistoryPoint> points;
   final DateTime? startDate;
+  final bool applyBodyWeightFilter;
+  final String emptyLabel;
 
   @override
   Widget build(BuildContext context) {
-    final plotPoints = selectWeightChartPoints(points);
+    final plotPoints = applyBodyWeightFilter
+        ? selectWeightChartPoints(points)
+        : List<WeightHistoryPoint>.from(points);
     if (plotPoints.isEmpty) {
       return Container(
         height: 88,
         alignment: Alignment.center,
         child: Text(
-          'Sem registros de peso no período.',
+          emptyLabel,
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),

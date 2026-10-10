@@ -80,10 +80,18 @@ class SocialService {
 
   Future<SocialXpRanking> fetchXpRanking({
     SocialXpRankingPeriod period = SocialXpRankingPeriod.all,
+    int page = 1,
+    int pageSize = 10,
   }) async {
     final uri = Uri.parse(
       '$_baseUrl/social/xp-ranking',
-    ).replace(queryParameters: {'period': period.apiValue});
+    ).replace(
+      queryParameters: {
+        'period': period.apiValue,
+        'page': '$page',
+        'limit': '$pageSize',
+      },
+    );
     final response = await http.get(uri, headers: _headers());
     final body = _decodeJsonMap(
       response.body,
@@ -761,28 +769,30 @@ class SocialService {
           if (entry.userId.trim().isNotEmpty) entry.userId.trim(): entry,
     };
 
-    final ranking = detail.ranking.map((entry) {
-      final previousEntry = previousByUserId[entry.userId.trim()];
-      if (previousEntry == null) {
-        return _mergeRankingEntry(entry);
-      }
-      return _mergeRankingEntry(
-        SocialRankingEntry(
-          id: entry.id,
-          userId: entry.userId,
-          name: entry.name,
-          avatarUrl: entry.avatarUrl ?? previousEntry.avatarUrl,
-          avatarFrameId: entry.avatarFrameId ?? previousEntry.avatarFrameId,
-          points: entry.points,
-          streakDays: entry.streakDays,
-          isCurrentUser: entry.isCurrentUser,
-          isLeader: entry.isLeader,
-          position: entry.position,
-          subtitle: entry.subtitle,
-          dailyCalorieGoal: entry.dailyCalorieGoal,
-        ),
-      );
-    }).toList(growable: false);
+    final ranking = detail.ranking
+        .map((entry) {
+          final previousEntry = previousByUserId[entry.userId.trim()];
+          if (previousEntry == null) {
+            return _mergeRankingEntry(entry);
+          }
+          return _mergeRankingEntry(
+            SocialRankingEntry(
+              id: entry.id,
+              userId: entry.userId,
+              name: entry.name,
+              avatarUrl: entry.avatarUrl ?? previousEntry.avatarUrl,
+              avatarFrameId: entry.avatarFrameId ?? previousEntry.avatarFrameId,
+              points: entry.points,
+              streakDays: entry.streakDays,
+              isCurrentUser: entry.isCurrentUser,
+              isLeader: entry.isLeader,
+              position: entry.position,
+              subtitle: entry.subtitle,
+              dailyCalorieGoal: entry.dailyCalorieGoal,
+            ),
+          );
+        })
+        .toList(growable: false);
 
     return SocialGroupDetail(
       group: detail.group,
@@ -798,6 +808,10 @@ class SocialService {
       ranking: ranking.ranking.map(_mergeRankingEntry).toList(growable: false),
       viewerPosition: ranking.viewerPosition,
       viewerPoints: ranking.viewerPoints,
+      page: ranking.page,
+      pageSize: ranking.pageSize,
+      total: ranking.total,
+      totalPages: ranking.totalPages,
     );
   }
 
@@ -810,7 +824,8 @@ class SocialService {
       avatarUrl: avatarUrl,
       avatarFrameId: avatarFrameId,
     );
-    if (avatarUrl == friend.avatarUrl && avatarFrameId == friend.avatarFrameId) {
+    if (avatarUrl == friend.avatarUrl &&
+        avatarFrameId == friend.avatarFrameId) {
       return friend;
     }
     return SocialFriend(
@@ -822,7 +837,9 @@ class SocialService {
     );
   }
 
-  static SocialGroupChatMessage _mergeChatMessage(SocialGroupChatMessage message) {
+  static SocialGroupChatMessage _mergeChatMessage(
+    SocialGroupChatMessage message,
+  ) {
     final userId = message.userId.trim();
     final senderAvatarUrl =
         message.senderAvatarUrl ?? _avatarUrlByUserId[userId];
@@ -864,21 +881,24 @@ class SocialService {
           if (friend.id.trim().isNotEmpty) friend.id.trim(): friend,
     };
 
-    final friends = data.friends.map((friend) {
-      final previousFriend = previousById[friend.id.trim()];
-      if (previousFriend == null) {
-        return _mergeFriend(friend);
-      }
-      return _mergeFriend(
-        SocialFriend(
-          id: friend.id,
-          name: friend.name,
-          avatarUrl: friend.avatarUrl ?? previousFriend.avatarUrl,
-          avatarFrameId: friend.avatarFrameId ?? previousFriend.avatarFrameId,
-          streakDays: friend.streakDays,
-        ),
-      );
-    }).toList(growable: false);
+    final friends = data.friends
+        .map((friend) {
+          final previousFriend = previousById[friend.id.trim()];
+          if (previousFriend == null) {
+            return _mergeFriend(friend);
+          }
+          return _mergeFriend(
+            SocialFriend(
+              id: friend.id,
+              name: friend.name,
+              avatarUrl: friend.avatarUrl ?? previousFriend.avatarUrl,
+              avatarFrameId:
+                  friend.avatarFrameId ?? previousFriend.avatarFrameId,
+              streakDays: friend.streakDays,
+            ),
+          );
+        })
+        .toList(growable: false);
 
     return SocialFriendsData(
       friends: friends,

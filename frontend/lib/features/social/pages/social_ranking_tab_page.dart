@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_anchored_menu.dart';
 import '../../../shared/widgets/app_button.dart';
-import '../../../shared/widgets/app_section_header.dart';
+import '../../../shared/widgets/app_pagination.dart';
 import '../../../shared/widgets/app_skeleton.dart';
+import '../../profile/widgets/profile_section_card.dart';
 import '../models/social_group_models.dart';
 import '../widgets/social_empty_state.dart';
 import '../widgets/social_ranking_item.dart';
@@ -19,6 +20,9 @@ class SocialRankingTabPage extends StatelessWidget {
     required this.errorMessage,
     required this.onRetry,
     required this.onOpenProfile,
+    required this.page,
+    required this.totalPages,
+    required this.onPageChanged,
   });
 
   final SocialXpRankingPeriod period;
@@ -28,6 +32,9 @@ class SocialRankingTabPage extends StatelessWidget {
   final String? errorMessage;
   final VoidCallback onRetry;
   final ValueChanged<SocialRankingEntry> onOpenProfile;
+  final int page;
+  final int totalPages;
+  final ValueChanged<int> onPageChanged;
 
   static const _periods = <SocialXpRankingPeriod>[
     SocialXpRankingPeriod.all,
@@ -37,48 +44,33 @@ class SocialRankingTabPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppSectionHeader(
-          title: 'Ranking de XP',
-          titleStyle: AppTextStyles.missionsSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
-          ),
-          trailing: _PeriodFilterDropdown(
-            period: period,
-            periods: _periods,
-            onChanged: onPeriodChanged,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        if (isLoading && ranking.isEmpty)
-          const _RankingSkeleton()
-        else if (errorMessage != null && ranking.isEmpty)
-          _RankingError(message: errorMessage!, onRetry: onRetry)
-        else if (ranking.isEmpty)
-          const SocialEmptyState(
-            icon: Icons.emoji_events_outlined,
-            title: 'Ninguém no ranking ainda',
-            subtitle: 'Complete missões para acumular XP e aparecer aqui.',
-          )
-        else
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(
-                color: AppColors.performanceCardBorder,
-                width: 2,
-              ),
-              boxShadow: AppShadows.performanceCard,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: Stack(
-                children: [
-                  Column(
+    return ProfileSectionCard(
+      title: 'Ranking de XP',
+      trailing: _PeriodFilterDropdown(
+        period: period,
+        periods: _periods,
+        onChanged: onPeriodChanged,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (isLoading && ranking.isEmpty)
+            const _RankingSkeleton()
+          else if (errorMessage != null && ranking.isEmpty)
+            _RankingError(message: errorMessage!, onRetry: onRetry)
+          else if (ranking.isEmpty)
+            const SocialEmptyState(
+              icon: Icons.emoji_events_outlined,
+              title: 'Ninguém no ranking ainda',
+              subtitle: 'Complete missões para acumular XP e aparecer aqui.',
+              backgroundColor: AppColors.insetSurface,
+            )
+          else
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  child: Column(
                     children: [
                       for (final entry in ranking)
                         SocialRankingItem(
@@ -90,27 +82,36 @@ class SocialRankingTabPage extends StatelessWidget {
                         ),
                     ],
                   ),
-                  if (isLoading)
-                    Positioned.fill(
-                      child: ColoredBox(
-                        color: AppColors.surface.withValues(alpha: 0.45),
-                        child: const Center(
-                          child: SizedBox(
-                            width: 28,
-                            height: 28,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: AppColors.action500,
-                            ),
+                ),
+                if (isLoading)
+                  Positioned.fill(
+                    child: ColoredBox(
+                      color: AppColors.surface.withValues(alpha: 0.45),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.action500,
                           ),
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-          ),
-      ],
+          if (totalPages > 1) ...[
+            const SizedBox(height: AppSpacing.md),
+            AppPagination(
+              page: page,
+              totalPages: totalPages,
+              enabled: !isLoading,
+              onPageChanged: onPageChanged,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -193,8 +194,6 @@ class _PeriodFilterMenu extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-          boxShadow: AppShadows.performanceCard,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.md - 2),
@@ -271,13 +270,8 @@ class _RankingSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-      ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: const Column(
         children: [
           _RankingRowSkeleton(),
@@ -296,6 +290,7 @@ class _RankingRowSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
+        color: AppColors.insetSurface,
         border: Border(
           bottom: BorderSide(
             color: AppColors.performanceTrack.withValues(alpha: 0.95),

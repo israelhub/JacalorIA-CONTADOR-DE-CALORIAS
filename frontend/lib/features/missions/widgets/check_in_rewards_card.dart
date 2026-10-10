@@ -74,84 +74,69 @@ class _CheckInRewardsCardState extends State<CheckInRewardsCard> {
     final claimEnabled =
         checkIn.canClaimToday && !widget.isClaiming && widget.onClaim != null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          checkIn.title,
-          style: AppTextStyles.missionsSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(0, AppSpacing.lg, 0, AppSpacing.lg),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              checkIn.title,
+              style: AppTextStyles.missionsSectionTitle.copyWith(
+                color: AppColors.brand900Variant,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(0, 18, 0, 16),
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-            boxShadow: AppShadows.sm,
+          const SizedBox(height: AppSpacing.xl),
+          SizedBox(
+            height: 76,
+            child: ListView.separated(
+              controller: _daysController,
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.zero,
+              itemCount: checkIn.days.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (context, index) {
+                return _CheckInDayTile(day: checkIn.days[index]);
+              },
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+          if (!checkIn.claimedToday) ...<Widget>[
+            const SizedBox(height: AppSpacing.xl),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: AppButton(
+                label: widget.isClaiming
+                    ? 'Recebendo...'
+                    : 'Receber recompensa',
+                onPressed: claimEnabled ? widget.onClaim : null,
+              ),
+            ),
+          ] else ...<Widget>[
+            const SizedBox(height: AppSpacing.xl),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: SizedBox(
+                width: double.infinity,
                 child: Text(
-                  checkIn.subtitle,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.brand900Variant,
-                    fontWeight: FontWeight.w800,
+                  'A próxima recompensa ficará disponível amanhã',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
-              SizedBox(
-                height: 76,
-                child: ListView.separated(
-                  controller: _daysController,
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.zero,
-                  itemCount: checkIn.days.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 6),
-                  itemBuilder: (context, index) {
-                    return _CheckInDayTile(day: checkIn.days[index]);
-                  },
-                ),
-              ),
-              if (!checkIn.claimedToday) ...<Widget>[
-                const SizedBox(height: AppSpacing.xl),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: AppButton(
-                    label: widget.isClaiming
-                        ? 'Recebendo...'
-                        : 'Receber recompensa',
-                    onPressed: claimEnabled ? widget.onClaim : null,
-                  ),
-                ),
-              ] else ...<Widget>[
-                const SizedBox(height: AppSpacing.xl),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Text(
-                      'A próxima recompensa ficará disponível amanhã',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

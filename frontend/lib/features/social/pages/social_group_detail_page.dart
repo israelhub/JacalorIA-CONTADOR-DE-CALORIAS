@@ -12,14 +12,16 @@ import '../../../core/files/bytes_file_saver.dart';
 import '../../../core/config/api_config.dart';
 import '../../../core/images/widget_image_exporter.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_refresh_scroll_view.dart';
-import '../../../shared/widgets/app_section_header.dart';
 import '../../../shared/widgets/app_floating_circle_button.dart';
+import '../../../shared/widgets/app_skeleton.dart';
 import '../../home/widgets/home_weight_quick_edit_button.dart';
+import '../../profile/widgets/profile_section_card.dart';
 import 'social_create_group_page.dart';
 import 'social_friend_profile_page.dart';
 import 'social_group_chat_page.dart';
@@ -181,8 +183,15 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
   @override
   Widget build(BuildContext context) {
     final fabBottomInset = homeShellFabBottomInset(context);
+    final title =
+        _detail?.group.name ??
+        widget.initialDetail?.group.name ??
+        SocialService.cachedGroup(widget.groupId)?.group.name ??
+        'Grupo';
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.pageBackground,
+      extendBodyBehindAppBar: true,
+      appBar: AppBackPageHeader(title: title, actions: _headerActions()),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: _detail == null
           ? null
@@ -195,8 +204,65 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
                 onPressed: _openGroupChat,
               ),
             ),
-      body: SafeArea(child: _buildContent(fabBottomInset: fabBottomInset)),
+      body: AppBackPageContent(
+        bottom: false,
+        child: _buildContent(fabBottomInset: fabBottomInset),
+      ),
     );
+  }
+
+  List<Widget> _headerActions() {
+    final detail = _detail;
+    if (detail == null) return const [];
+
+    SocialRankingEntry? currentUserEntry;
+    for (final entry in detail.ranking) {
+      if (entry.isCurrentUser) {
+        currentUserEntry = entry;
+        break;
+      }
+    }
+    final isCurrentUserLeader = currentUserEntry?.isLeader == true;
+    final canLeaveGroup = currentUserEntry != null;
+
+    return [
+      if (isCurrentUserLeader)
+        IconButton(
+          tooltip: 'Configurações',
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          onPressed: (_isLeavingGroup || _isDeletingGroup)
+              ? null
+              : _openEditGroupSheet,
+          icon: const Icon(
+            Icons.settings_outlined,
+            color: AppColors.brand900Variant,
+            size: 22,
+          ),
+        ),
+      IconButton(
+        tooltip: 'Sair do grupo',
+        visualDensity: VisualDensity.compact,
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        onPressed: canLeaveGroup && !_isLeavingGroup ? _leaveGroup : null,
+        icon: _isLeavingGroup
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: AppColors.brand900Variant,
+                ),
+              )
+            : Icon(
+                Icons.logout_rounded,
+                color: canLeaveGroup
+                    ? AppColors.brand900Variant
+                    : AppColors.textMuted,
+                size: 22,
+              ),
+      ),
+    ];
   }
 
   void _openGroupChat() {
@@ -238,10 +304,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
     List<SocialActivityItem> extra,
   ) {
     final seen = preview.map((item) => item.id).toSet();
-    return [
-      ...preview,
-      ...extra.where((item) => seen.add(item.id)),
-    ];
+    return [...preview, ...extra.where((item) => seen.add(item.id))];
   }
 
   Future<void> _loadRemainingActivities({bool silent = false}) async {
@@ -279,9 +342,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
 
   Widget _buildContent({required double fabBottomInset}) {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.action500),
-      );
+      return const AppSkeletonList(itemCount: 5, itemHeight: 88);
     }
 
     if (_errorMessage != null || _detail == null) {
@@ -317,98 +378,24 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
       }
     }
     final isCurrentUserLeader = currentUserEntry?.isLeader == true;
-    final canLeaveGroup = currentUserEntry != null;
 
     return AppRefreshScrollView(
       onRefresh: () => _loadDetail(silent: true),
       padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
+        AppSpacing.pageHorizontal,
+        AppSpacing.md,
+        AppSpacing.pageHorizontal,
         fabBottomInset + 56 + AppSpacing.lg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.of(context).maybePop(),
-                behavior: HitTestBehavior.opaque,
-                child: const Padding(
-                  padding: EdgeInsets.all(6),
-                  child: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: AppColors.brand900Variant,
-                    size: 22,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  group.name,
-                  style: AppTextStyles.homeSectionTitle.copyWith(
-                    color: AppColors.brand900Variant,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (isCurrentUserLeader) ...[
-                GestureDetector(
-                  onTap: (_isLeavingGroup || _isDeletingGroup)
-                      ? null
-                      : _openEditGroupSheet,
-                  behavior: HitTestBehavior.opaque,
-                  child: const Padding(
-                    padding: EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.settings_outlined,
-                      color: AppColors.textSecondary,
-                      size: 22,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-              ],
-              GestureDetector(
-                onTap: canLeaveGroup && !_isLeavingGroup ? _leaveGroup : null,
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: _isLeavingGroup
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            color: AppColors.textSecondary,
-                          ),
-                        )
-                      : Icon(
-                          Icons.logout_rounded,
-                          color: canLeaveGroup
-                              ? AppColors.textSecondary
-                              : AppColors.textMuted,
-                          size: 22,
-                        ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(
-                color: AppColors.performanceCardBorder,
-                width: 2,
-              ),
-              boxShadow: AppShadows.performanceCard,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -500,10 +487,6 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
               decoration: BoxDecoration(
                 color: AppColors.missionsGoldPill,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(
-                  color: AppColors.performanceCardBorder,
-                  width: 1.5,
-                ),
               ),
               child: Row(
                 children: [
@@ -527,30 +510,14 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.cardGap),
           ],
-          AppSectionHeader(
+          ProfileSectionCard(
             title: 'Ranking',
-            titleStyle: AppTextStyles.missionsSectionTitle.copyWith(
-              color: AppColors.brand900Variant,
-            ),
             trailing: const Icon(
               Icons.emoji_events_rounded,
               color: AppColors.accent500,
               size: 22,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(
-                color: AppColors.performanceCardBorder,
-                width: 2,
-              ),
-              boxShadow: AppShadows.performanceCard,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.md),
@@ -608,36 +575,34 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
               ],
             ),
           ],
-          const SizedBox(height: AppSpacing.lg),
-          AppSectionHeader(
+          const SizedBox(height: AppSpacing.cardGap),
+          ProfileSectionCard(
             title: 'Atividade recente',
-            titleStyle: AppTextStyles.missionsSectionTitle.copyWith(
-              color: AppColors.brand900Variant,
-            ),
             trailing: const Icon(
               Icons.auto_awesome_rounded,
               color: AppColors.action500,
               size: 22,
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Column(
-            children: [
-              for (final activity in _visibleActivities(detail)) ...[
-                SocialActivityItemWidget(activity: activity),
-                const SizedBox(height: AppSpacing.sm),
+            child: Column(
+              children: [
+                for (final activity in _visibleActivities(detail)) ...[
+                  SocialActivityItemWidget(activity: activity),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+                if (_showActivitiesExpand(detail))
+                  AppButton(
+                    key: const ValueKey('group-activities-expand'),
+                    label: _isLoadingMoreActivities
+                        ? 'Carregando...'
+                        : 'Ver mais',
+                    variant: AppButtonVariant.link,
+                    trailingIcon: Icons.expand_more_rounded,
+                    onPressed: _isLoadingMoreActivities
+                        ? null
+                        : () => unawaited(_loadRemainingActivities()),
+                  ),
               ],
-              if (_showActivitiesExpand(detail))
-                AppButton(
-                  key: const ValueKey('group-activities-expand'),
-                  label: _isLoadingMoreActivities ? 'Carregando...' : 'Ver mais',
-                  variant: AppButtonVariant.link,
-                  trailingIcon: Icons.expand_more_rounded,
-                  onPressed: _isLoadingMoreActivities
-                      ? null
-                      : () => unawaited(_loadRemainingActivities()),
-                ),
-            ],
+            ),
           ),
         ],
       ),

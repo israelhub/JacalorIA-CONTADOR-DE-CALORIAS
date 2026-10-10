@@ -25,9 +25,7 @@ class PerformanceService {
 
     final response = await http.get(
       uri,
-      headers: <String, String>{
-        'Authorization': 'Bearer $token',
-      },
+      headers: <String, String>{'Authorization': 'Bearer $token'},
     );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -41,7 +39,7 @@ class PerformanceService {
       throw Exception(message);
     }
 
-    throw Exception('Erro ao carregar desempenho do mês.');
+    throw Exception('Erro ao carregar progresso do mês.');
   }
 
   Future<WeightHistory> fetchWeightHistory({
@@ -60,14 +58,13 @@ class PerformanceService {
       query['endDate'] = _toDateText(endDate);
     }
 
-    final uri = Uri.parse('$_baseUrl/performance/weight-history')
-        .replace(queryParameters: query);
+    final uri = Uri.parse(
+      '$_baseUrl/performance/weight-history',
+    ).replace(queryParameters: query);
 
     final response = await http.get(
       uri,
-      headers: <String, String>{
-        'Authorization': 'Bearer $token',
-      },
+      headers: <String, String>{'Authorization': 'Bearer $token'},
     );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;

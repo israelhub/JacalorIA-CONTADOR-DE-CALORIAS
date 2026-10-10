@@ -4,6 +4,7 @@ import '../../../shared/widgets/app_page_route.dart';
 import '../../../core/analytics/analytics_service.dart';
 import 'personal_data_page.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_button.dart';
 
 class WelcomePage extends StatefulWidget {
@@ -36,9 +37,10 @@ class _WelcomePageState extends State<WelcomePage> {
       canPop: false,
       child: Scaffold(
         backgroundColor: AppColors.surface,
-        body: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
+        body: AppAmbientPageBody(
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
               final contentWidth = constraints.maxWidth;
               final mascotBubbleWidth = contentWidth;
               final mascotWidth = mascotBubbleWidth * 0.69;
@@ -212,7 +214,8 @@ class _WelcomePageState extends State<WelcomePage> {
                   ],
                 ),
               );
-            },
+              },
+            ),
           ),
         ),
       ),

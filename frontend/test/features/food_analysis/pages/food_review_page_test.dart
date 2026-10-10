@@ -96,7 +96,15 @@ void main() {
       expect(find.text('Estimativa nutricional do prato'), findsNothing);
       expect(find.text('Justificativa da estimativa'), findsNothing);
       expect(
-        find.byKey(const ValueKey('food-review-main-divider')),
+        find.byKey(const ValueKey('food-review-items-card')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('food-review-meal-type-card')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('food-review-add-item-button')),
         findsOneWidget,
       );
       expect(
@@ -108,9 +116,16 @@ void main() {
         find.byKey(const ValueKey('food-review-ai-title-inline')),
         findsOneWidget,
       );
+      final titleRect = tester.getRect(
+        find.byKey(const ValueKey('food-review-ai-title-inline')),
+      );
+      final firstFieldRect = tester.getRect(
+        find.byKey(const ValueKey('food-review-name-field-0')),
+      );
+      expect(firstFieldRect.top - titleRect.bottom, lessThan(24));
       expect(
         find.byKey(const ValueKey('food-review-image-container')),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.text('Tipo de refeição'), findsOneWidget);
       expect(
@@ -132,7 +147,7 @@ void main() {
       );
     });
 
-    testWidgets('adiciona novo item ao tocar no botão tracejado', (
+    testWidgets('adiciona novo item ao tocar no botão de adicionar', (
       WidgetTester tester,
     ) async {
       await _pumpFoodReview(tester);

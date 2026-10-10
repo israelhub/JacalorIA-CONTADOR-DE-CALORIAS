@@ -6,6 +6,7 @@ import 'objective_page.dart';
 import '../widgets/onboarding_input_field.dart';
 import '../widgets/onboarding_step_header.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_date_picker.dart';
@@ -83,20 +84,21 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: Theme(
-          data: pageTheme,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
+      body: AppAmbientPageBody(
+        child: SafeArea(
+          child: Theme(
+            data: pageTheme,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
               final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
               return SingleChildScrollView(
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
+                  AppSpacing.pageHorizontal,
                   0,
-                  AppSpacing.lg,
+                  AppSpacing.pageHorizontal,
                   AppSpacing.lg + keyboardInset,
                 ),
                 child: ConstrainedBox(
@@ -124,7 +126,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                       AppInputField(
                         key: const ValueKey('personal-birthdate-field'),
                         label: 'Data de nascimento',
-                        hint: 'Selecione sua data de nascimento',
+                        hint: 'Ex.: 15/03/1990',
                         controller: _birthDateController,
                         readOnly: true,
                         onTap: _pickBirthDate,
@@ -137,7 +139,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                       const SizedBox(height: AppSpacing.xxl),
                       MeasurementInputField(
                         label: 'Peso',
-                        hint: 'Digite seu peso',
+                        hint: 'Ex.: 70',
                         controller: _weightController,
                         unitSelectorKey: const ValueKey(
                           'personal-weight-unit-selector',
@@ -156,7 +158,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                       const SizedBox(height: AppSpacing.xxl),
                       MeasurementInputField(
                         label: 'Altura',
-                        hint: 'Digite sua altura',
+                        hint: 'Ex.: 170',
                         controller: _heightController,
                         unitSelectorKey: const ValueKey(
                           'personal-height-unit-selector',
@@ -178,7 +180,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                         child: AppSelectInputField(
                           fieldKey: const ValueKey('personal-sex-field'),
                           label: '',
-                          hint: 'Selecione seu sexo',
+                          hint: 'Ex.: Feminino',
                           selectedValue: _selectedSex ?? '',
                           options: _sexOptions,
                           onSelected: (value) {
@@ -240,7 +242,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                   ),
                 ),
               );
-            },
+              },
+            ),
           ),
         ),
       ),

@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/analytics/analytics_service.dart';
 import '../../../../shared/theme/app_theme.dart';
+import '../../../../shared/widgets/app_ambient_page_glow.dart';
+import '../../../../shared/widgets/app_back_page_header.dart';
 import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_expandable_fab.dart';
+import '../../../../shared/widgets/app_expandable_header_menu.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/app_page_route.dart';
 import '../../../../shared/widgets/app_svg_icon.dart';
@@ -17,7 +21,7 @@ import '../../avatar_frames/pages/avatar_frame_store_page.dart';
 import '../../social/models/jaca_emoji_catalog.dart';
 import '../../auth/pages/enter_page.dart';
 import '../../home/pages/home_shell_page.dart';
-import '../../home/widgets/home_weight_quick_edit_button.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../../reminders/pages/meal_reminders_page.dart';
 import '../../support/pages/support_page.dart';
 import '../../auth/service/auth_service.dart';
@@ -27,6 +31,8 @@ import '../../social/widgets/social_profile_info_card.dart';
 import '../../social/widgets/social_profile_metric_card.dart';
 import '../helpers/profile_date_helpers.dart';
 import '../widgets/profile_achievements_card.dart';
+import '../widgets/profile_reaction_emoji_sheet.dart';
+import '../widgets/profile_section_card.dart';
 import 'profile_edit_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -50,6 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Set<String> _purchasedAvatarFrameIds = const <String>{};
   Set<String> _purchasedAvatarBackgroundIds = const <String>{};
   Set<String> _purchasedStickerIds = const <String>{};
+  String? _equippedReactionEmojiId;
   String _equippedCoverId = _ProfileCustomizationState.noneId;
   String _equippedBackgroundId = _ProfileCustomizationState.noneId;
   String? _equippedBlockerId;
@@ -74,6 +81,7 @@ class _ProfilePageState extends State<ProfilePage> {
       widget.initialProfile ?? const <String, dynamic>{},
     );
     _hydrateProfile();
+    unawaited(_refreshProfileSnapshot());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() {
@@ -95,6 +103,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _purchasedAvatarBackgroundIds =
         AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(profile);
     _purchasedStickerIds = JacaEmojiCatalog.purchasedIdsFromProfile(profile);
+    _equippedReactionEmojiId = JacaEmojiCatalog.reactionIdFromProfile(profile);
     final personalization = _ProfileCustomizationState.fromProfile(profile);
     _equippedCoverId = personalization.equippedCoverId;
     _equippedBackgroundId = personalization.equippedBackgroundId;
@@ -365,8 +374,8 @@ class _ProfilePageState extends State<ProfilePage> {
             return SafeArea(
               child: Padding(
                 padding: EdgeInsets.only(
-                  left: AppSpacing.lg,
-                  right: AppSpacing.lg,
+                  left: AppSpacing.pageHorizontal,
+                  right: AppSpacing.pageHorizontal,
                   top: AppSpacing.lg,
                   bottom:
                       AppSpacing.lg + MediaQuery.of(context).viewInsets.bottom,
@@ -477,6 +486,51 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     await _savePersonalizationSelection();
+  }
+
+  Future<void> _openReactionEmojiSheet() async {
+    final selected = await showProfileReactionEmojiSheet(
+      context: context,
+      ownedIds: _purchasedStickerIds,
+      selectedId: _equippedReactionEmojiId,
+    );
+    if (selected == null || !mounted) {
+      return;
+    }
+
+    final nextId = selected.trim().isEmpty ? null : selected.trim();
+    if (nextId == _equippedReactionEmojiId) {
+      return;
+    }
+
+    final previousId = _equippedReactionEmojiId;
+    setState(() {
+      _equippedReactionEmojiId = nextId;
+      _isSaving = true;
+    });
+
+    try {
+      await _authService.updateProfile({
+        'equippedProfileReactionEmojiId': nextId ?? '',
+      });
+      await _refreshProfileSnapshot();
+      if (mounted) {
+        _hasChanges = true;
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _equippedReactionEmojiId = previousId;
+        });
+        AppToast.error(context, message: 'Erro ao salvar reação: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   Future<void> _savePersonalizationSelection() async {
@@ -682,18 +736,6 @@ class _ProfilePageState extends State<ProfilePage> {
     return unit.isEmpty ? value : '$value $unit';
   }
 
-  Widget _sectionTitle(String value) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        value,
-        style: AppTextStyles.missionsSectionTitle.copyWith(
-          color: AppColors.brand900Variant,
-        ),
-      ),
-    );
-  }
-
   Widget _metricCard({
     required IconData icon,
     required Color iconColor,
@@ -713,12 +755,15 @@ class _ProfilePageState extends State<ProfilePage> {
     required Color iconColor,
     required String label,
     required String value,
+    SocialProfileInfoCardLayout layout =
+        SocialProfileInfoCardLayout.horizontal,
   }) {
     return SocialProfileInfoCard(
       icon: icon,
       iconColor: iconColor,
       label: label,
       value: value,
+      layout: layout,
     );
   }
 
@@ -737,6 +782,15 @@ class _ProfilePageState extends State<ProfilePage> {
         ? 'Sem registros'
         : favoriteDishRaw;
 
+    final topInset = MediaQuery.paddingOf(context).top;
+    final bannerOverlayHeight = topInset + AppBackPageHeader.barHeight;
+    final bannerComposeHeight = AvatarProfilePreview.edgeToEdgeComposeHeight(
+      topOverlayHeight: bannerOverlayHeight,
+    );
+    final bannerHeight = AvatarProfilePreview.edgeToEdgeHeight(
+      topOverlayHeight: bannerOverlayHeight,
+    );
+
     return PopScope<bool>(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -746,230 +800,322 @@ class _ProfilePageState extends State<ProfilePage> {
         Navigator.of(context).pop(_hasChanges);
       },
       child: Scaffold(
-        backgroundColor: AppColors.surface,
-        appBar: AppBar(
-          backgroundColor: AppColors.surface,
-          surfaceTintColor: AppColors.surface,
-          title: Text(
-            'Perfil',
-            style: AppTextStyles.headingSmall.copyWith(
-              color: AppColors.brand900Variant,
-            ),
+        backgroundColor: AppColors.pageBackground,
+        extendBodyBehindAppBar: true,
+        appBar: AppBackPageHeader(
+          title: 'Perfil',
+          backgroundColor: Colors.transparent,
+          trailing: AppExpandableHeaderMenu(
+            showShadow: true,
+            actions: [
+              AppExpandableHeaderMenuAction(
+                label: 'Lembretes de refeição',
+                icon: Icons.notifications_active_outlined,
+                onPressed: () {
+                  context.pushSlidePage(const MealRemindersPage());
+                },
+              ),
+              AppExpandableHeaderMenuAction(
+                label: 'Suporte',
+                icon: Icons.support_agent_rounded,
+                onPressed: () {
+                  context.pushSlidePage(const SupportPage());
+                },
+              ),
+              AppExpandableHeaderMenuAction(
+                label: 'Editar dados pessoais',
+                icon: Icons.badge_rounded,
+                onPressed: _openEditDataPage,
+              ),
+              AppExpandableHeaderMenuAction(
+                label: 'Personalizar perfil',
+                icon: Icons.storefront_rounded,
+                onPressed: _openStorePage,
+              ),
+            ],
           ),
         ),
-        body: SafeArea(
-          child: AnimatedOpacity(
-            opacity: _isContentReady ? 1 : 0,
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOut,
-            child: AnimatedSlide(
-              offset: _isContentReady ? Offset.zero : const Offset(0, 0.02),
+        body: AppAmbientPageBody(
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: AnimatedOpacity(
+              opacity: _isContentReady ? 1 : 0,
               duration: const Duration(milliseconds: 280),
               curve: Curves.easeOut,
-              child: AppRefreshScrollView(
-                onRefresh: _refreshProfileSnapshot,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AvatarProfilePreview(
+              child: AnimatedSlide(
+                offset: _isContentReady ? Offset.zero : const Offset(0, 0.02),
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOut,
+                child: AppRefreshScrollView(
+                  onRefresh: _refreshProfileSnapshot,
+                  padding: EdgeInsets.only(
+                    bottom: homeShellScrollBottomInset(context),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      AvatarProfilePreview(
                       avatarUrl: _avatarUrl,
                       frameId: _equippedAvatarFrameId,
                       backgroundId: _equippedBackgroundId,
+                      reactionEmojiId: _equippedReactionEmojiId,
+                      showReactionBubble: true,
+                      onReactionTap: _openReactionEmojiSheet,
                       name: _profileName,
+                      height: bannerHeight,
+                      composeHeight: bannerComposeHeight,
+                      borderRadius: BorderRadius.zero,
                     ),
+                    const SizedBox(height: AppSpacing.lg),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.xl,
-                        AppSpacing.lg,
-                        AppSpacing.xl,
-                        AppSpacing.xxxl,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.pageHorizontal,
                       ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _profileName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.left,
-                                  style: AppTextStyles.missionsTitle.copyWith(
-                                    color: AppColors.brand900Variant,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _profileName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.left,
+                                    style: AppTextStyles.missionsTitle.copyWith(
+                                      color: AppColors.brand900Variant,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: AppSpacing.md),
-                              Expanded(
-                                child: Text(
-                                  '$friendCount amigos',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.right,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.textSecondary,
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: Text(
+                                    '$friendCount amigos',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: AppSpacing.xl),
-                          _sectionTitle('Resumo'),
-                          const SizedBox(height: AppSpacing.sm),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final maxWidth = constraints.maxWidth;
-                              final spacing = AppSpacing.md;
-                              const columns = 2;
-                              final availableWidth =
-                                  maxWidth - (spacing * (columns - 1));
-                              final cardWidth = availableWidth > 0
-                                  ? availableWidth / columns
-                                  : maxWidth;
+                          ProfileSectionCard(
+                            title: 'Resumo',
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final maxWidth = constraints.maxWidth;
+                                final spacing = AppSpacing.md;
+                                const columns = 2;
+                                final availableWidth =
+                                    maxWidth - (spacing * (columns - 1));
+                                final cardWidth = availableWidth > 0
+                                    ? availableWidth / columns
+                                    : maxWidth;
 
-                              return Wrap(
-                                spacing: spacing,
-                                runSpacing: AppSpacing.md,
-                                children: [
-                                  SizedBox(
-                                    width: cardWidth,
-                                    child: _metricCard(
-                                      icon: Icons.local_fire_department_rounded,
-                                      iconColor: AppColors.socialMetricStreak,
-                                      label: 'Sequência',
-                                      value:
-                                          '${_intFromKeys(const ['streakDays', 'streak_days'])} dias',
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: cardWidth,
-                                    child: _metricCard(
-                                      icon: Icons.restaurant_menu_rounded,
-                                      iconColor:
-                                          AppColors.socialMetricFavoriteDish,
-                                      label: 'Prato favorito',
-                                      value: favoriteDish,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: cardWidth,
-                                    child: _metricCard(
-                                      icon: Icons.schedule_rounded,
-                                      iconColor:
-                                          AppColors.socialMetricPreferredPeriod,
-                                      label: 'Come mais de',
-                                      value: _formatPreferredPeriod(
-                                        _stringFromKeys(const [
-                                          'preferredPeriod',
-                                          'preferred_period',
-                                        ]),
+                                return Wrap(
+                                  spacing: spacing,
+                                  runSpacing: AppSpacing.md,
+                                  children: [
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: _metricCard(
+                                        icon:
+                                            Icons.local_fire_department_rounded,
+                                        iconColor: AppColors.socialMetricStreak,
+                                        label: 'Sequência',
+                                        value:
+                                            "${_intFromKeys(const ['streakDays', 'streak_days'])} dias",
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(
-                                    width: cardWidth,
-                                    child: _metricCard(
-                                      icon: Icons.auto_awesome_rounded,
-                                      iconColor: AppColors.socialMetricXp,
-                                      label: 'Total de XP',
-                                      value:
-                                          '${_intFromKeys(const ['totalXp', 'total_xp', 'xp'])}',
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: _metricCard(
+                                        icon: Icons.restaurant_menu_rounded,
+                                        iconColor:
+                                            AppColors.socialMetricFavoriteDish,
+                                        label: 'Prato favorito',
+                                        value: favoriteDish,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                          const SizedBox(height: AppSpacing.xl),
-                          _sectionTitle('Informações adicionais'),
-                          const SizedBox(height: AppSpacing.sm),
-                          _infoCard(
-                            icon: Icons.cake_rounded,
-                            iconColor: AppColors.socialInfoBirthDateBase,
-                            label: 'Data de nascimento',
-                            value: _formatBirthDate(),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          _infoCard(
-                            icon: Icons.person_rounded,
-                            iconColor: AppColors.socialInfoSex,
-                            label: 'Sexo',
-                            value: _normalizeLabel(
-                              _stringFromKeys(const ['sex'], fallback: ''),
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: _metricCard(
+                                        icon: Icons.schedule_rounded,
+                                        iconColor: AppColors
+                                            .socialMetricPreferredPeriod,
+                                        label: 'Come mais de',
+                                        value: _formatPreferredPeriod(
+                                          _stringFromKeys(const [
+                                            'preferredPeriod',
+                                            'preferred_period',
+                                          ]),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: _metricCard(
+                                        icon: Icons.auto_awesome_rounded,
+                                        iconColor: AppColors.socialMetricXp,
+                                        label: 'Total de XP',
+                                        value:
+                                            "${_intFromKeys(const ['totalXp', 'total_xp', 'xp'])}",
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.md),
-                          _infoCard(
-                            icon: Icons.flag_rounded,
-                            iconColor: AppColors.socialInfoObjective,
-                            label: 'Objetivo',
-                            value: _formatObjective(
-                              _stringFromKeys(const [
-                                'objective',
-                              ], fallback: ''),
+                          const SizedBox(height: AppSpacing.cardGap),
+                          ProfileSectionCard(
+                            title: 'Informações adicionais',
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final spacing = AppSpacing.md;
+                                const columns = 2;
+                                final availableWidth =
+                                    constraints.maxWidth -
+                                    (spacing * (columns - 1));
+                                final cardWidth = availableWidth > 0
+                                    ? availableWidth / columns
+                                    : constraints.maxWidth;
+
+                                const compactHeight = 100.0;
+                                Widget tile(Widget child) => SizedBox(
+                                  width: cardWidth,
+                                  height: compactHeight,
+                                  child: child,
+                                );
+
+                                const compact =
+                                    SocialProfileInfoCardLayout.compactStart;
+
+                                return Wrap(
+                                  spacing: spacing,
+                                  runSpacing: AppSpacing.md,
+                                  children: [
+                                    SizedBox(
+                                      width: constraints.maxWidth,
+                                      child: _infoCard(
+                                        icon: Icons.cake_rounded,
+                                        iconColor:
+                                            AppColors.socialInfoBirthDateBase,
+                                        label: 'Data de nascimento',
+                                        value: _formatBirthDate(),
+                                      ),
+                                    ),
+                                    tile(
+                                      _infoCard(
+                                        icon: Icons.flag_rounded,
+                                        iconColor:
+                                            AppColors.socialInfoObjective,
+                                        label: 'Objetivo',
+                                        value: _formatObjective(
+                                          _stringFromKeys(const [
+                                            'objective',
+                                          ], fallback: ''),
+                                        ),
+                                        layout: compact,
+                                      ),
+                                    ),
+                                    tile(
+                                      _infoCard(
+                                        icon: Icons.height_rounded,
+                                        iconColor:
+                                            AppColors.socialInfoObjective,
+                                        label: 'Altura',
+                                        value: _formatMeasure(
+                                          rawValue: _profileData['height'],
+                                          unit: _stringFromKeys(const [
+                                            'heightUnit',
+                                            'height_unit',
+                                          ]),
+                                        ),
+                                        layout: compact,
+                                      ),
+                                    ),
+                                    tile(
+                                      _infoCard(
+                                        icon: Icons.fitness_center_rounded,
+                                        iconColor:
+                                            AppColors.socialInfoObjective,
+                                        label: 'Peso',
+                                        value: _formatMeasure(
+                                          rawValue: _profileData['weight'],
+                                          unit: _stringFromKeys(const [
+                                            'weightUnit',
+                                            'weight_unit',
+                                          ]),
+                                        ),
+                                        layout: compact,
+                                      ),
+                                    ),
+                                    tile(
+                                      _infoCard(
+                                        icon: Icons.directions_run_rounded,
+                                        iconColor:
+                                            AppColors.socialInfoObjective,
+                                        label: 'Nível de atividade',
+                                        value: _formatActivityLevel(
+                                          _stringFromKeys(const [
+                                            'activityLevel',
+                                            'activity_level',
+                                          ]),
+                                        ),
+                                        layout: compact,
+                                      ),
+                                    ),
+                                    tile(
+                                      _infoCard(
+                                        icon: Icons.person_rounded,
+                                        iconColor: AppColors.socialInfoSex,
+                                        label: 'Sexo',
+                                        value: _normalizeLabel(
+                                          _stringFromKeys(const [
+                                            'sex',
+                                          ], fallback: ''),
+                                        ),
+                                        layout: compact,
+                                      ),
+                                    ),
+                                    tile(
+                                      _infoCard(
+                                        icon: Icons.schedule_rounded,
+                                        iconColor: AppColors.socialInfoSex,
+                                        label: 'Idade da conta',
+                                        value: _formatAccountAge(),
+                                        layout: compact,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.md),
-                          _infoCard(
-                            icon: Icons.directions_run_rounded,
-                            iconColor: AppColors.socialInfoObjective,
-                            label: 'Nível de atividade',
-                            value: _formatActivityLevel(
-                              _stringFromKeys(const [
-                                'activityLevel',
-                                'activity_level',
+                          const SizedBox(height: AppSpacing.cardGap),
+                          ProfileSectionCard(
+                            title: 'Conquistas',
+                            child: ProfileAchievementsCard(
+                              missionsCompleted: _intFromKeys(const [
+                                'missionsCompleted',
+                                'missions_completed',
                               ]),
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          _infoCard(
-                            icon: Icons.fitness_center_rounded,
-                            iconColor: AppColors.socialInfoObjective,
-                            label: 'Peso',
-                            value: _formatMeasure(
-                              rawValue: _profileData['weight'],
-                              unit: _stringFromKeys(const [
-                                'weightUnit',
-                                'weight_unit',
+                              longestStreakDays: _intFromKeys(const [
+                                'longestStreakDays',
+                                'longest_streak_days',
                               ]),
+                              cosmeticsOwned: _cosmeticsOwnedCount,
                             ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          _infoCard(
-                            icon: Icons.height_rounded,
-                            iconColor: AppColors.socialInfoObjective,
-                            label: 'Altura',
-                            value: _formatMeasure(
-                              rawValue: _profileData['height'],
-                              unit: _stringFromKeys(const [
-                                'heightUnit',
-                                'height_unit',
-                              ]),
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          _infoCard(
-                            // Same glyph already used in Resumo ("Come mais de"),
-                            // so it survives stale tree-shaken MaterialIcons caches.
-                            icon: Icons.schedule_rounded,
-                            iconColor: AppColors.socialInfoSex,
-                            label: 'Idade da conta',
-                            value: _formatAccountAge(),
-                          ),
-                          const SizedBox(height: AppSpacing.xl),
-                          _sectionTitle('Conquistas'),
-                          const SizedBox(height: AppSpacing.sm),
-                          ProfileAchievementsCard(
-                            missionsCompleted: _intFromKeys(const [
-                              'missionsCompleted',
-                              'missions_completed',
-                            ]),
-                            longestStreakDays: _intFromKeys(const [
-                              'longestStreakDays',
-                              'longest_streak_days',
-                            ]),
-                            cosmeticsOwned: _cosmeticsOwnedCount,
                           ),
                           const SizedBox(height: AppSpacing.xl),
                           SizedBox(
@@ -991,45 +1137,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
           ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        floatingActionButton: Padding(
-          padding: EdgeInsets.only(bottom: homeShellFabBottomInset(context)),
-          child: AppExpandableFab(
-            closedIcon: Icons.settings_rounded,
-            openIcon: Icons.close_rounded,
-            closedSemanticLabel: 'Abrir ações do perfil',
-            openSemanticLabel: 'Fechar ações do perfil',
-            actions: [
-              AppExpandableFabAction(
-                label: 'Lembretes de refeição',
-                icon: Icons.notifications_active_outlined,
-                onPressed: () {
-                  context.pushSlidePage(const MealRemindersPage());
-                },
-              ),
-              AppExpandableFabAction(
-                label: 'Suporte',
-                icon: Icons.support_agent_rounded,
-                onPressed: () {
-                  context.pushSlidePage(const SupportPage());
-                },
-              ),
-              AppExpandableFabAction(
-                label: 'Editar dados pessoais',
-                icon: Icons.badge_rounded,
-                onPressed: () {
-                  _openEditDataPage();
-                },
-              ),
-              AppExpandableFabAction(
-                label: 'Personalizar perfil',
-                icon: Icons.storefront_rounded,
-                onPressed: () {
-                  _openStorePage();
-                },
-              ),
-            ],
           ),
         ),
       ),

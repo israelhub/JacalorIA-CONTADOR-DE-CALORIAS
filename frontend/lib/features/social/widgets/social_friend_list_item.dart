@@ -5,10 +5,16 @@ import '../../../shared/widgets/framed_avatar.dart';
 import '../models/social_group_models.dart';
 
 class SocialFriendListItem extends StatelessWidget {
-  const SocialFriendListItem({super.key, required this.friend, this.onTap});
+  const SocialFriendListItem({
+    super.key,
+    required this.friend,
+    this.onTap,
+    this.backgroundColor = AppColors.surface,
+  });
 
   final SocialFriend friend;
   final VoidCallback? onTap;
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -21,10 +27,8 @@ class SocialFriendListItem extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-            boxShadow: AppShadows.performanceCard,
           ),
           child: Row(
             children: [
@@ -69,5 +73,4 @@ class SocialFriendListItem extends StatelessWidget {
       ),
     );
   }
-
 }

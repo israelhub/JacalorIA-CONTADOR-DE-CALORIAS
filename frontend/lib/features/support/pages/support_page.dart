@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -113,21 +114,13 @@ class _SupportPageState extends State<SupportPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        title: Text(
-          'Suporte',
-          style: AppTextStyles.homeSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
-          ),
-        ),
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-      ),
-      body: SafeArea(
+      backgroundColor: AppColors.pageBackground,
+      extendBodyBehindAppBar: true,
+      appBar: const AppBackPageHeader(title: 'Suporte'),
+      body: AppBackPageContent(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
+            horizontal: AppSpacing.pageHorizontal,
             vertical: AppSpacing.lg,
           ),
           child: Column(
@@ -149,55 +142,59 @@ class _SupportPageState extends State<SupportPage> {
               ),
               const SizedBox(height: AppSpacing.sm),
               Row(
-                children: SupportSubjectType.values.map((type) {
-                  final isSelected = _subjectType == type;
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: type == SupportSubjectType.bug
-                            ? AppSpacing.sm
-                            : 0,
-                      ),
-                      child: ChoiceChip(
-                        selected: isSelected,
-                        showCheckmark: false,
-                        label: SizedBox(
-                          width: double.infinity,
-                          child: Text(
-                            type.label,
-                            textAlign: TextAlign.center,
+                children: SupportSubjectType.values
+                    .map((type) {
+                      final isSelected = _subjectType == type;
+                      return Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            right: type == SupportSubjectType.bug
+                                ? AppSpacing.sm
+                                : 0,
+                          ),
+                          child: ChoiceChip(
+                            selected: isSelected,
+                            showCheckmark: false,
+                            label: SizedBox(
+                              width: double.infinity,
+                              child: Text(
+                                type.label,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            backgroundColor: AppColors.surfaceAlt,
+                            selectedColor: AppColors.action500.withValues(
+                              alpha: 0.2,
+                            ),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppColors.action500
+                                  : AppColors.borderAlt,
+                            ),
+                            labelStyle: AppTextStyles.bodyMedium.copyWith(
+                              color: isSelected
+                                  ? AppColors.action500
+                                  : AppColors.textSecondary,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                            onSelected: _isSending
+                                ? null
+                                : (_) {
+                                    setState(() => _subjectType = type);
+                                  },
                           ),
                         ),
-                        backgroundColor: AppColors.surfaceAlt,
-                        selectedColor:
-                            AppColors.action500.withValues(alpha: 0.2),
-                        side: BorderSide(
-                          color: isSelected
-                              ? AppColors.action500
-                              : AppColors.borderAlt,
-                        ),
-                        labelStyle: AppTextStyles.bodyMedium.copyWith(
-                          color: isSelected
-                              ? AppColors.action500
-                              : AppColors.textSecondary,
-                          fontWeight:
-                              isSelected ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                        onSelected: _isSending
-                            ? null
-                            : (_) {
-                                setState(() => _subjectType = type);
-                              },
-                      ),
-                    ),
-                  );
-                }).toList(growable: false),
+                      );
+                    })
+                    .toList(growable: false),
               ),
               const SizedBox(height: AppSpacing.xl),
               if (!_isAuthenticated) ...[
                 AppInputField(
                   label: 'E-mail',
-                  hint: 'Digite seu e-mail',
+                  hint: 'Ex.: maria@email.com',
                   controller: _emailController,
                   enabled: !_isSending,
                   keyboardType: TextInputType.emailAddress,
@@ -230,7 +227,7 @@ class _SupportPageState extends State<SupportPage> {
                     color: AppColors.textPrimary,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Descreva o bug ou a sugestão com detalhes',
+                    hintText: 'Ex.: Ao salvar a refeição, o app fecha',
                     hintStyle: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),

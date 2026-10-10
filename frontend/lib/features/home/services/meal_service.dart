@@ -34,21 +34,6 @@ class MealService {
     return headers;
   }
 
-  int _asRoundedInt(Object? value) {
-    if (value is num) {
-      return value.round();
-    }
-
-    if (value is String) {
-      final parsed = num.tryParse(value.replaceAll(',', '.'));
-      if (parsed != null) {
-        return parsed.round();
-      }
-    }
-
-    return 0;
-  }
-
   Future<List<FoodMealRecord>> fetchMeals({
     DateTime? startDate,
     DateTime? endDate,
@@ -69,56 +54,15 @@ class MealService {
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       return _mergeMealImageUrls(
-        data.map((json) {
-        final imageUrl = json['imageUrl'] as String?;
-        final isNetwork =
-            imageUrl != null &&
-            (imageUrl.startsWith('http') || imageUrl.startsWith('https'));
-        final items = (json['analysisItems'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map((item) => FoodAnalysisItem.fromJson(item))
-            .toList(growable: false);
-
-        return FoodMealRecord(
-          id: json['id'] as String?,
-          imageBytes: null,
-          imageUrl: isNetwork ? imageUrl : null,
-          imageAsset: !isNetwork && (imageUrl ?? '').trim().startsWith('assets/')
-              ? imageUrl
-              : null,
-          createdAt: _parseDateTime(json['createdAt'] ?? json['created_at']),
-          title: json['title'] ?? 'Refeição',
-          description: json['description'] ?? '',
-          kcalLabel: '${json['calories']} kcal',
-          timeLabel: json['timeLabel'] ?? '12:00',
-          mealType: json['mealType'] != null || json['meal_type'] != null
-              ? foodMealTypeFromApi(
-                  (json['mealType'] ?? json['meal_type']) as String?,
-                )
-              : foodMealTypeFromTitle(json['title'] as String? ?? ''),
-          calories: _asRoundedInt(json['calories']),
-          protein: _asRoundedInt(json['protein']),
-          carbs: _asRoundedInt(json['carbs']),
-          fat: _asRoundedInt(json['fat']),
-          items: items,
-          status: (json['status'] as String? ?? 'active').trim().toLowerCase(),
-        );
-      }).toList(),
+        data
+            .whereType<Map>()
+            .map(
+              (json) => FoodMealRecord.fromJson(Map<String, dynamic>.from(json)),
+            )
+            .toList(),
       );
     }
     return [];
-  }
-
-  DateTime? _parseDateTime(Object? value) {
-    if (value is DateTime) {
-      return value.toLocal();
-    }
-
-    if (value is String && value.isNotEmpty) {
-      return DateTime.tryParse(value)?.toLocal();
-    }
-
-    return null;
   }
 
   Future<FoodMealRecord> saveMeal({

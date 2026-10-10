@@ -1,10 +1,11 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
 import '../../../core/analytics/analytics_service.dart';
 import '../../home/services/meal_service.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../helpers/food_review_helpers.dart';
 import '../models/food_analysis_result.dart';
@@ -43,6 +44,7 @@ class FoodReviewPage extends StatefulWidget {
   final FoodAnalysisService analysisService;
   final String? existingMealId;
   final String? initialMealTitle;
+
   /// Horário original da refeição (ex.: ao editar). Não regenerar a partir de UTC.
   final String? initialTimeLabel;
   final FoodMealType? initialMealType;
@@ -67,8 +69,8 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   String? _error;
   int _nextItemId = 0;
 
-  static const Duration _itemInsertDuration = Duration(milliseconds: 220);
-  static const Duration _itemRemoveDuration = Duration(milliseconds: 180);
+  static const Duration _itemInsertDuration = Duration(milliseconds: 320);
+  static const Duration _itemRemoveDuration = Duration(milliseconds: 220);
 
   String get _currentSignature {
     return _currentItems.map((item) => item.signature()).join('|');
@@ -136,17 +138,18 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.pageBackground,
+      extendBodyBehindAppBar: true,
       appBar: const FoodAnalysisPageHeader(title: 'Revisar análise'),
-      body: SafeArea(
+      body: AppBackPageContent(
         child: Column(
           children: [
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.pageHorizontal,
                   AppSpacing.lg,
-                  AppSpacing.lg,
-                  AppSpacing.lg,
+                  AppSpacing.pageHorizontal,
                   AppSpacing.lg,
                 ),
                 children: [
@@ -166,46 +169,62 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
                       }
                     },
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-                  const Divider(
-                    key: ValueKey('food-review-main-divider'),
-                    color: AppColors.divider,
-                    height: 1,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  const FoodReviewAiTitle(),
-                  const SizedBox(height: AppSpacing.xl),
-                  AnimatedList(
-                    key: _itemsListKey,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    initialItemCount: _items.length,
-                    itemBuilder: (context, index, animation) {
-                      final item = _items[index];
+                  const SizedBox(height: AppSpacing.lg),
+                  Container(
+                    key: const ValueKey('food-review-items-card'),
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const FoodReviewAiTitle(),
+                        AnimatedList(
+                          key: _itemsListKey,
+                          shrinkWrap: true,
+                          padding: EdgeInsets.zero,
+                          physics: const NeverScrollableScrollPhysics(),
+                          initialItemCount: _items.length,
+                          itemBuilder: (context, index, animation) {
+                            final item = _items[index];
 
-                      return _AnimatedFoodReviewRow(
-                        animation: animation,
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-                          child: FoodReviewItemRow(
-                            key: ValueKey(item.id),
-                            index: index,
-                            nameController: item.nameController,
-                            measurementController: item.measurementController,
-                            onRemove: _items.length > 1
-                                ? () => _removeItem(index)
-                                : null,
-                            onChanged: () {
-                              setState(() {
-                                _error = null;
-                              });
-                            },
-                          ),
+                            return _AnimatedFoodReviewRow(
+                              animation: animation,
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  top: index == 0
+                                      ? AppSpacing.md
+                                      : AppSpacing.sm,
+                                ),
+                                child: FoodReviewItemRow(
+                                  key: ValueKey(item.id),
+                                  index: index,
+                                  nameController: item.nameController,
+                                  measurementController:
+                                      item.measurementController,
+                                  onRemove: _items.length > 1
+                                      ? () => _removeItem(index)
+                                      : null,
+                                  onChanged: () {
+                                    setState(() {
+                                      _error = null;
+                                    });
+                                  },
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                        const SizedBox(height: AppSpacing.md),
+                        FoodReviewAddItemButton(
+                          onTap: _isBusy ? null : _addItem,
+                        ),
+                      ],
+                    ),
                   ),
-                  FoodReviewAddItemButton(onTap: _isBusy ? null : _addItem),
                   if (_error != null) ...[
                     const SizedBox(height: AppSpacing.md),
                     Text(
@@ -223,9 +242,9 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
       ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg,
+          AppSpacing.pageHorizontal,
           0,
-          AppSpacing.lg,
+          AppSpacing.pageHorizontal,
           AppSpacing.lg + MediaQuery.of(context).viewPadding.bottom,
         ),
         child: FoodReviewConfirmButton(
@@ -295,7 +314,9 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
       (context, animation) => _AnimatedFoodReviewRow(
         animation: animation,
         child: Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+          padding: EdgeInsets.only(
+            top: index == 0 ? AppSpacing.md : AppSpacing.sm,
+          ),
           child: FoodReviewItemRow(
             index: index,
             nameController: removedItem.nameController,
@@ -348,8 +369,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
     });
   }
 
-  Future<void> _saveAndOpenDetails(
-  ) async {
+  Future<void> _saveAndOpenDetails() async {
     final currentItems = _currentItems;
 
     final mealTitle = _mealTitleController.text.trim();
@@ -437,9 +457,11 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
         ? fallbackMealRecord
         : fallbackMealRecord.copyWith(
             id: persistedMealRecord!.id ?? fallbackMealRecord.id,
-            imageUrl: persistedMealRecord!.imageUrl ?? fallbackMealRecord.imageUrl,
+            imageUrl:
+                persistedMealRecord!.imageUrl ?? fallbackMealRecord.imageUrl,
             imageAsset:
-                persistedMealRecord!.imageAsset ?? fallbackMealRecord.imageAsset,
+                persistedMealRecord!.imageAsset ??
+                fallbackMealRecord.imageAsset,
             createdAt:
                 persistedMealRecord!.createdAt ?? fallbackMealRecord.createdAt,
             status: persistedMealRecord!.status,
@@ -490,22 +512,22 @@ class _AnimatedFoodReviewRow extends StatelessWidget {
     final curvedAnimation = CurvedAnimation(
       parent: animation,
       curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
     );
 
     return FadeTransition(
       opacity: curvedAnimation,
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, -0.08),
-          end: Offset.zero,
-        ).animate(curvedAnimation),
-        child: SizeTransition(
-          sizeFactor: curvedAnimation,
-          axisAlignment: -1,
+      child: SizeTransition(
+        sizeFactor: curvedAnimation,
+        axisAlignment: -1,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.12),
+            end: Offset.zero,
+          ).animate(curvedAnimation),
           child: child,
         ),
       ),
     );
   }
 }
-

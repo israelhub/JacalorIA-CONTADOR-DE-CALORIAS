@@ -12,16 +12,24 @@ import '../../../shared/widgets/app_main_bottom_navigation.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/prefer_vertical_page_view.dart';
 import '../../auth/service/auth_service.dart';
+import '../../avatar_frames/pages/avatar_frame_store_page.dart';
 import '../../food_analysis/models/food_meal_record.dart';
 import '../../food_analysis/pages/food_capture_page.dart';
 import '../../missions/pages/missions_page.dart';
+import '../../notifications/pages/in_app_messages_page.dart';
 import '../../performance/pages/performance_page.dart';
+import '../../profile/pages/profile_page.dart';
 import '../../social/helpers/social_data_invalidator.dart';
 import '../../social/pages/social_page.dart';
+import '../../workouts/pages/workout_page.dart';
+import '../controllers/home_steps_weight_controller.dart';
 import '../helpers/home_date_helpers.dart';
 import '../helpers/home_greeting_helpers.dart';
+import '../services/steps_service.dart';
 import '../widgets/home_shell_layout.dart';
+import '../widgets/home_steps_weight_scope.dart';
 import 'home_page.dart';
+import 'home_steps_weight_focus_lab_page.dart';
 
 class HomeShellPage extends StatefulWidget {
   const HomeShellPage({
@@ -31,6 +39,8 @@ class HomeShellPage extends StatefulWidget {
     this.homePage,
     this.missionsPage,
     this.socialPage,
+    this.workoutPage,
+    this.stepsService,
   });
 
   /// Opens Social when a friend/group invite deep link is pending.
@@ -48,6 +58,8 @@ class HomeShellPage extends StatefulWidget {
   final Widget? homePage;
   final Widget? missionsPage;
   final Widget? socialPage;
+  final Widget? workoutPage;
+  final StepsService? stepsService;
 
   static HomeShellController? _controller;
 
@@ -76,6 +88,10 @@ abstract class HomeShellController {
   AppMainBottomTab get activeTab;
   Future<void> openTab(AppMainBottomTab tab);
   Future<void> openFoodCapture();
+  Future<void> openProfile();
+  Future<void> openStore();
+  Future<void> openNotifications();
+  Future<void> openCardFocusLab();
 }
 
 class _HomeShellPageState extends State<HomeShellPage>
@@ -83,19 +99,22 @@ class _HomeShellPageState extends State<HomeShellPage>
     implements HomeShellController {
   static const int _performanceIndex = 0;
   static const int _homeIndex = 1;
-  static const int _missionsIndex = 2;
-  static const int _socialIndex = 3;
+  static const int _socialIndex = 2;
 
   /// Soft-refresh only on resume / after writes — never on every tab switch.
   /// Switching tabs should reuse in-memory UI (stale-while-revalidate).
   static const Duration _resumeStaleAfter = Duration(minutes: 5);
 
   late int _currentIndex;
+  late AppMainBottomTab _activeTab;
   late DateTime _selectedHomeDate;
+  bool _isMoreMenuOpen = false;
+  final Set<AppMainBottomTab> _visitedOverflow = <AppMainBottomTab>{};
   late final PageController _pageController;
   int _performanceRefreshVersion = 0;
   int _missionsRefreshVersion = 0;
   int _socialRefreshVersion = 0;
+  int _workoutRefreshVersion = 0;
   int _homeMealSyncVersion = 0;
   FoodMealRecord? _pendingSavedMeal;
   final Set<int> _visitedTabs = <int>{};
@@ -104,14 +123,20 @@ class _HomeShellPageState extends State<HomeShellPage>
   final GlobalKey _homePageKey = GlobalKey();
   final GlobalKey _missionsPageKey = GlobalKey();
   final GlobalKey _socialPageKey = GlobalKey();
+  final GlobalKey _workoutPageKey = GlobalKey();
   final GlobalKey<NavigatorState> _nestedNavigatorKey =
       GlobalKey<NavigatorState>();
   late final _ShellNestedNavigatorObserver _nestedNavObserver;
+  late final HomeStepsWeightController _stepsWeightController;
 
   @override
   void initState() {
     super.initState();
     HomeShellPage._attach(this);
+    _stepsWeightController = HomeStepsWeightController(
+      stepsService: widget.stepsService,
+    );
+    unawaited(_stepsWeightController.ensureLoaded());
     WidgetsBinding.instance.addObserver(this);
     _nestedNavObserver = _ShellNestedNavigatorObserver(
       onChange: () {
@@ -120,13 +145,19 @@ class _HomeShellPageState extends State<HomeShellPage>
         }
       },
     );
-    _currentIndex = _tabToIndex(widget.initialTab);
+    _activeTab = widget.initialTab;
+    _currentIndex = _isSwipeTab(widget.initialTab)
+        ? _tabToIndex(widget.initialTab)
+        : _homeIndex;
+    if (!_isSwipeTab(widget.initialTab)) {
+      _visitedOverflow.add(widget.initialTab);
+    }
     _selectedHomeDate = normalizeHomeDate(DateTime.now());
     _pageController = PageController(initialPage: _currentIndex);
     _visitedTabs.add(_currentIndex);
     _lastTabRefreshAt[_currentIndex] = DateTime.now();
     AnalyticsService.instance.trackAppOpen();
-    _trackTabOpened(_currentIndex);
+    _trackTabOpened(_activeTab);
     unawaited(MealReminderService.instance.syncScheduledReminders());
     unawaited(
       MealReminderHomeWidget.sync(
@@ -155,6 +186,7 @@ class _HomeShellPageState extends State<HomeShellPage>
     WidgetsBinding.instance.removeObserver(this);
     unawaited(AnalyticsService.instance.leaveForeground(reason: 'dispose'));
     _pageController.dispose();
+    _stepsWeightController.dispose();
     super.dispose();
   }
 
@@ -176,7 +208,11 @@ class _HomeShellPageState extends State<HomeShellPage>
       unawaited(InAppMessageStore.instance.syncRemoteCatalog());
       // Soft-refresh the visible tab after returning to the app
       // (inclui virada de dia para média calórica no social).
-      _forceSoftRefreshForIndex(_currentIndex);
+      if (_isSwipeTab(_activeTab)) {
+        _forceSoftRefreshForIndex(_currentIndex);
+      } else {
+        _forceSoftRefreshForTab(_activeTab);
+      }
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden ||
@@ -185,21 +221,25 @@ class _HomeShellPageState extends State<HomeShellPage>
     }
   }
 
-  void _trackTabOpened(int index) {
-    switch (index) {
-      case _missionsIndex:
+  void _trackTabOpened(AppMainBottomTab tab) {
+    switch (tab) {
+      case AppMainBottomTab.missions:
         AnalyticsService.instance.trackScreen('missions');
         AnalyticsService.instance.track('missions_tab_opened');
         break;
-      case _socialIndex:
+      case AppMainBottomTab.social:
         AnalyticsService.instance.trackScreen('social');
         AnalyticsService.instance.track('social_tab_opened');
         break;
-      case _performanceIndex:
+      case AppMainBottomTab.performance:
         AnalyticsService.instance.trackScreen('performance');
         AnalyticsService.instance.track('performance_tab_opened');
         break;
-      case _homeIndex:
+      case AppMainBottomTab.workout:
+        AnalyticsService.instance.trackScreen('workout');
+        AnalyticsService.instance.track('workout_tab_opened');
+        break;
+      case AppMainBottomTab.home:
         AnalyticsService.instance.trackScreen('home');
         AnalyticsService.instance.track('home_tab_opened');
         break;
@@ -209,27 +249,26 @@ class _HomeShellPageState extends State<HomeShellPage>
   @override
   AppMainBottomTab get activeTab => _activeTab;
 
-  AppMainBottomTab get _activeTab {
-    if (_currentIndex == _performanceIndex) {
-      return AppMainBottomTab.performance;
-    }
+  bool _isSwipeTab(AppMainBottomTab tab) {
+    return tab == AppMainBottomTab.social ||
+        tab == AppMainBottomTab.home ||
+        tab == AppMainBottomTab.performance;
+  }
 
-    if (_currentIndex == _missionsIndex) {
-      return AppMainBottomTab.missions;
-    }
+  bool get _isOverflowTab => !_isSwipeTab(_activeTab);
 
-    if (_currentIndex == _socialIndex) {
-      return AppMainBottomTab.social;
-    }
-
-    return AppMainBottomTab.home;
+  AppMainBottomTab _indexToTab(int index) {
+    return switch (index) {
+      _socialIndex => AppMainBottomTab.social,
+      _performanceIndex => AppMainBottomTab.performance,
+      _ => AppMainBottomTab.home,
+    };
   }
 
   int _tabToIndex(AppMainBottomTab tab) {
     return switch (tab) {
-      AppMainBottomTab.performance => _performanceIndex,
-      AppMainBottomTab.missions => _missionsIndex,
       AppMainBottomTab.social => _socialIndex,
+      AppMainBottomTab.performance => _performanceIndex,
       _ => _homeIndex,
     };
   }
@@ -264,13 +303,27 @@ class _HomeShellPageState extends State<HomeShellPage>
       case _performanceIndex:
         _performanceRefreshVersion++;
         break;
-      case _missionsIndex:
-        _missionsRefreshVersion++;
-        break;
       case _socialIndex:
         _socialRefreshVersion++;
         break;
     }
+  }
+
+  void _forceSoftRefreshForTab(AppMainBottomTab tab) {
+    if (!mounted || tab == AppMainBottomTab.home) {
+      return;
+    }
+    if (_isSwipeTab(tab)) {
+      _forceSoftRefreshForIndex(_tabToIndex(tab));
+      return;
+    }
+    setState(() {
+      if (tab == AppMainBottomTab.missions) {
+        _missionsRefreshVersion++;
+      } else if (tab == AppMainBottomTab.workout) {
+        _workoutRefreshVersion++;
+      }
+    });
   }
 
   void _forceSoftRefreshForIndex(int index) {
@@ -295,37 +348,138 @@ class _HomeShellPageState extends State<HomeShellPage>
 
   Future<void> _goToTab(AppMainBottomTab tab) async {
     _popNestedOverlays();
-    final nextIndex = _tabToIndex(tab);
-    if (nextIndex == _currentIndex) {
+    if (tab == _activeTab && !_isMoreMenuOpen) {
       return;
     }
 
-    final isAdjacent = (nextIndex - _currentIndex).abs() == 1;
+    if (!_isSwipeTab(tab)) {
+      setState(() {
+        _isMoreMenuOpen = false;
+        _activeTab = tab;
+        _visitedOverflow.add(tab);
+      });
+      _trackTabOpened(tab);
+      return;
+    }
+
+    final nextIndex = _tabToIndex(tab);
+    final isAdjacent =
+        !_isOverflowTab && (nextIndex - _currentIndex).abs() == 1;
 
     setState(() {
+      _isMoreMenuOpen = false;
+      _activeTab = tab;
       _currentIndex = nextIndex;
-      // Mark visited so the page mounts once; do not network-refresh.
       _visitedTabs.add(nextIndex);
       _lastTabRefreshAt.putIfAbsent(nextIndex, DateTime.now);
     });
-    _trackTabOpened(nextIndex);
+    _trackTabOpened(tab);
 
-    // Saltos nao adjacentes renderizariam as abas intermediarias durante a
-    // animacao; pular direto evita esse custo.
-    if (!isAdjacent) {
-      _pageController.jumpToPage(nextIndex);
-      return;
+    if (_pageController.hasClients && _pageController.page != nextIndex) {
+      if (!isAdjacent) {
+        _pageController.jumpToPage(nextIndex);
+        return;
+      }
+
+      await _pageController.animateToPage(
+        nextIndex,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+      );
     }
-
-    await _pageController.animateToPage(
-      nextIndex,
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutCubic,
-    );
+    return;
   }
 
   @override
   Future<void> openFoodCapture() => _openFoodCapture();
+
+  @override
+  Future<void> openProfile() => _openProfile();
+
+  @override
+  Future<void> openStore() => _openStore();
+
+  @override
+  Future<void> openNotifications() => _openNotifications();
+
+  @override
+  Future<void> openCardFocusLab() => _openCardFocusLab();
+
+  Future<void> _openProfile() async {
+    if (_isMoreMenuOpen) {
+      setState(() => _isMoreMenuOpen = false);
+    }
+
+    final nestedContext = _nestedNavigatorKey.currentContext;
+    if (nestedContext == null) {
+      return;
+    }
+
+    await nestedContext.pushSlidePage<bool>(
+      ProfilePage(initialProfile: AuthService.globalUser),
+    );
+  }
+
+  Future<void> _openNotifications() async {
+    if (_isMoreMenuOpen) {
+      setState(() => _isMoreMenuOpen = false);
+    }
+
+    final nestedContext = _nestedNavigatorKey.currentContext;
+    if (nestedContext == null) {
+      return;
+    }
+
+    await nestedContext.pushSlidePage(
+      InAppMessagesPage(store: InAppMessageStore.instance),
+    );
+  }
+
+  Future<void> _openCardFocusLab() async {
+    if (_isMoreMenuOpen) {
+      setState(() => _isMoreMenuOpen = false);
+    }
+
+    final nestedContext = _nestedNavigatorKey.currentContext;
+    if (nestedContext == null) {
+      return;
+    }
+
+    await nestedContext.pushSlidePage(const HomeStepsWeightFocusLabPage());
+  }
+
+  Future<void> _openStore() async {
+    if (_isMoreMenuOpen) {
+      setState(() => _isMoreMenuOpen = false);
+    }
+
+    final nestedContext = _nestedNavigatorKey.currentContext;
+    if (nestedContext == null) {
+      return;
+    }
+
+    final profile = AuthService.globalUser ?? const <String, dynamic>{};
+    final goldRaw = profile['gold'];
+    final gold = goldRaw is int
+        ? goldRaw
+        : goldRaw is num
+        ? goldRaw.toInt()
+        : int.tryParse('$goldRaw') ?? 0;
+
+    final updated = await nestedContext.pushSlidePage<Object>(
+      AvatarFrameStorePage(
+        initialGoldBalance: gold,
+        profile: Map<String, dynamic>.from(profile),
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+    if (updated == 'go_to_missions') {
+      await _goToTab(AppMainBottomTab.missions);
+    }
+  }
 
   Future<void> _openFoodCapture() async {
     AnalyticsService.instance.track(
@@ -355,7 +509,7 @@ class _HomeShellPageState extends State<HomeShellPage>
     SocialDataInvalidator.markDirty();
     _forceSoftRefreshForIndex(_socialIndex);
     _forceSoftRefreshForIndex(_performanceIndex);
-    _forceSoftRefreshForIndex(_missionsIndex);
+    _forceSoftRefreshForTab(AppMainBottomTab.missions);
   }
 
   Future<void> _goToHomeDate(DateTime date) async {
@@ -372,6 +526,12 @@ class _HomeShellPageState extends State<HomeShellPage>
     }
 
     return switch (index) {
+      _socialIndex =>
+        widget.socialPage ??
+            SocialPage(
+              key: _socialPageKey,
+              refreshVersion: _socialRefreshVersion,
+            ),
       _performanceIndex =>
         widget.performancePage ??
             PerformancePage(
@@ -379,7 +539,7 @@ class _HomeShellPageState extends State<HomeShellPage>
               onDateSelected: _goToHomeDate,
               refreshVersion: _performanceRefreshVersion,
             ),
-      _homeIndex =>
+      _ =>
         widget.homePage ??
             HomePage(
               key: _homePageKey,
@@ -392,19 +552,42 @@ class _HomeShellPageState extends State<HomeShellPage>
                 });
               },
             ),
-      _missionsIndex =>
-        widget.missionsPage ??
-            MissionsPage(
-              key: _missionsPageKey,
-              refreshVersion: _missionsRefreshVersion,
-            ),
-      _ =>
-        widget.socialPage ??
-            SocialPage(
-              key: _socialPageKey,
-              refreshVersion: _socialRefreshVersion,
-            ),
     };
+  }
+
+  Widget _buildMissionsPage() {
+    return widget.missionsPage ??
+        MissionsPage(
+          key: _missionsPageKey,
+          refreshVersion: _missionsRefreshVersion,
+        );
+  }
+
+  Widget _buildWorkoutPage() {
+    return widget.workoutPage ??
+        WorkoutPage(
+          key: _workoutPageKey,
+          refreshVersion: _workoutRefreshVersion,
+        );
+  }
+
+  Widget _buildShellBody() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Offstage(offstage: _isOverflowTab, child: _buildTabsPageView()),
+        if (_visitedOverflow.contains(AppMainBottomTab.missions))
+          Offstage(
+            offstage: _activeTab != AppMainBottomTab.missions,
+            child: _buildMissionsPage(),
+          ),
+        if (_visitedOverflow.contains(AppMainBottomTab.workout))
+          Offstage(
+            offstage: _activeTab != AppMainBottomTab.workout,
+            child: _buildWorkoutPage(),
+          ),
+      ],
+    );
   }
 
   Widget _buildTabsPageView() {
@@ -416,56 +599,95 @@ class _HomeShellPageState extends State<HomeShellPage>
         }
 
         setState(() {
+          _isMoreMenuOpen = false;
           _currentIndex = index;
+          _activeTab = _indexToTab(index);
           _visitedTabs.add(index);
           _lastTabRefreshAt.putIfAbsent(index, DateTime.now);
         });
-        _trackTabOpened(index);
+        _trackTabOpened(_indexToTab(index));
       },
-      children: List<Widget>.generate(4, _buildTabPage),
+      children: List<Widget>.generate(3, _buildTabPage),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final nestedCanPop = _nestedNavigatorKey.currentState?.canPop() ?? false;
-    final navOverlap =
-        homeShellBottomNavBodyHeight + MediaQuery.viewPaddingOf(context).bottom;
+    final navOverlap = homeShellBottomNavBodyHeight +
+        homeShellBottomNavFloatingGap +
+        MediaQuery.viewPaddingOf(context).bottom;
 
-    return HomeShellLayout(
-      navOverlap: navOverlap,
-      child: PopScope(
-        canPop: !nestedCanPop,
-        onPopInvokedWithResult: (didPop, result) {
-          if (didPop) {
-            return;
-          }
-          _nestedNavigatorKey.currentState?.maybePop();
-        },
-        child: Scaffold(
-          backgroundColor: AppColors.surface,
-          extendBody: true,
-          body: Navigator(
-            key: _nestedNavigatorKey,
-            observers: <NavigatorObserver>[_nestedNavObserver],
-            onGenerateRoute: (settings) {
-              return PageRouteBuilder<void>(
-                settings: settings,
-                pageBuilder: (context, animation, secondaryAnimation) {
-                  return _buildTabsPageView();
-                },
-                transitionDuration: Duration.zero,
-                reverseTransitionDuration: Duration.zero,
+    return HomeStepsWeightScope(
+      controller: _stepsWeightController,
+      child: HomeShellLayout(
+        navOverlap: navOverlap,
+        child: PopScope(
+          canPop: !nestedCanPop,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) {
+              return;
+            }
+            _nestedNavigatorKey.currentState?.maybePop();
+          },
+          child: Builder(
+            builder: (context) {
+              final mediaQuery = MediaQuery.of(context);
+              final paddedMediaQuery = mediaQuery.copyWith(
+                padding: mediaQuery.padding.copyWith(bottom: navOverlap),
+              );
+
+              return Scaffold(
+                backgroundColor: AppColors.pageBackground,
+                body: Stack(
+                  children: [
+                    MediaQuery(
+                      data: paddedMediaQuery,
+                      child: Navigator(
+                        key: _nestedNavigatorKey,
+                        observers: <NavigatorObserver>[_nestedNavObserver],
+                        onGenerateRoute: (settings) {
+                          return PageRouteBuilder<void>(
+                            settings: settings,
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) {
+                              return _buildShellBody();
+                            },
+                            transitionDuration: Duration.zero,
+                            reverseTransitionDuration: Duration.zero,
+                          );
+                        },
+                      ),
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: AppMainBottomNavigation(
+                        activeTab: _activeTab,
+                        isMoreMenuOpen: _isMoreMenuOpen,
+                        onMoreTap: () {
+                          setState(() {
+                            _isMoreMenuOpen = !_isMoreMenuOpen;
+                          });
+                        },
+                        onPerformanceTap: () =>
+                            _goToTab(AppMainBottomTab.performance),
+                        onWorkoutTap: () => _goToTab(AppMainBottomTab.workout),
+                        onNotificationsTap: _openNotifications,
+                        onStoreTap: _openStore,
+                        onProfileTap: _openProfile,
+                        onHomeTap: () => _goToTab(AppMainBottomTab.home),
+                        onMissionsTap: () => _goToTab(AppMainBottomTab.missions),
+                        onSocialTap: () => _goToTab(AppMainBottomTab.social),
+                        onCardFocusLabTap: _openCardFocusLab,
+                        onCenterActionTap: _openFoodCapture,
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
-          ),
-          bottomNavigationBar: AppMainBottomNavigation(
-            activeTab: _activeTab,
-            onPerformanceTap: () => _goToTab(AppMainBottomTab.performance),
-            onHomeTap: () => _goToTab(AppMainBottomTab.home),
-            onMissionsTap: () => _goToTab(AppMainBottomTab.missions),
-            onSocialTap: () => _goToTab(AppMainBottomTab.social),
-            onCenterActionTap: _openFoodCapture,
           ),
         ),
       ),
