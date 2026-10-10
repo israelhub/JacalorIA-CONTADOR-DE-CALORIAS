@@ -1,0 +1,38 @@
+' Jacaloria — arquitetura em 4 camadas
+' Preview: https://www.plantuml.com/plantuml
+@startuml Jacaloria - Arquitetura
+title Jacaloria — Arquitetura
+caption Mesma origem HTTPS: jacaloria.online
+footer Deploy: GitHub Actions (OIDC) publica a API (Docker, ECR, Elastic Beanstalk) e o Flutter Web (S3 + invalidação CloudFront)
+
+skinparam shadowing false
+skinparam roundCorner 18
+skinparam defaultFontSize 15
+skinparam defaultTextAlignment center
+skinparam ArrowColor #0F172A
+skinparam ArrowThickness 2
+skinparam ArrowFontSize 14
+skinparam ranksep 45
+skinparam linetype ortho
+
+skinparam rectangle {
+  BorderColor #0F172A
+  FontColor #0F172A
+  FontSize 15
+}
+
+top to bottom direction
+
+rectangle "**1. Clientes**\n\nFlutter Web (PWA)        ·        Flutter Android / iOS\ncâmera · Google Sign-In · notificações · widget" as clientes #BBF7D0
+
+rectangle "**2. CloudFront + ACM**\nhttps://jacaloria.online\n\nsite (SPA)          =>  S3\nAPI e dashboard     =>  NestJS" as edge #FDBA74
+
+rectangle "**3. Origens AWS**\n\n**S3** — Flutter Web estático (privado)\n**Elastic Beanstalk** — API NestJS (Docker :3000)\nAuth, Meals, AI, Social, Missions, Performance, Notifications" as aws #FDE68A
+
+rectangle "**4. Dados e serviços**\n\n**Postgres** (Supabase + TACO)     **Storage** (fotos)     **Gemini** (visão)\n**Google Identity** (Sign-In)     **SMTP** (e-mail)" as deps #EDE9FE
+
+clientes -down-> edge : HTTPS
+edge -down-> aws
+aws -down-> deps
+
+@enduml
