@@ -108,12 +108,18 @@ jobs:
 
       - name: Build web
         working-directory: frontend
+        env:
+          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: |
+          WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
+          if [ -z "$WEB_CLIENT_ID" ]; then
+            WEB_CLIENT_ID="618330390967-emagf9ea3j4l5kaeroi2s1bs527ugc0i.apps.googleusercontent.com"
+          fi
           flutter build web --release \
             --pwa-strategy=none \
             --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }} \
             --dart-define=SHARE_BASE_URL=${{ vars.SHARE_BASE_URL }} \
-            --dart-define=GOOGLE_WEB_CLIENT_ID=${{ vars.GOOGLE_WEB_CLIENT_ID }}
+            --dart-define=GOOGLE_WEB_CLIENT_ID="$WEB_CLIENT_ID"
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -243,11 +249,25 @@ jobs:
 
       - name: Build APK
         working-directory: frontend
+        env:
+          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: |
+          WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
+          if [ -z "$WEB_CLIENT_ID" ]; then
+            WEB_CLIENT_ID="618330390967-emagf9ea3j4l5kaeroi2s1bs527ugc0i.apps.googleusercontent.com"
+          fi
           flutter build apk --release \
             --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }} \
             --dart-define=SHARE_BASE_URL=${{ vars.SHARE_BASE_URL }} \
-            --dart-define=GOOGLE_WEB_CLIENT_ID=${{ vars.GOOGLE_WEB_CLIENT_ID }}
+            --dart-define=GOOGLE_WEB_CLIENT_ID="$WEB_CLIENT_ID"
+
+      - name: Conferir SHA da assinatura do APK
+        working-directory: frontend
+        run: |
+          keytool -list -v \
+            -keystore android/app/jacaloria-sideload.keystore \
+            -alias androiddebugkey \
+            -storepass android
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
