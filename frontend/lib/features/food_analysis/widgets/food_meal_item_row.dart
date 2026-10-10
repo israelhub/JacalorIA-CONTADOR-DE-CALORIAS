@@ -289,18 +289,12 @@ class _TacoStamp extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.action500.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(
-          color: AppColors.action500.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: AppColors.action500.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.verified_outlined,
-            size: 12,
-            color: AppColors.brand900,
-          ),
+          Icon(Icons.verified_outlined, size: 12, color: AppColors.brand900),
           const SizedBox(width: 3),
           Text(
             'TACO',

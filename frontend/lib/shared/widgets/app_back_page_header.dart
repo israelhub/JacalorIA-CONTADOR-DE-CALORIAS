@@ -57,7 +57,9 @@ class AppBackPageHeaderBar extends StatelessWidget {
               child: SizedBox(
                 height: chipHeight,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -140,9 +142,14 @@ class AppBackPageHeader extends StatelessWidget implements PreferredSizeWidget {
     if (media.padding.top >= barHeight) {
       return media.padding.top;
     }
-    final statusTop =
-        media.padding.top > 0 ? media.padding.top : media.viewPadding.top;
+    final statusTop = media.padding.top > 0
+        ? media.padding.top
+        : media.viewPadding.top;
     return statusTop + barHeight;
+  }
+
+  static double scrollTopInset(BuildContext context, {double extra = 0}) {
+    return contentTopInset(context) + extra;
   }
 
   @override
@@ -151,31 +158,31 @@ class AppBackPageHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final isTransparent = backgroundColor.a == 0;
-
-    return AppBar(
-      backgroundColor: backgroundColor,
-      surfaceTintColor: Colors.transparent,
-      shadowColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      forceMaterialTransparency: isTransparent,
-      automaticallyImplyLeading: false,
-      toolbarHeight: barHeight,
-      titleSpacing: 0,
-      title: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.pageHorizontal,
-        ),
-        child: AppBackPageHeaderBar(
-          title: title,
-          actions: actions,
-          trailing: trailing,
-          onBack: onBack,
-          showBack: showBack,
-          backButtonKey: backButtonKey,
+    final bar = SafeArea(
+      bottom: false,
+      child: SizedBox(
+        height: barHeight,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.pageHorizontal,
+          ),
+          child: AppBackPageHeaderBar(
+            title: title,
+            actions: actions,
+            trailing: trailing,
+            onBack: onBack,
+            showBack: showBack,
+            backButtonKey: backButtonKey,
+          ),
         ),
       ),
     );
+
+    if (isTransparent) {
+      return bar;
+    }
+
+    return ColoredBox(color: backgroundColor, child: bar);
   }
 }
 
@@ -192,16 +199,7 @@ class AppBackPageContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppAmbientPageBody(
-      child: SafeArea(
-        top: false,
-        bottom: bottom,
-        child: Padding(
-          padding: EdgeInsets.only(
-            top: AppBackPageHeader.contentTopInset(context),
-          ),
-          child: child,
-        ),
-      ),
+      child: SafeArea(top: false, bottom: bottom, child: child),
     );
   }
 }

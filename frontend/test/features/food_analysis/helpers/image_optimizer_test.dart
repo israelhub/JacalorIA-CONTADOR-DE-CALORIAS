@@ -40,5 +40,12 @@ void main() {
       expect(output.width, 800);
       expect(output.height, 1200);
     });
+
+    test('falha com formato que o decoder nao reconhece', () {
+      expect(
+        () => resizeAndEncodeForAnalysis(Uint8List.fromList([1, 2, 3, 4])),
+        throwsStateError,
+      );
+    });
   });
 }

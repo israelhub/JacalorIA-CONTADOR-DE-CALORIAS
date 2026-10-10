@@ -23,10 +23,7 @@ double resolveStepStrideMeters({num? heightCm}) {
   );
 }
 
-double estimateStepsDistanceKm({
-  required int steps,
-  num? heightCm,
-}) {
+double estimateStepsDistanceKm({required int steps, num? heightCm}) {
   if (steps <= 0) {
     return 0;
   }
@@ -34,14 +31,13 @@ double estimateStepsDistanceKm({
   return meters / 1000;
 }
 
-int estimateStepsCaloriesKcal({
-  required int steps,
-  num? weightKg,
-}) {
+int estimateStepsCaloriesKcal({required int steps, num? weightKg}) {
   if (steps <= 0) {
     return 0;
   }
-  final weight = (weightKg == null || weightKg <= 0) ? 70.0 : weightKg.toDouble();
+  final weight = (weightKg == null || weightKg <= 0)
+      ? 70.0
+      : weightKg.toDouble();
   return (steps * weight * stepsCaloriesPerKgPerStep).round();
 }
 
@@ -58,14 +54,18 @@ String formatStepsCount(int steps) {
   return buffer.toString();
 }
 
-String formatStepsDistanceKm(double kilometers) {
+String formatStepsDistanceKmNumber(double kilometers) {
   if (kilometers <= 0) {
-    return '0 km';
+    return '0';
   }
   if (kilometers < 10) {
-    return '${kilometers.toStringAsFixed(2).replaceAll('.', ',')} km';
+    return kilometers.toStringAsFixed(2).replaceAll('.', ',');
   }
-  return '${kilometers.toStringAsFixed(1).replaceAll('.', ',')} km';
+  return kilometers.toStringAsFixed(1).replaceAll('.', ',');
+}
+
+String formatStepsDistanceKm(double kilometers) {
+  return '${formatStepsDistanceKmNumber(kilometers)} km';
 }
 
 String formatStepsCalories(int kcal) => '$kcal kcal';
@@ -86,7 +86,11 @@ String homeStepsStatusMessage(HomeStepsOverview overview) {
 }
 
 num? readHomeProfileWeightKg(Map<String, dynamic>? profile) {
-  final value = readHomeProfileInt(profile, const ['weight', 'weightKg', 'weight_kg']);
+  final value = readHomeProfileInt(profile, const [
+    'weight',
+    'weightKg',
+    'weight_kg',
+  ]);
   return value > 0 ? value : null;
 }
 

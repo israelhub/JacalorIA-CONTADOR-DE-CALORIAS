@@ -83,6 +83,22 @@ export class SocialController {
     );
   }
 
+  @Get('friends/:friendUserId/daily-workouts')
+  getPublicProfileDailyWorkouts(
+    @Req() req: any,
+    @Param('friendUserId') friendUserId: string,
+    @Query('date') date?: string,
+    @Query('groupId') groupId?: string,
+    @Query('viaUserId') viaUserId?: string,
+  ) {
+    return this.socialService.getPublicProfileDailyWorkouts(
+      req.user.sub,
+      friendUserId,
+      date,
+      { groupId, viaUserId },
+    );
+  }
+
   @Get('friends/:userId/list')
   listUserFriends(
     @Req() req: any,

@@ -4,10 +4,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 
 class WorkoutEmptyState extends StatelessWidget {
-  const WorkoutEmptyState({
-    super.key,
-    required this.onCreateRoutine,
-  });
+  const WorkoutEmptyState({super.key, required this.onCreateRoutine});
 
   final VoidCallback onCreateRoutine;
 

@@ -197,11 +197,19 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
       ),
       body: AppBackPageContent(
         child: _loading
-            ? const AppSkeletonList(itemCount: 4, itemHeight: 80)
+            ? Padding(
+                padding: EdgeInsets.only(
+                  top: AppBackPageHeader.scrollTopInset(context),
+                ),
+                child: const AppSkeletonList(itemCount: 4, itemHeight: 80),
+              )
             : ListView(
                 padding: EdgeInsets.fromLTRB(
                   AppSpacing.pageHorizontal,
-                  AppSpacing.lg,
+                  AppBackPageHeader.scrollTopInset(
+                    context,
+                    extra: AppSpacing.lg,
+                  ),
                   AppSpacing.pageHorizontal,
                   homeShellScrollBottomInset(context),
                 ),
@@ -233,9 +241,7 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
                           enabled: _settings.masterEnabled,
                           busy: _saving,
                           onChanged: (value) {
-                            _persist(
-                              _settings.copyWith(masterEnabled: value),
-                            );
+                            _persist(_settings.copyWith(masterEnabled: value));
                           },
                         ),
                       ],
@@ -285,9 +291,7 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
                           const SizedBox(height: AppSpacing.md),
                         ],
                         if (_settings.canAddMore)
-                          _AddReminderTile(
-                            onTap: _saving ? null : _addReminder,
-                          )
+                          _AddReminderTile(onTap: _saving ? null : _addReminder)
                         else
                           Text(
                             'Limite de ${MealReminderSettings.maxReminders} lembretes atingido. '

@@ -140,11 +140,7 @@ class _WaterAddButton extends StatelessWidget {
           child: const SizedBox(
             width: 40,
             height: 40,
-            child: Icon(
-              Icons.add_rounded,
-              color: AppColors.surface,
-              size: 24,
-            ),
+            child: Icon(Icons.add_rounded, color: AppColors.surface, size: 24),
           ),
         ),
       ),

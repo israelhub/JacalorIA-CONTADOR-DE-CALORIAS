@@ -109,9 +109,9 @@ class _HomeStepsPageState extends State<HomeStepsPage> {
       _isSaving = true;
       _error = null;
     });
-    final saved = await HomeStepsWeightScope.of(context).setGoal(
-      clampDailyStepsGoal(goal),
-    );
+    final saved = await HomeStepsWeightScope.of(
+      context,
+    ).setGoal(clampDailyStepsGoal(goal));
     if (!mounted) {
       return;
     }
@@ -145,7 +145,7 @@ class _HomeStepsPageState extends State<HomeStepsPage> {
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.pageHorizontal,
-            AppSpacing.lg,
+            AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
             AppSpacing.pageHorizontal,
             homeShellScrollBottomInset(context),
           ),
@@ -175,9 +175,7 @@ class _HomeStepsPageState extends State<HomeStepsPage> {
                       controller: _goalController,
                       hintText: 'Ex.: 10000',
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       showBorder: true,
                       showShadow: false,
                       onChanged: (_) {

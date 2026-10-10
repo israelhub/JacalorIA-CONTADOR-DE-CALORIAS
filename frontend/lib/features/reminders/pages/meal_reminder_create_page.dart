@@ -98,7 +98,7 @@ class _MealReminderCreatePageState extends State<MealReminderCreatePage> {
         child: Padding(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.pageHorizontal,
-            AppSpacing.lg,
+            AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
             AppSpacing.pageHorizontal,
             homeShellScrollBottomInset(context),
           ),

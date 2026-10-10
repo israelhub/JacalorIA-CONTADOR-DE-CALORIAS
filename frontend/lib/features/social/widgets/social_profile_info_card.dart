@@ -145,9 +145,7 @@ class _CompactStartContent extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.left,
-          style: AppTextStyles.label.copyWith(
-            color: AppColors.brand900Variant,
-          ),
+          style: AppTextStyles.label.copyWith(color: AppColors.brand900Variant),
         ),
       ],
     );

@@ -70,7 +70,7 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.pageHorizontal,
-            AppSpacing.lg,
+            AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
             AppSpacing.pageHorizontal,
             homeShellScrollBottomInset(context),
           ),
@@ -166,7 +166,11 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
                           ),
                         )
                       else
-                        for (var index = 0; index < _results.length; index++) ...[
+                        for (
+                          var index = 0;
+                          index < _results.length;
+                          index++
+                        ) ...[
                           if (index > 0) const SizedBox(height: AppSpacing.sm),
                           SocialSearchResultItem(
                             user: _results[index],

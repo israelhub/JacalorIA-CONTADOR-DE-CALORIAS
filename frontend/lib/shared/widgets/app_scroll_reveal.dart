@@ -96,6 +96,14 @@ class _AppScrollRevealState extends State<AppScrollReveal> {
     });
   }
 
+  bool _isPartiallyInViewport(RenderBox box) {
+    final origin = box.localToGlobal(Offset.zero);
+    final top = origin.dy;
+    final bottom = top + box.size.height;
+    final height = MediaQuery.sizeOf(context).height;
+    return bottom > 0 && top < height;
+  }
+
   void _checkVisibility() {
     if (!mounted) {
       return;
@@ -130,14 +138,11 @@ class _AppScrollRevealState extends State<AppScrollReveal> {
       }
     }
 
-    final height = MediaQuery.sizeOf(context).height;
-    final top = origin.dy;
-    final inView = top < height * 0.88;
-    final belowFold = top > height * 0.98;
+    final inView = _isPartiallyInViewport(renderObject);
 
     if (!_measured) {
       _measured = true;
-      if (!belowFold) {
+      if (inView) {
         _armed = true;
         if (!_visible) {
           setState(() {
@@ -152,10 +157,11 @@ class _AppScrollRevealState extends State<AppScrollReveal> {
         _visible = false;
         _animate = false;
       });
+      _scheduleSettlingRechecks();
       return;
     }
 
-    if (belowFold) {
+    if (!inView) {
       if (_armed || _visible) {
         _revealGen += 1;
         _armed = false;
@@ -167,9 +173,24 @@ class _AppScrollRevealState extends State<AppScrollReveal> {
       return;
     }
 
-    if (inView && !_visible && !_armed) {
+    if (!_visible && !_armed) {
       _reveal();
     }
+  }
+
+  void _scheduleSettlingRechecks([int remaining = 6]) {
+    if (remaining <= 0 || !mounted) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _visible || _armed) {
+        return;
+      }
+      _checkVisibility();
+      if (!_visible && !_armed) {
+        _scheduleSettlingRechecks(remaining - 1);
+      }
+    });
   }
 
   Future<void> _reveal() async {

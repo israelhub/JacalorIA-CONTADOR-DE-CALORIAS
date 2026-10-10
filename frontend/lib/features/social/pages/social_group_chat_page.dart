@@ -475,7 +475,7 @@ class _SocialGroupChatPageState extends State<SocialGroupChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.pageBackground,
       resizeToAvoidBottomInset: false,
       body: AppAmbientPageBody(
         child: Column(

@@ -1,0 +1,2 @@
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS hide_public_profile_workouts BOOLEAN NOT NULL DEFAULT FALSE;

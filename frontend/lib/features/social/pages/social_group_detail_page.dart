@@ -191,7 +191,11 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       extendBodyBehindAppBar: true,
-      appBar: AppBackPageHeader(title: title, actions: _headerActions()),
+      appBar: AppBackPageHeader(
+        title: title,
+        backgroundColor: Colors.transparent,
+        actions: _headerActions(),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: _detail == null
           ? null
@@ -206,7 +210,13 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
             ),
       body: AppBackPageContent(
         bottom: false,
-        child: _buildContent(fabBottomInset: fabBottomInset),
+        child: _buildContent(
+          fabBottomInset: fabBottomInset,
+          scrollTopInset: AppBackPageHeader.scrollTopInset(
+            context,
+            extra: AppSpacing.md,
+          ),
+        ),
       ),
     );
   }
@@ -340,28 +350,37 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
     }
   }
 
-  Widget _buildContent({required double fabBottomInset}) {
+  Widget _buildContent({
+    required double fabBottomInset,
+    required double scrollTopInset,
+  }) {
     if (_isLoading) {
-      return const AppSkeletonList(itemCount: 5, itemHeight: 88);
+      return Padding(
+        padding: EdgeInsets.only(top: scrollTopInset),
+        child: const AppSkeletonList(itemCount: 5, itemHeight: 88),
+      );
     }
 
     if (_errorMessage != null || _detail == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _errorMessage ?? 'Não foi possível carregar o grupo.',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
+      return Padding(
+        padding: EdgeInsets.only(top: scrollTopInset),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xxl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _errorMessage ?? 'Não foi possível carregar o grupo.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppButton(label: 'Tentar novamente', onPressed: _loadDetail),
-            ],
+                const SizedBox(height: AppSpacing.lg),
+                AppButton(label: 'Tentar novamente', onPressed: _loadDetail),
+              ],
+            ),
           ),
         ),
       );
@@ -383,7 +402,7 @@ class _SocialGroupDetailPageState extends State<SocialGroupDetailPage>
       onRefresh: () => _loadDetail(silent: true),
       padding: EdgeInsets.fromLTRB(
         AppSpacing.pageHorizontal,
-        AppSpacing.md,
+        scrollTopInset,
         AppSpacing.pageHorizontal,
         fabBottomInset + 56 + AppSpacing.lg,
       ),

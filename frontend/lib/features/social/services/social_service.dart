@@ -83,9 +83,7 @@ class SocialService {
     int page = 1,
     int pageSize = 10,
   }) async {
-    final uri = Uri.parse(
-      '$_baseUrl/social/xp-ranking',
-    ).replace(
+    final uri = Uri.parse('$_baseUrl/social/xp-ranking').replace(
       queryParameters: {
         'period': period.apiValue,
         'page': '$page',
@@ -534,6 +532,44 @@ class SocialService {
     }
     throw Exception(
       _extractMessage(body, 'Erro ao carregar refeições do perfil.'),
+    );
+  }
+
+  Future<SocialMemberDailyWorkouts> fetchPublicProfileDailyWorkouts({
+    required String userId,
+    String? date,
+    String? groupId,
+    String? viaUserId,
+  }) async {
+    final queryParameters = <String, String>{};
+    final normalizedDate = date?.trim();
+    if (normalizedDate != null && normalizedDate.isNotEmpty) {
+      queryParameters['date'] = normalizedDate;
+    }
+    final normalizedGroupId = groupId?.trim();
+    if (normalizedGroupId != null && normalizedGroupId.isNotEmpty) {
+      queryParameters['groupId'] = normalizedGroupId;
+    }
+    final normalizedViaUserId = viaUserId?.trim();
+    if (normalizedViaUserId != null && normalizedViaUserId.isNotEmpty) {
+      queryParameters['viaUserId'] = normalizedViaUserId;
+    }
+    final uri =
+        Uri.parse(
+          '$_baseUrl/social/friends/${userId.trim()}/daily-workouts',
+        ).replace(
+          queryParameters: queryParameters.isEmpty ? null : queryParameters,
+        );
+    final response = await http.get(uri, headers: _headers());
+    final body = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Não foi possível carregar treinos do perfil.',
+    );
+    if (response.statusCode == 200) {
+      return SocialMemberDailyWorkouts.fromJson(body);
+    }
+    throw Exception(
+      _extractMessage(body, 'Erro ao carregar treinos do perfil.'),
     );
   }
 

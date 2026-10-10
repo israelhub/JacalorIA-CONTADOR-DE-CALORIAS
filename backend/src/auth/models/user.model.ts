@@ -147,6 +147,10 @@ export class User extends Model {
   @Column({ type: DataType.BOOLEAN, field: 'hide_public_profile_meals' })
   hidePublicProfileMeals: boolean;
 
+  @Default(false)
+  @Column({ type: DataType.BOOLEAN, field: 'hide_public_profile_workouts' })
+  hidePublicProfileWorkouts: boolean;
+
   @AllowNull(true)
   @Column({ type: DataType.DATE, field: 'last_active_at' })
   lastActiveAt: Date | null;

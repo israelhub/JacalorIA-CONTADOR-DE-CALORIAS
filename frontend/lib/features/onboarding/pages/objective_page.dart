@@ -40,93 +40,94 @@ class _ObjectivePageState extends State<ObjectivePage> {
               horizontal: AppSpacing.pageHorizontal,
             ),
             child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: AppSpacing.lg),
-              OnboardingStepHeader(
-                activeStep: 2,
-                onBack: () {
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-              const SizedBox(height: AppSpacing.xxxl),
-              Text(
-                'Qual seu objetivo?',
-                style: AppTextStyles.headingLarge.copyWith(
-                  color: AppColors.brand900Variant,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.huge + AppSpacing.lg),
-              OnboardingSelectOptionButton(
-                key: const ValueKey('objective-option-lose'),
-                boxKey: const ValueKey('objective-option-box-lose'),
-                label: 'Emagrecer',
-                isSelected: _selectedObjective == ObjectiveType.loseWeight,
-                height: AppSpacing.huge + AppSpacing.xs / 2,
-                textStyle: AppTextStyles.buttonSmall,
-                onTap: () {
-                  setState(() {
-                    _selectedObjective = ObjectiveType.loseWeight;
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              OnboardingSelectOptionButton(
-                key: const ValueKey('objective-option-gain'),
-                boxKey: const ValueKey('objective-option-box-gain'),
-                label: 'Ganhar massa',
-                isSelected: _selectedObjective == ObjectiveType.gainMass,
-                height: AppSpacing.huge + AppSpacing.xs / 2,
-                textStyle: AppTextStyles.buttonSmall,
-                onTap: () {
-                  setState(() {
-                    _selectedObjective = ObjectiveType.gainMass;
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              OnboardingSelectOptionButton(
-                key: const ValueKey('objective-option-maintain'),
-                boxKey: const ValueKey('objective-option-box-maintain'),
-                label: 'Manter peso',
-                isSelected: _selectedObjective == ObjectiveType.maintainWeight,
-                height: AppSpacing.huge + AppSpacing.xs / 2,
-                textStyle: AppTextStyles.buttonSmall,
-                onTap: () {
-                  setState(() {
-                    _selectedObjective = ObjectiveType.maintainWeight;
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.huge),
-              SizedBox(
-                key: const ValueKey('objective-next-button-box'),
-                width: double.infinity,
-                height: AppSpacing.huge + AppSpacing.xs,
-                child: AppButton(
-                  label: 'Avançar',
-                  onPressed: () {
-                    final data = Map<String, dynamic>.from(
-                      widget.onboardingData,
-                    );
-                    data['objective'] = _selectedObjective.name;
-
-                    AnalyticsService.instance.track(
-                      'onboarding_step_completed',
-                      properties: {'step': 'objective'},
-                    );
-
-                    context.pushSlidePage(
-                      ActivityLevelPage(onboardingData: data),
-                    );
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: AppSpacing.lg),
+                OnboardingStepHeader(
+                  activeStep: 2,
+                  onBack: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
                   },
-                  variant: AppButtonVariant.primary,
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(height: AppSpacing.xxxl),
+                Text(
+                  'Qual seu objetivo?',
+                  style: AppTextStyles.headingLarge.copyWith(
+                    color: AppColors.brand900Variant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.huge + AppSpacing.lg),
+                OnboardingSelectOptionButton(
+                  key: const ValueKey('objective-option-lose'),
+                  boxKey: const ValueKey('objective-option-box-lose'),
+                  label: 'Emagrecer',
+                  isSelected: _selectedObjective == ObjectiveType.loseWeight,
+                  height: AppSpacing.huge + AppSpacing.xs / 2,
+                  textStyle: AppTextStyles.buttonSmall,
+                  onTap: () {
+                    setState(() {
+                      _selectedObjective = ObjectiveType.loseWeight;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                OnboardingSelectOptionButton(
+                  key: const ValueKey('objective-option-gain'),
+                  boxKey: const ValueKey('objective-option-box-gain'),
+                  label: 'Ganhar massa',
+                  isSelected: _selectedObjective == ObjectiveType.gainMass,
+                  height: AppSpacing.huge + AppSpacing.xs / 2,
+                  textStyle: AppTextStyles.buttonSmall,
+                  onTap: () {
+                    setState(() {
+                      _selectedObjective = ObjectiveType.gainMass;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                OnboardingSelectOptionButton(
+                  key: const ValueKey('objective-option-maintain'),
+                  boxKey: const ValueKey('objective-option-box-maintain'),
+                  label: 'Manter peso',
+                  isSelected:
+                      _selectedObjective == ObjectiveType.maintainWeight,
+                  height: AppSpacing.huge + AppSpacing.xs / 2,
+                  textStyle: AppTextStyles.buttonSmall,
+                  onTap: () {
+                    setState(() {
+                      _selectedObjective = ObjectiveType.maintainWeight;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.huge),
+                SizedBox(
+                  key: const ValueKey('objective-next-button-box'),
+                  width: double.infinity,
+                  height: AppSpacing.huge + AppSpacing.xs,
+                  child: AppButton(
+                    label: 'Avançar',
+                    onPressed: () {
+                      final data = Map<String, dynamic>.from(
+                        widget.onboardingData,
+                      );
+                      data['objective'] = _selectedObjective.name;
+
+                      AnalyticsService.instance.track(
+                        'onboarding_step_completed',
+                        properties: {'step': 'objective'},
+                      );
+
+                      context.pushSlidePage(
+                        ActivityLevelPage(onboardingData: data),
+                      );
+                    },
+                    variant: AppButtonVariant.primary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -15,6 +15,9 @@ import { SocialGroup } from './models/social-group.model';
 import { SocialService } from './social.service';
 import { StreakModule } from '../streak/streak.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { WorkoutExercise } from '../workouts/models/workout-exercise.model';
+import { WorkoutLoadEntry } from '../workouts/models/workout-load-entry.model';
+import { WorkoutRoutine } from '../workouts/models/workout-routine.model';
 
 @Module({
   imports: [
@@ -32,6 +35,9 @@ import { AnalyticsModule } from '../analytics/analytics.module';
       User,
       Meal,
       UserCurrencyTransaction,
+      WorkoutRoutine,
+      WorkoutExercise,
+      WorkoutLoadEntry,
     ]),
   ],
   controllers: [SocialController],

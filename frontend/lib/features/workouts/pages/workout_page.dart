@@ -347,9 +347,7 @@ class _WorkoutPageState extends State<WorkoutPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          WorkoutHeroHeader(
-            onImportWithAi: _isBusy ? null : _importNotes,
-          ),
+          WorkoutHeroHeader(onImportWithAi: _isBusy ? null : _importNotes),
           Transform.translate(
             offset: const Offset(0, -workoutHeroContentOverlap),
             child: Padding(
@@ -361,9 +359,7 @@ class _WorkoutPageState extends State<WorkoutPage>
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildPlanCard(routines),
-                ],
+                children: [_buildPlanCard(routines)],
               ),
             ),
           ),
@@ -425,9 +421,7 @@ class _WorkoutPageState extends State<WorkoutPage>
               ],
               const SizedBox(height: AppSpacing.md),
             ],
-            _WorkoutAddExerciseCard(
-              onTap: _isBusy ? null : _createExercise,
-            ),
+            _WorkoutAddExerciseCard(onTap: _isBusy ? null : _createExercise),
           ],
         ],
       ),

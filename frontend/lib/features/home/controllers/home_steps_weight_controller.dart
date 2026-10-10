@@ -102,6 +102,13 @@ class HomeStepsWeightController extends ChangeNotifier {
 
   Future<HomeStepsStatus> activateTracking() async {
     await reloadSteps(requestPermission: true);
+    if (_steps.status == HomeStepsStatus.ready) {
+      return _steps.status;
+    }
+
+    // Após o diálogo de permissão o status ainda pode vir stale no mesmo ciclo.
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    await reloadSteps(quietly: true);
     return _steps.status;
   }
 

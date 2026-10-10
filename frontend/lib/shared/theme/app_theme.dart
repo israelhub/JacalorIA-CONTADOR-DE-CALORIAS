@@ -540,7 +540,7 @@ class AppTheme {
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: AppColors.pageBackground,
       textTheme: TextTheme(
         displayLarge: AppTextStyles.displayLarge.copyWith(
           color: AppColors.textPrimary,
