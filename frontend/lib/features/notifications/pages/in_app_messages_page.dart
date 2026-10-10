@@ -7,6 +7,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../home/widgets/home_shell_layout.dart';
 
 class InAppMessagesPage extends StatefulWidget {
   const InAppMessagesPage({super.key, this.store});
@@ -170,7 +171,7 @@ class _InAppMessagesPageState extends State<InAppMessagesPage> {
                         AppSpacing.pageHorizontal,
                         scrollTop,
                         AppSpacing.pageHorizontal,
-                        AppSpacing.xxxl,
+                        homeShellScrollBottomInset(context),
                       ),
                       itemCount: messages.length,
                       separatorBuilder: (_, _) =>

@@ -40,6 +40,15 @@ class _HomeShellOverlayNavigationBarState
     extends State<HomeShellOverlayNavigationBar> {
   bool _isMoreMenuOpen = false;
 
+  void _closeMoreMenu() {
+    if (!_isMoreMenuOpen) {
+      return;
+    }
+    setState(() {
+      _isMoreMenuOpen = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final shell = HomeShellPage.maybeController;
@@ -47,67 +56,63 @@ class _HomeShellOverlayNavigationBarState
       return const SizedBox.shrink();
     }
 
-    return AppMainBottomNavigation(
-      activeTab: shell.activeTab,
-      isMoreMenuOpen: _isMoreMenuOpen,
-      onMoreTap: () {
-        setState(() {
-          _isMoreMenuOpen = !_isMoreMenuOpen;
-        });
-      },
-      onCenterActionTap: () {
-        setState(() {
-          _isMoreMenuOpen = false;
-        });
-        unawaited(shell.openFoodCapture());
-      },
-      onPerformanceTap: () {
-        setState(() {
-          _isMoreMenuOpen = false;
-        });
-        unawaited(shell.openTab(AppMainBottomTab.performance));
-      },
-      onWorkoutTap: () {
-        setState(() {
-          _isMoreMenuOpen = false;
-        });
-        unawaited(shell.openTab(AppMainBottomTab.workout));
-      },
-      onNotificationsTap: () {
-        setState(() {
-          _isMoreMenuOpen = false;
-        });
-        unawaited(shell.openNotifications());
-      },
-      onStoreTap: () {
-        setState(() {
-          _isMoreMenuOpen = false;
-        });
-        unawaited(shell.openStore());
-      },
-      onProfileTap: () {
-        setState(() {
-          _isMoreMenuOpen = false;
-        });
-        unawaited(shell.openProfile());
-      },
-      onHomeTap: () {
-        setState(() {
-          _isMoreMenuOpen = false;
-        });
-        unawaited(shell.openTab(AppMainBottomTab.home));
-      },
-      onMissionsTap: () {
-        setState(() {
-          _isMoreMenuOpen = false;
-        });
-        unawaited(shell.openTab(AppMainBottomTab.missions));
-      },
-      onSocialTap: () {
-        setState(() {
-          _isMoreMenuOpen = false;
-        });
-        unawaited(shell.openTab(AppMainBottomTab.social));
+    return ListenableBuilder(
+      listenable: shell.navigationListenable,
+      builder: (context, _) {
+        return AppMainBottomNavigation(
+          activeTab: shell.activeTab,
+          overlayDestination: shell.overlayDestination,
+          isMoreMenuOpen: _isMoreMenuOpen,
+          onMoreTap: () {
+            setState(() {
+              _isMoreMenuOpen = !_isMoreMenuOpen;
+            });
+          },
+          onCenterActionTap: () {
+            _closeMoreMenu();
+            unawaited(shell.openFoodCapture());
+          },
+          onPerformanceTap: () {
+            _closeMoreMenu();
+            unawaited(shell.openTab(AppMainBottomTab.performance));
+          },
+          onWorkoutTap: () {
+            _closeMoreMenu();
+            unawaited(shell.openTab(AppMainBottomTab.workout));
+          },
+          onNotificationsTap: () {
+            _closeMoreMenu();
+            unawaited(shell.openNotifications());
+          },
+          onRemindersTap: () {
+            _closeMoreMenu();
+            unawaited(shell.openReminders());
+          },
+          onSupportTap: () {
+            _closeMoreMenu();
+            unawaited(shell.openSupport());
+          },
+          onStoreTap: () {
+            _closeMoreMenu();
+            unawaited(shell.openStore());
+          },
+          onProfileTap: () {
+            _closeMoreMenu();
+            unawaited(shell.openProfile());
+          },
+          onHomeTap: () {
+            _closeMoreMenu();
+            unawaited(shell.openTab(AppMainBottomTab.home));
+          },
+          onMissionsTap: () {
+            _closeMoreMenu();
+            unawaited(shell.openTab(AppMainBottomTab.missions));
+          },
+          onSocialTap: () {
+            _closeMoreMenu();
+            unawaited(shell.openTab(AppMainBottomTab.social));
+          },
+        );
       },
     );
   }

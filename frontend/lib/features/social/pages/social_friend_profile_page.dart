@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_page_route.dart';
@@ -127,27 +126,25 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
             : 'Perfil',
         backgroundColor: Colors.transparent,
       ),
-      body: AppAmbientPageBody(
-        child: SafeArea(
-          top: false,
-          bottom: false,
-          child: _isLoading
-              ? const _FriendProfileSkeleton()
-              : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xxl),
-                    child: Text(
-                      _error!,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: _isLoading
+            ? const _FriendProfileSkeleton()
+            : _error != null
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xxl),
+                  child: Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
                     ),
                   ),
-                )
-              : _buildProfile(),
-        ),
+                ),
+              )
+            : _buildProfile(),
       ),
     );
   }
@@ -181,6 +178,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
           AvatarProfilePreview(
             avatarUrl: profile.avatarUrl,
             frameId: profile.avatarFrameId,
+            backgroundId: profile.avatarBackgroundId,
             reactionEmojiId: profile.profileReactionEmojiId,
             name: profile.name,
             height: bannerHeight,
