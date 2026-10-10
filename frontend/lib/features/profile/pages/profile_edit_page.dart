@@ -9,11 +9,13 @@ import '../../../../shared/widgets/app_back_page_header.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_confirm_modal.dart';
 import '../../../../shared/widgets/app_date_picker.dart';
+import '../../../../shared/widgets/app_dropdown_menu.dart';
+import '../../../../shared/widgets/app_form_card.dart';
 import '../../../../shared/widgets/app_input.dart';
-import '../../../../shared/widgets/app_select_input_field.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/measurement_input_field.dart';
 import '../../auth/service/auth_service.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../helpers/profile_date_helpers.dart';
 import '../widgets/profile_privacy_card.dart';
 
@@ -401,191 +403,198 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
         extendBodyBehindAppBar: true,
-        appBar: const AppBackPageHeader(title: 'Editar dados pessoais'),
+        appBar: const AppBackPageHeader(
+          title: 'Editar dados pessoais',
+          backgroundColor: Colors.transparent,
+        ),
         body: AppBackPageContent(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSpacing.pageHorizontal,
               AppSpacing.lg,
               AppSpacing.pageHorizontal,
-              AppSpacing.xxxl,
+              homeShellScrollBottomInset(context),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: GestureDetector(
-                    onTap: _isSaving ? null : _pickAvatar,
-                    child: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 44,
-                          backgroundColor: AppColors.surfaceAlt,
-                          backgroundImage: avatarUrl?.startsWith('http') == true
-                              ? CachedNetworkImageProvider(avatarUrl!)
-                              : null,
-                          child: avatarUrl?.startsWith('http') == true
-                              ? null
-                              : Text(
-                                  initial,
-                                  style: AppTextStyles.headingSmall.copyWith(
-                                    color: AppColors.brand900Variant,
+            child: AppFormCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: GestureDetector(
+                      onTap: _isSaving ? null : _pickAvatar,
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 44,
+                            backgroundColor: AppColors.insetSurface,
+                            backgroundImage:
+                                avatarUrl?.startsWith('http') == true
+                                ? CachedNetworkImageProvider(avatarUrl!)
+                                : null,
+                            child: avatarUrl?.startsWith('http') == true
+                                ? null
+                                : Text(
+                                    initial,
+                                    style: AppTextStyles.headingSmall.copyWith(
+                                      color: AppColors.brand900Variant,
+                                    ),
                                   ),
+                          ),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.action500,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
                                 ),
-                        ),
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.action500,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.pill,
+                                border: Border.all(
+                                  color: AppColors.surface,
+                                  width: 2,
+                                ),
                               ),
-                              border: Border.all(
+                              padding: const EdgeInsets.all(AppSpacing.xs),
+                              child: const Icon(
+                                Icons.edit_rounded,
+                                size: 14,
                                 color: AppColors.surface,
-                                width: 2,
                               ),
-                            ),
-                            padding: const EdgeInsets.all(AppSpacing.xs),
-                            child: const Icon(
-                              Icons.edit_rounded,
-                              size: 14,
-                              color: AppColors.surface,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                AppInputField(
-                  label: 'Nome',
-                  hint: 'Ex.: Maria Silva',
-                  controller: _nameController,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppInputField(
-                  label: 'Data de nascimento',
-                  hint: 'Ex.: 15/03/1990',
-                  controller: _birthDateController,
-                  readOnly: true,
-                  onTap: _pickBirthDate,
-                  suffixIcon: IconButton(
-                    onPressed: _pickBirthDate,
-                    color: AppColors.textSecondary,
-                    icon: const Icon(Icons.calendar_today_outlined),
+                  const SizedBox(height: AppSpacing.xl),
+                  AppInputField(
+                    label: 'Nome',
+                    hint: 'Ex.: Maria Silva',
+                    controller: _nameController,
                   ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                MeasurementInputField(
-                  label: 'Peso',
-                  hint: 'Ex.: 70',
-                  controller: _weightController,
-                  unitSelectorKey: const ValueKey(
-                    'profile-edit-weight-unit-selector',
+                  const SizedBox(height: AppSpacing.lg),
+                  AppInputField(
+                    label: 'Data de nascimento',
+                    hint: 'Ex.: 15/03/1990',
+                    controller: _birthDateController,
+                    readOnly: true,
+                    onTap: _pickBirthDate,
+                    suffixIcon: IconButton(
+                      onPressed: _pickBirthDate,
+                      color: AppColors.textSecondary,
+                      icon: const Icon(Icons.calendar_today_outlined),
+                    ),
                   ),
-                  selectedUnit: _selectedWeightUnit,
-                  unitOptions: const ['kg', 'lb', 'g'],
-                  onUnitSelected: (unit) {
-                    setState(() {
-                      _selectedWeightUnit = unit;
-                    });
-                  },
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                  const SizedBox(height: AppSpacing.lg),
+                  MeasurementInputField(
+                    label: 'Peso',
+                    hint: 'Ex.: 70',
+                    controller: _weightController,
+                    unitSelectorKey: const ValueKey(
+                      'profile-edit-weight-unit-selector',
+                    ),
+                    selectedUnit: _selectedWeightUnit,
+                    unitOptions: const ['kg', 'lb', 'g'],
+                    onUnitSelected: (unit) {
+                      setState(() {
+                        _selectedWeightUnit = unit;
+                      });
+                    },
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                MeasurementInputField(
-                  label: 'Altura',
-                  hint: 'Ex.: 170',
-                  controller: _heightController,
-                  unitSelectorKey: const ValueKey(
-                    'profile-edit-height-unit-selector',
+                  const SizedBox(height: AppSpacing.lg),
+                  MeasurementInputField(
+                    label: 'Altura',
+                    hint: 'Ex.: 170',
+                    controller: _heightController,
+                    unitSelectorKey: const ValueKey(
+                      'profile-edit-height-unit-selector',
+                    ),
+                    selectedUnit: _selectedHeightUnit,
+                    unitOptions: const ['cm', 'm', 'ft', 'in'],
+                    onUnitSelected: (unit) {
+                      setState(() {
+                        _selectedHeightUnit = unit;
+                      });
+                    },
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
-                  selectedUnit: _selectedHeightUnit,
-                  unitOptions: const ['cm', 'm', 'ft', 'in'],
-                  onUnitSelected: (unit) {
-                    setState(() {
-                      _selectedHeightUnit = unit;
-                    });
-                  },
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                  const SizedBox(height: AppSpacing.lg),
+                  AppDropdownMenu(
+                    fieldKey: const ValueKey('profile-edit-activity-field'),
+                    label: 'Nível de atividade',
+                    hint: 'Ex.: Moderadamente ativo',
+                    selectedValue: _activityController.text,
+                    options: _activityLabels.values.toList(),
+                    onSelected: (value) {
+                      final entry = _activityLabels.entries.firstWhere(
+                        (entry) => entry.value == value,
+                        orElse: () =>
+                            const MapEntry('sedentary', 'Sedentário'),
+                      );
+                      setState(() {
+                        _selectedActivityLevel = entry.key;
+                        _activityController.text = entry.value;
+                      });
+                    },
                   ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppSelectInputField(
-                  fieldKey: const ValueKey('profile-edit-activity-field'),
-                  label: 'Nível de atividade',
-                  hint: 'Ex.: Moderadamente ativo',
-                  selectedValue: _activityController.text,
-                  options: _activityLabels.values.toList(),
-                  onSelected: (value) {
-                    final entry = _activityLabels.entries.firstWhere(
-                      (entry) => entry.value == value,
-                      orElse: () => const MapEntry('sedentary', 'Sedentário'),
-                    );
-                    setState(() {
-                      _selectedActivityLevel = entry.key;
-                      _activityController.text = entry.value;
-                    });
-                  },
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppSelectInputField(
-                  fieldKey: const ValueKey('profile-edit-sex-field'),
-                  label: 'Sexo',
-                  hint: 'Ex.: Feminino',
-                  selectedValue: _selectedSex ?? '',
-                  options: _sexOptions,
-                  onSelected: (value) {
-                    setState(() {
-                      _selectedSex = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppSelectInputField(
-                  fieldKey: const ValueKey('profile-edit-objective-field'),
-                  label: 'Objetivo',
-                  hint: 'Ex.: Emagrecer',
-                  selectedValue: _objectiveController.text,
-                  options: _objectiveLabels.values.toList(),
-                  onSelected: (value) {
-                    final entry = _objectiveLabels.entries.firstWhere(
-                      (entry) => entry.value == value,
-                      orElse: () =>
-                          const MapEntry('maintainWeight', 'Manter peso'),
-                    );
-                    setState(() {
-                      _selectedObjective = entry.key;
-                      _objectiveController.text = entry.value;
-                    });
-                  },
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                ProfilePrivacyCard(
-                  mealsVisible: !_hidePublicProfileMeals,
-                  busy: _isSaving,
-                  onMealsVisibleChanged: (visible) {
-                    setState(() {
-                      _hidePublicProfileMeals = !visible;
-                    });
-                  },
-                ),
-                const SizedBox(height: AppSpacing.xxxl),
-                SizedBox(
-                  height: AppSpacing.huge + AppSpacing.xs,
-                  child: AppButton(
-                    label: _isSaving ? 'Salvando...' : 'Salvar alterações',
-                    onPressed: _isSaving ? null : _saveProfile,
-                    variant: AppButtonVariant.primary,
+                  const SizedBox(height: AppSpacing.lg),
+                  AppDropdownMenu(
+                    fieldKey: const ValueKey('profile-edit-sex-field'),
+                    label: 'Sexo',
+                    hint: 'Ex.: Feminino',
+                    selectedValue: _selectedSex ?? '',
+                    options: _sexOptions,
+                    onSelected: (value) {
+                      setState(() {
+                        _selectedSex = value;
+                      });
+                    },
                   ),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.lg),
+                  AppDropdownMenu(
+                    fieldKey: const ValueKey('profile-edit-objective-field'),
+                    label: 'Objetivo',
+                    hint: 'Ex.: Emagrecer',
+                    selectedValue: _objectiveController.text,
+                    options: _objectiveLabels.values.toList(),
+                    onSelected: (value) {
+                      final entry = _objectiveLabels.entries.firstWhere(
+                        (entry) => entry.value == value,
+                        orElse: () =>
+                            const MapEntry('maintainWeight', 'Manter peso'),
+                      );
+                      setState(() {
+                        _selectedObjective = entry.key;
+                        _objectiveController.text = entry.value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  ProfilePrivacyCard(
+                    mealsVisible: !_hidePublicProfileMeals,
+                    busy: _isSaving,
+                    onMealsVisibleChanged: (visible) {
+                      setState(() {
+                        _hidePublicProfileMeals = !visible;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xxxl),
+                  SizedBox(
+                    height: AppSpacing.huge + AppSpacing.xs,
+                    child: AppButton(
+                      label: _isSaving ? 'Salvando...' : 'Salvar alterações',
+                      onPressed: _isSaving ? null : _saveProfile,
+                      variant: AppButtonVariant.primary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

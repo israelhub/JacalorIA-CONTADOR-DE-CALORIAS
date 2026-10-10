@@ -682,13 +682,13 @@ class _AddLoadCard extends StatelessWidget {
               const Icon(
                 Icons.add_rounded,
                 size: 22,
-                color: AppColors.action500,
+                color: AppColors.textPrimary,
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 'Adicionar carga',
                 style: AppTextStyles.homeAction.copyWith(
-                  color: AppColors.action500,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],

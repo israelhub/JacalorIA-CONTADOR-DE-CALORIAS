@@ -108,12 +108,6 @@ class _HomeShellOverlayNavigationBarState
         });
         unawaited(shell.openTab(AppMainBottomTab.social));
       },
-      onCardFocusLabTap: () {
-        setState(() {
-          _isMoreMenuOpen = false;
-        });
-        unawaited(shell.openCardFocusLab());
-      },
     );
   }
 }

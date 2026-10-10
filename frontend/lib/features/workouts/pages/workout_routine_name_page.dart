@@ -102,7 +102,6 @@ class _WorkoutRoutineNamePageState extends State<WorkoutRoutineNamePage> {
                   hintText: widget.hint,
                   showBorder: true,
                   showShadow: false,
-                  borderColor: AppColors.foodReviewFieldBorder,
                   onChanged: (_) {
                     if (_error != null) {
                       setState(() {

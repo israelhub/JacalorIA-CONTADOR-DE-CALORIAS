@@ -33,20 +33,19 @@ class AppAmbientPageGlow extends StatelessWidget {
           ),
           DecoratedBox(
             decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(1.05, -0.08),
-                radius: 3.1,
-                colors: [
-                  _yellowPastel.withValues(alpha: 0.92),
-                  _yellowPastel.withValues(alpha: 0.78),
-                  _yellowPastel.withValues(alpha: 0.4),
-                  _yellowPastel.withValues(alpha: 0.2),
-                  _yellowPastel.withValues(alpha: 0.08),
-                  _yellowPastel.withValues(alpha: 0.03),
-                  AppColors.pageBackground.withValues(alpha: 0),
-                ],
-                stops: const [0.0, 0.12, 0.26, 0.44, 0.62, 0.82, 1.0],
-              ),
+                    gradient: RadialGradient(
+                      center: const Alignment(1.05, -0.08),
+                      radius: 1.1,
+                      colors: [
+                        _yellowPastel.withValues(alpha: 0.92),
+                        _yellowPastel.withValues(alpha: 0.78),
+                        _yellowPastel.withValues(alpha: 0.4),
+                        _yellowPastel.withValues(alpha: 0.18),
+                        _yellowPastel.withValues(alpha: 0.06),
+                        AppColors.pageBackground.withValues(alpha: 0),
+                      ],
+                      stops: const [0.0, 0.14, 0.32, 0.52, 0.74, 1.0],
+                    ),
             ),
           ),
         ],

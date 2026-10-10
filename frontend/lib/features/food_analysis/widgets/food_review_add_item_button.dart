@@ -20,7 +20,7 @@ class FoodReviewAddItemButton extends StatelessWidget {
         borderRadius: radius,
         child: Container(
           width: double.infinity,
-          height: foodReviewControlHeight + AppSpacing.sm,
+          height: foodReviewControlHeight,
           decoration: BoxDecoration(
             color: AppColors.insetSurface,
             borderRadius: radius,
@@ -31,7 +31,7 @@ class FoodReviewAddItemButton extends StatelessWidget {
               const Icon(
                 Icons.add_rounded,
                 size: 22,
-                color: AppColors.action500,
+                color: AppColors.textPrimary,
               ),
               const SizedBox(width: AppSpacing.sm),
               Flexible(
@@ -40,7 +40,7 @@ class FoodReviewAddItemButton extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.homeAction.copyWith(
-                    color: AppColors.action500,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),

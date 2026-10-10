@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_form_card.dart';
 import '../../home/widgets/home_shell_layout.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_select_input_field.dart';
@@ -113,104 +114,108 @@ class _SocialPublicGroupsPageState extends State<SocialPublicGroupsPage> {
         bottom: false,
         child: Padding(
           padding: homeShellNestedFillPadding(context),
-          child: Column(
-            children: [
-              AppInputField(
-                label: '',
-                hint: 'Ex.: Família Saudável',
-                controller: _queryController,
-                suffixIcon: IconButton(
-                  onPressed: _load,
-                  icon: const Icon(Icons.search_rounded),
+          child: AppFormCard(
+            expand: true,
+            child: Column(
+              children: [
+                AppInputField(
+                  label: '',
+                  hint: 'Ex.: Família Saudável',
+                  controller: _queryController,
+                  suffixIcon: IconButton(
+                    onPressed: _load,
+                    icon: const Icon(Icons.search_rounded),
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Expanded(
-                    child: AppSelectInputField(
-                      label: 'Tempo',
-                      labelStyle: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      selectedValue: _selectedDurationLabel,
-                      options: _durationOptions,
-                      onSelected: (value) {
-                        setState(() {
-                          if (value == _anyDuration) {
-                            _durationDays = null;
-                            return;
-                          }
-                          _durationDays = value == 'Infinito'
-                              ? 0
-                              : int.tryParse(value.replaceAll(' dias', ''));
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: AppSelectInputField(
-                      label: 'Competição',
-                      labelStyle: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      selectedValue: _selectedCompetitionLabel,
-                      options: _competitionOptions,
-                      onSelected: (value) {
-                        setState(() {
-                          if (value == _anyCompetition) {
-                            _competitionType = null;
-                            return;
-                          }
-                          final match = _types.where(
-                            (entry) => entry.value == value,
-                          );
-                          _competitionType = match.isEmpty
-                              ? null
-                              : match.first.key;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppButton(
-                label: 'Aplicar filtros',
-                variant: AppButtonVariant.outline,
-                onPressed: _load,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Expanded(
-                child: _loading
-                    ? const AppSkeletonList(
-                        itemCount: 4,
-                        itemHeight: 96,
-                        padding: EdgeInsets.zero,
-                      )
-                    : _error != null
-                    ? Center(child: Text(_error!))
-                    : _groups.isEmpty
-                    ? const Center(
-                        child: Text('Nenhum grupo público encontrado.'),
-                      )
-                    : ListView.separated(
-                        itemCount: _groups.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: AppSpacing.sm),
-                        itemBuilder: (context, index) {
-                          final group = _groups[index];
-                          return SocialGroupCard(
-                            group: group,
-                            onTap: () => Navigator.of(context).pop(group.id),
-                          );
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppSelectInputField(
+                        label: 'Tempo',
+                        labelStyle: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        selectedValue: _selectedDurationLabel,
+                        options: _durationOptions,
+                        onSelected: (value) {
+                          setState(() {
+                            if (value == _anyDuration) {
+                              _durationDays = null;
+                              return;
+                            }
+                            _durationDays = value == 'Infinito'
+                                ? 0
+                                : int.tryParse(value.replaceAll(' dias', ''));
+                          });
                         },
                       ),
-              ),
-            ],
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: AppSelectInputField(
+                        label: 'Competição',
+                        labelStyle: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        selectedValue: _selectedCompetitionLabel,
+                        options: _competitionOptions,
+                        onSelected: (value) {
+                          setState(() {
+                            if (value == _anyCompetition) {
+                              _competitionType = null;
+                              return;
+                            }
+                            final match = _types.where(
+                              (entry) => entry.value == value,
+                            );
+                            _competitionType = match.isEmpty
+                                ? null
+                                : match.first.key;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                AppButton(
+                  label: 'Aplicar filtros',
+                  variant: AppButtonVariant.outline,
+                  onPressed: _load,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Expanded(
+                  child: _loading
+                      ? const AppSkeletonList(
+                          itemCount: 4,
+                          itemHeight: 96,
+                          padding: EdgeInsets.zero,
+                        )
+                      : _error != null
+                      ? Center(child: Text(_error!))
+                      : _groups.isEmpty
+                      ? const Center(
+                          child: Text('Nenhum grupo público encontrado.'),
+                        )
+                      : ListView.separated(
+                          itemCount: _groups.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: AppSpacing.sm),
+                          itemBuilder: (context, index) {
+                            final group = _groups[index];
+                            return SocialGroupCard(
+                              group: group,
+                              backgroundColor: AppColors.insetSurface,
+                              onTap: () => Navigator.of(context).pop(group.id),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

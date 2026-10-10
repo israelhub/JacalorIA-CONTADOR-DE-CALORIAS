@@ -4,6 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_form_card.dart';
 import '../../home/widgets/home_shell_layout.dart';
 import '../widgets/social_profile_invite_card.dart';
 
@@ -44,69 +45,71 @@ class SocialAddFriendPage extends StatelessWidget {
             AppSpacing.pageHorizontal,
             homeShellScrollBottomInset(context),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SocialProfileInviteCard(
-                name: userName,
-                avatarUrl: userAvatarUrl,
-                avatarFrameId: userAvatarFrameId,
-                onCopyId: onCopyId,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Center(
-                child: Text(
-                  'Escanear para adicionar aos amigos',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.captionStrong.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+          child: AppFormCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SocialProfileInviteCard(
+                  name: userName,
+                  avatarUrl: userAvatarUrl,
+                  avatarFrameId: userAvatarFrameId,
+                  onCopyId: onCopyId,
                 ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Center(
-                child: QrImageView(
-                  data: qrPayload,
-                  size: 240,
-                  backgroundColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Row(
-                children: [
-                  Expanded(
-                    child: AppButton(
-                      label: 'Buscar usuário',
-                      variant: AppButtonVariant.outline,
-                      leadingIcon: Icons.search_rounded,
-                      onPressed: onSearchUser,
-                      textStyle: AppTextStyles.buttonMedium.copyWith(
-                        fontSize: 14,
-                      ),
+                const SizedBox(height: AppSpacing.md),
+                Center(
+                  child: Text(
+                    'Escanear para adicionar aos amigos',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.captionStrong.copyWith(
+                      color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: AppButton(
-                      label: 'Escanear QR',
-                      variant: AppButtonVariant.outline,
-                      leadingIcon: Icons.qr_code_scanner_rounded,
-                      onPressed: onScanQr,
-                      textStyle: AppTextStyles.buttonMedium.copyWith(
-                        fontSize: 14,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Center(
+                  child: QrImageView(
+                    data: qrPayload,
+                    size: 240,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppButton(
+                        label: 'Buscar usuário',
+                        variant: AppButtonVariant.outline,
+                        leadingIcon: Icons.search_rounded,
+                        onPressed: onSearchUser,
+                        textStyle: AppTextStyles.buttonMedium.copyWith(
+                          fontSize: 14,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppButton(
-                label: 'Compartilhar link de amizade',
-                variant: AppButtonVariant.primary,
-                leadingIcon: Icons.share_rounded,
-                onPressed: onShareLink,
-              ),
-            ],
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: AppButton(
+                        label: 'Escanear QR',
+                        variant: AppButtonVariant.outline,
+                        leadingIcon: Icons.qr_code_scanner_rounded,
+                        onPressed: onScanQr,
+                        textStyle: AppTextStyles.buttonMedium.copyWith(
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                AppButton(
+                  label: 'Compartilhar link de amizade',
+                  variant: AppButtonVariant.primary,
+                  leadingIcon: Icons.share_rounded,
+                  onPressed: onShareLink,
+                ),
+              ],
+            ),
           ),
         ),
       ),

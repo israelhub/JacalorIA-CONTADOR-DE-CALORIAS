@@ -32,6 +32,9 @@ class SocialFriendsTabPage extends StatelessWidget {
           label: 'Adicionar amigo',
           variant: AppButtonVariant.outline,
           leadingIcon: Icons.person_add_alt_1_rounded,
+          textStyle: AppTextStyles.buttonMedium.copyWith(
+            color: AppColors.textPrimary,
+          ),
           onPressed: onAddFriend,
         ),
         const SizedBox(height: AppSpacing.lg),

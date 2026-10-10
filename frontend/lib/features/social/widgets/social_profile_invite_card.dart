@@ -23,7 +23,7 @@ class SocialProfileInviteCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surfaceAlt,
+        color: AppColors.insetSurface,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(

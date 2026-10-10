@@ -144,6 +144,11 @@ class _OutlineButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final foreground = textStyle?.color ?? AppColors.action500;
+    final resolvedStyle = (textStyle ?? AppTextStyles.buttonMedium).copyWith(
+      color: foreground,
+    );
+
     return _PressableButtonSurface(
       onTap: onPressed,
       child: Container(
@@ -163,28 +168,18 @@ class _OutlineButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 17),
         alignment: Alignment.center,
         child: (leadingIcon == null && trailingIcon == null)
-            ? Text(
-                label,
-                style: (textStyle ?? AppTextStyles.buttonMedium).copyWith(
-                  color: AppColors.action500,
-                ),
-              )
+            ? Text(label, style: resolvedStyle)
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (leadingIcon != null) ...[
-                    Icon(leadingIcon, color: AppColors.action500, size: 18),
+                    Icon(leadingIcon, color: foreground, size: 18),
                     const SizedBox(width: AppSpacing.xs),
                   ],
-                  Text(
-                    label,
-                    style: (textStyle ?? AppTextStyles.buttonMedium).copyWith(
-                      color: AppColors.action500,
-                    ),
-                  ),
+                  Text(label, style: resolvedStyle),
                   if (trailingIcon != null) ...[
                     const SizedBox(width: AppSpacing.xs),
-                    Icon(trailingIcon, color: AppColors.action500, size: 18),
+                    Icon(trailingIcon, color: foreground, size: 18),
                   ],
                 ],
               ),

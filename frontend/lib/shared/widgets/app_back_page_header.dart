@@ -49,30 +49,33 @@ class AppBackPageHeaderBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: chipGap),
+          if (title.trim().isNotEmpty) const SizedBox(width: chipGap),
         ],
-        Expanded(
-          child: _HeaderChip(
-            child: SizedBox(
-              height: chipHeight,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.homeSectionTitle.copyWith(
-                      color: AppColors.brand900Variant,
-                      fontWeight: FontWeight.w600,
+        if (title.trim().isNotEmpty)
+          Expanded(
+            child: _HeaderChip(
+              child: SizedBox(
+                height: chipHeight,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.homeSectionTitle.copyWith(
+                        color: AppColors.brand900Variant,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ),
+          )
+        else
+          const Spacer(),
         if (hasTrailing) ...[
           const SizedBox(width: chipGap),
           trailing!,
@@ -130,9 +133,16 @@ class AppBackPageHeader extends StatelessWidget implements PreferredSizeWidget {
   final Key? backButtonKey;
 
   static double contentTopInset(BuildContext context) {
-    // viewPadding: com extendBodyBehindAppBar o Scaffold ja mete a altura do
-    // AppBar em padding.top do body; somar barHeight de novo dobrava o vazio.
-    return MediaQuery.viewPaddingOf(context).top + barHeight;
+    final media = MediaQuery.of(context);
+    // No body com extendBodyBehindAppBar o Scaffold zera viewPadding.top e
+    // define padding.top como a altura real do AppBar; usar viewPadding aqui
+    // subestima o inset no Android e o conteudo fica sob os chips.
+    if (media.padding.top >= barHeight) {
+      return media.padding.top;
+    }
+    final statusTop =
+        media.padding.top > 0 ? media.padding.top : media.viewPadding.top;
+    return statusTop + barHeight;
   }
 
   @override
@@ -145,6 +155,7 @@ class AppBackPageHeader extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: backgroundColor,
       surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       forceMaterialTransparency: isTransparent,
@@ -172,7 +183,7 @@ class AppBackPageContent extends StatelessWidget {
   const AppBackPageContent({
     super.key,
     required this.child,
-    this.bottom = true,
+    this.bottom = false,
   });
 
   final Widget child;

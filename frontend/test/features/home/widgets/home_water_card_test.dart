@@ -23,14 +23,12 @@ void main() {
     );
 
     expect(find.text('Registre sua água!'), findsOneWidget);
-    expect(find.text('500 ml / 2 L'), findsNothing);
     expect(find.text('500'), findsOneWidget);
-    expect(find.text('ml'), findsOneWidget);
+    expect(find.text(' / 2 L'), findsOneWidget);
     expect(find.byKey(const ValueKey('home-water-add')), findsOneWidget);
-    expect(find.text('Adicionar água'), findsNothing);
   });
 
-  testWidgets('botao abre o seletor de quantidade', (tester) async {
+  testWidgets('botao abre o modal manual de quantidade', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Builder(
@@ -56,9 +54,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('home-water-add')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Quanto de água?'), findsOneWidget);
-    expect(find.text('200 ml'), findsOneWidget);
-    expect(find.text('300 ml'), findsOneWidget);
-    expect(find.text('500 ml'), findsOneWidget);
+    expect(find.text('Registrar água'), findsOneWidget);
+    expect(find.byKey(const ValueKey('home-water-edit-field')), findsOneWidget);
+    expect(find.text('200 ml'), findsNothing);
+    expect(find.text('300 ml'), findsNothing);
+    expect(find.text('500 ml'), findsNothing);
+    expect(find.text('Salvar'), findsOneWidget);
   });
 }

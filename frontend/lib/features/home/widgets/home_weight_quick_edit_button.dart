@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -10,7 +12,7 @@ import '../../auth/service/auth_service.dart';
 
 export 'home_shell_layout.dart';
 
-/// Opens [HomeWeightQuickEditButton] from an external trigger (ex.: card da home).
+/// Opens the weight editor from an external trigger (ex.: card da home).
 class HomeWeightQuickEditController {
   VoidCallback? _open;
 
@@ -23,6 +25,27 @@ class HomeWeightQuickEditController {
       _open = null;
     }
   }
+}
+
+Future<void> showHomeWeightEditSheet(
+  BuildContext context, {
+  required Map<String, dynamic>? userProfile,
+  AuthService? authService,
+  ValueChanged<Map<String, dynamic>>? onWeightUpdated,
+}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) {
+      return _HomeWeightEditSheet(
+        userProfile: userProfile,
+        authService: authService,
+        onWeightUpdated: onWeightUpdated,
+      );
+    },
+  );
 }
 
 class HomeWeightQuickEditButton extends StatefulWidget {
@@ -40,7 +63,7 @@ class HomeWeightQuickEditButton extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>>? onWeightUpdated;
   final HomeWeightQuickEditController? controller;
 
-  /// When false, only the overlay host is mounted (trigger via [controller]).
+  /// When false, only the host is mounted (trigger via [controller]).
   final bool showTrigger;
 
   @override
@@ -49,22 +72,6 @@ class HomeWeightQuickEditButton extends StatefulWidget {
 }
 
 class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
-  final OverlayPortalController _portalController = OverlayPortalController();
-  final TextEditingController _controller = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-
-  /// Pre-mounted host keeps [_focusNode] attached so the FAB tap can open the
-  /// IME inside the same user gesture. While the sheet is open, the visible
-  /// field owns the node instead.
-  final TextEditingController _hostController = TextEditingController();
-  final FocusNode _hostFocusNode = FocusNode();
-
-  var _isSaving = false;
-  var _isOpen = false;
-  var _isHandlingClose = false;
-
-  AuthService get _authService => widget.authService ?? AuthService();
-
   @override
   void initState() {
     super.initState();
@@ -79,6 +86,61 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
       widget.controller?._attach(_openEditor);
     }
   }
+
+  @override
+  void dispose() {
+    widget.controller?._detach(_openEditor);
+    super.dispose();
+  }
+
+  void _openEditor() {
+    unawaited(
+      showHomeWeightEditSheet(
+        context,
+        userProfile: widget.userProfile,
+        authService: widget.authService,
+        onWeightUpdated: widget.onWeightUpdated,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.showTrigger) {
+      return const SizedBox.shrink();
+    }
+
+    return AppFloatingCircleButton(
+      key: const ValueKey('home-weight-quick-edit-button'),
+      icon: Icons.monitor_weight_outlined,
+      semanticLabel: 'Atualizar peso',
+      onPressed: _openEditor,
+    );
+  }
+}
+
+class _HomeWeightEditSheet extends StatefulWidget {
+  const _HomeWeightEditSheet({
+    required this.userProfile,
+    this.authService,
+    this.onWeightUpdated,
+  });
+
+  final Map<String, dynamic>? userProfile;
+  final AuthService? authService;
+  final ValueChanged<Map<String, dynamic>>? onWeightUpdated;
+
+  @override
+  State<_HomeWeightEditSheet> createState() => _HomeWeightEditSheetState();
+}
+
+class _HomeWeightEditSheetState extends State<_HomeWeightEditSheet> {
+  late final TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
+  var _isSaving = false;
+  var _isHandlingClose = false;
+
+  AuthService get _authService => widget.authService ?? AuthService();
 
   double get _currentWeight {
     final rawWeight = widget.userProfile?['weight'];
@@ -117,66 +179,19 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    final text = _formatWeight(_currentWeight);
+    _controller = TextEditingController(
+      text: text,
+    )..selection = TextSelection(baseOffset: 0, extentOffset: text.length);
+  }
+
+  @override
   void dispose() {
-    widget.controller?._detach(_openEditor);
     _focusNode.dispose();
     _controller.dispose();
-    _hostFocusNode.dispose();
-    _hostController.dispose();
     super.dispose();
-  }
-
-  void _showKeyboard(FocusNode node) {
-    node.requestFocus();
-    SystemChannels.textInput.invokeMethod<void>('TextInput.show');
-  }
-
-  void _primeKeyboard() {
-    if (_isSaving) {
-      return;
-    }
-    _showKeyboard(_hostFocusNode);
-  }
-
-  void _openEditor() {
-    if (_isSaving || _isOpen) {
-      return;
-    }
-
-    final text = _formatWeight(_currentWeight);
-    _controller.value = TextEditingValue(
-      text: text,
-      selection: TextSelection(baseOffset: 0, extentOffset: text.length),
-    );
-
-    // Keep IME open from the pointer-down prime (same gesture).
-    _showKeyboard(_hostFocusNode);
-
-    setState(() => _isOpen = true);
-    _portalController.show();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_isOpen) {
-        return;
-      }
-      _showKeyboard(_focusNode);
-      Future<void>.delayed(const Duration(milliseconds: 30), () {
-        if (mounted && _isOpen) {
-          _showKeyboard(_focusNode);
-        }
-      });
-    });
-  }
-
-  void _closeEditor() {
-    if (!_isOpen) {
-      return;
-    }
-    _focusNode.unfocus();
-    _hostFocusNode.unfocus();
-    SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
-    _portalController.hide();
-    setState(() => _isOpen = false);
   }
 
   bool _isUnchanged(double weight, String unit) {
@@ -202,20 +217,20 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
   }
 
   Future<void> _requestClose() async {
-    if (!_isOpen || _isHandlingClose || _isSaving) {
+    if (_isHandlingClose || _isSaving) {
       return;
     }
 
     if (!_hasUnsavedChanges) {
-      _closeEditor();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
       return;
     }
 
     _isHandlingClose = true;
     try {
       _focusNode.unfocus();
-      _hostFocusNode.unfocus();
-      SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
 
       final shouldSave = await AppConfirmModal.show(
         context,
@@ -233,16 +248,18 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
       if (shouldSave) {
         final weight = _parsedWeight;
         if (weight == null) {
-          _closeEditor();
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
           return;
         }
-        final unit = _currentUnit;
-        _closeEditor();
-        await _persistWeight(weight, unit);
+        await _persistWeight(weight, _currentUnit, closeOnSuccess: true);
         return;
       }
 
-      _closeEditor();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     } finally {
       _isHandlingClose = false;
     }
@@ -253,12 +270,14 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
     if (weight == null) {
       return;
     }
-    final unit = _currentUnit;
-    _closeEditor();
-    await _persistWeight(weight, unit);
+    await _persistWeight(weight, _currentUnit, closeOnSuccess: true);
   }
 
-  Future<void> _persistWeight(double weight, String unit) async {
+  Future<void> _persistWeight(
+    double weight,
+    String unit, {
+    bool closeOnSuccess = false,
+  }) async {
     setState(() => _isSaving = true);
     try {
       final updated = await _authService.updateProfile(<String, dynamic>{
@@ -271,8 +290,13 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
         'weight': weight,
         'weightUnit': unit,
       });
-      if (mounted) {
-        AppToast.success(context, message: 'Peso atualizado.');
+      if (!mounted) {
+        return;
+      }
+      AppToast.success(context, message: 'Peso atualizado.');
+      if (closeOnSuccess) {
+        Navigator.of(context).pop();
+        return;
       }
     } catch (e) {
       if (mounted) {
@@ -285,159 +309,112 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
     }
   }
 
-  Widget _buildSheet(BuildContext context) {
-    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-
-    return Material(
-      color: Colors.transparent,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: _requestClose,
-              child: const ColoredBox(color: Color(0x8A000000)),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Padding(
-              padding: EdgeInsets.only(bottom: keyboardInset),
-              child: Material(
-                color: AppColors.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.lg),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xxl,
-                      AppSpacing.xl,
-                      AppSpacing.xxl,
-                      AppSpacing.xl,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Atualizar peso',
-                          style: AppTextStyles.headingSmall.copyWith(
-                            color: AppColors.brand900Variant,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minWidth: 96,
-                                maxWidth: 180,
-                              ),
-                              child: TextField(
-                                key: const ValueKey('home-weight-edit-field'),
-                                controller: _controller,
-                                focusNode: _focusNode,
-                                autofocus: true,
-                                textAlign: TextAlign.center,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                textInputAction: TextInputAction.done,
-                                enableSuggestions: false,
-                                autocorrect: false,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                    RegExp(r'[0-9.,]'),
-                                  ),
-                                  LengthLimitingTextInputFormatter(6),
-                                ],
-                                style: AppTextStyles.headingLarge.copyWith(
-                                  color: AppColors.brand900Variant,
-                                ),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  border: InputBorder.none,
-                                  hintText: 'Ex.: 70',
-                                  hintStyle: AppTextStyles.headingLarge
-                                      .copyWith(
-                                        color: AppColors.textSecondary
-                                            .withValues(alpha: 0.45),
-                                      ),
-                                ),
-                                onChanged: (_) => setState(() {}),
-                                onTap: () => _showKeyboard(_focusNode),
-                                onSubmitted: (_) => _submit(),
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.xs),
-                            Text(
-                              _currentUnit,
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
-                        AppButton(
-                          label: 'Salvar',
-                          onPressed: _parsedWeight == null ? null : _submit,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return OverlayPortal(
-      controller: _portalController,
-      overlayChildBuilder: _buildSheet,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Non-zero layout (not Offstage): some platforms skip IME for
-          // offstage/zero-size editors even when FocusNode.requestFocus succeeds.
-          SizedBox(
-            width: 1,
-            height: 1,
-            child: TextField(
-              key: const ValueKey('home-weight-edit-field-host'),
-              controller: _hostController,
-              focusNode: _hostFocusNode,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return PopScope(
+      canPop: !_hasUnsavedChanges && !_isSaving,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || _isHandlingClose || _isSaving) {
+          return;
+        }
+        unawaited(_requestClose());
+      },
+      child: Padding(
+        padding: EdgeInsets.only(bottom: keyboardInset),
+        child: Material(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.lg),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xxl,
+                AppSpacing.xl,
+                AppSpacing.xxl,
+                AppSpacing.xl,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Atualizar peso',
+                    style: AppTextStyles.headingSmall.copyWith(
+                      color: AppColors.brand900Variant,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minWidth: 96,
+                          maxWidth: 180,
+                        ),
+                        child: TextField(
+                          key: const ValueKey('home-weight-edit-field'),
+                          controller: _controller,
+                          focusNode: _focusNode,
+                          autofocus: true,
+                          textAlign: TextAlign.center,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          textInputAction: TextInputAction.done,
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[0-9.,]'),
+                            ),
+                            LengthLimitingTextInputFormatter(6),
+                          ],
+                          style: AppTextStyles.headingLarge.copyWith(
+                            color: AppColors.brand900Variant,
+                          ),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            hintText: 'Ex.: 70',
+                            hintStyle: AppTextStyles.headingLarge.copyWith(
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.45,
+                              ),
+                            ),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                          onSubmitted: (_) => _submit(),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        _currentUnit,
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  AppButton(
+                    label: 'Salvar',
+                    onPressed: _parsedWeight == null || _isSaving
+                        ? null
+                        : _submit,
+                  ),
+                ],
               ),
             ),
           ),
-          if (widget.showTrigger)
-            Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerDown: (_) => _primeKeyboard(),
-              child: AppFloatingCircleButton(
-                key: const ValueKey('home-weight-quick-edit-button'),
-                icon: Icons.monitor_weight_outlined,
-                semanticLabel: 'Atualizar peso',
-                onPressed: _openEditor,
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }

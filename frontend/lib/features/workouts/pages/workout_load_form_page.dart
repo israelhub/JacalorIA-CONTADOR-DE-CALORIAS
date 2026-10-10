@@ -152,7 +152,6 @@ class _WorkoutLoadFormPageState extends State<WorkoutLoadFormPage> {
                   ),
                   showBorder: true,
                   showShadow: false,
-                  borderColor: AppColors.foodReviewFieldBorder,
                   onChanged: (_) => _clearError(),
                 ),
                 if (!widget.lockDate) ...[
@@ -177,9 +176,7 @@ class _WorkoutLoadFormPageState extends State<WorkoutLoadFormPage> {
                         decoration: BoxDecoration(
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(AppRadius.md),
-                          border: Border.all(
-                            color: AppColors.foodReviewFieldBorder,
-                          ),
+                          border: Border.all(color: AppColors.inputBorder),
                         ),
                         child: Text(
                           formatWorkoutDateLong(_selectedDate),

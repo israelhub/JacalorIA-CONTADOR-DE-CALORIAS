@@ -170,6 +170,58 @@ void main() {
       );
     });
 
+    testWidgets(
+      'mostra lixeira com um item e desabilita confirmar ao excluir todos',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(412, 917);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          _wrap(
+            FoodReviewPage(
+              imageBytes: null,
+              analysis: const FoodAnalysisResult(
+                items: [
+                  FoodAnalysisItem(
+                    name: 'Arroz branco cozido',
+                    grams: 100,
+                    calories: 130,
+                    protein: 3,
+                    carbs: 28,
+                    fat: 0.2,
+                  ),
+                ],
+                totals: FoodAnalysisTotals(
+                  calories: 130,
+                  protein: 3,
+                  carbs: 28,
+                  fat: 0.2,
+                ),
+                justification: 'ok',
+              ),
+              analysisService: _FakeFoodAnalysisService(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.delete), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.delete));
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.delete), findsNothing);
+        expect(find.text('Confirmar'), findsOneWidget);
+
+        await tester.tap(find.text('Confirmar'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(FoodMealDetailsPage), findsNothing);
+      },
+    );
+
     testWidgets('remove item antes de salvar e recalcula com a lista atual', (
       WidgetTester tester,
     ) async {

@@ -5,7 +5,7 @@ import 'package:jacaloria/features/home/widgets/home_steps_card.dart';
 
 void main() {
   testWidgets('mostra passos restantes, kcal e distancia', (tester) async {
-    var editedGoal = false;
+    var openedDetails = false;
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -18,22 +18,22 @@ void main() {
               status: HomeStepsStatus.ready,
               sourceLabel: 'Health Connect',
             ),
-            onEditGoal: () => editedGoal = true,
+            onOpenDetails: () => openedDetails = true,
           ),
         ),
       ),
     );
 
     expect(find.text('Passos'), findsOneWidget);
-    expect(find.text('👣'), findsOneWidget);
     expect(find.text('5.480'), findsOneWidget);
-    expect(find.text('restantes'), findsOneWidget);
-    expect(find.text('148 kcal'), findsOneWidget);
-    expect(find.text('3,20 km'), findsOneWidget);
+    expect(find.text('passos restantes'), findsOneWidget);
+    expect(find.text('148 kcal'), findsNothing);
+    expect(find.text('3,20 km'), findsNothing);
     expect(find.byKey(const ValueKey('home-steps-activate')), findsNothing);
+    expect(find.byIcon(Icons.edit_outlined), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('home-steps-goal-edit')));
-    expect(editedGoal, isTrue);
+    await tester.tap(find.byKey(const ValueKey('home-steps-open')));
+    expect(openedDetails, isTrue);
   });
 
   testWidgets('mostra botao para ativar quando falta permissao', (tester) async {

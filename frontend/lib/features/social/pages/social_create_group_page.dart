@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_form_card.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../home/widgets/home_shell_layout.dart';
@@ -160,187 +161,228 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
                   homeShellScrollBottomInset(context),
             ),
             child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Ícone',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.brand900Variant,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  for (final option in _icons)
-                    _IconPickerOption(
-                      icon: option.icon,
-                      selected: option.key == _selectedIconKey,
-                      onTap: () {
-                        setState(() {
-                          _selectedIconKey = option.key;
-                        });
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppInputField(
-                label: 'Nome do grupo',
-                hint: 'Ex.: Família Saudável',
-                controller: _nameController,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppInputField(
-                label: 'Descrição (opcional)',
-                hint: 'Ex.: Grupo para compartilhar metas',
-                controller: _descriptionController,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                'Tempo do desafio',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.brand900Variant,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (
-                      var index = 0;
-                      index < _visibleDurationOptions.length;
-                      index++
-                    ) ...[
-                      if (index > 0) const SizedBox(width: AppSpacing.sm),
-                      _DurationChip(
-                        value: _visibleDurationOptions[index],
-                        label: socialDurationLabel(
-                          _visibleDurationOptions[index],
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppFormCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ícone',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.brand900Variant,
                         ),
-                        selected:
-                            _visibleDurationOptions[index] ==
-                            _selectedDurationDays,
-                        onTap: () {
-                          setState(() {
-                            _selectedDurationDays =
-                                _visibleDurationOptions[index];
-                          });
-                        },
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        children: [
+                          for (final option in _icons)
+                            _IconPickerOption(
+                              icon: option.icon,
+                              selected: option.key == _selectedIconKey,
+                              onTap: () {
+                                setState(() {
+                                  _selectedIconKey = option.key;
+                                });
+                              },
+                            ),
+                        ],
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: _sectionGap),
-              Text(
-                'Tipo de competição',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.brand900Variant,
+                const SizedBox(height: _sectionGap),
+                AppFormCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppInputField(
+                        label: 'Nome do grupo',
+                        hint: 'Ex.: Família Saudável',
+                        controller: _nameController,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppInputField(
+                        label: 'Descrição (opcional)',
+                        hint: 'Ex.: Grupo para compartilhar metas',
+                        controller: _descriptionController,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              for (
-                var index = 0;
-                index < _competitionTypeKeys.length;
-                index++
-              ) ...[
-                if (index > 0) const SizedBox(height: AppSpacing.sm),
-                _CompetitionTypeTile(
-                  typeKey: _competitionTypeKeys[index],
-                  selected:
-                      _competitionTypeKeys[index] == _selectedCompetitionType,
-                  onTap: () {
-                    setState(() {
-                      _selectedCompetitionType = _competitionTypeKeys[index];
-                      if (_selectedCompetitionType == 'group_streak') {
-                        _selectedDurationDays = 0;
-                      } else if (_selectedDurationDays == 0) {
-                        _selectedDurationDays = 7;
-                      }
-                    });
-                  },
+                const SizedBox(height: _sectionGap),
+                AppFormCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tempo do desafio',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.brand900Variant,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            for (
+                              var index = 0;
+                              index < _visibleDurationOptions.length;
+                              index++
+                            ) ...[
+                              if (index > 0)
+                                const SizedBox(width: AppSpacing.sm),
+                              _DurationChip(
+                                value: _visibleDurationOptions[index],
+                                label: socialDurationLabel(
+                                  _visibleDurationOptions[index],
+                                ),
+                                selected:
+                                    _visibleDurationOptions[index] ==
+                                    _selectedDurationDays,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedDurationDays =
+                                        _visibleDurationOptions[index];
+                                  });
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-              const SizedBox(height: _sectionGap),
-              Text(
-                'Grupo público',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.brand900Variant,
+                const SizedBox(height: _sectionGap),
+                AppFormCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tipo de competição',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.brand900Variant,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      for (
+                        var index = 0;
+                        index < _competitionTypeKeys.length;
+                        index++
+                      ) ...[
+                        if (index > 0) const SizedBox(height: AppSpacing.sm),
+                        _CompetitionTypeTile(
+                          typeKey: _competitionTypeKeys[index],
+                          selected:
+                              _competitionTypeKeys[index] ==
+                              _selectedCompetitionType,
+                          onTap: () {
+                            setState(() {
+                              _selectedCompetitionType =
+                                  _competitionTypeKeys[index];
+                              if (_selectedCompetitionType == 'group_streak') {
+                                _selectedDurationDays = 0;
+                              } else if (_selectedDurationDays == 0) {
+                                _selectedDurationDays = 7;
+                              }
+                            });
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Transform.scale(
-                    scale: 0.86,
-                    child: Switch(
-                      value: _isPublicGroup,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      activeThumbColor: AppColors.surface,
-                      activeTrackColor: AppColors.action500,
-                      inactiveThumbColor: AppColors.textMuted,
-                      inactiveTrackColor: AppColors.surfaceAlt,
-                      onChanged: (value) {
-                        setState(() {
-                          _isPublicGroup = value;
-                        });
-                      },
+                const SizedBox(height: _sectionGap),
+                AppFormCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Grupo público',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.brand900Variant,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Transform.scale(
+                            scale: 0.86,
+                            child: Switch(
+                              value: _isPublicGroup,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              activeThumbColor: AppColors.surface,
+                              activeTrackColor: AppColors.action500,
+                              inactiveThumbColor: AppColors.textMuted,
+                              inactiveTrackColor: AppColors.insetSurface,
+                              onChanged: (value) {
+                                setState(() {
+                                  _isPublicGroup = value;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              _isPublicGroup
+                                  ? 'Visível na lista pública para qualquer usuário entrar.'
+                                  : 'Somente por convite/código.',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  height: 48,
+                  child: Opacity(
+                    opacity: _canSubmit ? 1 : 0.5,
+                    child: AppButton(
+                      label: _isSaving
+                          ? (_isEditing ? 'Salvando...' : 'Criando...')
+                          : (_isEditing
+                                ? 'Salvar alterações'
+                                : 'Criar grupo'),
+                      onPressed: _canSubmit ? _submit : null,
+                      variant: AppButtonVariant.primary,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      _isPublicGroup
-                          ? 'Visível na lista pública para qualquer usuário entrar.'
-                          : 'Somente por convite/código.',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                ),
+                if (_isEditing && widget.onDeleteRequested != null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(
+                    height: 48,
+                    width: double.infinity,
+                    child: AppButton(
+                      label: 'Excluir grupo',
+                      variant: AppButtonVariant.danger,
+                      trailingIcon: Icons.delete_outline_rounded,
+                      onPressed: _isSaving
+                          ? null
+                          : () async {
+                              Navigator.of(context).pop();
+                              await widget.onDeleteRequested!.call();
+                            },
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                height: 48,
-                child: Opacity(
-                  opacity: _canSubmit ? 1 : 0.5,
-                  child: AppButton(
-                    label: _isSaving
-                        ? (_isEditing ? 'Salvando...' : 'Criando...')
-                        : (_isEditing ? 'Salvar alterações' : 'Criar grupo'),
-                    onPressed: _canSubmit ? _submit : null,
-                    variant: AppButtonVariant.primary,
-                  ),
-                ),
-              ),
-              if (_isEditing && widget.onDeleteRequested != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                SizedBox(
-                  height: 48,
-                  width: double.infinity,
-                  child: AppButton(
-                    label: 'Excluir grupo',
-                    variant: AppButtonVariant.danger,
-                    trailingIcon: Icons.delete_outline_rounded,
-                    onPressed: _isSaving
-                        ? null
-                        : () async {
-                            Navigator.of(context).pop();
-                            await widget.onDeleteRequested!.call();
-                          },
-                  ),
-                ),
               ],
-            ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -375,7 +417,7 @@ class _IconPickerOption extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: selected ? AppColors.action500 : AppColors.surfaceAlt,
+          color: selected ? AppColors.action500 : AppColors.insetSurface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected ? AppColors.action500 : Colors.transparent,
@@ -416,7 +458,7 @@ class _CompetitionTypeTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? AppColors.action500.withValues(alpha: 0.12)
-              : AppColors.surface,
+              : AppColors.insetSurface,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: selected
@@ -473,7 +515,7 @@ class _DurationChip extends StatelessWidget {
         height: 30,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: selected ? AppColors.action500 : AppColors.surfaceAlt,
+          color: selected ? AppColors.action500 : AppColors.insetSurface,
           borderRadius: BorderRadius.circular(AppRadius.pill),
         ),
         alignment: Alignment.center,

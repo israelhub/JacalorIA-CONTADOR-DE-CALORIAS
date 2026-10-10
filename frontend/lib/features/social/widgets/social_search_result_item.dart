@@ -26,7 +26,7 @@ class SocialSearchResultItem extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.surfaceAlt,
+        color: AppColors.insetSurface,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(

@@ -8,11 +8,12 @@ import '../../../core/notifications/meal_reminder_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
-import '../../../shared/widgets/app_dashed_action_button.dart';
+import '../../../shared/widgets/app_form_card.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_time_picker.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import 'meal_reminder_create_page.dart';
 import 'meal_reminder_name_page.dart';
 
@@ -190,102 +191,114 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       extendBodyBehindAppBar: true,
-      appBar: const AppBackPageHeader(title: 'Lembretes de refeição'),
+      appBar: const AppBackPageHeader(
+        title: 'Lembretes de refeição',
+        backgroundColor: Colors.transparent,
+      ),
       body: AppBackPageContent(
         child: _loading
             ? const AppSkeletonList(itemCount: 4, itemHeight: 80)
             : ListView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.pageHorizontal,
-                  vertical: AppSpacing.lg,
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.pageHorizontal,
+                  AppSpacing.lg,
+                  AppSpacing.pageHorizontal,
+                  homeShellScrollBottomInset(context),
                 ),
                 children: [
-                  Text(
-                    'Receba avisos perto do horário das suas refeições '
-                    'para não esquecer de registrar. Até ${MealReminderSettings.maxReminders} lembretes.',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  if (kIsWeb) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      'No navegador, os avisos funcionam com esta aba aberta '
-                      '(limitação dos browsers). No app Android/iOS, disparam '
-                      'mesmo com o app fechado.',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.xl),
-                  _MasterToggleCard(
-                    enabled: _settings.masterEnabled,
-                    busy: _saving,
-                    onChanged: (value) {
-                      _persist(_settings.copyWith(masterEnabled: value));
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Seus lembretes',
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
+                  AppFormCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Receba avisos perto do horário das suas refeições '
+                          'para não esquecer de registrar. Até ${MealReminderSettings.maxReminders} lembretes.',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                      ),
-                      Text(
-                        '$count/${MealReminderSettings.maxReminders}',
-                        style: AppTextStyles.captionStrong.copyWith(
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  for (final config in _settings.reminders) ...[
-                    _MealReminderTile(
-                      config: config,
-                      masterEnabled: _settings.masterEnabled,
-                      busy: _saving,
-                      onEnabledChanged: (value) {
-                        _persist(
-                          _settings.withReminder(
-                            config.copyWith(enabled: value),
+                        if (kIsWeb) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            'No navegador, os avisos funcionam com esta aba aberta '
+                            '(limitação dos browsers). No app Android/iOS, disparam '
+                            'mesmo com o app fechado.',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                        );
-                      },
-                      onTapTime: () => _pickTime(config),
-                      onTapTitle: () => _editTitle(config),
-                      onRemove: () => _removeReminder(config),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                  ],
-                  if (_settings.canAddMore)
-                    AppDashedActionButton(
-                      label: 'Adicionar lembrete',
-                      onTap: _saving ? null : _addReminder,
-                      leading: const Icon(
-                        Icons.add_rounded,
-                        color: AppColors.action500,
-                        size: 22,
-                      ),
-                    )
-                  else
-                    Padding(
-                      padding: const EdgeInsets.only(top: AppSpacing.xs),
-                      child: Text(
-                        'Limite de ${MealReminderSettings.maxReminders} lembretes atingido. '
-                        'Remova um para adicionar outro.',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textMuted,
+                        ],
+                        const SizedBox(height: AppSpacing.lg),
+                        _MasterToggleCard(
+                          enabled: _settings.masterEnabled,
+                          busy: _saving,
+                          onChanged: (value) {
+                            _persist(
+                              _settings.copyWith(masterEnabled: value),
+                            );
+                          },
                         ),
-                      ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(height: AppSpacing.cardGap),
+                  AppFormCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Seus lembretes',
+                                style: AppTextStyles.bodyLarge.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '$count/${MealReminderSettings.maxReminders}',
+                              style: AppTextStyles.captionStrong.copyWith(
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        for (final config in _settings.reminders) ...[
+                          _MealReminderTile(
+                            config: config,
+                            masterEnabled: _settings.masterEnabled,
+                            busy: _saving,
+                            onEnabledChanged: (value) {
+                              _persist(
+                                _settings.withReminder(
+                                  config.copyWith(enabled: value),
+                                ),
+                              );
+                            },
+                            onTapTime: () => _pickTime(config),
+                            onTapTitle: () => _editTitle(config),
+                            onRemove: () => _removeReminder(config),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                        ],
+                        if (_settings.canAddMore)
+                          _AddReminderTile(
+                            onTap: _saving ? null : _addReminder,
+                          )
+                        else
+                          Text(
+                            'Limite de ${MealReminderSettings.maxReminders} lembretes atingido. '
+                            'Remova um para adicionar outro.',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
       ),
@@ -312,7 +325,7 @@ class _MasterToggleCard extends StatelessWidget {
         vertical: AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surfaceAlt,
+        color: AppColors.insetSurface,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.borderBrand),
       ),
@@ -359,6 +372,59 @@ class _MasterToggleCard extends StatelessWidget {
   }
 }
 
+class _AddReminderTile extends StatelessWidget {
+  const _AddReminderTile({required this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppRadius.md);
+
+    return Material(
+      color: AppColors.insetSurface,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.sm,
+            AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(color: AppColors.homeMealCardBorder),
+          ),
+          child: SizedBox(
+            height: 48,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.add_rounded,
+                  color: AppColors.textPrimary,
+                  size: 22,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  'Adicionar lembrete',
+                  style: AppTextStyles.homeAction.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MealReminderTile extends StatelessWidget {
   const _MealReminderTile({
     required this.config,
@@ -390,10 +456,9 @@ class _MealReminderTile extends StatelessWidget {
         AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.insetSurface,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.homeMealCardBorder),
-        boxShadow: AppShadows.sm,
       ),
       child: Row(
         children: [

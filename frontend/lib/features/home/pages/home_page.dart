@@ -18,6 +18,7 @@ import '../helpers/home_greeting_helpers.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_refresh_scroll_view.dart';
+import '../../../shared/widgets/app_scroll_reveal.dart';
 import '../services/meal_service.dart';
 import '../widgets/home_daily_goal_with_mascot.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
@@ -1151,70 +1152,81 @@ class _HomeBody extends StatelessWidget {
                 onSelected: onSelectedDateChanged,
               ),
               const SizedBox(height: AppSpacing.xl),
-              _HomeSectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const _SectionHeader(title: 'Refeições'),
-                    const SizedBox(height: AppSpacing.md),
-                    _HomeSectionAddCard(
-                      cardKey: const ValueKey('home-section-meals-add'),
-                      label: 'Adicionar refeição',
-                      onTap: onAddMealPressed,
-                    ),
-                    for (final (index, record) in dayRecords.indexed) ...[
+              AppScrollReveal(
+                child: _HomeSectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const _SectionHeader(title: 'Refeições'),
                       const SizedBox(height: AppSpacing.md),
-                      HomeMealCard(
-                        cardKey: ValueKey('home-meal-card-$index'),
-                        title: record.title,
-                        description: record.description,
-                        kcal: record.kcalLabel,
-                        time: record.timeLabel,
-                        imageAsset: record.imageAsset,
-                        imageBytes: record.imageBytes,
-                        imageUrl: record.imageUrl,
-                        height: HomePage._mealCardHeight,
-                        backgroundColor: AppColors.insetSurface,
-                        onTap: () => onMealTap(record),
+                      _HomeSectionAddCard(
+                        cardKey: const ValueKey('home-section-meals-add'),
+                        label: 'Adicionar refeição',
+                        onTap: onAddMealPressed,
                       ),
+                      for (final (index, record) in dayRecords.indexed) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        HomeMealCard(
+                          cardKey: ValueKey('home-meal-card-$index'),
+                          title: record.title,
+                          description: record.description,
+                          kcal: record.kcalLabel,
+                          time: record.timeLabel,
+                          imageAsset: record.imageAsset,
+                          imageBytes: record.imageBytes,
+                          imageUrl: record.imageUrl,
+                          height: HomePage._mealCardHeight,
+                          backgroundColor: AppColors.insetSurface,
+                          onTap: () => onMealTap(record),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.cardGap),
-              _HomeSectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const _SectionHeader(title: 'Treinos'),
-                    const SizedBox(height: AppSpacing.md),
-                    _HomeSectionAddCard(
-                      cardKey: const ValueKey('home-section-workouts-add'),
-                      label: 'Adicionar treino',
-                      onTap: onAddWorkoutPressed,
-                    ),
-                    for (final (index, entry) in workoutEntries.indexed) ...[
+              AppScrollReveal(
+                delay: const Duration(milliseconds: 40),
+                child: _HomeSectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const _SectionHeader(title: 'Treinos'),
                       const SizedBox(height: AppSpacing.md),
-                      WorkoutDayExerciseCard(
-                        key: ValueKey('home-workout-card-$index'),
-                        entry: entry,
-                        backgroundColor: AppColors.insetSurface,
-                        onTap: () => onWorkoutTap(entry),
-                        onDelete: () => onWorkoutDelete(entry),
+                      _HomeSectionAddCard(
+                        cardKey: const ValueKey('home-section-workouts-add'),
+                        label: 'Adicionar treino',
+                        onTap: onAddWorkoutPressed,
                       ),
+                      for (final (index, entry) in workoutEntries.indexed) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        WorkoutDayExerciseCard(
+                          key: ValueKey('home-workout-card-$index'),
+                          entry: entry,
+                          backgroundColor: AppColors.insetSurface,
+                          onTap: () => onWorkoutTap(entry),
+                          onDelete: () => onWorkoutDelete(entry),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.cardGap),
-              HomeWaterCard(
-                days: waterDays,
-                selectedDate: selectedDate,
-                goalMl: waterGoalMl,
-                onAdd: onAddWaterPressed,
+              AppScrollReveal(
+                delay: const Duration(milliseconds: 80),
+                child: HomeWaterCard(
+                  days: waterDays,
+                  selectedDate: selectedDate,
+                  goalMl: waterGoalMl,
+                  onAdd: onAddWaterPressed,
+                ),
               ),
               const SizedBox(height: AppSpacing.cardGap),
-                HomeStepsWeightRow(onWeightUpdated: onWeightUpdated),
+              AppScrollReveal(
+                delay: const Duration(milliseconds: 120),
+                child: HomeStepsWeightRow(onWeightUpdated: onWeightUpdated),
+              ),
               ],
             ),
           ),
@@ -1403,13 +1415,13 @@ class _HomeSectionAddCard extends StatelessWidget {
               const Icon(
                 Icons.add_rounded,
                 size: 22,
-                color: AppColors.action500,
+                color: AppColors.textPrimary,
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 label,
                 style: AppTextStyles.homeAction.copyWith(
-                  color: AppColors.action500,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],

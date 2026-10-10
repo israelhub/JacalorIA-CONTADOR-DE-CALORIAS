@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../helpers/home_steps_helpers.dart';
 import '../models/home_steps_models.dart';
+import '../pages/home_steps_page.dart';
 import 'home_steps_card.dart';
-import 'home_steps_goal_sheet.dart';
 import 'home_steps_weight_scope.dart';
 import 'home_weight_card.dart';
 
@@ -37,7 +37,7 @@ class HomeStepsWeightRow extends StatelessWidget {
             overview: controller.steps,
             isLoading: controller.isStepsLoading,
             onActivate: () => _activateSteps(context),
-            onEditGoal: () => _editGoal(context),
+            onOpenDetails: () => _openDetails(context),
           ),
         ),
         const SizedBox(width: AppSpacing.md),
@@ -54,6 +54,10 @@ class HomeStepsWeightRow extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  void _openDetails(BuildContext context) {
+    unawaited(context.pushSlidePage(const HomeStepsPage()));
   }
 
   Future<void> _activateSteps(BuildContext context) async {
@@ -92,24 +96,5 @@ class HomeStepsWeightRow extends StatelessWidget {
         );
         return;
     }
-  }
-
-  Future<void> _editGoal(BuildContext context) async {
-    final controller = HomeStepsWeightScope.of(context);
-    final selected = await showHomeStepsGoalSheet(
-      context,
-      currentGoal: controller.steps.goalSteps,
-    );
-    if (selected == null || !context.mounted) {
-      return;
-    }
-    final goal = await controller.setGoal(selected);
-    if (goal == null || !context.mounted) {
-      return;
-    }
-    AppToast.success(
-      context,
-      message: 'Meta de ${formatStepsCount(goal)} passos salva.',
-    );
   }
 }
