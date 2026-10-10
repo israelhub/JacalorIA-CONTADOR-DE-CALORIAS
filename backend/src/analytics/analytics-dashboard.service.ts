@@ -11,6 +11,12 @@ export type DashboardQuery = {
   days?: number;
 };
 
+/** Coorte da pesquisa: exclui is_dev (devs e testers fora da amostra). */
+const RESEARCH_COHORT_SQL = 'COALESCE(is_dev, false) = false';
+const EVENT_FROM_RESEARCH_SQL = `
+  user_id IN (SELECT id FROM users WHERE COALESCE(is_dev, false) = false)
+`;
+
 @Injectable()
 export class AnalyticsDashboardService {
   constructor(
@@ -841,6 +847,7 @@ export class AnalyticsDashboardService {
           ) AS onboarding_complete
         FROM users
         WHERE created_at >= :betaStart AND created_at < :betaEnd
+          AND ${RESEARCH_COHORT_SQL}
       ),
       activated AS (
         SELECT DISTINCT user_id
@@ -855,6 +862,7 @@ export class AnalyticsDashboardService {
           SELECT COUNT(DISTINCT user_id)::text
           FROM analytics_events
           WHERE event_name = 'app_open'
+            AND ${EVENT_FROM_RESEARCH_SQL}
             AND (occurred_at AT TIME ZONE 'America/Sao_Paulo')::date
               = (now() AT TIME ZONE 'America/Sao_Paulo')::date
         ) AS dau_today,
@@ -862,25 +870,36 @@ export class AnalyticsDashboardService {
           SELECT COUNT(DISTINCT user_id)::text
           FROM analytics_events
           WHERE event_name = 'app_open'
+            AND ${EVENT_FROM_RESEARCH_SQL}
             AND occurred_at >= now() - INTERVAL '7 days'
         ) AS wau,
         (
           SELECT COUNT(*)::text
           FROM users
-          WHERE last_active_at >= now() - INTERVAL '7 days'
-             OR id IN (
-               SELECT DISTINCT user_id FROM analytics_events
-               WHERE event_name = 'app_open' AND occurred_at >= now() - INTERVAL '7 days'
-             )
+          WHERE ${RESEARCH_COHORT_SQL}
+            AND (
+              last_active_at >= now() - INTERVAL '7 days'
+              OR id IN (
+                SELECT DISTINCT user_id FROM analytics_events
+                WHERE event_name = 'app_open'
+                  AND ${EVENT_FROM_RESEARCH_SQL}
+                  AND occurred_at >= now() - INTERVAL '7 days'
+              )
+            )
         ) AS active_7d,
         (
           SELECT COUNT(*)::text
           FROM users
-          WHERE last_active_at >= now() - INTERVAL '30 days'
-             OR id IN (
-               SELECT DISTINCT user_id FROM analytics_events
-               WHERE event_name = 'app_open' AND occurred_at >= now() - INTERVAL '30 days'
-             )
+          WHERE ${RESEARCH_COHORT_SQL}
+            AND (
+              last_active_at >= now() - INTERVAL '30 days'
+              OR id IN (
+                SELECT DISTINCT user_id FROM analytics_events
+                WHERE event_name = 'app_open'
+                  AND ${EVENT_FROM_RESEARCH_SQL}
+                  AND occurred_at >= now() - INTERVAL '30 days'
+              )
+            )
         ) AS active_30d
       `,
       {
@@ -929,6 +948,7 @@ export class AnalyticsDashboardService {
           COUNT(DISTINCT user_id) AS dau
         FROM analytics_events
         WHERE event_name = 'app_open'
+          AND ${EVENT_FROM_RESEARCH_SQL}
           AND occurred_at >= :betaStart
           AND occurred_at < :betaEnd
         GROUP BY 1
@@ -960,6 +980,7 @@ export class AnalyticsDashboardService {
         SELECT id
         FROM users
         WHERE created_at >= :betaStart AND created_at < :betaEnd
+          AND ${RESEARCH_COHORT_SQL}
       )
       SELECT
         (SELECT COUNT(*)::text FROM cohort) AS signups,
@@ -1026,7 +1047,7 @@ export class AnalyticsDashboardService {
           (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS signup_day
         FROM users
         WHERE created_at >= :betaStart AND created_at < :betaEnd
-          AND COALESCE(is_dev, false) = false
+          AND ${RESEARCH_COHORT_SQL}
       ),
       activity AS (
         SELECT DISTINCT
@@ -1120,7 +1141,7 @@ export class AnalyticsDashboardService {
           (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS signup_day
         FROM users
         WHERE created_at >= :betaStart AND created_at < :betaEnd
-          AND COALESCE(is_dev, false) = false
+          AND ${RESEARCH_COHORT_SQL}
       ),
       activated AS (
         SELECT DISTINCT user_id
@@ -1238,6 +1259,7 @@ export class AnalyticsDashboardService {
         SELECT (properties->>'duration_sec')::numeric AS dur
         FROM analytics_events
         WHERE event_name = 'session_end'
+          AND ${EVENT_FROM_RESEARCH_SQL}
           AND occurred_at >= :betaStart
           AND occurred_at < :betaEnd
           AND (properties->>'duration_sec') ~ '^[0-9]+(\\.[0-9]+)?$'
@@ -1270,6 +1292,7 @@ export class AnalyticsDashboardService {
         COUNT(*)::text AS views
       FROM analytics_events
       WHERE event_name = 'screen_view'
+        AND ${EVENT_FROM_RESEARCH_SQL}
         AND occurred_at >= :betaStart
         AND occurred_at < :betaEnd
       GROUP BY 1
@@ -1297,6 +1320,10 @@ export class AnalyticsDashboardService {
       SELECT event_name, COUNT(*)::text AS count
       FROM analytics_events
       WHERE occurred_at >= :betaStart AND occurred_at < :betaEnd
+        AND (
+          user_id IS NULL
+          OR ${EVENT_FROM_RESEARCH_SQL}
+        )
       GROUP BY 1
       ORDER BY COUNT(*) DESC
       LIMIT 20
@@ -1324,6 +1351,7 @@ export class AnalyticsDashboardService {
         COUNT(DISTINCT user_id)::text AS users
       FROM analytics_events
       WHERE event_name = 'app_open'
+        AND ${EVENT_FROM_RESEARCH_SQL}
         AND occurred_at >= :betaStart
         AND occurred_at < :betaEnd
       GROUP BY 1
@@ -1360,6 +1388,7 @@ export class AnalyticsDashboardService {
           COUNT(*)::text AS count
         FROM analytics_events
         WHERE event_name = 'meal_capture_started'
+          AND ${EVENT_FROM_RESEARCH_SQL}
           AND occurred_at >= :betaStart
           AND occurred_at < :betaEnd
           AND properties->>'entry' IN ('camera', 'gallery', 'text', 'saved_meal')
@@ -1375,6 +1404,7 @@ export class AnalyticsDashboardService {
         SELECT COUNT(*)::text AS count
         FROM analytics_events
         WHERE event_name = 'ai_analyze_requested'
+          AND ${EVENT_FROM_RESEARCH_SQL}
           AND properties->>'source' = 'server'
           AND properties->>'has_manual_text' = 'true'
           AND occurred_at >= :betaStart
