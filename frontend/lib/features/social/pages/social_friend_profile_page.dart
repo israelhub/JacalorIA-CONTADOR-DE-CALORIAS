@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_ambient_page_glow.dart';
+import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_page_route.dart';
+import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/avatar_profile_preview.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../../profile/helpers/profile_date_helpers.dart';
 import '../../profile/widgets/profile_achievements_card.dart';
+import '../../profile/widgets/profile_section_card.dart';
 import '../helpers/social_model_parsers.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
@@ -113,39 +118,35 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        foregroundColor: AppColors.brand900Variant,
-        title: Text(
-          widget.initialFriendName?.trim().isNotEmpty == true
-              ? widget.initialFriendName!
-              : 'Perfil',
-          style: AppTextStyles.missionsSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
-          ),
-        ),
+      backgroundColor: AppColors.pageBackground,
+      extendBodyBehindAppBar: true,
+      appBar: AppBackPageHeader(
+        title: widget.initialFriendName?.trim().isNotEmpty == true
+            ? widget.initialFriendName!
+            : 'Perfil',
+        backgroundColor: Colors.transparent,
       ),
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: AppColors.action500),
-              )
-            : _error != null
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xxl),
-                  child: Text(
-                    _error!,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
+      body: AppAmbientPageBody(
+        child: SafeArea(
+          top: false,
+          bottom: false,
+          child: _isLoading
+              ? const _FriendProfileSkeleton()
+              : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xxl),
+                    child: Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
-                ),
-              )
-            : _buildProfile(),
+                )
+              : _buildProfile(),
+        ),
       ),
     );
   }
@@ -162,152 +163,177 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
     };
 
     final objective = _formatObjective(profile.objective);
+    final topInset = MediaQuery.paddingOf(context).top;
+    final bannerOverlayHeight = topInset + AppBackPageHeader.barHeight;
+    final bannerComposeHeight = AvatarProfilePreview.edgeToEdgeComposeHeight(
+      topOverlayHeight: bannerOverlayHeight,
+    );
+    final bannerHeight = AvatarProfilePreview.edgeToEdgeHeight(
+      topOverlayHeight: bannerOverlayHeight,
+    );
 
     return SingleChildScrollView(
+      padding: EdgeInsets.only(bottom: homeShellScrollBottomInset(context)),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AvatarProfilePreview(
             avatarUrl: profile.avatarUrl,
             frameId: profile.avatarFrameId,
             backgroundId: profile.avatarBackgroundId,
+            reactionEmojiId: profile.profileReactionEmojiId,
             name: profile.name,
+            height: bannerHeight,
+            composeHeight: bannerComposeHeight,
+            borderRadius: BorderRadius.zero,
           ),
+          const SizedBox(height: AppSpacing.lg),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xl,
-              AppSpacing.lg,
-              AppSpacing.xl,
-              AppSpacing.xl,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.pageHorizontal,
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            profile.name,
-                            textAlign: TextAlign.left,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.missionsTitle.copyWith(
-                              color: AppColors.brand900Variant,
+                          Expanded(
+                            child: Text(
+                              profile.name,
+                              textAlign: TextAlign.left,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.missionsTitle.copyWith(
+                                color: AppColors.brand900Variant,
+                              ),
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.xs),
-                          InkWell(
-                            onTap: _openFriendsList,
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 2,
-                              ),
-                              child: Text(
-                                '${profile.friendCount} amigos',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.action500,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                          if (!profile.isSelf) ...[
+                            const SizedBox(width: AppSpacing.md),
+                            _buildHeaderFriendshipSlot(profile),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      InkWell(
+                        onTap: _openFriendsList,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 2,
+                          ),
+                          child: Text(
+                            '${profile.friendCount} amigos',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.action500,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                ProfileSectionCard(
+                  title: 'Resumo',
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final maxWidth = constraints.maxWidth;
+                      final spacing = AppSpacing.md;
+                      const columns = 2;
+                      final availableWidth =
+                          maxWidth - (spacing * (columns - 1));
+                      final cardWidth = availableWidth > 0
+                          ? availableWidth / columns
+                          : maxWidth;
+
+                      return Wrap(
+                        spacing: spacing,
+                        runSpacing: AppSpacing.md,
+                        children: [
+                          SizedBox(
+                            width: cardWidth,
+                            child: _metricCard(
+                              icon: Icons.local_fire_department_rounded,
+                              iconColor: AppColors.socialMetricStreak,
+                              label: 'Sequência',
+                              value: '${profile.streakDays} dias',
+                            ),
+                          ),
+                          SizedBox(
+                            width: cardWidth,
+                            child: _metricCard(
+                              icon: Icons.restaurant_menu_rounded,
+                              iconColor: AppColors.socialMetricFavoriteDish,
+                              label: 'Prato favorito',
+                              value:
+                                  profile.favoriteDish?.trim().isNotEmpty ==
+                                      true
+                                  ? profile.favoriteDish!
+                                  : 'Sem registros',
+                            ),
+                          ),
+                          SizedBox(
+                            width: cardWidth,
+                            child: _metricCard(
+                              icon: Icons.schedule_rounded,
+                              iconColor: AppColors.socialMetricPreferredPeriod,
+                              label: 'Come mais de',
+                              value: preferredPeriod,
+                            ),
+                          ),
+                          SizedBox(
+                            width: cardWidth,
+                            child: _metricCard(
+                              icon: Icons.auto_awesome_rounded,
+                              iconColor: AppColors.socialMetricXp,
+                              label: 'Total de XP',
+                              value: '${profile.totalXp}',
                             ),
                           ),
                         ],
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.cardGap),
+                ProfileSectionCard(
+                  title: 'Informações',
+                  child: Column(
+                    children: [
+                      _infoCard(
+                        icon: Icons.flag_rounded,
+                        iconColor: AppColors.socialInfoObjective,
+                        label: 'Objetivo',
+                        value: objective,
                       ),
-                    ),
-                    if (!profile.isSelf) ...[
-                      const SizedBox(width: AppSpacing.md),
-                      _buildHeaderFriendshipSlot(profile),
+                      const SizedBox(height: AppSpacing.md),
+                      _infoCard(
+                        icon: Icons.schedule_rounded,
+                        iconColor: AppColors.socialInfoSex,
+                        label: 'Idade da conta',
+                        value: formatProfileAccountAge(profile.createdAt),
+                      ),
                     ],
-                  ],
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.xl),
-                _sectionTitle('Resumo'),
-                const SizedBox(height: AppSpacing.sm),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final maxWidth = constraints.maxWidth;
-                    final spacing = AppSpacing.md;
-                    const columns = 2;
-                    final availableWidth = maxWidth - (spacing * (columns - 1));
-                    final cardWidth = availableWidth > 0
-                        ? availableWidth / columns
-                        : maxWidth;
-
-                    return Wrap(
-                      spacing: spacing,
-                      runSpacing: AppSpacing.md,
-                      children: [
-                        SizedBox(
-                          width: cardWidth,
-                          child: _metricCard(
-                            icon: Icons.local_fire_department_rounded,
-                            iconColor: AppColors.socialMetricStreak,
-                            label: 'Sequência',
-                            value: '${profile.streakDays} dias',
-                          ),
-                        ),
-                        SizedBox(
-                          width: cardWidth,
-                          child: _metricCard(
-                            icon: Icons.restaurant_menu_rounded,
-                            iconColor: AppColors.socialMetricFavoriteDish,
-                            label: 'Prato favorito',
-                            value:
-                                profile.favoriteDish?.trim().isNotEmpty == true
-                                ? profile.favoriteDish!
-                                : 'Sem registros',
-                          ),
-                        ),
-                        SizedBox(
-                          width: cardWidth,
-                          child: _metricCard(
-                            icon: Icons.schedule_rounded,
-                            iconColor: AppColors.socialMetricPreferredPeriod,
-                            label: 'Come mais de',
-                            value: preferredPeriod,
-                          ),
-                        ),
-                        SizedBox(
-                          width: cardWidth,
-                          child: _metricCard(
-                            icon: Icons.auto_awesome_rounded,
-                            iconColor: AppColors.socialMetricXp,
-                            label: 'Total de XP',
-                            value: '${profile.totalXp}',
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                _sectionTitle('Informações'),
-                const SizedBox(height: AppSpacing.sm),
-                _infoCard(
-                  icon: Icons.flag_rounded,
-                  iconColor: AppColors.socialInfoObjective,
-                  label: 'Objetivo',
-                  value: objective,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _infoCard(
-                  icon: Icons.schedule_rounded,
-                  iconColor: AppColors.socialInfoSex,
-                  label: 'Idade da conta',
-                  value: formatProfileAccountAge(profile.createdAt),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                _sectionTitle('Conquistas'),
-                const SizedBox(height: AppSpacing.sm),
-                ProfileAchievementsCard(
-                  missionsCompleted: profile.missionsCompleted,
-                  longestStreakDays: profile.longestStreakDays,
-                  cosmeticsOwned: profile.cosmeticsOwned,
+                const SizedBox(height: AppSpacing.cardGap),
+                ProfileSectionCard(
+                  title: 'Conquistas',
+                  child: ProfileAchievementsCard(
+                    missionsCompleted: profile.missionsCompleted,
+                    longestStreakDays: profile.longestStreakDays,
+                    cosmeticsOwned: profile.cosmeticsOwned,
+                  ),
                 ),
                 SocialMemberDailyMealsSection(
                   memberUserId: profile.id,
@@ -320,18 +346,6 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String value) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        value,
-        style: AppTextStyles.missionsSectionTitle.copyWith(
-          color: AppColors.brand900Variant,
-        ),
       ),
     );
   }
@@ -468,10 +482,10 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
   }
 
   String _formatObjective(String? value) {
-    final raw = (value ?? '')
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z]'), '');
+    final raw = (value ?? '').trim().toLowerCase().replaceAll(
+      RegExp(r'[^a-z]'),
+      '',
+    );
     if (raw.isEmpty) return 'Não informado';
 
     const labels = <String, String>{
@@ -530,9 +544,7 @@ class _CompactFriendshipButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: background,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: filled
-                  ? null
-                  : Border.all(color: AppColors.borderAlt),
+              border: filled ? null : Border.all(color: AppColors.borderAlt),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -554,6 +566,51 @@ class _CompactFriendshipButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FriendProfileSkeleton extends StatelessWidget {
+  const _FriendProfileSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final topInset = MediaQuery.paddingOf(context).top;
+    final bannerHeight = topInset + AppBackPageHeader.barHeight + 180;
+
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.only(bottom: homeShellScrollBottomInset(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppSkeletonBox(height: bannerHeight, borderRadius: 0),
+          const SizedBox(height: AppSpacing.lg),
+          const Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.pageHorizontal,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppSkeletonBox(height: 22, width: 160),
+                SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Expanded(child: AppSkeletonBox(height: 72)),
+                    SizedBox(width: AppSpacing.md),
+                    Expanded(child: AppSkeletonBox(height: 72)),
+                  ],
+                ),
+                SizedBox(height: AppSpacing.cardGap),
+                AppSkeletonBox(height: 120),
+                SizedBox(height: AppSpacing.cardGap),
+                AppSkeletonBox(height: 160),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

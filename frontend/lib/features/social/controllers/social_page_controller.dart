@@ -65,12 +65,25 @@ class SocialPageController extends ChangeNotifier {
   static const String _hideIntroLocalKeyPrefix = 'social_hide_intro_local';
   final Set<String> _viewedFinishedGroupIds = <String>{};
 
+  static const int xpRankingPageSize = 10;
+
   SocialXpRankingPeriod _xpRankingPeriod = SocialXpRankingPeriod.all;
   SocialXpRankingPeriod get xpRankingPeriod => _xpRankingPeriod;
 
   final List<SocialRankingEntry> _xpRanking = <SocialRankingEntry>[];
   List<SocialRankingEntry> get xpRanking =>
       List<SocialRankingEntry>.unmodifiable(_xpRanking);
+
+  final Map<String, List<SocialRankingEntry>> _xpRankingPageCache =
+      <String, List<SocialRankingEntry>>{};
+  final Map<SocialXpRankingPeriod, int> _xpRankingTotalPagesByPeriod =
+      <SocialXpRankingPeriod, int>{};
+
+  int _xpRankingPage = 1;
+  int get xpRankingPage => _xpRankingPage;
+
+  int _xpRankingTotalPages = 0;
+  int get xpRankingTotalPages => _xpRankingTotalPages;
 
   bool _isXpRankingLoading = false;
   bool get isXpRankingLoading => _isXpRankingLoading;
@@ -79,6 +92,25 @@ class SocialPageController extends ChangeNotifier {
   String? get xpRankingErrorMessage => _xpRankingErrorMessage;
 
   bool _hasLoadedXpRanking = false;
+
+  String _xpRankingCacheKey(SocialXpRankingPeriod period, int page) {
+    return '${period.apiValue}:$page';
+  }
+
+  void _applyXpRankingPage({
+    required SocialXpRankingPeriod period,
+    required int page,
+    required List<SocialRankingEntry> entries,
+    required int totalPages,
+  }) {
+    _xpRankingPeriod = period;
+    _xpRankingPage = page;
+    _xpRankingTotalPages = totalPages;
+    _xpRankingTotalPagesByPeriod[period] = totalPages;
+    _xpRanking
+      ..clear()
+      ..addAll(entries);
+  }
 
   String _hideIntroLocalKeyForUserId(String userId) {
     final normalized = userId.trim().isEmpty ? 'user' : userId.trim();
@@ -230,11 +262,54 @@ class SocialPageController extends ChangeNotifier {
   Future<void> changeXpRankingPeriod(SocialXpRankingPeriod period) async {
     if (_xpRankingPeriod == period) return;
     _xpRankingPeriod = period;
+    _xpRankingPage = 1;
+    _xpRankingErrorMessage = null;
+
+    final cacheKey = _xpRankingCacheKey(period, 1);
+    final cached = _xpRankingPageCache[cacheKey];
+    if (cached != null) {
+      _applyXpRankingPage(
+        period: period,
+        page: 1,
+        entries: cached,
+        totalPages: _xpRankingTotalPagesByPeriod[period] ?? 0,
+      );
+      notifyListeners();
+      return;
+    }
+
+    _xpRanking.clear();
+    _xpRankingTotalPages = _xpRankingTotalPagesByPeriod[period] ?? 0;
     notifyListeners();
-    await loadXpRanking(silent: _xpRanking.isNotEmpty);
+    await loadXpRanking(silent: false, page: 1);
   }
 
-  Future<void> loadXpRanking({bool silent = false}) async {
+  Future<void> changeXpRankingPage(int page) async {
+    if (page < 1 || page == _xpRankingPage) return;
+    if (_xpRankingTotalPages > 0 && page > _xpRankingTotalPages) return;
+
+    final cacheKey = _xpRankingCacheKey(_xpRankingPeriod, page);
+    final cached = _xpRankingPageCache[cacheKey];
+    _xpRankingErrorMessage = null;
+
+    if (cached != null) {
+      _applyXpRankingPage(
+        period: _xpRankingPeriod,
+        page: page,
+        entries: cached,
+        totalPages: _xpRankingTotalPages,
+      );
+      notifyListeners();
+      return;
+    }
+
+    _xpRankingPage = page;
+    notifyListeners();
+    await loadXpRanking(silent: _xpRanking.isNotEmpty, page: page);
+  }
+
+  Future<void> loadXpRanking({bool silent = false, int? page}) async {
+    final targetPage = page ?? _xpRankingPage;
     final hadData = _xpRanking.isNotEmpty;
     _isXpRankingLoading = true;
     if (!silent || !hadData) {
@@ -243,11 +318,21 @@ class SocialPageController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final data = await _service.fetchXpRanking(period: _xpRankingPeriod);
-      _xpRanking
-        ..clear()
-        ..addAll(data.ranking);
-      _xpRankingPeriod = data.period;
+      final data = await _service.fetchXpRanking(
+        period: _xpRankingPeriod,
+        page: targetPage,
+        pageSize: xpRankingPageSize,
+      );
+      final resolvedPage = data.page > 0 ? data.page : targetPage;
+      final entries = List<SocialRankingEntry>.from(data.ranking);
+      _xpRankingPageCache[_xpRankingCacheKey(data.period, resolvedPage)] =
+          entries;
+      _applyXpRankingPage(
+        period: data.period,
+        page: resolvedPage,
+        entries: entries,
+        totalPages: data.totalPages,
+      );
       _hasLoadedXpRanking = true;
       _isXpRankingLoading = false;
       _xpRankingErrorMessage = null;
@@ -255,8 +340,10 @@ class SocialPageController extends ChangeNotifier {
     } catch (error) {
       _isXpRankingLoading = false;
       if (!silent || !hadData) {
-        _xpRankingErrorMessage =
-            error.toString().replaceFirst('Exception: ', '');
+        _xpRankingErrorMessage = error.toString().replaceFirst(
+          'Exception: ',
+          '',
+        );
       }
       notifyListeners();
     }

@@ -81,54 +81,71 @@ class AppNetworkImage extends StatelessWidget {
       return error ?? const SizedBox.shrink();
     }
 
-    final cacheKey = ValueKey('network-image-$imageUrl');
-    final loading = placeholder ??
-        AppSkeletonBox(
-          width: width ?? double.infinity,
-          height: height ?? double.infinity,
-          borderRadius: borderRadius,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final resolvedWidth = _resolveLayoutSize(width, constraints.maxWidth);
+        final resolvedHeight = _resolveLayoutSize(height, constraints.maxHeight);
+        final cacheKey = ValueKey('network-image-$imageUrl');
+        final loading =
+            placeholder ??
+            AppSkeletonBox(
+              width: resolvedWidth ?? double.infinity,
+              height: resolvedHeight ?? double.infinity,
+              borderRadius: borderRadius,
+            );
+        final fallback = error ?? const SizedBox.shrink();
+
+        if (kIsWeb) {
+          return Image.network(
+            key: cacheKey,
+            imageUrl,
+            fit: fit,
+            width: resolvedWidth,
+            height: resolvedHeight,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => fallback,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) {
+                return child;
+              }
+              return loading;
+            },
+          );
+        }
+
+        final memCache = resolveAspectSafeMemCache(
+          width: resolvedWidth,
+          height: resolvedHeight,
+          devicePixelRatio: MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0,
         );
-    final fallback = error ?? const SizedBox.shrink();
 
-    if (kIsWeb) {
-      return Image.network(
-        key: cacheKey,
-        imageUrl,
-        fit: fit,
-        width: width,
-        height: height,
-        gaplessPlayback: true,
-        errorBuilder: (_, __, ___) => fallback,
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) {
-            return child;
-          }
-          return loading;
-        },
-      );
-    }
-
-    final memCache = resolveAspectSafeMemCache(
-      width: width,
-      height: height,
-      devicePixelRatio: MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0,
-    );
-
-    return CachedNetworkImage(
-      key: cacheKey,
-      imageUrl: imageUrl,
-      cacheKey: imageUrl,
-      cacheManager: AppImageCacheManager.instance,
-      fit: fit,
-      width: width,
-      height: height,
-      memCacheWidth: memCache.width,
-      memCacheHeight: memCache.height,
-      maxWidthDiskCache: memCache.width,
-      maxHeightDiskCache: memCache.height,
-      fadeInDuration: const Duration(milliseconds: 150),
-      placeholder: (_, __) => loading,
-      errorWidget: (_, __, ___) => fallback,
+        return CachedNetworkImage(
+          key: cacheKey,
+          imageUrl: imageUrl,
+          cacheKey: imageUrl,
+          cacheManager: AppImageCacheManager.instance,
+          fit: fit,
+          width: resolvedWidth,
+          height: resolvedHeight,
+          memCacheWidth: memCache.width,
+          memCacheHeight: memCache.height,
+          maxWidthDiskCache: memCache.width,
+          maxHeightDiskCache: memCache.height,
+          fadeInDuration: const Duration(milliseconds: 150),
+          placeholder: (_, __) => loading,
+          errorWidget: (_, __, ___) => fallback,
+        );
+      },
     );
   }
+}
+
+double? _resolveLayoutSize(double? explicit, double constraint) {
+  if (explicit != null && explicit.isFinite && explicit > 0) {
+    return explicit;
+  }
+  if (constraint.isFinite && constraint > 0) {
+    return constraint;
+  }
+  return null;
 }

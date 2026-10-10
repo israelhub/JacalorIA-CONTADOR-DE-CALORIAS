@@ -124,4 +124,15 @@ class JacaEmojiCatalog {
         .where((id) => id.isNotEmpty && isPurchasable(id))
         .toSet();
   }
+
+  static String? reactionIdFromProfile(Map<String, dynamic>? profile) {
+    final raw =
+        profile?['equippedProfileReactionEmojiId'] ??
+        profile?['equipped_profile_reaction_emoji_id'] ??
+        profile?['profileReactionEmojiId'] ??
+        profile?['profile_reaction_emoji_id'];
+    final id = raw?.toString().trim();
+    if (id == null || id.isEmpty) return null;
+    return byId(id)?.id;
+  }
 }

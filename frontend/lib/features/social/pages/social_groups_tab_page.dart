@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
-import '../../../shared/widgets/app_section_header.dart';
+import '../../profile/widgets/profile_section_card.dart';
 import '../models/social_group_models.dart';
 import '../widgets/social_empty_state.dart';
 import '../widgets/social_group_card.dart';
@@ -51,52 +51,47 @@ class SocialGroupsTabPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        AppSectionHeader(
+        ProfileSectionCard(
           title: 'Seus grupos ativos',
-          titleStyle: AppTextStyles.missionsSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
-          ),
+          child: activeGroups.isEmpty
+              ? const SocialEmptyState(
+                  icon: Icons.groups_2_rounded,
+                  title: 'Nenhum grupo por aqui ainda',
+                  subtitle:
+                      'Crie ou entre por link para disputar com seus amigos.',
+                  backgroundColor: AppColors.insetSurface,
+                )
+              : Column(
+                  children: [
+                    for (var index = 0; index < activeGroups.length; index++) ...[
+                      if (index > 0) const SizedBox(height: AppSpacing.md),
+                      SocialGroupCard(
+                        group: activeGroups[index],
+                        isFinished: isGroupFinished(activeGroups[index]),
+                        backgroundColor: AppColors.insetSurface,
+                        onTap: () => onOpenGroup(activeGroups[index].id),
+                      ),
+                    ],
+                  ],
+                ),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        if (activeGroups.isEmpty)
-          const SocialEmptyState(
-            icon: Icons.groups_2_rounded,
-            title: 'Nenhum grupo por aqui ainda',
-            subtitle: 'Crie ou entre por link para disputar com seus amigos.',
-          )
-        else
-          Column(
-            children: [
-              for (final group in activeGroups) ...[
-                SocialGroupCard(
-                  group: group,
-                  isFinished: isGroupFinished(group),
-                  onTap: () => onOpenGroup(group.id),
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-            ],
-          ),
         if (historyGroups.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.lg),
-          AppSectionHeader(
+          const SizedBox(height: AppSpacing.cardGap),
+          ProfileSectionCard(
             title: 'Histórico de grupos',
-            titleStyle: AppTextStyles.missionsSectionTitle.copyWith(
-              color: AppColors.brand900Variant,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Column(
-            children: [
-              for (final group in historyGroups) ...[
-                SocialGroupCard(
-                  group: group,
-                  isFinished: true,
-                  onTap: () => onOpenGroup(group.id),
-                ),
-                const SizedBox(height: AppSpacing.md),
+            child: Column(
+              children: [
+                for (var index = 0; index < historyGroups.length; index++) ...[
+                  if (index > 0) const SizedBox(height: AppSpacing.md),
+                  SocialGroupCard(
+                    group: historyGroups[index],
+                    isFinished: true,
+                    backgroundColor: AppColors.insetSurface,
+                    onTap: () => onOpenGroup(historyGroups[index].id),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ],
       ],

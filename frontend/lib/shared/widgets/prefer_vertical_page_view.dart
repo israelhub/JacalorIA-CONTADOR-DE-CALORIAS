@@ -70,8 +70,7 @@ class _PreferVerticalPageViewState extends State<PreferVerticalPageView> {
     }
 
     _axisDecided = true;
-    final isHorizontal =
-        delta.dx.abs() > delta.dy.abs() * _horizontalDominance;
+    final isHorizontal = delta.dx.abs() > delta.dy.abs() * _horizontalDominance;
     if (!isHorizontal && !_lockSwipe.value) {
       _lockSwipe.value = true;
     }

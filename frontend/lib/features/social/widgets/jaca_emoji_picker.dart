@@ -28,9 +28,7 @@ class JacaEmojiPicker extends StatelessWidget {
       ),
       decoration: const BoxDecoration(
         color: AppColors.surfaceAlt,
-        border: Border(
-          top: BorderSide(color: AppColors.performanceCardBorder),
-        ),
+        border: Border(top: BorderSide(color: AppColors.performanceCardBorder)),
       ),
       child: GridView.builder(
         shrinkWrap: true,

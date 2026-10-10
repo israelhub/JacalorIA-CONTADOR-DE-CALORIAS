@@ -6,9 +6,11 @@ import '../../../core/notifications/meal_reminder_models.dart';
 import '../../../core/notifications/meal_reminder_prefs.dart';
 import '../../../core/notifications/meal_reminder_service.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_dashed_action_button.dart';
 import '../../../shared/widgets/app_page_route.dart';
+import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_time_picker.dart';
 import '../../../shared/widgets/app_toast.dart';
 import 'meal_reminder_create_page.dart';
@@ -61,8 +63,8 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
         return;
       }
       if (next.masterEnabled) {
-        final enabled =
-            await MealReminderService.instance.areNotificationsEnabled();
+        final enabled = await MealReminderService.instance
+            .areNotificationsEnabled();
         if (!mounted) {
           return;
         }
@@ -76,7 +78,8 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
         } else {
           AppToast.success(
             context,
-            message: successMessage ??
+            message:
+                successMessage ??
                 (kIsWeb
                     ? 'Lembretes atualizados. Mantém a aba aberta para receber os avisos.'
                     : 'Lembretes atualizados.'),
@@ -136,7 +139,8 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
     if (!_settings.canAddMore) {
       AppToast.show(
         context,
-        message: 'Você já atingiu o máximo de ${MealReminderSettings.maxReminders} lembretes.',
+        message:
+            'Você já atingiu o máximo de ${MealReminderSettings.maxReminders} lembretes.',
       );
       return;
     }
@@ -152,7 +156,8 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
     if (next == null) {
       AppToast.show(
         context,
-        message: 'Você já atingiu o máximo de ${MealReminderSettings.maxReminders} lembretes.',
+        message:
+            'Você já atingiu o máximo de ${MealReminderSettings.maxReminders} lembretes.',
       );
       return;
     }
@@ -183,25 +188,15 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
     final count = _settings.reminders.length;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        title: Text(
-          'Lembretes de refeição',
-          style: AppTextStyles.homeSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
-          ),
-        ),
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-      ),
-      body: SafeArea(
+      backgroundColor: AppColors.pageBackground,
+      extendBodyBehindAppBar: true,
+      appBar: const AppBackPageHeader(title: 'Lembretes de refeição'),
+      body: AppBackPageContent(
         child: _loading
-            ? const Center(
-                child: CircularProgressIndicator(color: AppColors.action500),
-              )
+            ? const AppSkeletonList(itemCount: 4, itemHeight: 80)
             : ListView(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
+                  horizontal: AppSpacing.pageHorizontal,
                   vertical: AppSpacing.lg,
                 ),
                 children: [
@@ -481,7 +476,9 @@ class _MealReminderTile extends StatelessWidget {
             tooltip: 'Remover lembrete',
             icon: Icon(
               Icons.delete_outline_rounded,
-              color: busy ? AppColors.textTertiary : AppColors.foodReviewDeleteIcon,
+              color: busy
+                  ? AppColors.textTertiary
+                  : AppColors.foodReviewDeleteIcon,
             ),
           ),
           Transform.scale(

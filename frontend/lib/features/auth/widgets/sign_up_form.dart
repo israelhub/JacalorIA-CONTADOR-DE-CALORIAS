@@ -80,7 +80,7 @@ class _SignUpFormState extends State<SignUpForm> {
         children: [
           AppInputField(
             label: 'Nome',
-            hint: 'Digite seu nome',
+            hint: 'Ex.: Maria Silva',
             controller: _nameController,
             enabled: !widget.isLoading,
             validator: (value) {
@@ -93,7 +93,7 @@ class _SignUpFormState extends State<SignUpForm> {
           const SizedBox(height: AppSpacing.lg),
           AppInputField(
             label: 'E-mail',
-            hint: 'Digite seu email',
+            hint: 'Ex.: maria@email.com',
             controller: _emailController,
             enabled: !widget.isLoading,
             validator: (value) {
@@ -106,7 +106,7 @@ class _SignUpFormState extends State<SignUpForm> {
           const SizedBox(height: AppSpacing.lg),
           AppInputField(
             label: 'Senha',
-            hint: 'Digite sua senha',
+            hint: 'Ex.: sua senha',
             obscureText: true,
             controller: _passwordController,
             enabled: !widget.isLoading,
@@ -120,7 +120,7 @@ class _SignUpFormState extends State<SignUpForm> {
           const SizedBox(height: AppSpacing.lg),
           AppInputField(
             label: 'Confirmar senha',
-            hint: 'Confirme sua senha',
+            hint: 'Ex.: confirme a senha',
             obscureText: true,
             controller: _confirmPasswordController,
             enabled: !widget.isLoading,
@@ -205,9 +205,7 @@ class _SignUpFormState extends State<SignUpForm> {
                   ? null
                   : () {
                       context.pushSlidePage(
-                        SupportPage(
-                          initialEmail: _emailController.text.trim(),
-                        ),
+                        SupportPage(initialEmail: _emailController.text.trim()),
                       );
                     },
               style: TextButton.styleFrom(

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_scroll_reveal.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_section_header.dart';
-import '../../home/widgets/home_weight_quick_edit_button.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../helpers/performance_month_helpers.dart';
 import '../models/monthly_performance.dart';
 import '../models/weight_history.dart';
@@ -272,7 +273,10 @@ class _PerformancePageState extends State<PerformancePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Scaffold(backgroundColor: AppColors.surface, body: _buildContent());
+    return Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      body: AppAmbientPageBody(child: _buildContent()),
+    );
   }
 
   Widget _buildContent() {
@@ -289,7 +293,7 @@ class _PerformancePageState extends State<PerformancePage>
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  _errorMessage ?? 'Não foi possível carregar o desempenho.',
+                  _errorMessage ?? 'Não foi possível carregar o progresso.',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
@@ -314,6 +318,7 @@ class _PerformancePageState extends State<PerformancePage>
     );
     final bottomInset =
         homeShellBottomNavBodyHeight +
+        homeShellBottomNavFloatingGap +
         MediaQuery.viewPaddingOf(context).bottom +
         AppSpacing.xxxl;
 
@@ -331,9 +336,9 @@ class _PerformancePageState extends State<PerformancePage>
             offset: const Offset(0, -performanceHeroCalendarOverlap),
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg,
+                AppSpacing.pageHorizontal,
                 0,
-                AppSpacing.lg,
+                AppSpacing.pageHorizontal,
                 bottomInset,
               ),
               child: Column(
@@ -350,18 +355,12 @@ class _PerformancePageState extends State<PerformancePage>
                             onDayTap: widget.onDateSelected,
                           ),
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.cardGap),
                   AppScrollReveal(
                     delay: const Duration(milliseconds: 60),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: _PerformanceSectionCard(
+                      title: 'Relatório do mês',
                       children: <Widget>[
-                        AppSectionHeader(
-                          title: 'Relatório do mês',
-                          titleStyle: AppTextStyles.performanceSectionTitle
-                              .copyWith(color: AppColors.brand900Variant),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
                         Row(
                           children: <Widget>[
                             Expanded(
@@ -386,66 +385,57 @@ class _PerformancePageState extends State<PerformancePage>
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  AppScrollReveal(
-                    delay: const Duration(milliseconds: 120),
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: PerformanceStatCard(
-                            icon: Icons.local_fire_department_outlined,
-                            title: 'Média diária',
-                            value: '${performance.avgDailyCalories}',
-                            subtitle: 'kcal por dia',
-                            iconColor: AppColors.missionsChallenge,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: PerformanceStatCard(
-                            icon: _weightTrendIcon(performance.weightDirection),
-                            title: _weightTrendTitle(
-                              performance.weightDirection,
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: PerformanceStatCard(
+                                icon: Icons.local_fire_department_outlined,
+                                title: 'Média diária',
+                                value: '${performance.avgDailyCalories}',
+                                subtitle: 'kcal por dia',
+                                iconColor: AppColors.missionsChallenge,
+                              ),
                             ),
-                            value:
-                                '${performance.weightDifferenceKg.toStringAsFixed(1)} kg',
-                            subtitle: 'vs início do mês',
-                            iconColor: AppColors.textMuted,
-                          ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: PerformanceStatCard(
+                                icon: _weightTrendIcon(
+                                  performance.weightDirection,
+                                ),
+                                title: _weightTrendTitle(
+                                  performance.weightDirection,
+                                ),
+                                value:
+                                    '${performance.weightDifferenceKg.toStringAsFixed(1)} kg',
+                                subtitle: 'vs início do mês',
+                                iconColor: AppColors.textMuted,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  AppScrollReveal(
-                    delay: const Duration(milliseconds: 180),
-                    child: _HighlightCard(
-                      title: performance.highlightTitle,
-                      description: performance.highlightDescription,
-                      macroProgress: performance.macroProgress,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  AppScrollReveal(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
+                        const SizedBox(height: AppSpacing.md),
+                        _HighlightCard(
+                          title: performance.highlightTitle,
+                          description: performance.highlightDescription,
+                          macroProgress: performance.macroProgress,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
                         Text(
                           'Mês: ${performanceMonthLabel(monthDate)}',
                           style: AppTextStyles.performanceCardMicro.copyWith(
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.lg),
-                        AppSectionHeader(
-                          title: 'Relatório de peso geral',
-                          titleStyle: AppTextStyles.performanceSectionTitle
-                              .copyWith(color: AppColors.brand900Variant),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.cardGap),
+                  AppScrollReveal(
+                    delay: const Duration(milliseconds: 120),
+                    child: _PerformanceSectionCard(
+                      title: 'Relatório de peso geral',
+                      children: <Widget>[
                         _WeightHistoryCard(
                           selectedPeriod: _selectedWeightPeriod,
                           onPeriodSelected: _onSelectWeightPeriod,
@@ -495,6 +485,7 @@ class _PerformanceBodySkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomInset =
         homeShellBottomNavBodyHeight +
+        homeShellBottomNavFloatingGap +
         MediaQuery.viewPaddingOf(context).bottom +
         AppSpacing.xxxl;
 
@@ -508,16 +499,16 @@ class _PerformanceBodySkeleton extends StatelessWidget {
             offset: const Offset(0, -performanceHeroCalendarOverlap),
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg,
+                AppSpacing.pageHorizontal,
                 0,
-                AppSpacing.lg,
+                AppSpacing.pageHorizontal,
                 bottomInset,
               ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   _PerformanceCalendarSkeleton(),
-                  SizedBox(height: AppSpacing.lg),
+                  SizedBox(height: AppSpacing.cardGap),
                   AppSkeletonBox(height: 20, width: 180, borderRadius: 10),
                   SizedBox(height: AppSpacing.md),
                   Row(
@@ -617,9 +608,7 @@ class _PerformanceCalendarSkeleton extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-        boxShadow: AppShadows.performanceCard,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(
         children: const <Widget>[
@@ -683,120 +672,95 @@ class _WeightHistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-        boxShadow: AppShadows.performanceCard,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          if (isLoading)
-            const SizedBox(
-              height: 180,
-              child: Center(
-                child: CircularProgressIndicator(color: AppColors.action500),
-              ),
-            )
-          else if (errorMessage != null && history == null)
-            SizedBox(
-              height: 88,
-              child: Center(
-                child: Text(
-                  errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (isLoading)
+          const AppSkeletonBox(height: 180, borderRadius: AppRadius.lg)
+        else if (errorMessage != null && history == null)
+          SizedBox(
+            height: 88,
+            child: Center(
+              child: Text(
+                errorMessage!,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
-            )
-          else
-            WeightHistoryChart(
-              points: history?.points ?? const <WeightHistoryPoint>[],
-              startDate: history?.range.startDate,
             ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: _periods
-                .where((entry) => entry.key != 'custom')
-                .map((entry) {
-                  final isSelected = selectedPeriod == entry.key;
-                  return Expanded(
-                    child: Center(
-                      child: Material(
-                        color: isSelected
-                            ? AppColors.action500.withValues(alpha: 0.2)
-                            : AppColors.surfaceAlt,
-                        shape: CircleBorder(
-                          side: BorderSide(
-                            color: isSelected
-                                ? AppColors.action500
-                                : AppColors.borderAlt,
-                          ),
-                        ),
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: () => onPeriodSelected(entry.key),
-                          child: SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: Center(
-                              child: Text(
-                                entry.value,
-                                style: AppTextStyles.performanceCardMicro
-                                    .copyWith(
-                                      color: isSelected
-                                          ? AppColors.action500
-                                          : AppColors.textSecondary,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                    ),
-                              ),
+          )
+        else
+          WeightHistoryChart(
+            points: history?.points ?? const <WeightHistoryPoint>[],
+            startDate: history?.range.startDate,
+          ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: _periods
+              .where((entry) => entry.key != 'custom')
+              .map((entry) {
+                final isSelected = selectedPeriod == entry.key;
+                return Expanded(
+                  child: Center(
+                    child: Material(
+                      color: isSelected
+                          ? AppColors.action500.withValues(alpha: 0.2)
+                          : AppColors.insetSurface,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => onPeriodSelected(entry.key),
+                        child: SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: Center(
+                            child: Text(
+                              entry.value,
+                              style: AppTextStyles.performanceCardMicro
+                                  .copyWith(
+                                    color: isSelected
+                                        ? AppColors.action500
+                                        : AppColors.textSecondary,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  );
-                })
-                .toList(growable: false),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          SizedBox(
-            width: double.infinity,
-            child: ChoiceChip(
-              selected: selectedPeriod == 'custom',
-              showCheckmark: false,
-              label: const SizedBox(
-                width: double.infinity,
-                child: Text('Personalizado', textAlign: TextAlign.center),
-              ),
-              backgroundColor: AppColors.surfaceAlt,
-              selectedColor: AppColors.action500.withValues(alpha: 0.2),
-              side: BorderSide(
-                color: selectedPeriod == 'custom'
-                    ? AppColors.action500
-                    : AppColors.borderAlt,
-              ),
-              labelStyle: AppTextStyles.performanceCardMicro.copyWith(
-                color: selectedPeriod == 'custom'
-                    ? AppColors.action500
-                    : AppColors.textSecondary,
-                fontWeight: selectedPeriod == 'custom'
-                    ? FontWeight.w700
-                    : FontWeight.w500,
-              ),
-              onSelected: (_) => onPeriodSelected('custom'),
+                  ),
+                );
+              })
+              .toList(growable: false),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        SizedBox(
+          width: double.infinity,
+          child: ChoiceChip(
+            selected: selectedPeriod == 'custom',
+            showCheckmark: false,
+            label: const SizedBox(
+              width: double.infinity,
+              child: Text('Personalizado', textAlign: TextAlign.center),
             ),
+            backgroundColor: AppColors.insetSurface,
+            selectedColor: AppColors.action500.withValues(alpha: 0.2),
+            side: BorderSide.none,
+            labelStyle: AppTextStyles.performanceCardMicro.copyWith(
+              color: selectedPeriod == 'custom'
+                  ? AppColors.action500
+                  : AppColors.textSecondary,
+              fontWeight: selectedPeriod == 'custom'
+                  ? FontWeight.w700
+                  : FontWeight.w500,
+            ),
+            onSelected: (_) => onPeriodSelected('custom'),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -838,10 +802,8 @@ class _HighlightCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.insetSurface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-        boxShadow: AppShadows.performanceCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -889,6 +851,40 @@ class _HighlightCard extends StatelessWidget {
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+}
+
+class _PerformanceSectionCard extends StatelessWidget {
+  const _PerformanceSectionCard({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppSectionHeader(
+            title: title,
+            titleStyle: AppTextStyles.performanceSectionTitle.copyWith(
+              color: AppColors.brand900Variant,
+            ),
+          ),
+          if (children.isNotEmpty) ...<Widget>[
+            const SizedBox(height: AppSpacing.md),
+            ...children,
+          ],
         ],
       ),
     );

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../controllers/auth_controller.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../onboarding/pages/welcome_page.dart';
@@ -166,9 +167,7 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
     }
 
     if (isResent) {
-      _showMessage(
-        'Código reenviado com sucesso. Verificar na caixa de spam.',
-      );
+      _showMessage('Código reenviado com sucesso. Verificar na caixa de spam.');
       return;
     }
 
@@ -186,19 +185,20 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: AppSpacing.lg),
-            const SizedBox(height: AppSpacing.huge - AppSpacing.sm),
-            Expanded(
+      body: AppAmbientPageBody(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.huge - AppSpacing.sm),
+              Expanded(
               child: Column(
                 children: [
                   const Spacer(flex: 6),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xxl,
+                      horizontal: AppSpacing.pageHorizontal,
                     ),
                     child: Text(
                       'Confirme o seu e-mail',
@@ -211,7 +211,7 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                   const SizedBox(height: AppSpacing.sm + 1),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xxl,
+                      horizontal: AppSpacing.pageHorizontal,
                     ),
                     child: Text(
                       'Enviamos um código para ${widget.email}.',
@@ -224,7 +224,7 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                   const SizedBox(height: AppSpacing.xs),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xxl,
+                      horizontal: AppSpacing.pageHorizontal,
                     ),
                     child: Text(
                       'Verificar na caixa de spam.',
@@ -340,8 +340,9 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
                   const Spacer(flex: 7),
                 ],
               ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

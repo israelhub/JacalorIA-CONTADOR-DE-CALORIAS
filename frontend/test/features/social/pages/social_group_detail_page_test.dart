@@ -160,7 +160,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byType(SocialGroupChatPage), findsOneWidget);
-    expect(find.text('Mensagem'), findsOneWidget);
+    expect(find.text('Ex.: Mensagem'), findsOneWidget);
     expect(find.byKey(const ValueKey('app-bottom-nav-surface')), findsNothing);
   });
 

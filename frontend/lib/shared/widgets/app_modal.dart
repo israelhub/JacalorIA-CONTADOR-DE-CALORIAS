@@ -7,7 +7,9 @@ class AppModal extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(AppSpacing.lg),
-    this.insetPadding = const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+    this.insetPadding = const EdgeInsets.symmetric(
+      horizontal: AppSpacing.pageHorizontal,
+    ),
   });
 
   final Widget child;

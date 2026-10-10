@@ -28,12 +28,12 @@ class AppToast {
     entry = OverlayEntry(
       builder: (_) => _ToastOverlay(
         message: message,
-        icon: icon ??
+        icon:
+            icon ??
             (isError
                 ? Icons.error_outline_rounded
                 : Icons.check_circle_rounded),
-        backgroundColor:
-            isError ? _errorBackground : AppColors.brand900Variant,
+        backgroundColor: isError ? _errorBackground : AppColors.brand900Variant,
         duration: duration,
         bottomInset: bottomInset,
         onClose: () {
@@ -121,8 +121,8 @@ class _ToastOverlayState extends State<_ToastOverlay>
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      left: AppSpacing.lg,
-      right: AppSpacing.lg,
+      left: AppSpacing.pageHorizontal,
+      right: AppSpacing.pageHorizontal,
       bottom: widget.bottomInset,
       child: IgnorePointer(
         child: SlideTransition(

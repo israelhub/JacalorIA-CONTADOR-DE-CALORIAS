@@ -26,37 +26,21 @@ class AppSectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedTitleStyle =
         titleStyle ?? AppTextStyles.performanceSectionTitle;
-    final resolvedSubtitleColor =
-        subtitleColor ?? AppColors.brand900Variant;
+    final resolvedSubtitleColor = subtitleColor ?? AppColors.brand900Variant;
     final resolvedSubtitleStyle =
         (subtitleStyle ??
-                resolvedTitleStyle.copyWith(
-                  fontSize: 14,
-                  height: 20 / 14,
-                ))
+                resolvedTitleStyle.copyWith(fontSize: 14, height: 20 / 14))
             .copyWith(color: resolvedSubtitleColor);
 
     return Row(
       children: <Widget>[
-        Expanded(
-          child: Text(
-            title,
-            style: resolvedTitleStyle,
-          ),
-        ),
+        Expanded(child: Text(title, style: resolvedTitleStyle)),
         if (subtitle != null) ...<Widget>[
           if (subtitleIcon != null) ...<Widget>[
-            Icon(
-              subtitleIcon,
-              size: 14,
-              color: resolvedSubtitleColor,
-            ),
+            Icon(subtitleIcon, size: 14, color: resolvedSubtitleColor),
             const SizedBox(width: 4),
           ],
-          Text(
-            subtitle!,
-            style: resolvedSubtitleStyle,
-          ),
+          Text(subtitle!, style: resolvedSubtitleStyle),
         ],
         if (trailing != null) ...<Widget>[
           if (subtitle != null) const SizedBox(width: AppSpacing.sm),

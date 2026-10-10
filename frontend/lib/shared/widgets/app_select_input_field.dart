@@ -38,13 +38,17 @@ class _AppSelectInputFieldState extends State<AppSelectInputField> {
     }
 
     final fieldBox = fieldContext.findRenderObject() as RenderBox?;
-    final overlayBox = Overlay.of(context).context.findRenderObject() as RenderBox?;
+    final overlayBox =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
 
     if (fieldBox == null || overlayBox == null) {
       return;
     }
 
-    final fieldOffset = fieldBox.localToGlobal(Offset.zero, ancestor: overlayBox);
+    final fieldOffset = fieldBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlayBox,
+    );
     final fieldRect = Rect.fromLTWH(
       fieldOffset.dx,
       fieldOffset.dy,
@@ -138,14 +142,16 @@ class _AppSelectInputFieldState extends State<AppSelectInputField> {
           child: Row(
             mainAxisSize: widget.compact ? MainAxisSize.min : MainAxisSize.max,
             children: [
-              if (!widget.compact) Expanded(
-                child: Text(
-                  value,
-                  style: AppTextStyles.bodyLarge.copyWith(color: valueColor),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ) else ...[
+              if (!widget.compact)
+                Expanded(
+                  child: Text(
+                    value,
+                    style: AppTextStyles.bodyLarge.copyWith(color: valueColor),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                )
+              else ...[
                 Text(
                   value,
                   style: AppTextStyles.bodyLarge.copyWith(
@@ -154,9 +160,7 @@ class _AppSelectInputFieldState extends State<AppSelectInputField> {
                   ),
                 ),
               ],
-              if (!widget.compact) ...[
-                const SizedBox(width: AppSpacing.sm),
-              ],
+              if (!widget.compact) ...[const SizedBox(width: AppSpacing.sm)],
               const Icon(
                 Icons.keyboard_arrow_down,
                 color: AppColors.textSecondary,

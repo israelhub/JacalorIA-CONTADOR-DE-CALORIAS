@@ -3,10 +3,11 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/helpers/profile_value_helpers.dart';
-import '../../../../shared/widgets/app_network_image.dart';
 import '../../../../shared/widgets/app_page_route.dart';
 import '../../../../shared/theme/app_theme.dart';
+import '../../../../shared/widgets/app_back_page_header.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/faded_meal_image.dart';
 import '../../../../shared/widgets/macro_progress_indicator.dart';
 import '../../home/services/meal_service.dart';
 import '../helpers/food_review_helpers.dart';
@@ -59,7 +60,7 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
   void initState() {
     super.initState();
     _record = widget.record;
-    _sectionVisible = List<bool>.filled(4, false);
+    _sectionVisible = List<bool>.filled(3, false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_started) {
@@ -131,9 +132,10 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
         Navigator.of(context).pop(payload);
       },
       child: Scaffold(
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.pageBackground,
+        extendBodyBehindAppBar: true,
         appBar: FoodAnalysisPageHeader(
-          title: 'Detalhes da refeição',
+          title: 'Detalhes refeição',
           actions: widget.readOnly
               ? const []
               : [
@@ -141,108 +143,249 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
                     tooltip: _isSavedAsTemplate
                         ? 'Remover das refeições salvas'
                         : 'Salvar para reutilizar',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 40,
+                    ),
                     onPressed: _isSavingTemplate ? null : _handleSaveAsTemplate,
                     icon: _isSavingTemplate
                         ? const SizedBox(
-                            width: 20,
-                            height: 20,
+                            width: 18,
+                            height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : Icon(
                             _isSavedAsTemplate
                                 ? Icons.bookmark
                                 : Icons.bookmark_add_outlined,
+                            size: 22,
                             color: _isSavedAsTemplate
                                 ? AppColors.brand900
-                                : null,
+                                : AppColors.brand900Variant,
                           ),
                   ),
+                  const SizedBox(width: AppSpacing.xs),
                   IconButton(
                     tooltip: 'Editar refeição',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 40,
+                    ),
                     onPressed: _handleEditMeal,
-                    icon: const Icon(Icons.edit_outlined),
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                      size: 22,
+                      color: AppColors.brand900Variant,
+                    ),
                   ),
+                  const SizedBox(width: AppSpacing.xs),
                   IconButton(
                     tooltip: 'Excluir refeição',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 40,
+                    ),
                     onPressed: _handleDeleteMeal,
-                    icon: const Icon(Icons.delete_outline),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 22,
+                      color: AppColors.brand900Variant,
+                    ),
                   ),
                 ],
         ),
-        body: SafeArea(
+        body: AppBackPageContent(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
+              AppSpacing.pageHorizontal,
               AppSpacing.sm,
-              AppSpacing.lg,
+              AppSpacing.pageHorizontal,
               AppSpacing.xxl,
             ),
             children: [
-              _RevealSection(
-                visible: _sectionVisible[0],
-                duration: _sectionRevealDuration,
-                child: _MealHeroImage(
-                  imageBytes: _record.imageBytes,
-                  imageAsset: _record.imageAsset,
-                  imageUrl: _record.imageUrl,
+              if (hasFadedMealImage(
+                imageAsset: _record.imageAsset,
+                imageBytes: _record.imageBytes,
+                imageUrl: _record.imageUrl,
+              )) ...[
+                _RevealSection(
+                  visible: _sectionVisible[0],
+                  duration: _sectionRevealDuration,
+                  child: _MealHeroImage(
+                    imageBytes: _record.imageBytes,
+                    imageAsset: _record.imageAsset,
+                    imageUrl: _record.imageUrl,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.cardGap),
+              ],
               _RevealSection(
                 visible: _sectionVisible[1],
                 duration: _sectionRevealDuration,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              mealTitle,
+                              style: AppTextStyles.homeUserName.copyWith(
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            _record.timeLabel,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              height: 22 / 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xs,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.action500,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
                           child: Text(
-                            mealTitle,
-                            style: AppTextStyles.homeUserName.copyWith(
-                              color: AppColors.textPrimary,
+                            _record.mealType.chipLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.captionStrong.copyWith(
+                              height: 1,
+                              color: AppColors.surface,
                             ),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          _record.timeLabel,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            height: 22 / 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xs,
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.action500.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(
-                          color: AppColors.action500.withValues(alpha: 0.35),
+                      const SizedBox(height: AppSpacing.md),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.insetSurface,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '$consumedCalories Calorias consumidas',
+                              style: AppTextStyles.homeSectionTitle.copyWith(
+                                color: AppColors.brand900Variant,
+                                fontSize: 20,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: MacroProgressIndicator(
+                                    label: 'Carboidratos',
+                                    consumed: _record.carbs,
+                                    goal: goalCarbs,
+                                    color: AppColors.homeMacroCarbs,
+                                    progressKey: const ValueKey(
+                                      'meal-details-macro-carboidratos',
+                                    ),
+                                    labelStyle: AppTextStyles.bodyMedium
+                                        .copyWith(
+                                          color: AppColors.brand900Variant,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                    valueStyle: AppTextStyles.captionStrong
+                                        .copyWith(
+                                          color: AppColors.brand900Variant,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                    trackColor: AppColors.homeProgressTrack,
+                                    barHeight: 10,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: MacroProgressIndicator(
+                                    label: 'Proteinas',
+                                    consumed: _record.protein,
+                                    goal: goalProtein,
+                                    color: AppColors.homeMacroProtein,
+                                    progressKey: const ValueKey(
+                                      'meal-details-macro-proteinas',
+                                    ),
+                                    labelStyle: AppTextStyles.bodyMedium
+                                        .copyWith(
+                                          color: AppColors.brand900Variant,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                    valueStyle: AppTextStyles.captionStrong
+                                        .copyWith(
+                                          color: AppColors.brand900Variant,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                    trackColor: AppColors.homeProgressTrack,
+                                    barHeight: 10,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: MacroProgressIndicator(
+                                    label: 'Gorduras',
+                                    consumed: _record.fat,
+                                    goal: goalFat,
+                                    color: AppColors.homeMacroFat,
+                                    progressKey: const ValueKey(
+                                      'meal-details-macro-gorduras',
+                                    ),
+                                    labelStyle: AppTextStyles.bodyMedium
+                                        .copyWith(
+                                          color: AppColors.brand900Variant,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                    valueStyle: AppTextStyles.captionStrong
+                                        .copyWith(
+                                          color: AppColors.brand900Variant,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                    trackColor: AppColors.homeProgressTrack,
+                                    barHeight: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      child: Text(
-                        _record.mealType.displayLabel,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.brand900,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.cardGap),
               _RevealSection(
                 visible: _sectionVisible[2],
                 duration: _sectionRevealDuration,
@@ -252,123 +395,6 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(
-                      color: AppColors.foodReviewFieldBorder,
-                      width: 2,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.foodReviewFieldShadow,
-                        offset: Offset(0, 4),
-                        blurRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$consumedCalories Calorias consumidas',
-                        style: AppTextStyles.homeSectionTitle.copyWith(
-                          color: AppColors.brand900Variant,
-                          fontSize: 20,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: MacroProgressIndicator(
-                              label: 'Carboidratos',
-                              consumed: _record.carbs,
-                              goal: goalCarbs,
-                              color: AppColors.homeMacroCarbs,
-                              progressKey: const ValueKey(
-                                'meal-details-macro-carboidratos',
-                              ),
-                              labelStyle: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.brand900Variant,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              valueStyle: AppTextStyles.captionStrong.copyWith(
-                                color: AppColors.brand900Variant,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              trackColor: AppColors.homeProgressTrack,
-                              barHeight: 10,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: MacroProgressIndicator(
-                              label: 'Proteinas',
-                              consumed: _record.protein,
-                              goal: goalProtein,
-                              color: AppColors.homeMacroProtein,
-                              progressKey: const ValueKey(
-                                'meal-details-macro-proteinas',
-                              ),
-                              labelStyle: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.brand900Variant,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              valueStyle: AppTextStyles.captionStrong.copyWith(
-                                color: AppColors.brand900Variant,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              trackColor: AppColors.homeProgressTrack,
-                              barHeight: 10,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: MacroProgressIndicator(
-                              label: 'Gorduras',
-                              consumed: _record.fat,
-                              goal: goalFat,
-                              color: AppColors.homeMacroFat,
-                              progressKey: const ValueKey(
-                                'meal-details-macro-gorduras',
-                              ),
-                              labelStyle: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.brand900Variant,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              valueStyle: AppTextStyles.captionStrong.copyWith(
-                                color: AppColors.brand900Variant,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              trackColor: AppColors.homeProgressTrack,
-                              barHeight: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _RevealSection(
-                visible: _sectionVisible[3],
-                duration: _sectionRevealDuration,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(
-                      color: AppColors.foodReviewFieldBorder,
-                      width: 2,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.foodReviewFieldShadow,
-                        offset: Offset(0, 4),
-                        blurRadius: 0,
-                      ),
-                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -714,79 +740,15 @@ class _MealHeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 250,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.foodReviewFieldShadow,
-            offset: Offset(0, 4),
-            blurRadius: 0,
-          ),
-        ],
-      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        child: _buildImage(),
-      ),
-    );
-  }
-
-  Widget _buildImage() {
-    if (imageBytes != null) {
-      return Image.memory(
-        imageBytes!,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-      );
-    }
-
-    if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return AppNetworkImage(
-        url: imageUrl!,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: 250,
-        borderRadius: AppRadius.md,
-        error: _buildMissingImage(),
-      );
-    }
-
-    if (imageAsset != null && imageAsset!.isNotEmpty) {
-      return Image.asset(
-        imageAsset!,
-        fit: BoxFit.cover,
-        width: double.infinity,
-      );
-    }
-
-    return _buildMissingImage();
-  }
-
-  Widget _buildMissingImage() {
-    return Container(
-      color: AppColors.surfaceAlt,
-      width: double.infinity,
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.image_not_supported_outlined,
-            color: AppColors.textSecondary,
-            size: 42,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Imagem não cadastrada',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+        child: FadedMealImage(
+          imageAsset: imageAsset,
+          imageBytes: imageBytes,
+          imageUrl: imageUrl,
+        ),
       ),
     );
   }

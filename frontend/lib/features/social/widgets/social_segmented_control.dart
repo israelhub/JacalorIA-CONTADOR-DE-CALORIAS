@@ -22,7 +22,6 @@ class SocialSegmentedControl extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -54,7 +53,9 @@ class SocialSegmentedControl extends StatelessWidget {
                             labels[i],
                             textAlign: TextAlign.center,
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: selectedIndex == i ? AppColors.surface : AppColors.textSecondary,
+                              color: selectedIndex == i
+                                  ? AppColors.surface
+                                  : AppColors.textSecondary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),

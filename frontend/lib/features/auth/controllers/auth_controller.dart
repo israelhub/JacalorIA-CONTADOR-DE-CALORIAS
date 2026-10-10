@@ -41,9 +41,7 @@ class AuthController extends ChangeNotifier {
       token = rawToken;
       shouldCompleteOnboarding =
           result['isNewUser'] == true || result['needsOnboarding'] == true;
-      currentUser = rawUser is Map
-          ? Map<String, dynamic>.from(rawUser)
-          : null;
+      currentUser = rawUser is Map ? Map<String, dynamic>.from(rawUser) : null;
       AuthService.globalToken = token;
       AuthService.globalUser = currentUser;
 

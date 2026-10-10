@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_skeleton.dart';
 import '../../home/widgets/home_shell_layout.dart';
 import '../models/social_group_models.dart';
 import '../widgets/social_search_result_item.dart';
@@ -52,19 +54,10 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        foregroundColor: AppColors.brand900Variant,
-        title: Text(
-          'Buscar usuário',
-          style: AppTextStyles.missionsSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
-          ),
-        ),
-      ),
-      body: SafeArea(
+      backgroundColor: AppColors.pageBackground,
+      extendBodyBehindAppBar: true,
+      appBar: const AppBackPageHeader(title: 'Buscar usuário'),
+      body: AppBackPageContent(
         bottom: false,
         child: Padding(
           padding: homeShellNestedFillPadding(context),
@@ -74,7 +67,7 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
               TextField(
                 controller: _queryController,
                 decoration: InputDecoration(
-                  hintText: 'Digite ID amigável, e-mail ou nome',
+                  hintText: 'Ex.: joao123, e-mail ou nome',
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
                   fillColor: AppColors.surfaceAlt,
@@ -90,8 +83,14 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
               const SizedBox(height: AppSpacing.md),
               Expanded(
                 child: _searching
-                    ? const Center(
-                        child: CircularProgressIndicator(color: AppColors.action500),
+                    ? const Column(
+                        children: [
+                          AppSkeletonFriendRow(),
+                          SizedBox(height: AppSpacing.lg),
+                          AppSkeletonFriendRow(),
+                          SizedBox(height: AppSpacing.lg),
+                          AppSkeletonFriendRow(),
+                        ],
                       )
                     : _results.isEmpty
                     ? Center(
@@ -104,7 +103,8 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
                       )
                     : ListView.separated(
                         itemCount: _results.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.sm),
                         itemBuilder: (context, index) {
                           final user = _results[index];
                           return SocialSearchResultItem(

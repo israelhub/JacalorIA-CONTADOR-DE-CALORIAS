@@ -116,6 +116,10 @@ export class User extends Model {
   purchasedJacaEmojiIds: string[];
 
   @AllowNull(true)
+  @Column({ type: DataType.STRING, field: 'equipped_profile_reaction_emoji_id' })
+  equippedProfileReactionEmojiId: string | null;
+
+  @AllowNull(true)
   @Column({ type: DataType.STRING, field: 'equipped_offensive_blocker_id' })
   equippedOffensiveBlockerId: string | null;
 

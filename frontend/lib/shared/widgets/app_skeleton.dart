@@ -47,8 +47,8 @@ class _AppSkeletonBoxState extends State<AppSkeletonBox>
       animation: _controller,
       builder: (context, child) {
         final color = Color.lerp(
-          widget.color ?? AppColors.surfaceAlt,
-          widget.highlightColor ?? AppColors.borderLight,
+          widget.color ?? AppColors.skeleton,
+          widget.highlightColor ?? AppColors.skeletonHighlight,
           _controller.value,
         );
 
@@ -61,6 +61,65 @@ class _AppSkeletonBoxState extends State<AppSkeletonBox>
           ),
         );
       },
+    );
+  }
+}
+
+class AppSkeletonList extends StatelessWidget {
+  const AppSkeletonList({
+    super.key,
+    this.itemCount = 4,
+    this.itemHeight = 72,
+    this.gap = AppSpacing.md,
+    this.padding = const EdgeInsets.symmetric(
+      horizontal: AppSpacing.pageHorizontal,
+      vertical: AppSpacing.lg,
+    ),
+    this.borderRadius = AppRadius.md,
+  });
+
+  final int itemCount;
+  final double itemHeight;
+  final double gap;
+  final EdgeInsetsGeometry padding;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: padding,
+      child: Column(
+        children: [
+          for (var index = 0; index < itemCount; index += 1) ...[
+            if (index > 0) SizedBox(height: gap),
+            AppSkeletonBox(height: itemHeight, borderRadius: borderRadius),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class AppSkeletonFriendRow extends StatelessWidget {
+  const AppSkeletonFriendRow({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        AppSkeletonBox(width: 52, height: 52, borderRadius: AppRadius.pill),
+        SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppSkeletonBox(height: 16, width: 140),
+              SizedBox(height: AppSpacing.sm),
+              AppSkeletonBox(height: 12, width: 88),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

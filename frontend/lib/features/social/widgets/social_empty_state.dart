@@ -8,11 +8,13 @@ class SocialEmptyState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.backgroundColor = AppColors.surface,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -20,10 +22,8 @@ class SocialEmptyState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-        boxShadow: AppShadows.performanceCard,
       ),
       child: Column(
         children: [

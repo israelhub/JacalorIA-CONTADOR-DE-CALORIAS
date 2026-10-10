@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_bottom_navigation.dart';
+import 'package:jacaloria/shared/widgets/app_nav_icons.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
 
 Widget _wrap(
   Widget child, {
@@ -24,34 +25,30 @@ void main() {
     await tester.pumpWidget(
       _wrap(
         AppBottomNavigation(
-          items: const [
+          items: [
             AppBottomNavigationItem(
               label: 'Calendário',
-              iconAsset: 'assets/icons/calendar.svg',
+              icon: AppNavIcons.performance(selected: false),
               color: AppColors.divider,
-              labelKey: ValueKey('bottom-label-calendar'),
-              iconKey: ValueKey('bottom-icon-calendar'),
+              iconKey: const ValueKey('bottom-icon-calendar'),
             ),
             AppBottomNavigationItem(
               label: 'Início',
-              iconAsset: 'assets/icons/home.svg',
+              icon: AppNavIcons.home(selected: true),
               color: AppColors.action500,
-              labelKey: ValueKey('bottom-label-home'),
-              iconKey: ValueKey('bottom-icon-home'),
+              iconKey: const ValueKey('bottom-icon-home'),
             ),
             AppBottomNavigationItem(
               label: 'Missões',
-              iconAsset: 'assets/icons/mission.svg',
+              icon: AppNavIcons.missions(selected: false),
               color: AppColors.divider,
-              labelKey: ValueKey('bottom-label-missions'),
-              iconKey: ValueKey('bottom-icon-missions'),
+              iconKey: const ValueKey('bottom-icon-missions'),
             ),
             AppBottomNavigationItem(
               label: 'Social',
-              iconAsset: 'assets/icons/profile.svg',
+              icon: AppNavIcons.social(selected: false),
               color: AppColors.divider,
-              labelKey: ValueKey('bottom-label-social'),
-              iconKey: ValueKey('bottom-icon-social'),
+              iconKey: const ValueKey('bottom-icon-social'),
             ),
           ],
           onCenterActionTap: () {},
@@ -61,7 +58,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.byType(SvgPicture), findsNWidgets(4));
+    expect(find.byType(PhosphorIcon), findsWidgets);
     expect(
       find.byKey(const ValueKey('app-bottom-nav-surface')),
       findsOneWidget,
@@ -71,11 +68,11 @@ void main() {
       findsOneWidget,
     );
 
-    final homeIcon = tester.widget<SvgPicture>(
+    final homeIcon = tester.widget<PhosphorIcon>(
       find.byKey(const ValueKey('bottom-icon-home')),
     );
 
-    expect(homeIcon.colorFilter, isNotNull);
+    expect(homeIcon.color, AppColors.action500);
     final surfaceDecoration = tester.widget<Container>(
       find.byKey(const ValueKey('app-bottom-nav-surface')),
     ).decoration as BoxDecoration;
@@ -85,7 +82,7 @@ void main() {
       tester
           .getSize(find.byKey(const ValueKey('app-bottom-nav-surface')))
           .height,
-      56,
+      appBottomNavCardHeight,
     );
   });
 
@@ -94,25 +91,25 @@ void main() {
       _wrap(
         viewPadding: const EdgeInsets.only(bottom: 34),
         AppBottomNavigation(
-          items: const [
+          items: [
             AppBottomNavigationItem(
               label: 'Calendário',
-              iconAsset: 'assets/icons/calendar.svg',
+              icon: AppNavIcons.performance(selected: false),
               color: AppColors.divider,
             ),
             AppBottomNavigationItem(
               label: 'Início',
-              iconAsset: 'assets/icons/home.svg',
+              icon: AppNavIcons.home(selected: true),
               color: AppColors.action500,
             ),
             AppBottomNavigationItem(
               label: 'Missões',
-              iconAsset: 'assets/icons/mission.svg',
+              icon: AppNavIcons.missions(selected: false),
               color: AppColors.divider,
             ),
             AppBottomNavigationItem(
               label: 'Social',
-              iconAsset: 'assets/icons/profile.svg',
+              icon: AppNavIcons.social(selected: false),
               color: AppColors.divider,
             ),
           ],
@@ -127,7 +124,7 @@ void main() {
       tester
           .getSize(find.byKey(const ValueKey('app-bottom-nav-surface')))
           .height,
-      56 + 34,
+      appBottomNavCardHeight + 34,
     );
   });
 }

@@ -47,6 +47,12 @@
 	<string>Precisamos da câmera para analisar a foto da refeição.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Precisamos acessar a galeria para escolher uma foto da refeição.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Usamos seus passos do Apple Saúde para mostrar o progresso diário na Home.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Não gravamos dados de saúde; o acesso é só para leitura de passos.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Usamos o sensor de movimento para contar seus passos do dia.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>FlutterDeepLinkingEnabled</key>

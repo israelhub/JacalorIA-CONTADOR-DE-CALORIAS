@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_page_route.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../controllers/auth_controller.dart';
 import '../helpers/auth_helpers.dart';
+import '../widgets/auth_form_card.dart';
 import 'login_page.dart';
 
 class ResetPasswordNewPasswordPage extends StatefulWidget {
@@ -87,18 +89,10 @@ class _ResetPasswordNewPasswordPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        title: Text(
-          'Nova senha',
-          style: AppTextStyles.homeSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
-          ),
-        ),
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-      ),
-      body: SafeArea(
+      backgroundColor: AppColors.pageBackground,
+      extendBodyBehindAppBar: true,
+      appBar: const AppBackPageHeader(title: 'Nova senha'),
+      body: AppBackPageContent(
         child: AnimatedBuilder(
           animation: _authController,
           builder: (context, _) {
@@ -106,54 +100,61 @@ class _ResetPasswordNewPasswordPageState
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xxl,
+                    horizontal: AppSpacing.pageHorizontal,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: AppSpacing.xl),
-                      Text(
-                        'Defina sua nova senha para ${widget.email}.',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      AppInputField(
-                        label: 'Nova senha',
-                        hint: 'Digite sua nova senha',
-                        controller: _newPasswordController,
-                        obscureText: true,
-                        onChanged: (_) => _authController.clearError(),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      AppInputField(
-                        label: 'Confirmar senha',
-                        hint: 'Confirme sua nova senha',
-                        controller: _confirmPasswordController,
-                        obscureText: true,
-                        onChanged: (_) => _authController.clearError(),
-                      ),
-                      if (_authController.error != null) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          _authController.error!,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textError,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: AppSpacing.xxl),
-                      SizedBox(
-                        height: AppSpacing.huge + AppSpacing.xs,
-                        child: AppButton(
-                          label: 'Salvar nova senha',
-                          onPressed: _authController.isLoading
-                              ? null
-                              : _handleResetPassword,
-                          variant: AppButtonVariant.primary,
+                      AuthFormCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Defina sua nova senha para ${widget.email}.',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xl),
+                            AppInputField(
+                              label: 'Nova senha',
+                              hint: 'Ex.: sua nova senha',
+                              controller: _newPasswordController,
+                              obscureText: true,
+                              onChanged: (_) => _authController.clearError(),
+                            ),
+                            const SizedBox(height: AppSpacing.xl),
+                            AppInputField(
+                              label: 'Confirmar senha',
+                              hint: 'Ex.: confirme a nova senha',
+                              controller: _confirmPasswordController,
+                              obscureText: true,
+                              onChanged: (_) => _authController.clearError(),
+                            ),
+                            if (_authController.error != null) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                _authController.error!,
+                                textAlign: TextAlign.center,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textError,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: AppSpacing.xxl),
+                            SizedBox(
+                              height: AppSpacing.huge + AppSpacing.xs,
+                              child: AppButton(
+                                label: 'Salvar nova senha',
+                                onPressed: _authController.isLoading
+                                    ? null
+                                    : _handleResetPassword,
+                                variant: AppButtonVariant.primary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

@@ -117,7 +117,8 @@ class _AppDashedActionButtonState extends State<AppDashedActionButton> {
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: widget.labelStyle ??
+                            style:
+                                widget.labelStyle ??
                                 AppTextStyles.homeAction.copyWith(
                                   color: AppColors.action500,
                                 ),

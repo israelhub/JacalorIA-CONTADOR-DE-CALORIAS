@@ -13,19 +13,19 @@ class RegisterForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const AppInputField(label: 'Nome', hint: 'Digite seu nome'),
+        const AppInputField(label: 'Nome', hint: 'Ex.: Maria Silva'),
         const SizedBox(height: AppSpacing.lg),
-        const AppInputField(label: 'E-mail', hint: 'Digite seu email'),
+        const AppInputField(label: 'E-mail', hint: 'Ex.: maria@email.com'),
         const SizedBox(height: AppSpacing.lg),
         const AppInputField(
           label: 'Senha',
-          hint: 'Digite sua senha',
+          hint: 'Ex.: sua senha',
           obscureText: true,
         ),
         const SizedBox(height: AppSpacing.lg),
         const AppInputField(
           label: 'Confirmar senha',
-          hint: 'Confirme sua senha',
+          hint: 'Ex.: confirme a senha',
           obscureText: true,
         ),
         const SizedBox(height: AppSpacing.xl),

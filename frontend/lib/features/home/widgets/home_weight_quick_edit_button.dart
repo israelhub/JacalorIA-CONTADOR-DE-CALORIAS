@@ -10,7 +10,7 @@ import '../../auth/service/auth_service.dart';
 
 export 'home_shell_layout.dart';
 
-/// Opens [HomeWeightQuickEditButton] from an external trigger (e.g. expandable FAB).
+/// Opens [HomeWeightQuickEditButton] from an external trigger (ex.: card da home).
 class HomeWeightQuickEditController {
   VoidCallback? _open;
 
@@ -366,7 +366,7 @@ class _HomeWeightQuickEditButtonState extends State<HomeWeightQuickEditButton> {
                                 decoration: InputDecoration(
                                   isDense: true,
                                   border: InputBorder.none,
-                                  hintText: '0',
+                                  hintText: 'Ex.: 70',
                                   hintStyle: AppTextStyles.headingLarge
                                       .copyWith(
                                         color: AppColors.textSecondary
