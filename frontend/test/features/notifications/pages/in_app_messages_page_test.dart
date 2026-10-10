@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:jacaloria/core/notifications/in_app_message_store.dart';
+import 'package:jacaloria/features/home/widgets/home_shell_layout.dart';
 import 'package:jacaloria/features/notifications/pages/in_app_messages_page.dart';
+import 'package:jacaloria/shared/theme/app_theme.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -80,5 +82,33 @@ void main() {
 
     expect(store.unreadCount, 0);
     expect(find.text('Todas as mensagens foram lidas.'), findsOneWidget);
+  });
+
+  testWidgets('scroll reserva o inset da navbar do shell', (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'meal_reminders_master_enabled': false,
+    });
+    final store = InAppMessageStore.instance;
+    await store.resetForTest();
+    await store.addMessage(
+      title: 'Hora do almoço',
+      body: 'Registre a refeição.',
+      source: 'meal_reminder',
+      id: 'msg-lunch',
+    );
+
+    const navOverlap = 88.0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeShellLayout(
+          navOverlap: navOverlap,
+          child: InAppMessagesPage(store: store),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final listView = tester.widget<ListView>(find.byType(ListView));
+    expect((listView.padding as EdgeInsets).bottom, navOverlap + AppSpacing.xxxl);
   });
 }

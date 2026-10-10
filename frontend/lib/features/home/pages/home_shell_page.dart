@@ -19,8 +19,10 @@ import '../../missions/pages/missions_page.dart';
 import '../../notifications/pages/in_app_messages_page.dart';
 import '../../performance/pages/performance_page.dart';
 import '../../profile/pages/profile_page.dart';
+import '../../reminders/pages/meal_reminders_page.dart';
 import '../../social/helpers/social_data_invalidator.dart';
 import '../../social/pages/social_page.dart';
+import '../../support/pages/support_page.dart';
 import '../../workouts/pages/workout_page.dart';
 import '../controllers/home_steps_weight_controller.dart';
 import '../helpers/home_date_helpers.dart';
@@ -85,11 +87,15 @@ class HomeShellPage extends StatefulWidget {
 
 abstract class HomeShellController {
   AppMainBottomTab get activeTab;
+  AppMainOverlayDestination get overlayDestination;
+  Listenable get navigationListenable;
   Future<void> openTab(AppMainBottomTab tab);
   Future<void> openFoodCapture();
   Future<void> openProfile();
   Future<void> openStore();
   Future<void> openNotifications();
+  Future<void> openReminders();
+  Future<void> openSupport();
 }
 
 class _HomeShellPageState extends State<HomeShellPage>
@@ -105,8 +111,12 @@ class _HomeShellPageState extends State<HomeShellPage>
 
   late int _currentIndex;
   late AppMainBottomTab _activeTab;
+  AppMainOverlayDestination _overlayDestination =
+      AppMainOverlayDestination.none;
   late DateTime _selectedHomeDate;
   bool _isMoreMenuOpen = false;
+  final _HomeShellNavigationTick _navigationListenable =
+      _HomeShellNavigationTick();
   final Set<AppMainBottomTab> _visitedOverflow = <AppMainBottomTab>{};
   late final PageController _pageController;
   int _performanceRefreshVersion = 0;
@@ -185,6 +195,7 @@ class _HomeShellPageState extends State<HomeShellPage>
     unawaited(AnalyticsService.instance.leaveForeground(reason: 'dispose'));
     _pageController.dispose();
     _stepsWeightController.dispose();
+    _navigationListenable.dispose();
     super.dispose();
   }
 
@@ -246,6 +257,27 @@ class _HomeShellPageState extends State<HomeShellPage>
 
   @override
   AppMainBottomTab get activeTab => _activeTab;
+
+  @override
+  AppMainOverlayDestination get overlayDestination => _overlayDestination;
+
+  @override
+  Listenable get navigationListenable => _navigationListenable;
+
+  bool get _hasOverlayDestination {
+    return _overlayDestination != AppMainOverlayDestination.none;
+  }
+
+  void _notifyNavigation() {
+    _navigationListenable.tick();
+  }
+
+  void _clearOverlayDestination() {
+    if (_overlayDestination == AppMainOverlayDestination.none) {
+      return;
+    }
+    _overlayDestination = AppMainOverlayDestination.none;
+  }
 
   bool _isSwipeTab(AppMainBottomTab tab) {
     return tab == AppMainBottomTab.social ||
@@ -345,17 +377,20 @@ class _HomeShellPageState extends State<HomeShellPage>
   }
 
   Future<void> _goToTab(AppMainBottomTab tab) async {
+    final hadOverlay = _hasOverlayDestination;
     _popNestedOverlays();
-    if (tab == _activeTab && !_isMoreMenuOpen) {
+    if (tab == _activeTab && !_isMoreMenuOpen && !hadOverlay) {
       return;
     }
 
     if (!_isSwipeTab(tab)) {
       setState(() {
+        _clearOverlayDestination();
         _isMoreMenuOpen = false;
         _activeTab = tab;
         _visitedOverflow.add(tab);
       });
+      _notifyNavigation();
       _trackTabOpened(tab);
       return;
     }
@@ -365,12 +400,14 @@ class _HomeShellPageState extends State<HomeShellPage>
         !_isOverflowTab && (nextIndex - _currentIndex).abs() == 1;
 
     setState(() {
+      _clearOverlayDestination();
       _isMoreMenuOpen = false;
       _activeTab = tab;
       _currentIndex = nextIndex;
       _visitedTabs.add(nextIndex);
       _lastTabRefreshAt.putIfAbsent(nextIndex, DateTime.now);
     });
+    _notifyNavigation();
     _trackTabOpened(tab);
 
     if (_pageController.hasClients && _pageController.page != nextIndex) {
@@ -400,46 +437,84 @@ class _HomeShellPageState extends State<HomeShellPage>
   @override
   Future<void> openNotifications() => _openNotifications();
 
-  Future<void> _openProfile() async {
+  @override
+  Future<void> openReminders() => _openReminders();
+
+  @override
+  Future<void> openSupport() => _openSupport();
+
+  Future<T?> _pushOverlay<T>(
+    AppMainOverlayDestination destination,
+    Future<T?> Function(BuildContext nestedContext) push,
+  ) async {
     if (_isMoreMenuOpen) {
       setState(() => _isMoreMenuOpen = false);
     }
 
     final nestedContext = _nestedNavigatorKey.currentContext;
     if (nestedContext == null) {
-      return;
+      return null;
     }
 
-    await nestedContext.pushSlidePage<bool>(
-      ProfilePage(initialProfile: AuthService.globalUser),
+    final previousDestination = _overlayDestination;
+    setState(() {
+      _overlayDestination = destination;
+    });
+    _notifyNavigation();
+
+    try {
+      return await push(nestedContext);
+    } finally {
+      if (mounted && _overlayDestination == destination) {
+        setState(() {
+          _overlayDestination = previousDestination;
+        });
+        _notifyNavigation();
+      }
+    }
+  }
+
+  Future<void> _openProfile() async {
+    await _pushOverlay<bool>(
+      AppMainOverlayDestination.profile,
+      (nestedContext) {
+        return nestedContext.pushSlidePage<bool>(
+          ProfilePage(initialProfile: AuthService.globalUser),
+        );
+      },
     );
   }
 
   Future<void> _openNotifications() async {
-    if (_isMoreMenuOpen) {
-      setState(() => _isMoreMenuOpen = false);
-    }
+    await _pushOverlay<void>(
+      AppMainOverlayDestination.notifications,
+      (nestedContext) {
+        return nestedContext.pushSlidePage(
+          InAppMessagesPage(store: InAppMessageStore.instance),
+        );
+      },
+    );
+  }
 
-    final nestedContext = _nestedNavigatorKey.currentContext;
-    if (nestedContext == null) {
-      return;
-    }
+  Future<void> _openReminders() async {
+    await _pushOverlay<void>(
+      AppMainOverlayDestination.reminders,
+      (nestedContext) {
+        return nestedContext.pushSlidePage(const MealRemindersPage());
+      },
+    );
+  }
 
-    await nestedContext.pushSlidePage(
-      InAppMessagesPage(store: InAppMessageStore.instance),
+  Future<void> _openSupport() async {
+    await _pushOverlay<void>(
+      AppMainOverlayDestination.support,
+      (nestedContext) {
+        return nestedContext.pushSlidePage(const SupportPage());
+      },
     );
   }
 
   Future<void> _openStore() async {
-    if (_isMoreMenuOpen) {
-      setState(() => _isMoreMenuOpen = false);
-    }
-
-    final nestedContext = _nestedNavigatorKey.currentContext;
-    if (nestedContext == null) {
-      return;
-    }
-
     final profile = AuthService.globalUser ?? const <String, dynamic>{};
     final goldRaw = profile['gold'];
     final gold = goldRaw is int
@@ -448,11 +523,16 @@ class _HomeShellPageState extends State<HomeShellPage>
         ? goldRaw.toInt()
         : int.tryParse('$goldRaw') ?? 0;
 
-    final updated = await nestedContext.pushSlidePage<Object>(
-      AvatarFrameStorePage(
-        initialGoldBalance: gold,
-        profile: Map<String, dynamic>.from(profile),
-      ),
+    final updated = await _pushOverlay<Object>(
+      AppMainOverlayDestination.store,
+      (nestedContext) {
+        return nestedContext.pushSlidePage<Object>(
+          AvatarFrameStorePage(
+            initialGoldBalance: gold,
+            profile: Map<String, dynamic>.from(profile),
+          ),
+        );
+      },
     );
 
     if (!mounted) {
@@ -581,12 +661,14 @@ class _HomeShellPageState extends State<HomeShellPage>
         }
 
         setState(() {
+          _clearOverlayDestination();
           _isMoreMenuOpen = false;
           _currentIndex = index;
           _activeTab = _indexToTab(index);
           _visitedTabs.add(index);
           _lastTabRefreshAt.putIfAbsent(index, DateTime.now);
         });
+        _notifyNavigation();
         _trackTabOpened(_indexToTab(index));
       },
       children: List<Widget>.generate(3, _buildTabPage),
@@ -649,6 +731,7 @@ class _HomeShellPageState extends State<HomeShellPage>
                       bottom: 0,
                       child: AppMainBottomNavigation(
                         activeTab: _activeTab,
+                        overlayDestination: _overlayDestination,
                         isMoreMenuOpen: _isMoreMenuOpen,
                         onMoreTap: () {
                           setState(() {
@@ -659,6 +742,8 @@ class _HomeShellPageState extends State<HomeShellPage>
                             _goToTab(AppMainBottomTab.performance),
                         onWorkoutTap: () => _goToTab(AppMainBottomTab.workout),
                         onNotificationsTap: _openNotifications,
+                        onRemindersTap: _openReminders,
+                        onSupportTap: _openSupport,
                         onStoreTap: _openStore,
                         onProfileTap: _openProfile,
                         onHomeTap: () => _goToTab(AppMainBottomTab.home),
@@ -702,4 +787,8 @@ class _ShellNestedNavigatorObserver extends NavigatorObserver {
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
       _notify();
+}
+
+class _HomeShellNavigationTick extends ChangeNotifier {
+  void tick() => notifyListeners();
 }
