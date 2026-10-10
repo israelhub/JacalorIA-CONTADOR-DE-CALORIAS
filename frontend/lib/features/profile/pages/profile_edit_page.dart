@@ -58,6 +58,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String _initialHeightUnit = 'cm';
   bool _hidePublicProfileMeals = false;
   bool _initialHidePublicProfileMeals = false;
+  bool _hidePublicProfileWorkouts = false;
+  bool _initialHidePublicProfileWorkouts = false;
 
   static const List<String> _sexOptions = [
     'Masculino',
@@ -156,6 +158,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       'hidePublicProfileMeals',
       'hide_public_profile_meals',
     ]);
+    _hidePublicProfileWorkouts = _boolFromProfile(profile, const [
+      'hidePublicProfileWorkouts',
+      'hide_public_profile_workouts',
+    ]);
     _captureInitialSnapshot();
   }
 
@@ -171,6 +177,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     _initialWeightUnit = _selectedWeightUnit;
     _initialHeightUnit = _selectedHeightUnit;
     _initialHidePublicProfileMeals = _hidePublicProfileMeals;
+    _initialHidePublicProfileWorkouts = _hidePublicProfileWorkouts;
   }
 
   bool get _hasUnsavedChanges {
@@ -184,7 +191,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _avatarUrl != _initialAvatarUrl ||
         _selectedWeightUnit != _initialWeightUnit ||
         _selectedHeightUnit != _initialHeightUnit ||
-        _hidePublicProfileMeals != _initialHidePublicProfileMeals;
+        _hidePublicProfileMeals != _initialHidePublicProfileMeals ||
+        _hidePublicProfileWorkouts != _initialHidePublicProfileWorkouts;
   }
 
   Future<void> _handleExitAttempt() async {
@@ -360,6 +368,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       if (_selectedObjective != null) 'objective': _selectedObjective,
       if (_avatarUrl != null && _avatarUrl!.isNotEmpty) 'avatarUrl': _avatarUrl,
       'hidePublicProfileMeals': _hidePublicProfileMeals,
+      'hidePublicProfileWorkouts': _hidePublicProfileWorkouts,
     };
 
     setState(() {
@@ -411,7 +420,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.pageHorizontal,
-              AppSpacing.lg,
+              AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
               AppSpacing.pageHorizontal,
               homeShellScrollBottomInset(context),
             ),
@@ -533,8 +542,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     onSelected: (value) {
                       final entry = _activityLabels.entries.firstWhere(
                         (entry) => entry.value == value,
-                        orElse: () =>
-                            const MapEntry('sedentary', 'Sedentário'),
+                        orElse: () => const MapEntry('sedentary', 'Sedentário'),
                       );
                       setState(() {
                         _selectedActivityLevel = entry.key;
@@ -577,10 +585,16 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   const SizedBox(height: AppSpacing.lg),
                   ProfilePrivacyCard(
                     mealsVisible: !_hidePublicProfileMeals,
+                    workoutsVisible: !_hidePublicProfileWorkouts,
                     busy: _isSaving,
                     onMealsVisibleChanged: (visible) {
                       setState(() {
                         _hidePublicProfileMeals = !visible;
+                      });
+                    },
+                    onWorkoutsVisibleChanged: (visible) {
+                      setState(() {
+                        _hidePublicProfileWorkouts = !visible;
                       });
                     },
                   ),

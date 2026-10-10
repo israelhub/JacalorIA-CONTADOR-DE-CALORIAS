@@ -16,9 +16,11 @@ class TermsPage extends StatelessWidget {
       appBar: const AppBackPageHeader(title: 'Termos e Condições'),
       body: AppBackPageContent(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.pageHorizontal,
-            vertical: AppSpacing.lg,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.pageHorizontal,
+            AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
+            AppSpacing.pageHorizontal,
+            AppSpacing.lg,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

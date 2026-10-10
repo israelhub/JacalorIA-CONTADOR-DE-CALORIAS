@@ -138,8 +138,8 @@ class _LoginPageState extends State<LoginPage> {
                                     : () {
                                         context.pushSlidePage(
                                           ForgotPasswordPage(
-                                            initialEmail:
-                                                _emailController.text.trim(),
+                                            initialEmail: _emailController.text
+                                                .trim(),
                                           ),
                                         );
                                       },
@@ -262,8 +262,8 @@ class _LoginPageState extends State<LoginPage> {
                                     : () {
                                         context.pushSlidePage(
                                           SupportPage(
-                                            initialEmail:
-                                                _emailController.text.trim(),
+                                            initialEmail: _emailController.text
+                                                .trim(),
                                           ),
                                         );
                                       },

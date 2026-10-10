@@ -113,7 +113,13 @@ class _SocialPublicGroupsPageState extends State<SocialPublicGroupsPage> {
       body: AppBackPageContent(
         bottom: false,
         child: Padding(
-          padding: homeShellNestedFillPadding(context),
+          padding: homeShellNestedFillPadding(
+            context,
+            top: AppBackPageHeader.scrollTopInset(
+              context,
+              extra: AppSpacing.lg,
+            ),
+          ),
           child: AppFormCard(
             expand: true,
             child: Column(

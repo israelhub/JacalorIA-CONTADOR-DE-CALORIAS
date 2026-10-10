@@ -61,18 +61,30 @@ class _SocialFriendRequestsPageState extends State<SocialFriendRequestsPage> {
       body: AppBackPageContent(
         bottom: false,
         child: _requests.isEmpty
-            ? Center(
-                child: Text(
-                  'Nenhuma solicitação pendente.',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+            ? Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    top: AppBackPageHeader.scrollTopInset(
+                      context,
+                      extra: AppSpacing.lg,
+                    ),
+                  ),
+                  child: Text(
+                    'Nenhuma solicitação pendente.',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               )
             : ListView.separated(
                 padding: EdgeInsets.fromLTRB(
                   AppSpacing.pageHorizontal,
-                  AppSpacing.lg,
+                  AppBackPageHeader.scrollTopInset(
+                    context,
+                    extra: AppSpacing.lg,
+                  ),
                   AppSpacing.pageHorizontal,
                   homeShellScrollBottomInset(context),
                 ),

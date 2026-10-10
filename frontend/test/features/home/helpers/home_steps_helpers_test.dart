@@ -36,6 +36,9 @@ void main() {
         estimateStepsCaloriesKcal(steps: 10000, weightKg: 70),
         350,
       );
+      expect(formatStepsDistanceKmNumber(0), '0');
+      expect(formatStepsDistanceKmNumber(3.2), '3,20');
+      expect(formatStepsDistanceKm(3.2), '3,20 km');
     });
 
     test('mensagem de status cobre os estados do card', () {

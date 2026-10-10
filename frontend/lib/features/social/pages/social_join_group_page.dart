@@ -56,7 +56,7 @@ class _SocialJoinGroupPageState extends State<SocialJoinGroupPage> {
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.pageHorizontal,
-            AppSpacing.lg,
+            AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
             AppSpacing.pageHorizontal,
             homeShellScrollBottomInset(context),
           ),

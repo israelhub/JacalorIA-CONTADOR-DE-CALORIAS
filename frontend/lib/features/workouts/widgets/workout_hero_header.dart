@@ -5,10 +5,7 @@ import '../../../shared/theme/app_theme.dart';
 const workoutHeroContentOverlap = 48.0;
 
 class WorkoutHeroHeader extends StatelessWidget {
-  const WorkoutHeroHeader({
-    super.key,
-    required this.onImportWithAi,
-  });
+  const WorkoutHeroHeader({super.key, required this.onImportWithAi});
 
   static const assetPath = 'assets/images/jaca_gym_hero.jpg';
 

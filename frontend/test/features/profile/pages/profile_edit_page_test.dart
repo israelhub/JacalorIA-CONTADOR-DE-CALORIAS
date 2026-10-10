@@ -5,7 +5,7 @@ import 'package:jacaloria/features/profile/pages/profile_edit_page.dart';
 Widget _wrap(Widget child) => MaterialApp(home: child);
 
 void main() {
-  testWidgets('exibe privacidade de refeições ligada por padrão', (
+  testWidgets('exibe privacidade de refeições e treinos ligada por padrão', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(412, 1200);
@@ -21,11 +21,10 @@ void main() {
 
     expect(find.text('Editar dados pessoais'), findsOneWidget);
     expect(find.text('Mostrar refeições no perfil público'), findsOneWidget);
-    expect(
-      find.text('Quem visitar seu perfil verá as refeições do dia.'),
-      findsNothing,
-    );
-    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    expect(find.text('Mostrar treinos no perfil público'), findsOneWidget);
+    final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
+    expect(switches, hasLength(2));
+    expect(switches.every((item) => item.value), isTrue);
   });
 
   testWidgets('exibe privacidade de refeições desligada quando oculta', (
@@ -44,10 +43,9 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
-    expect(
-      find.text('Suas refeições ficam visíveis só para você.'),
-      findsNothing,
-    );
+    final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
+    expect(switches, hasLength(2));
+    expect(switches.first.value, isFalse);
+    expect(switches.last.value, isTrue);
   });
 }

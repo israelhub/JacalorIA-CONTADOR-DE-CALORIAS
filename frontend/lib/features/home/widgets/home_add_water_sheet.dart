@@ -10,6 +10,7 @@ Future<int?> showHomeAddWaterSheet(BuildContext context) {
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
+    barrierColor: Colors.black54,
     builder: (sheetContext) {
       return const _HomeAddWaterSheet();
     },

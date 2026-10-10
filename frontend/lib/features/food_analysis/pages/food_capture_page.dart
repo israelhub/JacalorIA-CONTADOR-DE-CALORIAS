@@ -104,9 +104,12 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
           children: [
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
+                padding: EdgeInsets.fromLTRB(
                   AppSpacing.pageHorizontal,
-                  AppSpacing.xs,
+                  AppBackPageHeader.scrollTopInset(
+                    context,
+                    extra: AppSpacing.xs,
+                  ),
                   AppSpacing.pageHorizontal,
                   AppSpacing.sm,
                 ),
@@ -116,7 +119,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.pageHorizontal,
-                AppSpacing.lg,
+                AppSpacing.sm,
                 AppSpacing.pageHorizontal,
                 AppSpacing.xxl,
               ),
@@ -406,8 +409,8 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
     final aiManualAnalysis = await _pushAnalysisLoadingPage(
       imageBytes: null,
-      title: 'Analisando...',
-      message: 'A inteligência artificial está analisando sua refeição...',
+      title: '',
+      message: 'Estamos analisando os alimentos da sua refeição...',
       operation: () => widget._analysisService.analyzeManualText(typedText),
     );
 
@@ -492,8 +495,8 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
       final analysis = await _pushAnalysisLoadingPage(
         imageBytes: bytes,
-        title: 'Analisando...',
-        message: 'A inteligência artificial está analisando sua refeição...',
+        title: '',
+        message: 'Estamos analisando os alimentos da sua refeição...',
         operation: () => widget._analysisService.analyzeImage(
           imageBytes: bytes,
           mimeType: optimized.mimeType,
@@ -572,8 +575,8 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
       final analysis = await _pushAnalysisLoadingPage(
         imageBytes: bytes,
-        title: 'Analisando...',
-        message: 'A inteligência artificial está analisando sua refeição...',
+        title: '',
+        message: 'Estamos analisando os alimentos da sua refeição...',
         operation: () => widget._analysisService.analyzeImage(
           imageBytes: bytes,
           mimeType: optimized.mimeType,
@@ -698,18 +701,18 @@ class _CaptureActions extends StatelessWidget {
   final bool isCameraReady;
   final bool isBusy;
 
-  static const double _sideButtonSize = 72;
-  static const double _shutterSize = 84;
+  static const double _sideButtonSize = 64;
+  static const double _shutterSize = 72;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
         AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.xl,
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -723,7 +726,7 @@ class _CaptureActions extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 280),
             child: SizedBox(
               width: double.infinity,
-              height: 44,
+              height: 40,
               child: Material(
                 color: AppColors.surface,
                 elevation: 1,
@@ -744,7 +747,7 @@ class _CaptureActions extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.bookmark_border,
-                          size: 16,
+                          size: 15,
                           color: isBusy
                               ? AppColors.textTertiary
                               : const Color(0xFF4B5563),
@@ -766,7 +769,7 @@ class _CaptureActions extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.md),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 320),
             child: Row(
@@ -837,13 +840,13 @@ class _CaptureActionButton extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 24, color: color),
-              const SizedBox(height: 6),
+              Icon(icon, size: 22, color: color),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 label,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   height: 1.1,
                   fontWeight: FontWeight.w500,
                   color: enabled
@@ -882,7 +885,7 @@ class _CameraShutterButton extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.surface,
-            border: Border.all(color: ringColor, width: 5),
+            border: Border.all(color: ringColor, width: 4),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x1A000000),
@@ -895,14 +898,14 @@ class _CameraShutterButton extends StatelessWidget {
           child: Center(
             child: isBusy
                 ? SizedBox(
-                    width: 28,
-                    height: 28,
+                    width: 24,
+                    height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
                       color: ringColor,
                     ),
                   )
-                : Icon(Icons.photo_camera, color: ringColor, size: 32),
+                : Icon(Icons.photo_camera, color: ringColor, size: 28),
           ),
         ),
       ),

@@ -46,9 +46,9 @@ class MealService {
       queryParams['endDate'] = endDate.toUtc().toIso8601String();
     }
 
-    final uri = Uri.parse('$_baseUrl/meals').replace(
-      queryParameters: queryParams.isEmpty ? null : queryParams,
-    );
+    final uri = Uri.parse(
+      '$_baseUrl/meals',
+    ).replace(queryParameters: queryParams.isEmpty ? null : queryParams);
     final response = await http.get(uri, headers: _buildHeaders());
 
     if (response.statusCode == 200) {
@@ -57,7 +57,8 @@ class MealService {
         data
             .whereType<Map>()
             .map(
-              (json) => FoodMealRecord.fromJson(Map<String, dynamic>.from(json)),
+              (json) =>
+                  FoodMealRecord.fromJson(Map<String, dynamic>.from(json)),
             )
             .toList(),
       );
@@ -150,23 +151,25 @@ class MealService {
   }
 
   List<FoodMealRecord> _mergeMealImageUrls(List<FoodMealRecord> meals) {
-    return meals.map((meal) {
-      final id = meal.id?.trim() ?? '';
-      final url = meal.imageUrl?.trim();
-      if (id.isNotEmpty && url != null && url.isNotEmpty) {
-        _mealImageUrlById[id] = url;
-      }
-      if (url != null && url.isNotEmpty) {
-        return meal;
-      }
-      if (id.isEmpty) {
-        return meal;
-      }
-      final cached = _mealImageUrlById[id];
-      if (cached == null || cached.isEmpty) {
-        return meal;
-      }
-      return meal.copyWith(imageUrl: cached);
-    }).toList(growable: false);
+    return meals
+        .map((meal) {
+          final id = meal.id?.trim() ?? '';
+          final url = meal.imageUrl?.trim();
+          if (id.isNotEmpty && url != null && url.isNotEmpty) {
+            _mealImageUrlById[id] = url;
+          }
+          if (url != null && url.isNotEmpty) {
+            return meal;
+          }
+          if (id.isEmpty) {
+            return meal;
+          }
+          final cached = _mealImageUrlById[id];
+          if (cached == null || cached.isEmpty) {
+            return meal;
+          }
+          return meal.copyWith(imageUrl: cached);
+        })
+        .toList(growable: false);
   }
 }

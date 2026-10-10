@@ -23,6 +23,7 @@ class HomeShellOverlayNavigationBar extends StatefulWidget {
       return child;
     }
     return Stack(
+      fit: StackFit.expand,
       children: [
         child,
         Positioned(left: 0, right: 0, bottom: 0, child: nav),

@@ -82,12 +82,9 @@ class _WorkoutLoadFormPageState extends State<WorkoutLoadFormPage> {
       return;
     }
 
-    Navigator.of(context).pop(
-      WorkoutLoadDraft(
-        weight: weight,
-        recordedAt: _selectedDate,
-      ),
-    );
+    Navigator.of(
+      context,
+    ).pop(WorkoutLoadDraft(weight: weight, recordedAt: _selectedDate));
   }
 
   @override
@@ -103,7 +100,7 @@ class _WorkoutLoadFormPageState extends State<WorkoutLoadFormPage> {
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.pageHorizontal,
-            AppSpacing.lg,
+            AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
             AppSpacing.pageHorizontal,
             homeShellScrollBottomInset(context),
           ),

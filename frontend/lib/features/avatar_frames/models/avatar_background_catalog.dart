@@ -91,7 +91,8 @@ class AvatarBackgroundCatalog {
     AvatarBackgroundItem(
       id: 'aug_dusk_glow',
       name: 'Brilho do Crepusculo',
-      description: 'Fundo exclusivo do check-in de agosto, no brilho do crepusculo.',
+      description:
+          'Fundo exclusivo do check-in de agosto, no brilho do crepusculo.',
       assetPath: 'assets/images/avatar_backgrounds/aug_dusk_glow.png',
     ),
     AvatarBackgroundItem(

@@ -191,13 +191,15 @@ class AvatarFrameCatalog {
     AvatarFrameItem(
       id: 'aug_sunset_ring',
       name: 'Anel do Por do Sol',
-      description: 'Moldura exclusiva do check-in de agosto, em tons de por do sol.',
+      description:
+          'Moldura exclusiva do check-in de agosto, em tons de por do sol.',
       assetPath: 'assets/images/avatar_frames/aug_sunset_ring.png',
     ),
     AvatarFrameItem(
       id: 'aug_mint_leaf',
       name: 'Folha de Menta',
-      description: 'Moldura exclusiva do check-in de agosto, com folhas de menta.',
+      description:
+          'Moldura exclusiva do check-in de agosto, com folhas de menta.',
       assetPath: 'assets/images/avatar_frames/aug_mint_leaf.png',
     ),
   ];
