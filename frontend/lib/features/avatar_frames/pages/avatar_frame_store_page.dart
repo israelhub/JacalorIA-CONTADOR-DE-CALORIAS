@@ -836,42 +836,49 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                               name: name ?? 'Perfil',
                             ),
                             const SizedBox(height: AppSpacing.lg),
-                            AppFormCard(
-                              key: const ValueKey('store-catalog-card'),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _StoreCategorySwitcher(
-                                    selected: _selectedCategory,
-                                    onSelected: (next) {
-                                      setState(() {
-                                        _selectedCategory = next;
-                                      });
-                                    },
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  _StoreCategoryGrid(
-                                    key: ValueKey(
-                                      'store-grid-$category-$page-$rowCount',
+                            Expanded(
+                              child: AppFormCard(
+                                key: const ValueKey('store-catalog-card'),
+                                expand: true,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    _StoreCategorySwitcher(
+                                      selected: _selectedCategory,
+                                      onSelected: (next) {
+                                        setState(() {
+                                          _selectedCategory = next;
+                                        });
+                                      },
                                     ),
-                                    category: category,
-                                    items: pageItems,
-                                    rowCount: rowCount,
-                                    page: page,
-                                    totalPages: totalPages,
-                                    avatarUrl: avatarUrl,
-                                    name: name,
-                                    blockerInventory: _blockerInventory,
-                                    isOwned: _isOwned,
-                                    isEquipped: _isEquipped,
-                                    isSaving: _isSaving,
-                                    onTileTap: _onTileTap,
-                                    onBuy: _confirmPurchase,
-                                    onPageChanged: (next) =>
-                                        _onCategoryPageChanged(category, next),
-                                  ),
-                                ],
+                                    const SizedBox(height: AppSpacing.md),
+                                    Expanded(
+                                      child: _StoreCategoryGrid(
+                                        key: ValueKey(
+                                          'store-grid-$category-$page-$rowCount',
+                                        ),
+                                        category: category,
+                                        items: pageItems,
+                                        rowCount: rowCount,
+                                        page: page,
+                                        totalPages: totalPages,
+                                        avatarUrl: avatarUrl,
+                                        name: name,
+                                        blockerInventory: _blockerInventory,
+                                        isOwned: _isOwned,
+                                        isEquipped: _isEquipped,
+                                        isSaving: _isSaving,
+                                        onTileTap: _onTileTap,
+                                        onBuy: _confirmPurchase,
+                                        onPageChanged: (next) =>
+                                            _onCategoryPageChanged(
+                                              category,
+                                              next,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
