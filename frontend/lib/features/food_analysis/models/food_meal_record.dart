@@ -1,4 +1,4 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 
 import '../helpers/food_review_helpers.dart';
 import 'food_analysis_result.dart';
@@ -79,11 +79,13 @@ class FoodMealRecord {
 
   factory FoodMealRecord.fromJson(Map<String, dynamic> json) {
     final rawImageUrl = _readImageUrl(json);
-    final isNetwork = rawImageUrl != null &&
-        rawImageUrl.toLowerCase().startsWith('http');
+    final isNetwork =
+        rawImageUrl != null && rawImageUrl.toLowerCase().startsWith('http');
     final items = (json['analysisItems'] as List<dynamic>? ?? <dynamic>[])
         .whereType<Map>()
-        .map((item) => FoodAnalysisItem.fromJson(Map<String, dynamic>.from(item)))
+        .map(
+          (item) => FoodAnalysisItem.fromJson(Map<String, dynamic>.from(item)),
+        )
         .toList(growable: false);
     final title = json['title'] as String? ?? 'Refeição';
     final mealTypeRaw = json['mealType'] ?? json['meal_type'];

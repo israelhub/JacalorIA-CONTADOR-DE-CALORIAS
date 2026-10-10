@@ -193,153 +193,156 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
               const SizedBox(height: AppSpacing.lg),
               const SizedBox(height: AppSpacing.huge - AppSpacing.sm),
               Expanded(
-              child: Column(
-                children: [
-                  const Spacer(flex: 6),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.pageHorizontal,
-                    ),
-                    child: Text(
-                      'Confirme o seu e-mail',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.confirmationTitle.copyWith(
-                        color: AppColors.brand900Variant,
+                child: Column(
+                  children: [
+                    const Spacer(flex: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.pageHorizontal,
+                      ),
+                      child: Text(
+                        'Confirme o seu e-mail',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.confirmationTitle.copyWith(
+                          color: AppColors.brand900Variant,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm + 1),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.pageHorizontal,
-                    ),
-                    child: Text(
-                      'Enviamos um código para ${widget.email}.',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textMuted,
+                    const SizedBox(height: AppSpacing.sm + 1),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.pageHorizontal,
+                      ),
+                      child: Text(
+                        'Enviamos um código para ${widget.email}.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.pageHorizontal,
-                    ),
-                    child: Text(
-                      'Verificar na caixa de spam.',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textMuted,
+                    const SizedBox(height: AppSpacing.xs),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.pageHorizontal,
+                      ),
+                      child: Text(
+                        'Verificar na caixa de spam.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxxl + AppSpacing.sm - 2),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: (AppSpacing.xxl * 2) + AppSpacing.sm,
-                    ),
-                    child: Row(
-                      children: [
-                        for (var index = 0; index < 6; index++) ...[
-                          Expanded(
-                            child: Container(
-                              key: ValueKey('email-code-slot-$index'),
-                              height: AppSpacing.huge + AppSpacing.sm,
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceAlt,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.sm,
+                    const SizedBox(height: AppSpacing.xxxl + AppSpacing.sm - 2),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: (AppSpacing.xxl * 2) + AppSpacing.sm,
+                      ),
+                      child: Row(
+                        children: [
+                          for (var index = 0; index < 6; index++) ...[
+                            Expanded(
+                              child: Container(
+                                key: ValueKey('email-code-slot-$index'),
+                                height: AppSpacing.huge + AppSpacing.sm,
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceAlt,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.sm,
+                                  ),
+                                  border: Border.all(
+                                    color: AppColors.confirmationCodeBorder,
+                                  ),
                                 ),
-                                border: Border.all(
-                                  color: AppColors.confirmationCodeBorder,
-                                ),
-                              ),
-                              child: Center(
-                                child: Focus(
-                                  onKeyEvent: (node, event) =>
-                                      _onCodeFieldKeyEvent(index, event),
-                                  child: TextField(
-                                    controller: _controllers[index],
-                                    focusNode: _focusNodes[index],
-                                    keyboardType: TextInputType.number,
-                                    textAlign: TextAlign.center,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly,
-                                    ],
-                                    style: AppTextStyles.headingSmall.copyWith(
-                                      color: AppColors.brand900Variant,
-                                    ),
-                                    onChanged: (value) =>
-                                        _onDigitChanged(index, value),
-                                    decoration: const InputDecoration(
-                                      counterText: '',
-                                      border: InputBorder.none,
-                                      focusedBorder: InputBorder.none,
-                                      enabledBorder: InputBorder.none,
-                                      contentPadding: EdgeInsets.zero,
+                                child: Center(
+                                  child: Focus(
+                                    onKeyEvent: (node, event) =>
+                                        _onCodeFieldKeyEvent(index, event),
+                                    child: TextField(
+                                      controller: _controllers[index],
+                                      focusNode: _focusNodes[index],
+                                      keyboardType: TextInputType.number,
+                                      textAlign: TextAlign.center,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      style: AppTextStyles.headingSmall
+                                          .copyWith(
+                                            color: AppColors.brand900Variant,
+                                          ),
+                                      onChanged: (value) =>
+                                          _onDigitChanged(index, value),
+                                      decoration: const InputDecoration(
+                                        counterText: '',
+                                        border: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          if (index < 5) const SizedBox(width: AppSpacing.md),
+                            if (index < 5) const SizedBox(width: AppSpacing.md),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxxl + AppSpacing.sm - 14),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: (AppSpacing.xxl * 2) + AppSpacing.sm,
+                    const SizedBox(
+                      height: AppSpacing.xxxl + AppSpacing.sm - 14,
                     ),
-                    child: AnimatedBuilder(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: (AppSpacing.xxl * 2) + AppSpacing.sm,
+                      ),
+                      child: AnimatedBuilder(
+                        animation: _authController,
+                        builder: (context, _) {
+                          return SizedBox(
+                            key: const ValueKey('email-confirm-button'),
+                            height: AppSpacing.huge + AppSpacing.xs,
+                            child: AppButton(
+                              label: _authController.isLoading
+                                  ? 'Confirmando...'
+                                  : 'Confirmar',
+                              onPressed: _authController.isLoading
+                                  ? null
+                                  : _handleConfirm,
+                              variant: AppButtonVariant.primary,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg + 2),
+                    AnimatedBuilder(
                       animation: _authController,
                       builder: (context, _) {
-                        return SizedBox(
-                          key: const ValueKey('email-confirm-button'),
-                          height: AppSpacing.huge + AppSpacing.xs,
-                          child: AppButton(
-                            label: _authController.isLoading
-                                ? 'Confirmando...'
-                                : 'Confirmar',
-                            onPressed: _authController.isLoading
-                                ? null
-                                : _handleConfirm,
-                            variant: AppButtonVariant.primary,
+                        return TextButton(
+                          onPressed: _authController.isLoading
+                              ? null
+                              : _handleResendCode,
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.textPrimary,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: AppSpacing.xs,
+                            ),
+                          ),
+                          child: Text(
+                            'Reenviar código',
+                            style: AppTextStyles.confirmationResendLink,
                           ),
                         );
                       },
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg + 2),
-                  AnimatedBuilder(
-                    animation: _authController,
-                    builder: (context, _) {
-                      return TextButton(
-                        onPressed: _authController.isLoading
-                            ? null
-                            : _handleResendCode,
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.textPrimary,
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                            vertical: AppSpacing.xs,
-                          ),
-                        ),
-                        child: Text(
-                          'Reenviar código',
-                          style: AppTextStyles.confirmationResendLink,
-                        ),
-                      );
-                    },
-                  ),
-                  const Spacer(flex: 7),
-                ],
-              ),
+                    const Spacer(flex: 7),
+                  ],
+                ),
               ),
             ],
           ),

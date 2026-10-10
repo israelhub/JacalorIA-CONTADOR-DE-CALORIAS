@@ -88,6 +88,10 @@ class _SocialUserFriendsPageState extends State<SocialUserFriendsPage> {
     final title = ownerName == null || ownerName.isEmpty
         ? 'Amigos'
         : 'Amigos de $ownerName';
+    final scrollTop = AppBackPageHeader.scrollTopInset(
+      context,
+      extra: AppSpacing.lg,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
@@ -96,12 +100,14 @@ class _SocialUserFriendsPageState extends State<SocialUserFriendsPage> {
       body: AppBackPageContent(
         bottom: false,
         child: _isLoading
-            ? const Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.pageHorizontal,
-                  vertical: AppSpacing.lg,
+            ? Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.pageHorizontal,
+                  scrollTop,
+                  AppSpacing.pageHorizontal,
+                  AppSpacing.lg,
                 ),
-                child: Column(
+                child: const Column(
                   children: [
                     AppSkeletonFriendRow(),
                     SizedBox(height: AppSpacing.lg),
@@ -116,7 +122,12 @@ class _SocialUserFriendsPageState extends State<SocialUserFriendsPage> {
             : _error != null
             ? Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xxl),
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.xxl,
+                    scrollTop,
+                    AppSpacing.xxl,
+                    AppSpacing.xxl,
+                  ),
                   child: Text(
                     _error!,
                     textAlign: TextAlign.center,
@@ -127,12 +138,14 @@ class _SocialUserFriendsPageState extends State<SocialUserFriendsPage> {
                 ),
               )
             : _friends.isEmpty
-            ? const Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.pageHorizontal,
-                  vertical: AppSpacing.lg,
+            ? Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.pageHorizontal,
+                  scrollTop,
+                  AppSpacing.pageHorizontal,
+                  AppSpacing.lg,
                 ),
-                child: SocialEmptyState(
+                child: const SocialEmptyState(
                   icon: Icons.people_alt_outlined,
                   title: 'Nenhum amigo ainda',
                   subtitle: 'Quando houver amigos, eles aparecerão aqui.',
@@ -141,7 +154,10 @@ class _SocialUserFriendsPageState extends State<SocialUserFriendsPage> {
             : ListView.separated(
                 padding: EdgeInsets.fromLTRB(
                   AppSpacing.pageHorizontal,
-                  AppSpacing.lg,
+                  AppBackPageHeader.scrollTopInset(
+                    context,
+                    extra: AppSpacing.lg,
+                  ),
                   AppSpacing.pageHorizontal,
                   homeShellScrollBottomInset(context),
                 ),

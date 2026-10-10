@@ -29,6 +29,7 @@ import '../services/steps_service.dart';
 import '../widgets/home_shell_layout.dart';
 import '../widgets/home_steps_weight_scope.dart';
 import 'home_page.dart';
+
 class HomeShellPage extends StatefulWidget {
   const HomeShellPage({
     super.key,
@@ -595,7 +596,8 @@ class _HomeShellPageState extends State<HomeShellPage>
   @override
   Widget build(BuildContext context) {
     final nestedCanPop = _nestedNavigatorKey.currentState?.canPop() ?? false;
-    final navOverlap = homeShellBottomNavBodyHeight +
+    final navOverlap =
+        homeShellBottomNavBodyHeight +
         homeShellBottomNavFloatingGap +
         MediaQuery.viewPaddingOf(context).bottom;
 
@@ -620,6 +622,7 @@ class _HomeShellPageState extends State<HomeShellPage>
 
               return Scaffold(
                 backgroundColor: AppColors.pageBackground,
+                resizeToAvoidBottomInset: false,
                 body: Stack(
                   children: [
                     MediaQuery(
@@ -632,8 +635,8 @@ class _HomeShellPageState extends State<HomeShellPage>
                             settings: settings,
                             pageBuilder:
                                 (context, animation, secondaryAnimation) {
-                              return _buildShellBody();
-                            },
+                                  return _buildShellBody();
+                                },
                             transitionDuration: Duration.zero,
                             reverseTransitionDuration: Duration.zero,
                           );
@@ -659,7 +662,8 @@ class _HomeShellPageState extends State<HomeShellPage>
                         onStoreTap: _openStore,
                         onProfileTap: _openProfile,
                         onHomeTap: () => _goToTab(AppMainBottomTab.home),
-                        onMissionsTap: () => _goToTab(AppMainBottomTab.missions),
+                        onMissionsTap: () =>
+                            _goToTab(AppMainBottomTab.missions),
                         onSocialTap: () => _goToTab(AppMainBottomTab.social),
                         onCenterActionTap: _openFoodCapture,
                       ),

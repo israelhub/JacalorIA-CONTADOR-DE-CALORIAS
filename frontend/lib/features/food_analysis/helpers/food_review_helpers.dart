@@ -5,12 +5,7 @@ String formatFoodReviewTime(DateTime value) {
   return '$hour:$minute';
 }
 
-enum FoodMealType {
-  breakfast,
-  lunch,
-  dinner,
-  free,
-}
+enum FoodMealType { breakfast, lunch, dinner, free }
 
 extension FoodMealTypeX on FoodMealType {
   String get apiValue {
@@ -285,8 +280,9 @@ List<ManualFoodLineValue> parseManualFoodBlock(String rawText) {
 
     final name = match.group(1)?.trim() ?? '';
     final grams =
-        double.tryParse((match.group(2) ?? '0').replaceAll(',', '.'))
-            ?.round() ??
+        double.tryParse(
+          (match.group(2) ?? '0').replaceAll(',', '.'),
+        )?.round() ??
         0;
     final unit = (match.group(3)?.trim().isNotEmpty ?? false)
         ? match.group(3)!.trim().toLowerCase()

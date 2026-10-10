@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/analytics/analytics_service.dart';
 import '../../home/services/meal_service.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../helpers/food_review_helpers.dart';
@@ -141,14 +142,17 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
       backgroundColor: AppColors.pageBackground,
       extendBodyBehindAppBar: true,
       appBar: const FoodAnalysisPageHeader(title: 'Revisar análise'),
-      body: AppBackPageContent(
+      body: AppAmbientPageBody(
         child: Column(
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(
+                padding: EdgeInsets.fromLTRB(
                   AppSpacing.pageHorizontal,
-                  AppSpacing.lg,
+                  AppBackPageHeader.scrollTopInset(
+                    context,
+                    extra: AppSpacing.sm,
+                  ),
                   AppSpacing.pageHorizontal,
                   AppSpacing.lg,
                 ),

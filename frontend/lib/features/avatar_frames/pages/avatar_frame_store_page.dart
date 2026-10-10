@@ -8,7 +8,9 @@ import '../../../core/analytics/analytics_service.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_form_card.dart';
 import '../../../shared/widgets/app_modal.dart';
+import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_pagination.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_svg_icon.dart';
@@ -17,6 +19,7 @@ import '../../../shared/widgets/avatar_profile_preview.dart';
 import '../../../shared/widgets/frame_silhouette_icon.dart';
 import '../../auth/service/auth_service.dart';
 import '../../home/widgets/home_shell_layout.dart';
+import '../../missions/pages/gold_statement_page.dart';
 import '../../missions/services/missions_service.dart';
 import '../../social/models/jaca_emoji_catalog.dart';
 import '../models/avatar_background_catalog.dart';
@@ -80,13 +83,16 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
       _profileSnapshot,
     );
     _purchasedBackgroundIds =
-        AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(_profileSnapshot);
+        AvatarBackgroundCatalog.purchasedBackgroundIdsFromProfile(
+          _profileSnapshot,
+        );
     _purchasedStickerIds = JacaEmojiCatalog.purchasedIdsFromProfile(
       _profileSnapshot,
     );
-    _equippedBackgroundId = AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
-      _profileSnapshot,
-    );
+    _equippedBackgroundId =
+        AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
+          _profileSnapshot,
+        );
     _previewFrameId = _equippedFrameId;
     _previewBackgroundId = _equippedBackgroundId;
     _blockerInventory = AvatarFrameCatalog.blockerInventoryFromProfile(
@@ -256,12 +262,11 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     return [...owned, ...locked];
   }
 
-  int _totalPagesFor(int itemCount) {
-    if (itemCount <= 0) {
+  int _totalPagesFor(int itemCount, {required int pageSize}) {
+    if (itemCount <= 0 || pageSize <= 0) {
       return 1;
     }
-    return (itemCount + _StoreCategoryGrid.pageSize - 1) ~/
-        _StoreCategoryGrid.pageSize;
+    return (itemCount + pageSize - 1) ~/ pageSize;
   }
 
   int _pageFor(StoreCategory category, {required int totalPages}) {
@@ -307,7 +312,10 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
   }
 
   int get _totalBlockerInventory {
-    final fromMap = _blockerInventory.values.fold<int>(0, (sum, value) => sum + value);
+    final fromMap = _blockerInventory.values.fold<int>(
+      0,
+      (sum, value) => sum + value,
+    );
     if (fromMap > 0) {
       return fromMap;
     }
@@ -408,8 +416,7 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
       return;
     }
 
-    final missingGold =
-        priceGold > _goldBalance ? priceGold - _goldBalance : 0;
+    final missingGold = priceGold > _goldBalance ? priceGold - _goldBalance : 0;
 
     await showDialog<void>(
       context: context,
@@ -454,7 +461,9 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                       value: priceGold,
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.sm,
+                      ),
                       child: Divider(
                         height: 1,
                         color: AppColors.performanceCardBorder,
@@ -504,10 +513,9 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         _profileSnapshot['equippedAvatarFrameId'] = nextId;
       });
       _hasChanges = true;
-      unawaited(_persistEquippedCosmetic(
-        field: 'equippedAvatarFrameId',
-        value: nextId,
-      ));
+      unawaited(
+        _persistEquippedCosmetic(field: 'equippedAvatarFrameId', value: nextId),
+      );
       return;
     }
 
@@ -521,10 +529,12 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         _profileSnapshot['equippedAvatarBackgroundId'] = nextId;
       });
       _hasChanges = true;
-      unawaited(_persistEquippedCosmetic(
-        field: 'equippedAvatarBackgroundId',
-        value: nextId,
-      ));
+      unawaited(
+        _persistEquippedCosmetic(
+          field: 'equippedAvatarBackgroundId',
+          value: nextId,
+        ),
+      );
     }
   }
 
@@ -581,7 +591,8 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                 child: Center(
                   child: _StoreItemPreview(
                     item: item,
-                    avatarUrl: _profileSnapshot['avatarUrl'] as String? ??
+                    avatarUrl:
+                        _profileSnapshot['avatarUrl'] as String? ??
                         _profileSnapshot['avatar_url'] as String?,
                     name: _profileSnapshot['name']?.toString(),
                   ),
@@ -685,7 +696,9 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         _profileSnapshot,
       );
       _equippedBackgroundId =
-          AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(_profileSnapshot);
+          AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
+            _profileSnapshot,
+          );
       _previewFrameId = _equippedFrameId;
       _previewBackgroundId = _equippedBackgroundId;
       _blockerInventory = AvatarFrameCatalog.blockerInventoryFromProfile(
@@ -727,10 +740,12 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
   }
 
   void _showToast(String message, {bool isError = false}) {
-    AppToast.show(
-      context,
-      message: message,
-      isError: isError,
+    AppToast.show(context, message: message, isError: isError);
+  }
+
+  Future<void> _openGoldStatement() async {
+    await context.pushSlidePage<void>(
+      GoldStatementPage(service: _missionsService),
     );
   }
 
@@ -755,7 +770,10 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         appBar: AppBackPageHeader(
           title: 'Loja',
           actions: [
-            _GoldPill(value: _goldBalance.toString()),
+            _GoldPill(
+              value: _goldBalance.toString(),
+              onTap: _openGoldStatement,
+            ),
             const SizedBox(width: AppSpacing.xs),
             _BlockerPill(value: _totalBlockerInventory.toString()),
           ],
@@ -763,97 +781,104 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         body: AppBackPageContent(
           bottom: false,
           child: Padding(
-            padding: homeShellNestedFillPadding(context),
-            child: _isLoadingCatalog
-                ? const _StorePageSkeleton()
-                : RefreshIndicator(
-                    color: AppColors.action500,
-                    onRefresh: _loadCatalog,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          AvatarProfilePreview(
-                            avatarUrl: avatarUrl,
-                            frameId: _previewFrameId,
-                            backgroundId: _previewBackgroundId,
-                            name: name ?? 'Perfil',
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.lg,
-                              AppSpacing.md,
-                              AppSpacing.lg,
-                              AppSpacing.lg,
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.pageHorizontal,
+              AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
+              AppSpacing.pageHorizontal,
+              0,
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(bottom: homeShellNavOverlap(context)),
+              child: _isLoadingCatalog
+                  ? const _StorePageSkeleton()
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final category = _selectedCategory;
+                        final items = _itemsFor(category);
+                        final cardInnerWidth = constraints.maxWidth;
+                        final gridBudget =
+                            constraints.maxHeight -
+                            AvatarProfilePreview.defaultHeight -
+                            AppSpacing.lg -
+                            _StoreCategorySwitcher.height -
+                            AppSpacing.md -
+                            (AppSpacing.lg * 2) -
+                            _StoreCategoryGrid.paginationHeight -
+                            AppSpacing.sm;
+                        final rowCount = _StoreCategoryGrid.resolveRowCount(
+                          availableHeight: gridBudget,
+                          maxWidth: cardInnerWidth,
+                        );
+                        final pageSize = _StoreCategoryGrid.pageSizeFor(
+                          rowCount,
+                        );
+                        final totalPages = _totalPagesFor(
+                          items.length,
+                          pageSize: pageSize,
+                        );
+                        final page = _pageFor(
+                          category,
+                          totalPages: totalPages,
+                        );
+                        final pageStart = (page - 1) * pageSize;
+                        final pageItems = items
+                            .skip(pageStart)
+                            .take(pageSize)
+                            .toList(growable: false);
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            AvatarProfilePreview(
+                              avatarUrl: avatarUrl,
+                              frameId: _previewFrameId,
+                              backgroundId: _previewBackgroundId,
+                              name: name ?? 'Perfil',
                             ),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(AppRadius.lg),
+                            const SizedBox(height: AppSpacing.lg),
+                            AppFormCard(
+                              key: const ValueKey('store-catalog-card'),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _StoreCategorySwitcher(
+                                    selected: _selectedCategory,
+                                    onSelected: (next) {
+                                      setState(() {
+                                        _selectedCategory = next;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  _StoreCategoryGrid(
+                                    key: ValueKey(
+                                      'store-grid-$category-$page-$rowCount',
+                                    ),
+                                    category: category,
+                                    items: pageItems,
+                                    rowCount: rowCount,
+                                    page: page,
+                                    totalPages: totalPages,
+                                    avatarUrl: avatarUrl,
+                                    name: name,
+                                    blockerInventory: _blockerInventory,
+                                    isOwned: _isOwned,
+                                    isEquipped: _isEquipped,
+                                    isSaving: _isSaving,
+                                    onTileTap: _onTileTap,
+                                    onBuy: _confirmPurchase,
+                                    onPageChanged: (next) =>
+                                        _onCategoryPageChanged(category, next),
+                                  ),
+                                ],
+                              ),
                             ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _StoreCategorySwitcher(
-                                  selected: _selectedCategory,
-                                  onSelected: (category) {
-                                    setState(() {
-                                      _selectedCategory = category;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                Builder(
-                                  builder: (context) {
-                                    final category = _selectedCategory;
-                                    final items = _itemsFor(category);
-                                    final totalPages = _totalPagesFor(
-                                      items.length,
-                                    );
-                                    final page = _pageFor(
-                                      category,
-                                      totalPages: totalPages,
-                                    );
-                                    final pageStart =
-                                        (page - 1) * _StoreCategoryGrid.pageSize;
-                                    final pageItems = items
-                                        .skip(pageStart)
-                                        .take(_StoreCategoryGrid.pageSize)
-                                        .toList(growable: false);
-                                    return _StoreCategoryGrid(
-                                      key: ValueKey(
-                                        'store-grid-$category-$page',
-                                      ),
-                                      category: category,
-                                      items: pageItems,
-                                      page: page,
-                                      totalPages: totalPages,
-                                      avatarUrl: avatarUrl,
-                                      name: name,
-                                      blockerInventory: _blockerInventory,
-                                      isOwned: _isOwned,
-                                      isEquipped: _isEquipped,
-                                      isSaving: _isSaving,
-                                      onTileTap: _onTileTap,
-                                      onBuy: _confirmPurchase,
-                                      onPageChanged: (next) =>
-                                          _onCategoryPageChanged(
-                                            category,
-                                            next,
-                                          ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        );
+                      },
                     ),
-                  ),
+            ),
           ),
         ),
       ),
@@ -864,76 +889,96 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
 class _StorePageSkeleton extends StatelessWidget {
   const _StorePageSkeleton();
 
-  static const _gridAspectRatio = 1.0;
   static const _tabSkeletonSize = 28.0;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AppSkeletonBox(
-          height: AvatarProfilePreview.defaultHeight,
-          borderRadius: AppRadius.lg,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.lg,
-            AppSpacing.lg,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                height: 46,
-                child: Row(
-                  children: [
-                    for (var i = 0; i < StoreCategory.values.length; i++)
-                      const Expanded(
-                        child: Center(
-                          child: AppSkeletonBox(
-                            width: _tabSkeletonSize,
-                            height: _tabSkeletonSize,
-                            borderRadius: AppRadius.md,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final gridBudget =
+            constraints.maxHeight -
+            AvatarProfilePreview.defaultHeight -
+            AppSpacing.lg -
+            _StoreCategorySwitcher.height -
+            AppSpacing.md -
+            (AppSpacing.lg * 2) -
+            _StoreCategoryGrid.paginationHeight -
+            AppSpacing.sm;
+        final rowCount = _StoreCategoryGrid.resolveRowCount(
+          availableHeight: gridBudget,
+          maxWidth: constraints.maxWidth,
+        );
+        final cellSize = _StoreCategoryGrid.cellSizeFor(
+          maxWidth: constraints.maxWidth,
+          availableHeight: gridBudget,
+          rowCount: rowCount,
+        );
+        final gridHeight = _StoreCategoryGrid.gridHeightFor(
+          rowCount: rowCount,
+          cellSize: cellSize,
+        );
+        final itemCount = _StoreCategoryGrid.pageSizeFor(rowCount);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppSkeletonBox(
+              height: AvatarProfilePreview.defaultHeight,
+              borderRadius: AppRadius.lg,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AppFormCard(
+              key: const ValueKey('store-catalog-card'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: _StoreCategorySwitcher.height,
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < StoreCategory.values.length; i++)
+                          const Expanded(
+                            child: Center(
+                              child: AppSkeletonBox(
+                                width: _tabSkeletonSize,
+                                height: _tabSkeletonSize,
+                                borderRadius: AppRadius.md,
+                              ),
+                            ),
                           ),
-                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(
+                    height: gridHeight,
+                    child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      itemCount: itemCount,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: _StoreCategoryGrid.columns,
+                        crossAxisSpacing: AppSpacing.md,
+                        mainAxisSpacing: AppSpacing.md,
+                        mainAxisExtent: cellSize,
                       ),
-                  ],
-                ),
+                      itemBuilder: (_, _) => AppSkeletonBox(
+                        height: cellSize,
+                        borderRadius: AppRadius.md,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(
+                    height: _StoreCategoryGrid.paginationHeight,
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.md),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: 9,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: AppSpacing.md,
-                  mainAxisSpacing: AppSpacing.md,
-                  childAspectRatio: _gridAspectRatio,
-                ),
-                itemBuilder: (_, _) => LayoutBuilder(
-                  builder: (context, constraints) {
-                    return AppSkeletonBox(
-                      height: constraints.maxHeight,
-                      borderRadius: AppRadius.md,
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -943,6 +988,7 @@ class _StoreCategoryGrid extends StatelessWidget {
     super.key,
     required this.category,
     required this.items,
+    required this.rowCount,
     required this.page,
     required this.totalPages,
     required this.avatarUrl,
@@ -957,12 +1003,13 @@ class _StoreCategoryGrid extends StatelessWidget {
   });
 
   static const columns = 3;
+  static const minRows = 2;
   static const maxRows = 3;
-  static const pageSize = columns * maxRows;
   static const paginationHeight = 40.0;
 
   final StoreCategory category;
   final List<StoreCatalogItem> items;
+  final int rowCount;
   final int page;
   final int totalPages;
   final String? avatarUrl;
@@ -975,22 +1022,69 @@ class _StoreCategoryGrid extends StatelessWidget {
   final ValueChanged<StoreCatalogItem> onBuy;
   final ValueChanged<int> onPageChanged;
 
-  static double fullPageGridHeight(double maxWidth) {
+  static int pageSizeFor(int rowCount) => columns * rowCount;
+
+  static int resolveRowCount({
+    required double availableHeight,
+    required double maxWidth,
+  }) {
     final crossSpacing = AppSpacing.md * (columns - 1);
     final cellSize = (maxWidth - crossSpacing) / columns;
     if (cellSize <= 0) {
+      return minRows;
+    }
+    final heightForMax = cellSize * maxRows + AppSpacing.md * (maxRows - 1);
+    if (availableHeight + 0.5 >= heightForMax) {
+      return maxRows;
+    }
+    return minRows;
+  }
+
+  static double cellSizeFor({
+    required double maxWidth,
+    required double availableHeight,
+    required int rowCount,
+  }) {
+    final rows = rowCount.clamp(minRows, maxRows);
+    final crossSpacing = AppSpacing.md * (columns - 1);
+    final widthBased = (maxWidth - crossSpacing) / columns;
+    if (widthBased <= 0) {
       return 0;
     }
-    return cellSize * maxRows + AppSpacing.md * (maxRows - 1);
+    final mainSpacing = AppSpacing.md * (rows - 1);
+    final heightBased = (availableHeight - mainSpacing) / rows;
+    if (heightBased <= 0) {
+      return widthBased;
+    }
+    return math.min(widthBased, heightBased);
+  }
+
+  static double gridHeightFor({
+    required int rowCount,
+    required double cellSize,
+  }) {
+    final rows = rowCount.clamp(minRows, maxRows);
+    if (cellSize <= 0) {
+      return 0;
+    }
+    return cellSize * rows + AppSpacing.md * (rows - 1);
   }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossSpacing = AppSpacing.md * (columns - 1);
-        final cellSize = (constraints.maxWidth - crossSpacing) / columns;
-        final gridHeight = fullPageGridHeight(constraints.maxWidth);
+        final rows = rowCount.clamp(minRows, maxRows);
+        final paginationSlot = paginationHeight + AppSpacing.sm;
+        final gridBudget = constraints.maxHeight.isFinite
+            ? math.max(0.0, constraints.maxHeight - paginationSlot)
+            : double.infinity;
+        final cellSize = cellSizeFor(
+          maxWidth: constraints.maxWidth,
+          availableHeight: gridBudget.isFinite ? gridBudget : double.infinity,
+          rowCount: rows,
+        );
+        final gridHeight = gridHeightFor(rowCount: rows, cellSize: cellSize);
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -1069,6 +1163,7 @@ class _StoreCategorySwitcher extends StatelessWidget {
     required this.onSelected,
   });
 
+  static const height = 46.0;
   static const _indicatorWidth = 22.0;
   static const _indicatorHeight = 3.0;
 
@@ -1085,7 +1180,7 @@ class _StoreCategorySwitcher extends StatelessWidget {
             selected.index * tabWidth + (tabWidth - _indicatorWidth) / 2;
 
         return SizedBox(
-          height: 46,
+          height: height,
           child: Stack(
             children: [
               Row(
@@ -1093,11 +1188,8 @@ class _StoreCategorySwitcher extends StatelessWidget {
                   Expanded(
                     child: _CategoryButton(
                       label: 'Bloqueadores',
-                      iconBuilder: (color) => Icon(
-                        Icons.shield_outlined,
-                        size: 26,
-                        color: color,
-                      ),
+                      iconBuilder: (color) =>
+                          Icon(Icons.shield_outlined, size: 26, color: color),
                       isSelected: selected == StoreCategory.blockers,
                       onTap: () => onSelected(StoreCategory.blockers),
                     ),
@@ -1109,10 +1201,7 @@ class _StoreCategorySwitcher extends StatelessWidget {
                         width: 26,
                         height: 26,
                         child: Center(
-                          child: FrameSilhouetteIcon(
-                            size: 22,
-                            color: color,
-                          ),
+                          child: FrameSilhouetteIcon(size: 22, color: color),
                         ),
                       ),
                       isSelected: selected == StoreCategory.frames,
@@ -1134,10 +1223,8 @@ class _StoreCategorySwitcher extends StatelessWidget {
                   Expanded(
                     child: _CategoryButton(
                       label: 'Figurinhas',
-                      iconBuilder: (color) => AppSvgIcon.sticker(
-                        size: 26,
-                        color: color,
-                      ),
+                      iconBuilder: (color) =>
+                          AppSvgIcon.sticker(size: 26, color: color),
                       isSelected: selected == StoreCategory.stickers,
                       onTap: () => onSelected(StoreCategory.stickers),
                     ),
@@ -1209,16 +1296,14 @@ class _CategoryButton extends StatelessWidget {
 }
 
 class _PressableCategoryButton extends StatefulWidget {
-  const _PressableCategoryButton({
-    required this.onTap,
-    required this.child,
-  });
+  const _PressableCategoryButton({required this.onTap, required this.child});
 
   final VoidCallback onTap;
   final Widget child;
 
   @override
-  State<_PressableCategoryButton> createState() => _PressableCategoryButtonState();
+  State<_PressableCategoryButton> createState() =>
+      _PressableCategoryButtonState();
 }
 
 class _PressableCategoryButtonState extends State<_PressableCategoryButton> {
@@ -1295,20 +1380,17 @@ class _InsufficientGoldRow extends StatelessWidget {
 }
 
 class _GoldPill extends StatelessWidget {
-  const _GoldPill({required this.value});
+  const _GoldPill({required this.value, this.onTap});
 
   final String value;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 31,
+    final content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.missionsGoldPill,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-      ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           const AppSvgIcon.gold(size: 16),
           const SizedBox(width: AppSpacing.xs),
@@ -1319,6 +1401,17 @@ class _GoldPill extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+
+    return Material(
+      color: AppColors.missionsGoldPill,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: InkWell(
+        key: const ValueKey('store-gold-balance'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: SizedBox(height: 31, child: content),
       ),
     );
   }
@@ -1385,7 +1478,8 @@ class _StoreTile extends StatelessWidget {
         ? blockerQuantity
         : blockerQuantityFallback;
     final isCheckInExclusive = item.isCheckInExclusive && !isOwned;
-    final showPrice = item.isInventoryBlocker || (!isOwned && !isCheckInExclusive);
+    final showPrice =
+        item.isInventoryBlocker || (!isOwned && !isCheckInExclusive);
     final showChip = showPrice || isCheckInExclusive;
 
     return GestureDetector(
@@ -1442,9 +1536,8 @@ class _StoreTile extends StatelessWidget {
                                   effectiveBlockerQuantity > 0) ...[
                                 Text(
                                   'x$effectiveBlockerQuantity',
-                                  style: AppTextStyles.missionsPillValue.copyWith(
-                                    color: AppColors.action500,
-                                  ),
+                                  style: AppTextStyles.missionsPillValue
+                                      .copyWith(color: AppColors.action500),
                                 ),
                                 const SizedBox(width: 8),
                               ],
@@ -1595,9 +1688,7 @@ class _StoreItemPreview extends StatelessWidget {
             color: AppColors.surfaceAlt,
             border: Border.all(color: AppColors.performanceCardBorder),
           ),
-          child: AppSvgIcon.blocker(
-            size: iconSize,
-          ),
+          child: AppSvgIcon.blocker(size: iconSize),
         );
       case StoreItemType.sticker:
         final path = JacaEmojiCatalog.byId(item.id)?.assetPath;
@@ -1618,10 +1709,8 @@ class _StoreItemPreview extends StatelessWidget {
   }
 
   double _resolveSquareSize(BoxConstraints constraints) {
-    final width =
-        constraints.maxWidth.isFinite ? constraints.maxWidth : 0.0;
-    final height =
-        constraints.maxHeight.isFinite ? constraints.maxHeight : 0.0;
+    final width = constraints.maxWidth.isFinite ? constraints.maxWidth : 0.0;
+    final height = constraints.maxHeight.isFinite ? constraints.maxHeight : 0.0;
     if (width <= 0 && height <= 0) {
       return 0;
     }

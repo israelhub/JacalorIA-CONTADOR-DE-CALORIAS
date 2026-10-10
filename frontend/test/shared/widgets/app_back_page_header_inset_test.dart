@@ -8,7 +8,7 @@ void main() {
   const statusBarPhysical = statusBarLogical * dpr;
 
   testWidgets(
-    'conteudo comeca colado na base da header com status bar Android',
+    'conteudo com scroll padding alinha com base da header no Android',
     (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = dpr;
@@ -26,17 +26,28 @@ void main() {
       const title = 'Nova refeição';
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            extendBodyBehindAppBar: true,
-            appBar: AppBackPageHeader(title: title),
-            body: AppBackPageContent(
-              child: ColoredBox(
-                key: contentKey,
-                color: Colors.red,
-                child: SizedBox.expand(),
-              ),
-            ),
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                extendBodyBehindAppBar: true,
+                appBar: const AppBackPageHeader(title: title),
+                body: AppBackPageContent(
+                  child: ListView(
+                    padding: EdgeInsets.only(
+                      top: AppBackPageHeader.contentTopInset(context),
+                    ),
+                    children: const [
+                      ColoredBox(
+                        key: contentKey,
+                        color: Colors.red,
+                        child: SizedBox(height: 100, width: 100),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ),
       );
@@ -59,7 +70,7 @@ void main() {
   );
 
   testWidgets(
-    'quando padding.top raiz e 0, alinha com a altura real do AppBar',
+    'quando padding.top raiz e 0, scroll padding alinha com AppBar',
     (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = dpr;
@@ -72,19 +83,30 @@ void main() {
 
       const contentKey = ValueKey('page-content');
       const title = 'Detalhes';
+      late double expectedInset;
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            extendBodyBehindAppBar: true,
-            appBar: AppBackPageHeader(title: title),
-            body: AppBackPageContent(
-              child: ColoredBox(
-                key: contentKey,
-                color: Colors.red,
-                child: SizedBox.expand(),
-              ),
-            ),
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              expectedInset = AppBackPageHeader.contentTopInset(context);
+              return Scaffold(
+                extendBodyBehindAppBar: true,
+                appBar: const AppBackPageHeader(title: title),
+                body: AppBackPageContent(
+                  child: ListView(
+                    padding: EdgeInsets.only(top: expectedInset),
+                    children: const [
+                      ColoredBox(
+                        key: contentKey,
+                        color: Colors.red,
+                        child: SizedBox(height: 100, width: 100),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ),
       );
@@ -95,14 +117,57 @@ void main() {
           .getBottomLeft(find.byType(AppBackPageHeaderBar))
           .dy;
 
-      expect(contentTop, moreOrLessEquals(AppBackPageHeader.barHeight, epsilon: 1));
+      expect(contentTop, moreOrLessEquals(expectedInset, epsilon: 1));
       expect(
-        contentTop,
-        moreOrLessEquals(chipBottom, epsilon: 12),
-        reason: 'Gap extra entre chips e conteudo no edge-to-edge',
+        expectedInset,
+        moreOrLessEquals(
+          statusBarLogical + AppBackPageHeader.barHeight,
+          epsilon: 1,
+        ),
       );
+      expect(chipBottom, moreOrLessEquals(AppBackPageHeader.barHeight, epsilon: 1));
     },
   );
+
+  testWidgets('header transparente nao usa AppBar Material', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBackPageHeader(title: 'Revisar análise'),
+          body: AppBackPageContent(child: SizedBox.expand()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.byType(AppBackPageHeaderBar), findsOneWidget);
+    expect(find.text('Revisar análise'), findsOneWidget);
+  });
+
+  testWidgets('scrollTopInset soma extra ao contentTopInset', (tester) async {
+    tester.view.padding = const FakeViewPadding(top: 48);
+    tester.view.viewPadding = const FakeViewPadding(top: 48);
+    addTearDown(tester.view.reset);
+
+    late double inset;
+    late double scrollTop;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            inset = AppBackPageHeader.contentTopInset(context);
+            scrollTop = AppBackPageHeader.scrollTopInset(context, extra: 8);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    expect(scrollTop, inset + 8);
+  });
 
   testWidgets(
     'contentTopInset fora do body soma status bar + barHeight',

@@ -7,40 +7,45 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
-  testWidgets('mostra refeições públicas como ligadas', (tester) async {
+  testWidgets('mostra refeições e treinos públicos como ligados', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(
         ProfilePrivacyCard(
           mealsVisible: true,
+          workoutsVisible: true,
           busy: false,
           onMealsVisibleChanged: (_) {},
+          onWorkoutsVisibleChanged: (_) {},
         ),
       ),
     );
 
     expect(find.text('Mostrar refeições no perfil público'), findsOneWidget);
-    expect(
-      find.text('Quem visitar seu perfil verá as refeições do dia.'),
-      findsNothing,
-    );
-    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    expect(find.text('Mostrar treinos no perfil público'), findsOneWidget);
+    final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
+    expect(switches, hasLength(2));
+    expect(switches.every((item) => item.value), isTrue);
   });
 
-  testWidgets('mostra refeições privadas como desligadas', (tester) async {
+  testWidgets('mostra refeições e treinos privados como desligados', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(
         ProfilePrivacyCard(
           mealsVisible: false,
+          workoutsVisible: false,
           busy: false,
           onMealsVisibleChanged: (_) {},
+          onWorkoutsVisibleChanged: (_) {},
         ),
       ),
     );
 
-    expect(
-      find.text('Suas refeições ficam visíveis só para você.'),
-      findsNothing,
-    );
-    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+    final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
+    expect(switches, hasLength(2));
+    expect(switches.every((item) => !item.value), isTrue);
   });
 }

@@ -88,9 +88,13 @@ class _FoodReviewMealHeaderState extends State<FoodReviewMealHeader> {
   @override
   Widget build(BuildContext context) {
     final hasBytes = widget.imageBytes != null && widget.imageBytes!.isNotEmpty;
-    final hasNetworkImage =
-        (widget.imageUrl ?? '').trim().toLowerCase().startsWith('http');
-    final hasAssetImage = (widget.imageAsset ?? '').trim().startsWith('assets/');
+    final hasNetworkImage = (widget.imageUrl ?? '')
+        .trim()
+        .toLowerCase()
+        .startsWith('http');
+    final hasAssetImage = (widget.imageAsset ?? '').trim().startsWith(
+      'assets/',
+    );
     final hasImage = hasBytes || hasNetworkImage || hasAssetImage;
 
     return Column(
@@ -112,6 +116,8 @@ class _FoodReviewMealHeaderState extends State<FoodReviewMealHeader> {
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: double.infinity,
+                    gaplessPlayback: true,
+                    errorBuilder: (_, __, ___) => const SizedBox.expand(),
                   )
                 : hasNetworkImage
                 ? AppNetworkImage(

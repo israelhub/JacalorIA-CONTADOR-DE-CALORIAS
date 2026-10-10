@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -6,48 +7,40 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_form_card.dart';
 import '../../../shared/widgets/app_network_image.dart';
 import '../models/food_analysis_result.dart';
 import '../services/food_analysis_service.dart';
 import '../widgets/food_analysis_page_header.dart';
 
 class _StatusStage {
-  const _StatusStage({
-    required this.after,
-    required this.title,
-    required this.message,
-  });
+  const _StatusStage({required this.after, required this.message});
 
   final Duration after;
-  final String title;
   final String message;
 }
 
-/// Mensagens progressivas enquanto a análise roda (budget ~55s).
-/// Só UX de espera — sem jargão de fallback/modelo.
 const List<_StatusStage> _analysisStatusStages = [
   _StatusStage(
     after: Duration.zero,
-    title: 'Analisando...',
-    message: 'A inteligência artificial está analisando sua refeição...',
+    message: 'Estamos analisando os alimentos da sua refeição...',
   ),
   _StatusStage(
     after: Duration(seconds: 12),
-    title: 'Ainda analisando...',
     message: 'Isso pode levar alguns segundos. Estamos olhando bem o prato.',
   ),
   _StatusStage(
     after: Duration(seconds: 28),
-    title: 'Quase pronto...',
     message: 'Demorando um pouco mais; refinando a estimativa das calorias.',
   ),
   _StatusStage(
     after: Duration(seconds: 42),
-    title: 'Só mais um instante...',
     message:
         'Obrigado pela paciência. Se não concluir, você pode tentar de novo.',
   ),
 ];
+
+const String _jacaAnalyzingAsset = 'assets/images/jaca_analisando.jpg';
 
 class FoodAnalysisProcessingPage extends StatefulWidget {
   const FoodAnalysisProcessingPage({
@@ -79,8 +72,9 @@ class FoodAnalysisProcessingPage extends StatefulWidget {
 }
 
 class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _scannerController;
+    with TickerProviderStateMixin {
+  late final AnimationController _shineController;
+  late final AnimationController _pulseController;
   bool _didResolve = false;
   String? _errorMessage;
   bool _canRetry = false;
@@ -91,51 +85,35 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
 
   bool get _hasError => _errorMessage != null;
 
-  String get _displayTitle {
-    if (_hasError) {
-      return 'Não foi possível';
-    }
-    // Save/recalc sem título no overlay: não sobe os stages de "Analisando...".
-    if (widget.title.trim().isEmpty) {
-      return '';
-    }
-    if (_statusStageIndex == 0) {
-      return widget.title;
-    }
-    return _analysisStatusStages[_statusStageIndex].title;
-  }
-
   String get _displayMessage {
     if (_hasError) {
       return _errorMessage!;
     }
-    if (widget.title.trim().isEmpty || _statusStageIndex == 0) {
+    if (widget.message.trim().isNotEmpty && _statusStageIndex == 0) {
       return widget.message;
     }
     return _analysisStatusStages[_statusStageIndex].message;
   }
 
-  IconData get _displayIcon {
-    if (_hasError) {
-      return Icons.error_outline;
+  double get _progressValue {
+    if (_hasError || _didResolve) {
+      return 0;
     }
-    return widget.statusIcon;
-  }
-
-  Color get _displayIconColor {
-    if (_hasError) {
-      return AppColors.textError;
-    }
-    return AppColors.action500;
+    final t = (_elapsedSeconds / 55).clamp(0.0, 1.0);
+    return (1 - math.exp(-2.2 * t)).clamp(0.08, 0.94);
   }
 
   @override
   void initState() {
     super.initState();
-    _scannerController = AnimationController(
+    _shineController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 2800),
     )..repeat();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _started) {
@@ -150,7 +128,8 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
   @override
   void dispose() {
     _statusTimer?.cancel();
-    _scannerController.dispose();
+    _shineController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -181,11 +160,16 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
     });
   }
 
-  void _stopStatusProgression({required bool stopScanner}) {
+  void _stopStatusProgression({required bool stopShine}) {
     _statusTimer?.cancel();
     _statusTimer = null;
-    if (stopScanner && _scannerController.isAnimating) {
-      _scannerController.stop();
+    if (stopShine) {
+      if (_shineController.isAnimating) {
+        _shineController.stop();
+      }
+      if (_pulseController.isAnimating) {
+        _pulseController.stop();
+      }
     }
   }
 
@@ -198,7 +182,7 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
       }
 
       _didResolve = true;
-      _stopStatusProgression(stopScanner: true);
+      _stopStatusProgression(stopShine: true);
       Navigator.of(context).pop(result);
     } catch (error) {
       if (!mounted || _didResolve) {
@@ -206,7 +190,7 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
       }
 
       final mapped = FoodAnalysisService.toUserFacingError(error);
-      _stopStatusProgression(stopScanner: true);
+      _stopStatusProgression(stopShine: true);
 
       setState(() {
         _errorMessage = mapped.message;
@@ -215,12 +199,15 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final hasPreviewImage =
-        (widget.imageBytes != null && widget.imageBytes!.isNotEmpty) ||
+  bool get _hasPreviewImage {
+    return (widget.imageBytes != null && widget.imageBytes!.isNotEmpty) ||
         (widget.imageUrl ?? '').trim().toLowerCase().startsWith('http') ||
         (widget.imageAsset ?? '').trim().startsWith('assets/');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.sizeOf(context).height;
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
@@ -228,204 +215,116 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
       appBar: FoodAnalysisPageHeader(title: widget.appBarTitle),
       body: AppBackPageContent(
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.pageHorizontal,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.pageHorizontal,
+            AppBackPageHeader.contentTopInset(context),
+            AppSpacing.pageHorizontal,
+            0,
           ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final availableHeight = constraints.maxHeight;
+              if (_hasPreviewImage) {
+                return _buildWithImageLayout(
+                  availableHeight: availableHeight,
+                  screenHeight: screenHeight,
+                );
+              }
+              return _buildWithoutImageLayout(availableHeight: availableHeight);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWithImageLayout({
+    required double availableHeight,
+    required double screenHeight,
+  }) {
+    final statusBlockHeight = _estimateStatusBlockHeight();
+    final imageHeight = (screenHeight * 0.48)
+        .clamp(220.0, availableHeight - statusBlockHeight)
+        .toDouble();
+
+    return Column(
+      children: [
+        SizedBox(height: AppSpacing.sm),
+        SizedBox(
+          height: imageHeight,
+          width: double.infinity,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: _AnalysisPreviewCard(
+                image: _buildPreviewImage(),
+                showEffect: widget.showScanner && !_hasError,
+                shineController: _shineController,
+                pulseController: _pulseController,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _StatusCard(
+          hasError: _hasError,
+          displayMessage: _displayMessage,
+          showElapsedHint: !_hasError && _statusStageIndex >= 1,
+          elapsedHint: _elapsedHint(),
+          progressValue: _progressValue,
+          canRetry: _canRetry,
+          onRetry: _retry,
+          onGoBack: () => Navigator.of(context).pop(null),
+          mascotSize: _hasError
+              ? null
+              : (screenHeight * 0.12).clamp(72.0, 110.0).toDouble(),
+        ),
+        const Spacer(),
+      ],
+    );
+  }
+
+  Widget _buildWithoutImageLayout({required double availableHeight}) {
+    final mascotSize = (availableHeight * 0.28).clamp(120.0, 180.0);
+
+    return Center(
+      child: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: availableHeight * 0.85),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: AppSpacing.xxl),
-              Expanded(
-                child: Center(
-                  child: hasPreviewImage
-                      ? Container(
-                          constraints: const BoxConstraints(maxWidth: 360),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
-                            border: Border.all(
-                              color: AppColors.foodReviewFieldBorder,
-                            ),
-                            boxShadow: AppShadows.foodReviewField,
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
-                            child: Stack(
-                              children: [
-                                AspectRatio(
-                                  aspectRatio: 0.88,
-                                  child: _buildPreviewImage(),
-                                ),
-                                Positioned.fill(
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          AppColors.brand900Variant.withValues(
-                                            alpha: 0.28,
-                                          ),
-                                          AppColors.brand900Variant.withValues(
-                                            alpha: 0.08,
-                                          ),
-                                          Colors.transparent,
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                if (widget.showScanner && !_hasError)
-                                  Positioned.fill(
-                                    child: AnimatedBuilder(
-                                      animation: _scannerController,
-                                      builder: (context, child) {
-                                        return Align(
-                                          alignment: Alignment(
-                                            0,
-                                            (_scannerController.value * 2) - 1,
-                                          ),
-                                          child: Container(
-                                            height: 42,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: [
-                                                  Colors.transparent,
-                                                  AppColors.action500
-                                                      .withValues(alpha: 0.2),
-                                                  AppColors.action500
-                                                      .withValues(alpha: 0.42),
-                                                  AppColors.action500
-                                                      .withValues(alpha: 0.2),
-                                                  Colors.transparent,
-                                                ],
-                                                stops: const [
-                                                  0,
-                                                  0.2,
-                                                  0.5,
-                                                  0.8,
-                                                  1,
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                Positioned.fill(
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(
-                                            AppSpacing.md,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.surface.withValues(
-                                              alpha: 0.9,
-                                            ),
-                                            shape: BoxShape.circle,
-                                            boxShadow: AppShadows.sm,
-                                          ),
-                                          child: Icon(
-                                            _displayIcon,
-                                            color: _displayIconColor,
-                                            size: 32,
-                                          ),
-                                        ),
-                                        if (_displayTitle.isNotEmpty) ...[
-                                          const SizedBox(height: AppSpacing.md),
-                                          Text(
-                                            _displayTitle,
-                                            style: AppTextStyles
-                                                .homeSectionTitle
-                                                .copyWith(
-                                                  color: AppColors.surface,
-                                                ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_hasError) ...[
-                              Container(
-                                padding: const EdgeInsets.all(AppSpacing.md),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  shape: BoxShape.circle,
-                                  boxShadow: AppShadows.sm,
-                                ),
-                                child: Icon(
-                                  _displayIcon,
-                                  color: _displayIconColor,
-                                  size: 32,
-                                ),
-                              ),
-                              if (_displayTitle.isNotEmpty)
-                                const SizedBox(height: AppSpacing.md),
-                            ],
-                            if (_displayTitle.isNotEmpty)
-                              Text(
-                                _displayTitle,
-                                style: AppTextStyles.homeSectionTitle.copyWith(
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                          ],
-                        ),
-                ),
+              _StatusCard(
+                hasError: _hasError,
+                displayMessage: _displayMessage,
+                showElapsedHint: !_hasError && _statusStageIndex >= 1,
+                elapsedHint: _elapsedHint(),
+                progressValue: _progressValue,
+                canRetry: _canRetry,
+                onRetry: _retry,
+                onGoBack: () => Navigator.of(context).pop(null),
+                mascotSize: _hasError ? null : mascotSize,
               ),
-              const SizedBox(height: AppSpacing.xxl),
-              Text(
-                _displayMessage,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: _hasError
-                      ? AppColors.textError
-                      : AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (!_hasError &&
-                  widget.title.trim().isNotEmpty &&
-                  _statusStageIndex >= 1) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  _elapsedHint(),
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-              const SizedBox(height: AppSpacing.md),
-              if (!_hasError)
-                const CircularProgressIndicator(color: AppColors.action500)
-              else if (_canRetry)
-                _RetryActions(
-                  onRetry: _retry,
-                  onGoBack: () => Navigator.of(context).pop(null),
-                )
-              else
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(null),
-                  child: const Text('Voltar'),
-                ),
-              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
         ),
       ),
     );
+  }
+
+  double _estimateStatusBlockHeight() {
+    var height = 120.0;
+    if (!_hasError) {
+      height += 120;
+    }
+    if (!_hasError && _statusStageIndex >= 1) {
+      height += 28;
+    }
+    if (_hasError && _canRetry) {
+      height += 80;
+    }
+    return height + AppSpacing.md + AppSpacing.sm;
   }
 
   String _elapsedHint() {
@@ -449,6 +348,8 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
+        gaplessPlayback: true,
+        errorBuilder: (_, __, ___) => const SizedBox.expand(),
       );
     }
 
@@ -465,7 +366,12 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
 
     final imageAsset = (widget.imageAsset ?? '').trim();
     if (imageAsset.startsWith('assets/')) {
-      return Image.asset(imageAsset, fit: BoxFit.cover, width: double.infinity);
+      return Image.asset(
+        imageAsset,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
     }
 
     return const SizedBox.expand();
@@ -477,11 +383,194 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
       _canRetry = false;
       _statusStageIndex = 0;
     });
-    if (!_scannerController.isAnimating) {
-      _scannerController.repeat();
+    if (!_shineController.isAnimating) {
+      _shineController.repeat();
+    }
+    if (!_pulseController.isAnimating) {
+      _pulseController.repeat(reverse: true);
     }
     _startStatusProgression();
     unawaited(_runOperation());
+  }
+}
+
+class _AnalysisPreviewCard extends StatelessWidget {
+  const _AnalysisPreviewCard({
+    required this.image,
+    required this.showEffect,
+    required this.shineController,
+    required this.pulseController,
+  });
+
+  final Widget image;
+  final bool showEffect;
+  final AnimationController shineController;
+  final AnimationController pulseController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.foodReviewFieldBorder),
+        boxShadow: AppShadows.foodReviewField,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            image,
+            if (showEffect) ...[
+              AnimatedBuilder(
+                animation: pulseController,
+                builder: (context, child) {
+                  final pulse = 0.12 + (0.1 * pulseController.value);
+                  return IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          center: const Alignment(0, -0.15),
+                          radius: 1.05,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: pulse * 0.35),
+                            Colors.black.withValues(alpha: pulse),
+                          ],
+                          stops: const [0.45, 0.78, 1.0],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              AnimatedBuilder(
+                animation: Listenable.merge([shineController, pulseController]),
+                builder: (context, child) {
+                  final t = shineController.value;
+                  final soft = 0.55 + (0.25 * pulseController.value);
+                  return IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment(-1.8 + 3.6 * t, -1.1),
+                          end: Alignment(-0.9 + 3.6 * t, 1.1),
+                          colors: [
+                            Colors.transparent,
+                            Colors.white.withValues(alpha: 0.0),
+                            Colors.white.withValues(alpha: 0.06 * soft),
+                            Colors.white.withValues(alpha: 0.22 * soft),
+                            Colors.white.withValues(alpha: 0.42 * soft),
+                            Colors.white.withValues(alpha: 0.16 * soft),
+                            Colors.white.withValues(alpha: 0.04 * soft),
+                            Colors.transparent,
+                          ],
+                          stops: const [
+                            0.0,
+                            0.34,
+                            0.42,
+                            0.48,
+                            0.52,
+                            0.58,
+                            0.66,
+                            1.0,
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({
+    required this.hasError,
+    required this.displayMessage,
+    required this.showElapsedHint,
+    required this.elapsedHint,
+    required this.progressValue,
+    required this.canRetry,
+    required this.onRetry,
+    required this.onGoBack,
+    this.mascotSize,
+  });
+
+  final bool hasError;
+  final String displayMessage;
+  final bool showElapsedHint;
+  final String elapsedHint;
+  final double progressValue;
+  final bool canRetry;
+  final VoidCallback onRetry;
+  final VoidCallback onGoBack;
+  final double? mascotSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final showMascot = mascotSize != null && !hasError;
+
+    return AppFormCard(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showMascot) ...[
+            Image.asset(
+              _jacaAnalyzingAsset,
+              width: mascotSize,
+              height: mascotSize,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          Text(
+            displayMessage,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: hasError ? AppColors.textError : AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (showElapsedHint) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              elapsedHint,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+          if (!hasError) ...[
+            const SizedBox(height: AppSpacing.md),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: LinearProgressIndicator(
+                value: progressValue,
+                minHeight: 6,
+                backgroundColor: AppColors.homeProgressTrack,
+                color: AppColors.textPrimary.withValues(alpha: 0.72),
+              ),
+            ),
+          ] else if (canRetry) ...[
+            const SizedBox(height: AppSpacing.md),
+            _RetryActions(onRetry: onRetry, onGoBack: onGoBack),
+          ] else ...[
+            const SizedBox(height: AppSpacing.md),
+            TextButton(onPressed: onGoBack, child: const Text('Voltar')),
+          ],
+        ],
+      ),
+    );
   }
 }
 

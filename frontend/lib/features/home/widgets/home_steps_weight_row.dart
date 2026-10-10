@@ -12,10 +12,7 @@ import 'home_steps_weight_scope.dart';
 import 'home_weight_card.dart';
 
 class HomeStepsWeightRow extends StatelessWidget {
-  const HomeStepsWeightRow({
-    super.key,
-    this.onWeightUpdated,
-  });
+  const HomeStepsWeightRow({super.key, this.onWeightUpdated});
 
   final ValueChanged<Map<String, dynamic>>? onWeightUpdated;
 

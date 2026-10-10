@@ -90,158 +90,164 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
             data: pageTheme,
             child: LayoutBuilder(
               builder: (context, constraints) {
-              final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+                final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
-              return SingleChildScrollView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.pageHorizontal,
-                  0,
-                  AppSpacing.pageHorizontal,
-                  AppSpacing.lg + keyboardInset,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: AppSpacing.lg),
-                      OnboardingStepHeader(
-                        activeStep: 1,
-                        onBack: () {
-                          if (Navigator.of(context).canPop()) {
-                            Navigator.of(context).pop();
-                          }
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.xxxl),
-                      Text(
-                        'Dados pessoais',
-                        style: AppTextStyles.headingLarge.copyWith(
-                          color: AppColors.brand900Variant,
+                return SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.pageHorizontal,
+                    0,
+                    AppSpacing.pageHorizontal,
+                    AppSpacing.lg + keyboardInset,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: AppSpacing.lg),
+                        OnboardingStepHeader(
+                          activeStep: 1,
+                          onBack: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            }
+                          },
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.xxxl),
-                      AppInputField(
-                        key: const ValueKey('personal-birthdate-field'),
-                        label: 'Data de nascimento',
-                        hint: 'Ex.: 15/03/1990',
-                        controller: _birthDateController,
-                        readOnly: true,
-                        onTap: _pickBirthDate,
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.calendar_today_outlined),
-                          color: AppColors.textSecondary,
-                          onPressed: _pickBirthDate,
+                        const SizedBox(height: AppSpacing.xxxl),
+                        Text(
+                          'Dados pessoais',
+                          style: AppTextStyles.headingLarge.copyWith(
+                            color: AppColors.brand900Variant,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.xxl),
-                      MeasurementInputField(
-                        label: 'Peso',
-                        hint: 'Ex.: 70',
-                        controller: _weightController,
-                        unitSelectorKey: const ValueKey(
-                          'personal-weight-unit-selector',
+                        const SizedBox(height: AppSpacing.xxxl),
+                        AppInputField(
+                          key: const ValueKey('personal-birthdate-field'),
+                          label: 'Data de nascimento',
+                          hint: 'Ex.: 15/03/1990',
+                          controller: _birthDateController,
+                          readOnly: true,
+                          onTap: _pickBirthDate,
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.calendar_today_outlined),
+                            color: AppColors.textSecondary,
+                            onPressed: _pickBirthDate,
+                          ),
                         ),
-                        selectedUnit: _selectedWeightUnit,
-                        unitOptions: const ['kg', 'lb', 'g'],
-                        onUnitSelected: (unit) {
-                          setState(() {
-                            _selectedWeightUnit = unit;
-                          });
-                        },
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xxl),
-                      MeasurementInputField(
-                        label: 'Altura',
-                        hint: 'Ex.: 170',
-                        controller: _heightController,
-                        unitSelectorKey: const ValueKey(
-                          'personal-height-unit-selector',
-                        ),
-                        selectedUnit: _selectedHeightUnit,
-                        unitOptions: const ['cm', 'm', 'ft', 'in'],
-                        onUnitSelected: (unit) {
-                          setState(() {
-                            _selectedHeightUnit = unit;
-                          });
-                        },
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xxl),
-                      OnboardingInputField(
-                        label: 'Sexo',
-                        child: AppSelectInputField(
-                          fieldKey: const ValueKey('personal-sex-field'),
-                          label: '',
-                          hint: 'Ex.: Feminino',
-                          selectedValue: _selectedSex ?? '',
-                          options: _sexOptions,
-                          onSelected: (value) {
+                        const SizedBox(height: AppSpacing.xxl),
+                        MeasurementInputField(
+                          label: 'Peso',
+                          hint: 'Ex.: 70',
+                          controller: _weightController,
+                          unitSelectorKey: const ValueKey(
+                            'personal-weight-unit-selector',
+                          ),
+                          selectedUnit: _selectedWeightUnit,
+                          unitOptions: const ['kg', 'lb', 'g'],
+                          onUnitSelected: (unit) {
                             setState(() {
-                              _selectedSex = value;
+                              _selectedWeightUnit = unit;
                             });
                           },
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.huge + AppSpacing.xxl),
-                      SizedBox(
-                        key: const ValueKey('personal-next-button-box'),
-                        width: double.infinity,
-                        height: AppSpacing.huge + AppSpacing.xs,
-                        child: AppButton(
-                          label: 'Avançar',
-                          onPressed: () {
-                            final birthDate = _birthDateController.text;
-                            final weight =
-                                double.tryParse(_weightController.text) ?? 0.0;
-                            final height =
-                                double.tryParse(_heightController.text) ?? 0.0;
-                            final sex = _selectedSex;
-
-                            String? formattedBirthDate;
-                            if (birthDate.isNotEmpty) {
-                              try {
-                                final parts = birthDate.split('/');
-                                if (parts.length == 3) {
-                                  formattedBirthDate =
-                                      '${parts[2]}-${parts[1]}-${parts[0]}';
-                                }
-                              } catch (_) {}
-                            }
-
-                            final data = <String, dynamic>{
-                              if (formattedBirthDate != null)
-                                'birthDate': formattedBirthDate,
-                              if (weight > 0) 'weight': weight,
-                              if (height > 0) 'height': height,
-                              'weightUnit': _selectedWeightUnit,
-                              'heightUnit': _selectedHeightUnit,
-                              if (sex != null) 'sex': sex,
-                            };
-
-                            AnalyticsService.instance.track(
-                              'onboarding_step_completed',
-                              properties: {'step': 'personal_data'},
-                            );
-
-                            context.pushSlidePage(
-                              ObjectivePage(onboardingData: data),
-                            );
+                        const SizedBox(height: AppSpacing.xxl),
+                        MeasurementInputField(
+                          label: 'Altura',
+                          hint: 'Ex.: 170',
+                          controller: _heightController,
+                          unitSelectorKey: const ValueKey(
+                            'personal-height-unit-selector',
+                          ),
+                          selectedUnit: _selectedHeightUnit,
+                          unitOptions: const ['cm', 'm', 'ft', 'in'],
+                          onUnitSelected: (unit) {
+                            setState(() {
+                              _selectedHeightUnit = unit;
+                            });
                           },
-                          variant: AppButtonVariant.primary,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: AppSpacing.xxl),
+                        OnboardingInputField(
+                          label: 'Sexo',
+                          child: AppSelectInputField(
+                            fieldKey: const ValueKey('personal-sex-field'),
+                            label: '',
+                            hint: 'Ex.: Feminino',
+                            selectedValue: _selectedSex ?? '',
+                            options: _sexOptions,
+                            onSelected: (value) {
+                              setState(() {
+                                _selectedSex = value;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(
+                          height: AppSpacing.huge + AppSpacing.xxl,
+                        ),
+                        SizedBox(
+                          key: const ValueKey('personal-next-button-box'),
+                          width: double.infinity,
+                          height: AppSpacing.huge + AppSpacing.xs,
+                          child: AppButton(
+                            label: 'Avançar',
+                            onPressed: () {
+                              final birthDate = _birthDateController.text;
+                              final weight =
+                                  double.tryParse(_weightController.text) ??
+                                  0.0;
+                              final height =
+                                  double.tryParse(_heightController.text) ??
+                                  0.0;
+                              final sex = _selectedSex;
+
+                              String? formattedBirthDate;
+                              if (birthDate.isNotEmpty) {
+                                try {
+                                  final parts = birthDate.split('/');
+                                  if (parts.length == 3) {
+                                    formattedBirthDate =
+                                        '${parts[2]}-${parts[1]}-${parts[0]}';
+                                  }
+                                } catch (_) {}
+                              }
+
+                              final data = <String, dynamic>{
+                                if (formattedBirthDate != null)
+                                  'birthDate': formattedBirthDate,
+                                if (weight > 0) 'weight': weight,
+                                if (height > 0) 'height': height,
+                                'weightUnit': _selectedWeightUnit,
+                                'heightUnit': _selectedHeightUnit,
+                                if (sex != null) 'sex': sex,
+                              };
+
+                              AnalyticsService.instance.track(
+                                'onboarding_step_completed',
+                                properties: {'step': 'personal_data'},
+                              );
+
+                              context.pushSlidePage(
+                                ObjectivePage(onboardingData: data),
+                              );
+                            },
+                            variant: AppButtonVariant.primary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
+                );
               },
             ),
           ),

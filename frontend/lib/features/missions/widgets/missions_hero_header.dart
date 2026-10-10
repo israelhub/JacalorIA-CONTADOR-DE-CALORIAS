@@ -47,6 +47,7 @@ class MissionsHeroHeader extends StatelessWidget {
                 ),
               ),
               _HeroBalancePill(
+                key: const ValueKey('missions-gold-balance'),
                 value: gold.toString(),
                 icon: const AppSvgIcon.gold(size: 20),
                 onTap: onOpenGoldStatement,
@@ -105,6 +106,7 @@ class MissionsHeroHeader extends StatelessWidget {
 
 class _HeroBalancePill extends StatelessWidget {
   const _HeroBalancePill({
+    super.key,
     required this.value,
     required this.icon,
     this.onTap,
@@ -116,32 +118,39 @@ class _HeroBalancePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final content = Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 12, 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          icon,
+          const SizedBox(width: 6),
+          Text(
+            value,
+            style: AppTextStyles.missionsPillValue.copyWith(
+              color: AppColors.brand900Variant,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) {
+      return Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: content,
+      );
+    }
+
     return Material(
-      color: Colors.transparent,
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(8, 6, 12, 6),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              icon,
-              const SizedBox(width: 6),
-              Text(
-                value,
-                style: AppTextStyles.missionsPillValue.copyWith(
-                  color: AppColors.brand900Variant,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: content,
       ),
     );
   }

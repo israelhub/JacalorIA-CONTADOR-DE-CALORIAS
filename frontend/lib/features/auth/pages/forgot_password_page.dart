@@ -79,13 +79,18 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             return Stack(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.pageHorizontal,
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.pageHorizontal,
+                    AppBackPageHeader.scrollTopInset(
+                      context,
+                      extra: AppSpacing.xl,
+                    ),
+                    AppSpacing.pageHorizontal,
+                    0,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: AppSpacing.xl),
                       AuthFormCard(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,

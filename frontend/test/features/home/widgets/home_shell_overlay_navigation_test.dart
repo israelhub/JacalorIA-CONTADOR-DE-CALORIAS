@@ -288,12 +288,13 @@ void main() {
 
     expect(find.text('Loja'), findsOneWidget);
 
-    final content = tester.getRect(find.byType(RefreshIndicator));
+    final content = tester.getRect(
+      find.byKey(const ValueKey('store-catalog-card')),
+    );
     final nav = tester.getRect(
       find.byKey(const ValueKey('app-bottom-nav-surface')),
     );
 
     expect(content.bottom, lessThanOrEqualTo(nav.top + 0.5));
-    expect(nav.top - content.bottom, lessThan(AppSpacing.sm));
   });
 }

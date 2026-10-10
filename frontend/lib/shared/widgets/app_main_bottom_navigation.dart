@@ -44,10 +44,10 @@ class AppMainBottomNavigation extends StatefulWidget {
 
 class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
     with SingleTickerProviderStateMixin {
-  static const _openCurve = Cubic(0.22, 1, 0.36, 1);
+  static const _openCurve = Curves.easeOutCubic;
   static const _closeCurve = Curves.easeInCubic;
   static const _scrimMaxOpacity = 0.32;
-  static const _itemRisePx = 14.0;
+  static const _contentRevealStart = 0.42;
   static const _moreNavGap = AppSpacing.sm;
   static const _navCardRadius = AppRadius.pill;
   static const _moreCardRadius = AppRadius.xl;
@@ -76,14 +76,19 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
     return curved.clamp(0.0, 1.0);
   }
 
+  double _contentReveal(double t) {
+    return ((t - _contentRevealStart) / (1 - _contentRevealStart))
+        .clamp(0.0, 1.0);
+  }
+
   @override
   void initState() {
     super.initState();
     _messageStore.addListener(_onMessagesChanged);
     _moreController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 420),
-      reverseDuration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 360),
+      reverseDuration: const Duration(milliseconds: 260),
       value: widget.isMoreMenuOpen ? 1 : 0,
     );
     if (widget.isMoreMenuOpen) {
@@ -125,15 +130,6 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
     _messageStore.removeListener(_onMessagesChanged);
     _moreController.dispose();
     super.dispose();
-  }
-
-  double _itemProgress(int indexFromBottom, double t) {
-    final start = indexFromBottom * 0.045;
-    final span = 1 - start;
-    if (span <= 0) {
-      return t;
-    }
-    return ((t - start) / span).clamp(0.0, 1.0);
   }
 
   RRect? _cardRRect(GlobalKey key, double radius) {
@@ -272,7 +268,7 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
           children: [
             AnimatedBuilder(
               animation: _moreController,
-              builder: (context, child) {
+              builder: (context, _) {
                 if (_moreController.value == 0) {
                   return const SizedBox(width: double.infinity);
                 }
@@ -280,42 +276,50 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
                   _moreController.value,
                   closing: _moreController.status == AnimationStatus.reverse,
                 );
-                final fade = (t * 1.35).clamp(0.0, 1.0);
+                final contentOpacity = Curves.easeOut.transform(
+                  _contentReveal(t),
+                );
                 return Padding(
                   padding: EdgeInsets.only(bottom: _moreNavGap * t),
                   child: ClipRect(
                     child: Align(
                       alignment: Alignment.bottomCenter,
                       heightFactor: t,
-                      child: Opacity(opacity: fade, child: child),
+                      child: DecoratedBox(
+                        key: _moreCardKey,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(_moreCardRadius),
+                          boxShadow: AppShadows.sm,
+                          border: Border.all(
+                            color: AppColors.borderBrandAlt,
+                            width: 1.4,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(_moreCardRadius),
+                          child: Opacity(
+                            opacity: contentOpacity,
+                            child: IgnorePointer(
+                              ignoring: contentOpacity < 0.55,
+                              child: _MoreDestinationsPanel(
+                                activeTab: widget.activeTab,
+                                onMissionsTap: widget.onMissionsTap,
+                                onWorkoutTap: widget.onWorkoutTap,
+                                onNotificationsTap: widget.onNotificationsTap,
+                                notificationsBadgeCount:
+                                    _messageStore.unreadCount,
+                                onStoreTap: widget.onStoreTap,
+                                onProfileTap: widget.onProfileTap,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 );
               },
-              child: DecoratedBox(
-                key: _moreCardKey,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(_moreCardRadius),
-                  boxShadow: AppShadows.sm,
-                  border: Border.all(
-                    color: AppColors.borderBrandAlt,
-                    width: 1.4,
-                  ),
-                ),
-                child: _MoreDestinationsPanel(
-                  activeTab: widget.activeTab,
-                  controller: _moreController,
-                  itemProgress: _itemProgress,
-                  itemRisePx: _itemRisePx,
-                  onMissionsTap: widget.onMissionsTap,
-                  onWorkoutTap: widget.onWorkoutTap,
-                  onNotificationsTap: widget.onNotificationsTap,
-                  notificationsBadgeCount: _messageStore.unreadCount,
-                  onStoreTap: widget.onStoreTap,
-                  onProfileTap: widget.onProfileTap,
-                ),
-              ),
             ),
             _buildNavCard(),
           ],
@@ -374,9 +378,6 @@ class _ScrimWithHolesPainter extends CustomPainter {
 class _MoreDestinationsPanel extends StatelessWidget {
   const _MoreDestinationsPanel({
     required this.activeTab,
-    required this.controller,
-    required this.itemProgress,
-    required this.itemRisePx,
     this.onMissionsTap,
     this.onWorkoutTap,
     this.onNotificationsTap,
@@ -386,9 +387,6 @@ class _MoreDestinationsPanel extends StatelessWidget {
   });
 
   final AppMainBottomTab activeTab;
-  final AnimationController controller;
-  final double Function(int indexFromBottom, double t) itemProgress;
-  final double itemRisePx;
   final VoidCallback? onMissionsTap;
   final VoidCallback? onWorkoutTap;
   final VoidCallback? onNotificationsTap;
@@ -398,44 +396,6 @@ class _MoreDestinationsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttons = <Widget>[
-      _MoreDestinationButton(
-        label: 'Missões',
-        icon: AppNavIcons.missions(
-          selected: activeTab == AppMainBottomTab.missions,
-        ),
-        selected: activeTab == AppMainBottomTab.missions,
-        onTap: onMissionsTap,
-      ),
-      _MoreDestinationButton(
-        label: 'Treino',
-        icon: AppNavIcons.workout(
-          selected: activeTab == AppMainBottomTab.workout,
-        ),
-        selected: activeTab == AppMainBottomTab.workout,
-        onTap: onWorkoutTap,
-      ),
-      _MoreDestinationButton(
-        label: 'Perfil',
-        icon: AppNavIcons.profile,
-        selected: false,
-        onTap: onProfileTap,
-      ),
-      _MoreDestinationButton(
-        label: 'Loja',
-        icon: AppNavIcons.store,
-        selected: false,
-        onTap: onStoreTap,
-      ),
-      _MoreDestinationButton(
-        label: 'Notificações',
-        icon: AppNavIcons.notifications,
-        selected: false,
-        badgeCount: notificationsBadgeCount,
-        onTap: onNotificationsTap,
-      ),
-    ];
-
     return Padding(
       key: const ValueKey('app-more-destinations-panel'),
       padding: const EdgeInsets.fromLTRB(
@@ -444,36 +404,45 @@ class _MoreDestinationsPanel extends StatelessWidget {
         AppSpacing.sm,
         AppSpacing.md,
       ),
-      child: AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) {
-          final closing = controller.status == AnimationStatus.reverse;
-          final t = (closing
-                  ? Curves.easeInCubic.transform(controller.value)
-                  : const Cubic(0.22, 1, 0.36, 1).transform(controller.value))
-              .clamp(0.0, 1.0);
-          final count = buttons.length;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < count; i++)
-                Builder(
-                  builder: (context) {
-                    final progress = itemProgress(count - 1 - i, t);
-                    final eased = Curves.easeOutCubic.transform(progress);
-                    return Opacity(
-                      opacity: eased,
-                      child: Transform.translate(
-                        offset: Offset(0, itemRisePx * (1 - eased)),
-                        child: buttons[i],
-                      ),
-                    );
-                  },
-                ),
-            ],
-          );
-        },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _MoreDestinationButton(
+            label: 'Missões',
+            icon: AppNavIcons.missions(
+              selected: activeTab == AppMainBottomTab.missions,
+            ),
+            selected: activeTab == AppMainBottomTab.missions,
+            onTap: onMissionsTap,
+          ),
+          _MoreDestinationButton(
+            label: 'Treino',
+            icon: AppNavIcons.workout(
+              selected: activeTab == AppMainBottomTab.workout,
+            ),
+            selected: activeTab == AppMainBottomTab.workout,
+            onTap: onWorkoutTap,
+          ),
+          _MoreDestinationButton(
+            label: 'Perfil',
+            icon: AppNavIcons.profile,
+            selected: false,
+            onTap: onProfileTap,
+          ),
+          _MoreDestinationButton(
+            label: 'Loja',
+            icon: AppNavIcons.store,
+            selected: false,
+            onTap: onStoreTap,
+          ),
+          _MoreDestinationButton(
+            label: 'Notificações',
+            icon: AppNavIcons.notifications,
+            selected: false,
+            badgeCount: notificationsBadgeCount,
+            onTap: onNotificationsTap,
+          ),
+        ],
       ),
     );
   }

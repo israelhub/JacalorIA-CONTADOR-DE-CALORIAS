@@ -8,7 +8,8 @@ double cameraPreviewAspectRatio(CameraValue value) {
     return 1;
   }
 
-  final orientation = value.previewPauseOrientation ??
+  final orientation =
+      value.previewPauseOrientation ??
       value.lockedCaptureOrientation ??
       value.deviceOrientation;
   final isLandscape =

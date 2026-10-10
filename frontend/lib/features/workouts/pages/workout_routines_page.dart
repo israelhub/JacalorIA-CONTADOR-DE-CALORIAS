@@ -164,8 +164,7 @@ class _WorkoutRoutinesPageState extends State<WorkoutRoutinesPage> {
             if (item.id != routine.id) item,
         ];
         if (_selectedRoutineId == routine.id) {
-          _selectedRoutineId =
-              _routines.isEmpty ? null : _routines.first.id;
+          _selectedRoutineId = _routines.isEmpty ? null : _routines.first.id;
         }
       });
       AppToast.success(context, message: '${routine.name} apagado.');
@@ -194,9 +193,9 @@ class _WorkoutRoutinesPageState extends State<WorkoutRoutinesPage> {
       appBar: const AppBackPageHeader(title: 'Fichas'),
       body: AppBackPageContent(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             AppSpacing.pageHorizontal,
-            AppSpacing.lg,
+            AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
             AppSpacing.pageHorizontal,
             AppSpacing.xxxl,
           ),

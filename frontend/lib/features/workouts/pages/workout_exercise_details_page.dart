@@ -119,7 +119,10 @@ class _WorkoutExerciseDetailsPageState
       final now = DateTime.now();
       final initialRange =
           _customRange ??
-          DateTimeRange(start: now.subtract(const Duration(days: 29)), end: now);
+          DateTimeRange(
+            start: now.subtract(const Duration(days: 29)),
+            end: now,
+          );
       final selectedRange = await showDateRangePicker(
         context: context,
         firstDate: DateTime(2000),
@@ -378,222 +381,213 @@ class _WorkoutExerciseDetailsPageState
               homeShellScrollBottomInset(context),
             ),
             children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: const BoxDecoration(
-                              color: AppColors.missionsActionIconBg,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.fitness_center_rounded,
-                              size: 20,
-                              color: AppColors.action500,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Text(
-                              _exercise.name,
-                              style: AppTextStyles.homeUserName.copyWith(
-                                color: AppColors.brand900Variant,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      _ExerciseInfoRow(
-                        label: 'Parte do treino',
-                        value: widget.routineName,
-                        icon: Icons.view_agenda_outlined,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      _ExerciseInfoRow(
-                        label: 'Séries a executar',
-                        value: '${_exercise.sets} × ${_exercise.reps}',
-                        icon: Icons.repeat_rounded,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      _ExerciseInfoRow(
-                        label: 'Último peso',
-                        value: last == null
-                            ? 'Sem registro'
-                            : '${formatWorkoutWeight(last.weight)} kg',
-                        icon: Icons.monitor_weight_outlined,
-                        valueColor: last == null
-                            ? AppColors.textSecondary
-                            : AppColors.action500,
-                      ),
-                    ],
-                  ),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
-                const SizedBox(height: AppSpacing.cardGap),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Evolução da carga',
-                        style: AppTextStyles.homeSectionTitle.copyWith(
-                          color: AppColors.brand900Variant,
-                          fontSize: 20,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            color: AppColors.missionsActionIconBg,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.fitness_center_rounded,
+                            size: 20,
+                            color: AppColors.action500,
+                          ),
                         ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Text(
+                            _exercise.name,
+                            style: AppTextStyles.homeUserName.copyWith(
+                              color: AppColors.brand900Variant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _ExerciseInfoRow(
+                      label: 'Parte do treino',
+                      value: widget.routineName,
+                      icon: Icons.view_agenda_outlined,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _ExerciseInfoRow(
+                      label: 'Séries a executar',
+                      value: '${_exercise.sets} × ${_exercise.reps}',
+                      icon: Icons.repeat_rounded,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _ExerciseInfoRow(
+                      label: 'Último peso',
+                      value: last == null
+                          ? 'Sem registro'
+                          : '${formatWorkoutWeight(last.weight)} kg',
+                      icon: Icons.monitor_weight_outlined,
+                      valueColor: last == null
+                          ? AppColors.textSecondary
+                          : AppColors.action500,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.cardGap),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Evolução da carga',
+                      style: AppTextStyles.homeSectionTitle.copyWith(
+                        color: AppColors.brand900Variant,
+                        fontSize: 20,
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                      WeightHistoryChart(
-                        points: _chartPoints,
-                        startDate: _periodStart,
-                        applyBodyWeightFilter: false,
-                        emptyLabel:
-                            'Sem registros de carga neste período.',
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
-                        children: _periods
-                            .map((entry) {
-                              final isSelected =
-                                  _selectedPeriod == entry.key;
-                              return Expanded(
-                                child: Center(
-                                  child: Material(
-                                    color: isSelected
-                                        ? AppColors.action500.withValues(
-                                            alpha: 0.2,
-                                          )
-                                        : AppColors.insetSurface,
-                                    shape: const CircleBorder(),
-                                    child: InkWell(
-                                      customBorder: const CircleBorder(),
-                                      onTap: () =>
-                                          _selectPeriod(entry.key),
-                                      child: SizedBox(
-                                        width: 40,
-                                        height: 40,
-                                        child: Center(
-                                          child: Text(
-                                            entry.value,
-                                            style: AppTextStyles
-                                                .performanceCardMicro
-                                                .copyWith(
-                                                  color: isSelected
-                                                      ? AppColors
-                                                            .action500
-                                                      : AppColors
-                                                            .textSecondary,
-                                                  fontWeight: isSelected
-                                                      ? FontWeight.w700
-                                                      : FontWeight.w500,
-                                                ),
-                                          ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    WeightHistoryChart(
+                      points: _chartPoints,
+                      startDate: _periodStart,
+                      applyBodyWeightFilter: false,
+                      emptyLabel: 'Sem registros de carga neste período.',
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: _periods
+                          .map((entry) {
+                            final isSelected = _selectedPeriod == entry.key;
+                            return Expanded(
+                              child: Center(
+                                child: Material(
+                                  color: isSelected
+                                      ? AppColors.action500.withValues(
+                                          alpha: 0.2,
+                                        )
+                                      : AppColors.insetSurface,
+                                  shape: const CircleBorder(),
+                                  child: InkWell(
+                                    customBorder: const CircleBorder(),
+                                    onTap: () => _selectPeriod(entry.key),
+                                    child: SizedBox(
+                                      width: 40,
+                                      height: 40,
+                                      child: Center(
+                                        child: Text(
+                                          entry.value,
+                                          style: AppTextStyles
+                                              .performanceCardMicro
+                                              .copyWith(
+                                                color: isSelected
+                                                    ? AppColors.action500
+                                                    : AppColors.textSecondary,
+                                                fontWeight: isSelected
+                                                    ? FontWeight.w700
+                                                    : FontWeight.w500,
+                                              ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              );
-                            })
-                            .toList(growable: false),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ChoiceChip(
-                          selected: _selectedPeriod == 'custom',
-                          showCheckmark: false,
-                          label: const SizedBox(
-                            width: double.infinity,
-                            child: Text(
-                              'Personalizado',
-                              textAlign: TextAlign.center,
-                            ),
+                              ),
+                            );
+                          })
+                          .toList(growable: false),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ChoiceChip(
+                        selected: _selectedPeriod == 'custom',
+                        showCheckmark: false,
+                        label: const SizedBox(
+                          width: double.infinity,
+                          child: Text(
+                            'Personalizado',
+                            textAlign: TextAlign.center,
                           ),
-                          backgroundColor: AppColors.insetSurface,
-                          selectedColor: AppColors.action500.withValues(
-                            alpha: 0.2,
-                          ),
-                          side: BorderSide.none,
-                          labelStyle:
-                              AppTextStyles.performanceCardMicro.copyWith(
-                            color: _selectedPeriod == 'custom'
-                                ? AppColors.action500
-                                : AppColors.textSecondary,
-                            fontWeight: _selectedPeriod == 'custom'
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                          onSelected: (_) => _selectPeriod('custom'),
                         ),
+                        backgroundColor: AppColors.insetSurface,
+                        selectedColor: AppColors.action500.withValues(
+                          alpha: 0.2,
+                        ),
+                        side: BorderSide.none,
+                        labelStyle: AppTextStyles.performanceCardMicro.copyWith(
+                          color: _selectedPeriod == 'custom'
+                              ? AppColors.action500
+                              : AppColors.textSecondary,
+                          fontWeight: _selectedPeriod == 'custom'
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                        onSelected: (_) => _selectPeriod('custom'),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.cardGap),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Histórico',
-                        style: AppTextStyles.homeSectionTitle.copyWith(
-                          color: AppColors.brand900Variant,
-                          fontSize: 20,
-                        ),
+              ),
+              const SizedBox(height: AppSpacing.cardGap),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Histórico',
+                      style: AppTextStyles.homeSectionTitle.copyWith(
+                        color: AppColors.brand900Variant,
+                        fontSize: 20,
                       ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _AddLoadCard(onTap: _isBusy ? null : _addLoad),
+                    if (sortedLoads.isEmpty) ...[
                       const SizedBox(height: AppSpacing.md),
-                      _AddLoadCard(onTap: _isBusy ? null : _addLoad),
-                      if (sortedLoads.isEmpty) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'Nenhum registro de carga ainda.',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                      Text(
+                        'Nenhum registro de carga ainda.',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
                         ),
-                      ] else
-                        ...sortedLoads.map((load) {
-                          return Padding(
-                            padding:
-                                const EdgeInsets.only(top: AppSpacing.sm),
-                            child: _LoadHistoryCard(
-                              load: load,
-                              onDelete: _isBusy
-                                  ? null
-                                  : () => _deleteLoad(load),
-                            ),
-                          );
-                        }),
-                    ],
-                  ),
+                      ),
+                    ] else
+                      ...sortedLoads.map((load) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.sm),
+                          child: _LoadHistoryCard(
+                            load: load,
+                            onDelete: _isBusy ? null : () => _deleteLoad(load),
+                          ),
+                        );
+                      }),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 }

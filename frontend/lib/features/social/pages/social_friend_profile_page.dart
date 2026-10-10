@@ -16,6 +16,7 @@ import '../helpers/social_model_parsers.dart';
 import '../models/social_group_models.dart';
 import '../services/social_service.dart';
 import '../widgets/social_member_daily_meals_section.dart';
+import '../widgets/social_member_daily_workouts_section.dart';
 import '../widgets/social_profile_info_card.dart';
 import '../widgets/social_profile_metric_card.dart';
 import 'social_user_friends_page.dart';
@@ -180,7 +181,6 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
           AvatarProfilePreview(
             avatarUrl: profile.avatarUrl,
             frameId: profile.avatarFrameId,
-            backgroundId: profile.avatarBackgroundId,
             reactionEmojiId: profile.profileReactionEmojiId,
             name: profile.name,
             height: bannerHeight,
@@ -227,9 +227,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                         onTap: _openFriendsList,
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 2,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 2),
                           child: Text(
                             '${profile.friendCount} amigos',
                             style: AppTextStyles.bodyMedium.copyWith(
@@ -341,6 +339,12 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
                   viaUserId: widget.viaUserId,
                   service: widget.service,
                   readOnly: !profile.isSelf,
+                ),
+                SocialMemberDailyWorkoutsSection(
+                  memberUserId: profile.id,
+                  groupId: widget.groupId,
+                  viaUserId: widget.viaUserId,
+                  service: widget.service,
                 ),
               ],
             ),

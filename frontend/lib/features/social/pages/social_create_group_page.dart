@@ -148,6 +148,7 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
       extendBodyBehindAppBar: true,
       appBar: AppBackPageHeader(
         title: _isEditing ? 'Editar grupo' : 'Novo grupo',
+        backgroundColor: Colors.transparent,
       ),
       body: HomeShellOverlayNavigationBar.wrap(
         child: AppBackPageContent(
@@ -155,7 +156,7 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.pageHorizontal,
-              AppSpacing.md,
+              AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.md),
               AppSpacing.pageHorizontal,
               MediaQuery.viewInsetsOf(context).bottom +
                   homeShellScrollBottomInset(context),
@@ -354,9 +355,7 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
                     child: AppButton(
                       label: _isSaving
                           ? (_isEditing ? 'Salvando...' : 'Criando...')
-                          : (_isEditing
-                                ? 'Salvar alterações'
-                                : 'Criar grupo'),
+                          : (_isEditing ? 'Salvar alterações' : 'Criar grupo'),
                       onPressed: _canSubmit ? _submit : null,
                       variant: AppButtonVariant.primary,
                     ),

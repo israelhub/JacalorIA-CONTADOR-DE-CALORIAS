@@ -123,9 +123,7 @@ class _MealTypeChip extends StatelessWidget {
             style: AppTextStyles.homeAction.copyWith(
               height: 1,
               fontSize: expand ? 13 : null,
-              color: isSelected
-                  ? AppColors.surface
-                  : AppColors.brand900Variant,
+              color: isSelected ? AppColors.surface : AppColors.brand900Variant,
             ),
           ),
         ),

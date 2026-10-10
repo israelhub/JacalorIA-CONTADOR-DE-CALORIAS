@@ -36,7 +36,8 @@ class FoodAnalysisItem {
       name: (json['name'] as String? ?? '').trim(),
       grams: _asInt(json['grams']),
       calories: _asDouble(json['calories']),
-      unit: ((json['unit'] as String?)?.trim().toLowerCase().isNotEmpty ?? false)
+      unit:
+          ((json['unit'] as String?)?.trim().toLowerCase().isNotEmpty ?? false)
           ? (json['unit'] as String).trim().toLowerCase()
           : 'g',
       protein: _asDouble(json['protein']),
@@ -69,10 +70,10 @@ class FoodAnalysisItem {
   }
 
   Map<String, dynamic> toReanalysisJson() => <String, dynamic>{
-        'name': name,
-        'grams': grams,
-        'unit': unit,
-      };
+    'name': name,
+    'grams': grams,
+    'unit': unit,
+  };
 
   static int _asInt(Object? value) {
     if (value is int) {
@@ -152,7 +153,8 @@ class FoodAnalysisResult {
         .map(FoodAnalysisItem.fromJson)
         .toList(growable: false);
 
-    final totalsJson = json['totals'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final totalsJson =
+        json['totals'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
     return FoodAnalysisResult(
       items: items,

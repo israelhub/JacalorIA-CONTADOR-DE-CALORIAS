@@ -63,7 +63,11 @@ class SocialGroupsTabPage extends StatelessWidget {
                 )
               : Column(
                   children: [
-                    for (var index = 0; index < activeGroups.length; index++) ...[
+                    for (
+                      var index = 0;
+                      index < activeGroups.length;
+                      index++
+                    ) ...[
                       if (index > 0) const SizedBox(height: AppSpacing.md),
                       SocialGroupCard(
                         group: activeGroups[index],

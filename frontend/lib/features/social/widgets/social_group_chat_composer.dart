@@ -61,7 +61,9 @@ class SocialGroupChatComposer extends StatelessWidget {
                 child: _ComposerTextField(
                   controller: controller,
                   focusNode: focusNode,
-                  hintText: isEditing ? 'Ex.: Editar mensagem' : 'Ex.: Mensagem',
+                  hintText: isEditing
+                      ? 'Ex.: Editar mensagem'
+                      : 'Ex.: Mensagem',
                   onSubmitted: onSend,
                 ),
               ),

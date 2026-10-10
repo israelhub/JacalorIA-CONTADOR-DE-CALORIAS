@@ -9,7 +9,6 @@ import 'package:jacaloria/features/food_analysis/services/food_analysis_service.
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
 
-/// 1x1 PNG transparente — suficiente para ativar o overlay de preview.
 Uint8List _tinyPng() => Uint8List.fromList(const <int>[
       0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
       0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
@@ -40,8 +39,8 @@ void main() {
       _wrap(
         FoodAnalysisProcessingPage(
           imageBytes: _tinyPng(),
-          title: 'Analisando...',
-          message: 'A inteligência artificial está analisando a sua refeição...',
+          title: '',
+          message: 'Estamos analisando os alimentos da sua refeição...',
           operation: () => completer.future,
         ),
       ),
@@ -50,12 +49,12 @@ void main() {
     await tester.pump();
 
     expect(find.text('Nova refeição'), findsOneWidget);
-    expect(find.text('Analisando...'), findsOneWidget);
+    expect(find.text('Analisando...'), findsNothing);
     expect(
-      find.text('A inteligência artificial está analisando a sua refeição...'),
+      find.text('Estamos analisando os alimentos da sua refeição...'),
       findsOneWidget,
     );
-    expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
 
   testWidgets('avanca mensagem de espera apos demora', (tester) async {
@@ -65,8 +64,8 @@ void main() {
       _wrap(
         FoodAnalysisProcessingPage(
           imageBytes: _tinyPng(),
-          title: 'Analisando...',
-          message: 'A inteligência artificial está analisando sua refeição...',
+          title: '',
+          message: 'Estamos analisando os alimentos da sua refeição...',
           operation: () => completer.future,
         ),
       ),
@@ -75,7 +74,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 13));
 
-    expect(find.text('Ainda analisando...'), findsOneWidget);
+    expect(find.text('Ainda analisando...'), findsNothing);
     expect(
       find.textContaining('Estamos olhando bem o prato'),
       findsOneWidget,
@@ -88,8 +87,8 @@ void main() {
       _wrap(
         FoodAnalysisProcessingPage(
           imageBytes: _tinyPng(),
-          title: 'Analisando...',
-          message: 'A inteligência artificial está analisando sua refeição...',
+          title: '',
+          message: 'Estamos analisando os alimentos da sua refeição...',
           operation: () async {
             throw Exception(
               'ClientSoftware caused connection abort, '
@@ -103,11 +102,11 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.text('Não foi possível'), findsOneWidget);
+    expect(find.text('Não foi possível'), findsNothing);
     expect(find.text(FoodAnalysisService.connectionErrorMessage), findsOneWidget);
     expect(find.text('Analisando...'), findsNothing);
     expect(find.text('Tentar novamente'), findsOneWidget);
-    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    expect(find.byIcon(Icons.error_outline), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
@@ -116,7 +115,7 @@ void main() {
       _wrap(
         FoodAnalysisProcessingPage(
           imageBytes: _tinyPng(),
-          title: 'Analisando...',
+          title: '',
           message: 'mensagem inicial',
           operation: () async {
             throw const FormatException(
@@ -158,8 +157,8 @@ void main() {
       _wrap(
         FoodAnalysisProcessingPage(
           imageBytes: _tinyPng(),
-          title: 'Analisando...',
-          message: 'mensagem inicial',
+          title: '',
+          message: 'Estamos analisando os alimentos da sua refeição...',
           operation: () async {
             attempts += 1;
             if (attempts == 1) {
@@ -179,8 +178,12 @@ void main() {
     await tester.pump();
 
     expect(attempts, 2);
-    expect(find.text('Analisando...'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('Analisando...'), findsNothing);
+    expect(
+      find.text('Estamos analisando os alimentos da sua refeição...'),
+      findsOneWidget,
+    );
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
 
     completer.complete(_sampleResult());
     await tester.pumpAndSettle();

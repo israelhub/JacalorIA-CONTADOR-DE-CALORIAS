@@ -202,9 +202,9 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
         ),
         body: AppBackPageContent(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSpacing.pageHorizontal,
-              AppSpacing.sm,
+              AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.sm),
               AppSpacing.pageHorizontal,
               AppSpacing.xxl,
             ),
@@ -717,8 +717,11 @@ class _MealHeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final heroHeight = (screenHeight * 0.38).clamp(300.0, 420.0);
+
     return SizedBox(
-      height: 250,
+      height: heroHeight,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: FadedMealImage(

@@ -754,8 +754,7 @@ class _ProfilePageState extends State<ProfilePage> {
     required Color iconColor,
     required String label,
     required String value,
-    SocialProfileInfoCardLayout layout =
-        SocialProfileInfoCardLayout.horizontal,
+    SocialProfileInfoCardLayout layout = SocialProfileInfoCardLayout.horizontal,
   }) {
     return SocialProfileInfoCard(
       icon: icon,

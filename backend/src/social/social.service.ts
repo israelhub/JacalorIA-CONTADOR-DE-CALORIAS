@@ -5,6 +5,9 @@ import { randomBytes } from 'crypto';
 import { User } from '../auth/models/user.model';
 import { Meal, MealStatus } from '../meals/models/meal.model';
 import { UserCurrencyTransaction } from '../missions/models/user-currency-transaction.model';
+import { WorkoutExercise } from '../workouts/models/workout-exercise.model';
+import { WorkoutLoadEntry } from '../workouts/models/workout-load-entry.model';
+import { WorkoutRoutine } from '../workouts/models/workout-routine.model';
 import { AddFriendByEmailDto } from './dto/add-friend-by-email.dto';
 import { AddGroupMembersDto } from './dto/add-group-members.dto';
 import { CreateSocialGroupDto } from './dto/create-social-group.dto';
@@ -56,6 +59,8 @@ export class SocialService {
     private readonly userModel: typeof User,
     @InjectModel(Meal)
     private readonly mealModel: typeof Meal,
+    @InjectModel(WorkoutLoadEntry)
+    private readonly workoutLoadEntryModel: typeof WorkoutLoadEntry,
     @InjectModel(UserCurrencyTransaction)
     private readonly userCurrencyTransactionModel: typeof UserCurrencyTransaction,
     private readonly streakService: StreakService,
@@ -1275,6 +1280,54 @@ export class SocialService {
     };
   }
 
+  async getPublicProfileDailyWorkouts(
+    viewerId: string,
+    targetUserId: string,
+    date?: string,
+    options?: { groupId?: string; viaUserId?: string },
+  ) {
+    const canView = await this.canViewUserProfile(viewerId, targetUserId, options);
+    if (!canView) {
+      throw new NotFoundException('Perfil não encontrado');
+    }
+
+    const targetId = targetUserId.trim();
+    const target = await this.userModel.findByPk(targetId, {
+      attributes: ['id', 'createdAt', 'hidePublicProfileWorkouts'],
+    });
+    if (!target) {
+      throw new NotFoundException('Perfil não encontrado');
+    }
+
+    const isSelf = viewerId.trim().toLowerCase() === targetId.toLowerCase();
+    const isPrivate = target.hidePublicProfileWorkouts === true;
+    if (isPrivate && !isSelf) {
+      return {
+        enabled: false,
+        isPrivate: true,
+        date: null,
+        startsAt: null,
+        endsAt: null,
+        entries: [],
+      };
+    }
+
+    const createdAt = target.createdAt ? new Date(target.createdAt) : new Date();
+    const startDayKey = this.streakService.toDayKeyInAppTimeZone(createdAt);
+    const endDayKey = this.streakService.toDayKeyInAppTimeZone(new Date());
+    const selectedDayKey = this.clampDayKey(date, startDayKey, endDayKey);
+    const entries = await this.findMemberWorkoutsForDayKey(target.id, selectedDayKey);
+
+    return {
+      enabled: true,
+      isPrivate: isPrivate && isSelf,
+      date: selectedDayKey,
+      startsAt: startDayKey,
+      endsAt: endDayKey,
+      entries,
+    };
+  }
+
   private clampDayKey(date: string | undefined, startDayKey: string, endDayKey: string) {
     let selectedDayKey = (date ?? '').trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDayKey)) {
@@ -1304,6 +1357,58 @@ export class SocialService {
       createdAt: meal.createdAt,
       analysisItems: Array.isArray(meal.analysisItems) ? meal.analysisItems : [],
     };
+  }
+
+  private async findMemberWorkoutsForDayKey(userId: string, dayKey: string) {
+    const loads = await this.workoutLoadEntryModel.findAll({
+      where: {
+        userId,
+        recordedAt: dayKey,
+      },
+      include: [
+        {
+          model: WorkoutExercise,
+          as: 'exercise',
+          required: true,
+          include: [
+            {
+              model: WorkoutRoutine,
+              as: 'routine',
+              required: true,
+            },
+          ],
+        },
+      ],
+      order: [
+        ['createdAt', 'ASC'],
+      ],
+    });
+
+    const sorted = [...loads].sort((a, b) => {
+      const routineSort =
+        (a.exercise?.routine?.sortOrder ?? 0) - (b.exercise?.routine?.sortOrder ?? 0);
+      if (routineSort !== 0) {
+        return routineSort;
+      }
+      const exerciseSort =
+        (a.exercise?.sortOrder ?? 0) - (b.exercise?.sortOrder ?? 0);
+      if (exerciseSort !== 0) {
+        return exerciseSort;
+      }
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    });
+
+    return sorted.map((load) => ({
+      id: load.id,
+      weight: parseNumber(load.weight),
+      recordedAt: String(load.recordedAt).slice(0, 10),
+      exerciseId: load.exerciseId,
+      exerciseName: load.exercise?.name ?? 'Exercício',
+      sets: load.exercise?.sets ?? 0,
+      reps: load.exercise?.reps ?? 0,
+      routineId: load.exercise?.routineId ?? '',
+      routineName: load.exercise?.routine?.name ?? 'Treino',
+    }));
   }
 
   private async findMemberMealsForDayKey(userId: string, dayKey: string) {

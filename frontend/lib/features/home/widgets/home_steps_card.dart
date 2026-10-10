@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../performance/widgets/performance_stat_card.dart';
 import '../helpers/home_steps_helpers.dart';
 import '../models/home_steps_models.dart';
 import 'home_water_card.dart';
@@ -29,8 +30,8 @@ class HomeStepsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(AppRadius.lg);
     final showAction = overview.canRequestAccess && onActivate != null;
-    final showMetrics =
-        expanded && !showAction && overview.status == HomeStepsStatus.ready;
+    final showStatusMessage =
+        expanded && !showAction && overview.status != HomeStepsStatus.ready;
 
     final content = Padding(
       padding: EdgeInsets.fromLTRB(
@@ -74,29 +75,38 @@ class HomeStepsCard extends StatelessWidget {
                 ),
               ),
             ),
-          if (showAction) ...[
-            const SizedBox(height: AppSpacing.xs),
-            _ActivateButton(onPressed: onActivate!),
-          ] else if (showMetrics) ...[
-            const SizedBox(height: AppSpacing.sm),
+          if (expanded) ...[
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: [
                 Expanded(
-                  child: _MetricChip(
-                    icon: Icons.local_fire_department_rounded,
-                    label: formatStepsCalories(overview.caloriesKcal),
+                  child: PerformanceStatCard(
+                    key: const ValueKey('home-steps-distance-card'),
+                    icon: Icons.straighten_rounded,
+                    title: 'Distância',
+                    value: formatStepsDistanceKmNumber(overview.distanceKm),
+                    subtitle: 'km estimados',
+                    iconColor: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.xs),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: _MetricChip(
-                    icon: Icons.straighten_rounded,
-                    label: formatStepsDistanceKm(overview.distanceKm),
+                  child: PerformanceStatCard(
+                    key: const ValueKey('home-steps-calories-card'),
+                    icon: Icons.local_fire_department_outlined,
+                    title: 'Calorias',
+                    value: '${overview.caloriesKcal}',
+                    subtitle: 'kcal estimadas',
+                    iconColor: AppColors.textPrimary,
                   ),
                 ),
               ],
             ),
-          ] else if (expanded) ...[
+          ],
+          if (showAction) ...[
+            const SizedBox(height: AppSpacing.xs),
+            _ActivateButton(onPressed: onActivate!),
+          ] else if (showStatusMessage) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
               overview.status == HomeStepsStatus.unsupported
@@ -226,10 +236,7 @@ class _StepsBody extends StatelessWidget {
 }
 
 class _StepsProgressTrack extends StatelessWidget {
-  const _StepsProgressTrack({
-    required this.progress,
-    required this.isLoading,
-  });
+  const _StepsProgressTrack({required this.progress, required this.isLoading});
 
   final double progress;
   final bool isLoading;
@@ -243,8 +250,10 @@ class _StepsProgressTrack extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final travel =
-            (constraints.maxWidth - _shoeSize).clamp(0.0, double.infinity);
+        final travel = (constraints.maxWidth - _shoeSize).clamp(
+          0.0,
+          double.infinity,
+        );
         final shoeLeft = travel * t;
 
         return SizedBox(
@@ -283,45 +292,6 @@ class _StepsProgressTrack extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _MetricChip extends StatelessWidget {
-  const _MetricChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xs,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.insetSurface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: HomeStepsCard._accent),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.micro.copyWith(
-                color: AppColors.brand900Variant,
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -17,7 +17,8 @@ CameraDescription selectFoodCaptureCamera(List<CameraDescription> cameras) {
   }
 
   backCameras.sort(
-    (a, b) => _lensPreference(a.lensType).compareTo(_lensPreference(b.lensType)),
+    (a, b) =>
+        _lensPreference(a.lensType).compareTo(_lensPreference(b.lensType)),
   );
   return backCameras.first;
 }

@@ -62,6 +62,11 @@ double homeShellScrollBottomInset(
   BuildContext context, {
   double extra = AppSpacing.xxxl,
 }) {
+  final view = View.of(context);
+  final keyboardInset = view.viewInsets.bottom / view.devicePixelRatio;
+  if (keyboardInset > 0) {
+    return extra;
+  }
   return homeShellNavOverlap(context) + extra;
 }
 

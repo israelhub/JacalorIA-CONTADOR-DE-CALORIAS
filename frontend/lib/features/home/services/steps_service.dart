@@ -112,37 +112,23 @@ class StepsService {
         }
       }
 
-      final hasPermissions = await _health.hasPermissions(
-        _types,
-        permissions: _permissions,
+      final authorized = await _ensureHealthAuthorized(
+        requestPermission: requestPermission,
       );
-      if (hasPermissions != true) {
-        if (!requestPermission) {
-          final pedometer = await _fetchFromPedometer(
-            goal: goal,
-            weightKg: weightKg,
-            heightCm: heightCm,
-            requestPermission: false,
-          );
-          if (pedometer != null) {
-            return pedometer;
-          }
-          return HomeStepsOverview(
-            goalSteps: goal,
-            status: HomeStepsStatus.needsPermission,
-          );
-        }
-
-        final granted = await _health.requestAuthorization(
-          _types,
-          permissions: _permissions,
+      if (!authorized) {
+        final pedometer = await _fetchFromPedometer(
+          goal: goal,
+          weightKg: weightKg,
+          heightCm: heightCm,
+          requestPermission: requestPermission,
         );
-        if (!granted) {
-          return HomeStepsOverview(
-            goalSteps: goal,
-            status: HomeStepsStatus.needsPermission,
-          );
+        if (pedometer != null) {
+          return pedometer;
         }
+        return HomeStepsOverview(
+          goalSteps: goal,
+          status: HomeStepsStatus.needsPermission,
+        );
       }
 
       final now = DateTime.now();
@@ -203,6 +189,46 @@ class StepsService {
     }
     await _health.configure();
     _configured = true;
+  }
+
+  Future<bool> _ensureHealthAuthorized({
+    required bool requestPermission,
+  }) async {
+    Future<bool?> readGranted() {
+      return _health.hasPermissions(_types, permissions: _permissions);
+    }
+
+    final current = await readGranted();
+    if (current == true) {
+      return true;
+    }
+    if (!requestPermission) {
+      return false;
+    }
+
+    final granted = await _health.requestAuthorization(
+      _types,
+      permissions: _permissions,
+    );
+    if (granted) {
+      return true;
+    }
+
+    // Health Connect no Android às vezes devolve false logo após o diálogo,
+    // mesmo com a permissão já concedida; revalida após o resume da Activity.
+    for (final delay in const [
+      Duration(milliseconds: 300),
+      Duration(milliseconds: 900),
+      Duration(milliseconds: 1600),
+    ]) {
+      await Future<void>.delayed(delay);
+      final confirmed = await readGranted();
+      if (confirmed == true) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   Future<int> setDailyGoal(int goalSteps) async {
@@ -290,7 +316,11 @@ class StepsService {
         }
       }
 
-      final stepsSinceBoot = await _readPedometerSteps();
+      var stepsSinceBoot = await _readPedometerSteps();
+      if (stepsSinceBoot == null && requestPermission) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        stepsSinceBoot = await _readPedometerSteps();
+      }
       if (stepsSinceBoot == null) {
         return null;
       }
@@ -321,38 +351,34 @@ class StepsService {
     }
 
     final completer = Completer<int?>();
-    StreamSubscription<StepCount>? subscription;
     Timer? timeout;
 
+    void completeWith(int? value) {
+      if (!completer.isCompleted) {
+        completer.complete(value);
+      }
+    }
+
     try {
-      subscription = Pedometer.stepCountStream.listen(
+      _pedometerSub ??= Pedometer.stepCountStream.listen(
         (event) {
           _latestPedometerSteps = event.steps;
-          if (!completer.isCompleted) {
-            completer.complete(event.steps);
-          }
+          completeWith(event.steps);
         },
         onError: (_) {
-          if (!completer.isCompleted) {
-            completer.complete(null);
-          }
+          _pedometerSub = null;
+          completeWith(null);
         },
         cancelOnError: true,
       );
-      _pedometerSub ??= subscription;
 
-      timeout = Timer(const Duration(seconds: 2), () {
-        if (!completer.isCompleted) {
-          completer.complete(_latestPedometerSteps);
-        }
+      timeout = Timer(const Duration(seconds: 3), () {
+        completeWith(_latestPedometerSteps);
       });
 
       return await completer.future;
     } finally {
       timeout?.cancel();
-      if (!identical(subscription, _pedometerSub)) {
-        await subscription?.cancel();
-      }
     }
   }
 

@@ -126,9 +126,7 @@ class _HomeWeightCardState extends State<HomeWeightCard> {
               ),
               Align(
                 alignment: Alignment.centerRight,
-                child: _WeightAddButton(
-                  onPressed: _weightController.open,
-                ),
+                child: _WeightAddButton(onPressed: _weightController.open),
               ),
             ],
           ),
@@ -157,11 +155,7 @@ class _WeightAddButton extends StatelessWidget {
           child: const SizedBox(
             width: 40,
             height: 40,
-            child: Icon(
-              Icons.add_rounded,
-              color: AppColors.surface,
-              size: 24,
-            ),
+            child: Icon(Icons.add_rounded, color: AppColors.surface, size: 24),
           ),
         ),
       ),

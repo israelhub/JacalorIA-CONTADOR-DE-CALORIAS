@@ -147,10 +147,26 @@ class _CheckInDayTile extends StatelessWidget {
   final CheckInDayItem day;
 
   static const ColorFilter _greyFilter = ColorFilter.matrix(<double>[
-    0.2126, 0.7152, 0.0722, 0, 40,
-    0.2126, 0.7152, 0.0722, 0, 40,
-    0.2126, 0.7152, 0.0722, 0, 40,
-    0, 0, 0, 0.85, 0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    40,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    40,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    40,
+    0,
+    0,
+    0,
+    0.85,
+    0,
   ]);
 
   @override
@@ -180,10 +196,7 @@ class _CheckInDayTile extends StatelessWidget {
               clipBehavior: Clip.none,
               children: <Widget>[
                 if (muted)
-                  ColorFiltered(
-                    colorFilter: _greyFilter,
-                    child: rewardIcon,
-                  )
+                  ColorFiltered(colorFilter: _greyFilter, child: rewardIcon)
                 else
                   rewardIcon,
                 if (isClaimed)

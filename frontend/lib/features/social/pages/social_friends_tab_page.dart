@@ -44,8 +44,7 @@ class SocialFriendsTabPage extends StatelessWidget {
               ? const SocialEmptyState(
                   icon: Icons.people_alt_outlined,
                   title: 'Nenhum amigo ainda',
-                  subtitle:
-                      'Adicione amigos por e-mail ou link para começar.',
+                  subtitle: 'Adicione amigos por e-mail ou link para começar.',
                   backgroundColor: AppColors.insetSurface,
                 )
               : Column(

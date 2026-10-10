@@ -96,6 +96,10 @@ class _InAppMessagesPageState extends State<InAppMessagesPage> {
   Widget build(BuildContext context) {
     final messages = _store.messages;
     final hasUnread = _store.unreadCount > 0;
+    final scrollTop = AppBackPageHeader.scrollTopInset(
+      context,
+      extra: AppSpacing.sm,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
@@ -136,11 +140,22 @@ class _InAppMessagesPageState extends State<InAppMessagesPage> {
           children: [
             Expanded(
               child: _loading
-                  ? const AppSkeletonList(itemCount: 4, itemHeight: 96)
+                  ? Padding(
+                      padding: EdgeInsets.only(top: scrollTop),
+                      child: const AppSkeletonList(
+                        itemCount: 4,
+                        itemHeight: 96,
+                      ),
+                    )
                   : messages.isEmpty
                   ? Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xxl),
+                        padding: EdgeInsets.fromLTRB(
+                          AppSpacing.xxl,
+                          scrollTop,
+                          AppSpacing.xxl,
+                          AppSpacing.xxl,
+                        ),
                         child: Text(
                           'Nenhuma mensagem por enquanto.',
                           textAlign: TextAlign.center,
@@ -151,9 +166,9 @@ class _InAppMessagesPageState extends State<InAppMessagesPage> {
                       ),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(
+                      padding: EdgeInsets.fromLTRB(
                         AppSpacing.pageHorizontal,
-                        AppSpacing.sm,
+                        scrollTop,
                         AppSpacing.pageHorizontal,
                         AppSpacing.xxxl,
                       ),

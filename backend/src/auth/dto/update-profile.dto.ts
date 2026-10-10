@@ -121,4 +121,8 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsBoolean()
   hidePublicProfileMeals?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hidePublicProfileWorkouts?: boolean;
 }

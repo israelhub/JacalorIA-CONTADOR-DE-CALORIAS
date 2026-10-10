@@ -92,6 +92,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'JacalorIA',
         debugShowCheckedModeBanner: false,
+        theme: AppTheme.theme,
         locale: _appLocale,
         localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
           GlobalMaterialLocalizations.delegate,

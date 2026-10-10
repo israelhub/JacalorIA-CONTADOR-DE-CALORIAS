@@ -28,11 +28,11 @@ class FoodAnalysisException implements Exception {
 /// Mantido por compatibilidade com telas/testes existentes.
 class FoodAnalysisHighDemandException extends FoodAnalysisException {
   const FoodAnalysisHighDemandException([String? message])
-      : super(
-          message ?? FoodAnalysisService.highDemandMessage,
-          canRetry: true,
-          isHighDemand: true,
-        );
+    : super(
+        message ?? FoodAnalysisService.highDemandMessage,
+        canRetry: true,
+        isHighDemand: true,
+      );
 }
 
 class FoodAnalysisService {
@@ -67,9 +67,7 @@ class FoodAnalysisService {
       'Tente novamente.';
 
   Map<String, String> _headers() {
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
     final token = AuthService.globalToken;
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
@@ -81,13 +79,10 @@ class FoodAnalysisService {
     required Uint8List imageBytes,
     required String mimeType,
   }) async {
-    return _postAnalysis(
-      <String, dynamic>{
-        'imageBase64': base64Encode(imageBytes),
-        'mimeType': mimeType,
-      },
-      hasImage: true,
-    );
+    return _postAnalysis(<String, dynamic>{
+      'imageBase64': base64Encode(imageBytes),
+      'mimeType': mimeType,
+    }, hasImage: true);
   }
 
   Future<FoodAnalysisResult> recalculate({
@@ -95,8 +90,9 @@ class FoodAnalysisService {
   }) async {
     return _postAnalysis(
       <String, dynamic>{
-        'items':
-            items.map((item) => item.toReanalysisJson()).toList(growable: false),
+        'items': items
+            .map((item) => item.toReanalysisJson())
+            .toList(growable: false),
       },
       hasImage: false,
       itemCount: items.length,
@@ -104,12 +100,9 @@ class FoodAnalysisService {
   }
 
   Future<FoodAnalysisResult> analyzeManualText(String manualText) async {
-    return _postAnalysis(
-      <String, dynamic>{
-        'manualText': manualText,
-      },
-      hasImage: false,
-    );
+    return _postAnalysis(<String, dynamic>{
+      'manualText': manualText,
+    }, hasImage: false);
   }
 
   /// Converte qualquer erro técnico em mensagem amigável.
@@ -126,10 +119,7 @@ class FoodAnalysisService {
     }
 
     if (_looksLikeTimeout(normalized)) {
-      return const FoodAnalysisException(
-        timeoutMessage,
-        isHighDemand: true,
-      );
+      return const FoodAnalysisException(timeoutMessage, isHighDemand: true);
     }
 
     if (_looksLikeConnection(normalized) || error is http.ClientException) {
@@ -209,11 +199,7 @@ class FoodAnalysisService {
     final uri = Uri.parse('$_baseUrl/ai/food/analyze');
     try {
       final response = await http
-          .post(
-            uri,
-            headers: _headers(),
-            body: jsonEncode(body),
-          )
+          .post(uri, headers: _headers(), body: jsonEncode(body))
           .timeout(
             _analysisTimeout,
             onTimeout: () =>
@@ -299,7 +285,10 @@ class FoodAnalysisService {
         },
       );
 
-      if (_isHighDemandError(statusCode: response.statusCode, message: message)) {
+      if (_isHighDemandError(
+        statusCode: response.statusCode,
+        message: message,
+      )) {
         throw const FoodAnalysisHighDemandException();
       }
 

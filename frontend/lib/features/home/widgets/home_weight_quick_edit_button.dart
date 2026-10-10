@@ -38,6 +38,7 @@ Future<void> showHomeWeightEditSheet(
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
+    barrierColor: Colors.black54,
     builder: (sheetContext) {
       return _HomeWeightEditSheet(
         userProfile: userProfile,
@@ -182,9 +183,8 @@ class _HomeWeightEditSheetState extends State<_HomeWeightEditSheet> {
   void initState() {
     super.initState();
     final text = _formatWeight(_currentWeight);
-    _controller = TextEditingController(
-      text: text,
-    )..selection = TextSelection(baseOffset: 0, extentOffset: text.length);
+    _controller = TextEditingController(text: text)
+      ..selection = TextSelection(baseOffset: 0, extentOffset: text.length);
   }
 
   @override

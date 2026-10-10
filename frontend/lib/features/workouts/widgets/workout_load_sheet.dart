@@ -3,33 +3,47 @@ import 'package:flutter/services.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../helpers/workout_formatters.dart';
+import '../models/workout_models.dart';
+import 'workout_form_sheets.dart';
 
-Future<int?> showHomeAddWaterSheet(BuildContext context) {
-  return showModalBottomSheet<int>(
+Future<WorkoutLoadDraft?> showWorkoutLoadSheet(
+  BuildContext context, {
+  required WorkoutExercise exercise,
+  required DateTime recordedAt,
+}) {
+  return showModalBottomSheet<WorkoutLoadDraft>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black54,
     builder: (sheetContext) {
-      return const _HomeAddWaterSheet();
+      return _WorkoutLoadSheet(exercise: exercise, recordedAt: recordedAt);
     },
   );
 }
 
-class _HomeAddWaterSheet extends StatefulWidget {
-  const _HomeAddWaterSheet();
+class _WorkoutLoadSheet extends StatefulWidget {
+  const _WorkoutLoadSheet({required this.exercise, required this.recordedAt});
+
+  final WorkoutExercise exercise;
+  final DateTime recordedAt;
 
   @override
-  State<_HomeAddWaterSheet> createState() => _HomeAddWaterSheetState();
+  State<_WorkoutLoadSheet> createState() => _WorkoutLoadSheetState();
 }
 
-class _HomeAddWaterSheetState extends State<_HomeAddWaterSheet> {
+class _WorkoutLoadSheetState extends State<_WorkoutLoadSheet> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
 
-  int? get _parsedAmount {
-    final parsed = int.tryParse(_controller.text.trim());
+  double? get _suggestedWeight => widget.exercise.lastLoad?.weight;
+
+  double? get _parsedWeight {
+    final parsed = double.tryParse(
+      _controller.text.trim().replaceAll(',', '.'),
+    );
     if (parsed == null || parsed <= 0) {
       return null;
     }
@@ -44,16 +58,23 @@ class _HomeAddWaterSheetState extends State<_HomeAddWaterSheet> {
   }
 
   void _submit() {
-    final amount = _parsedAmount;
-    if (amount == null) {
+    final weight = _parsedWeight;
+    if (weight == null) {
       return;
     }
-    Navigator.of(context).pop(amount);
+    final day = widget.recordedAt;
+    Navigator.of(context).pop(
+      WorkoutLoadDraft(
+        weight: weight,
+        recordedAt: DateTime(day.year, day.month, day.day),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final suggested = _suggestedWeight;
 
     return Padding(
       padding: EdgeInsets.only(bottom: keyboardInset),
@@ -76,10 +97,30 @@ class _HomeAddWaterSheetState extends State<_HomeAddWaterSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderLight,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
                 Text(
-                  'Registrar água',
+                  widget.exercise.name,
                   style: AppTextStyles.headingSmall.copyWith(
                     color: AppColors.brand900Variant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  suggested == null
+                      ? 'Quanto você pegou?'
+                      : 'Última vez: ${formatWorkoutWeight(suggested)} kg',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -94,18 +135,20 @@ class _HomeAddWaterSheetState extends State<_HomeAddWaterSheet> {
                         maxWidth: 180,
                       ),
                       child: TextField(
-                        key: const ValueKey('home-water-edit-field'),
+                        key: const ValueKey('workout-load-sheet-field'),
                         controller: _controller,
                         focusNode: _focusNode,
                         autofocus: true,
                         textAlign: TextAlign.center,
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textInputAction: TextInputAction.done,
                         enableSuggestions: false,
                         autocorrect: false,
                         inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(5),
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                          LengthLimitingTextInputFormatter(6),
                         ],
                         style: AppTextStyles.headingLarge.copyWith(
                           color: AppColors.brand900Variant,
@@ -113,7 +156,7 @@ class _HomeAddWaterSheetState extends State<_HomeAddWaterSheet> {
                         decoration: InputDecoration(
                           isDense: true,
                           border: InputBorder.none,
-                          hintText: 'Ex.: 250',
+                          hintText: 'Ex.: 40',
                           hintStyle: AppTextStyles.headingLarge.copyWith(
                             color: AppColors.textSecondary.withValues(
                               alpha: 0.45,
@@ -126,7 +169,7 @@ class _HomeAddWaterSheetState extends State<_HomeAddWaterSheet> {
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
-                      'ml',
+                      'kg',
                       style: AppTextStyles.bodyLarge.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -135,8 +178,8 @@ class _HomeAddWaterSheetState extends State<_HomeAddWaterSheet> {
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 AppButton(
-                  label: 'Salvar',
-                  onPressed: _parsedAmount == null ? null : _submit,
+                  label: 'Salvar peso',
+                  onPressed: _parsedWeight == null ? null : _submit,
                 ),
               ],
             ),

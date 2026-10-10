@@ -2,7 +2,8 @@ import 'package:flutter/widgets.dart';
 
 import '../controllers/home_steps_weight_controller.dart';
 
-class HomeStepsWeightScope extends InheritedNotifier<HomeStepsWeightController> {
+class HomeStepsWeightScope
+    extends InheritedNotifier<HomeStepsWeightController> {
   const HomeStepsWeightScope({
     super.key,
     required HomeStepsWeightController controller,

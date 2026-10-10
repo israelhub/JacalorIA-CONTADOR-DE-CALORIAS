@@ -73,13 +73,9 @@ class _WorkoutExerciseFormPageState extends State<WorkoutExerciseFormPage> {
       return;
     }
 
-    Navigator.of(context).pop(
-      WorkoutExerciseDraft(
-        name: name,
-        sets: sets,
-        reps: reps,
-      ),
-    );
+    Navigator.of(
+      context,
+    ).pop(WorkoutExerciseDraft(name: name, sets: sets, reps: reps));
   }
 
   Widget _fieldLabel(String label) {
@@ -92,10 +88,7 @@ class _WorkoutExerciseFormPageState extends State<WorkoutExerciseFormPage> {
     );
   }
 
-  Widget _labeledInput({
-    required String label,
-    required Widget input,
-  }) {
+  Widget _labeledInput({required String label, required Widget input}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -119,7 +112,7 @@ class _WorkoutExerciseFormPageState extends State<WorkoutExerciseFormPage> {
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.pageHorizontal,
-            AppSpacing.lg,
+            AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
             AppSpacing.pageHorizontal,
             homeShellScrollBottomInset(context),
           ),
@@ -187,10 +180,7 @@ class _WorkoutExerciseFormPageState extends State<WorkoutExerciseFormPage> {
                       ),
                       child: Column(
                         children: [
-                          Opacity(
-                            opacity: 0,
-                            child: _fieldLabel('x'),
-                          ),
+                          Opacity(opacity: 0, child: _fieldLabel('x')),
                           const SizedBox(height: AppSpacing.sm),
                           SizedBox(
                             height: 48,

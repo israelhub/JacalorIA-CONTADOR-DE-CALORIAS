@@ -8,6 +8,7 @@ export 'social_friends_data.dart';
 export 'social_group_detail.dart';
 export 'social_group_summary.dart';
 export 'social_member_daily_meals.dart';
+export 'social_member_daily_workouts.dart';
 export 'social_ranking_entry.dart';
 export 'social_user_search_result.dart';
 export 'social_xp_ranking.dart';

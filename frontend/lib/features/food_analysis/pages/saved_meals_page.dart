@@ -154,6 +154,11 @@ class _SavedMealsPageState extends State<SavedMealsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final scrollTop = AppBackPageHeader.scrollTopInset(
+      context,
+      extra: AppSpacing.sm,
+    );
+
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       extendBodyBehindAppBar: true,
@@ -163,19 +168,24 @@ class _SavedMealsPageState extends State<SavedMealsPage> {
           future: _templatesFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
-              return const AppSkeletonList(
-                itemCount: 3,
-                itemHeight: HomeMealCard.defaultHeight,
-                borderRadius: AppRadius.lg,
+              return Padding(
+                padding: EdgeInsets.only(top: scrollTop),
+                child: const AppSkeletonList(
+                  itemCount: 3,
+                  itemHeight: HomeMealCard.defaultHeight,
+                  borderRadius: AppRadius.lg,
+                ),
               );
             }
 
             if (snapshot.hasError) {
               return Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.pageHorizontal,
-                    vertical: AppSpacing.lg,
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.pageHorizontal,
+                    scrollTop,
+                    AppSpacing.pageHorizontal,
+                    AppSpacing.lg,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -205,7 +215,12 @@ class _SavedMealsPageState extends State<SavedMealsPage> {
             if (templates.isEmpty) {
               return Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    scrollTop,
+                    AppSpacing.xl,
+                    AppSpacing.xl,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -243,9 +258,9 @@ class _SavedMealsPageState extends State<SavedMealsPage> {
                       .toList(growable: false);
 
             return Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSpacing.pageHorizontal,
-                AppSpacing.sm,
+                scrollTop,
                 AppSpacing.pageHorizontal,
                 AppSpacing.xxl,
               ),

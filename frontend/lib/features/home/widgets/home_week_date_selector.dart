@@ -44,10 +44,7 @@ class HomeWeekDateSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final end = normalizeHomeDate(today ?? DateTime.now());
-    final days = homeSelectableWeekDays(
-      today: end,
-      pastDays: _visiblePastDays,
-    );
+    final days = homeSelectableWeekDays(today: end, pastDays: _visiblePastDays);
 
     return SizedBox(
       height: _chipHeight,
@@ -156,10 +153,7 @@ class _DateChipShell extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: radius,
-        child: Container(
-          alignment: Alignment.center,
-          child: child,
-        ),
+        child: Container(alignment: Alignment.center, child: child),
       ),
     );
   }

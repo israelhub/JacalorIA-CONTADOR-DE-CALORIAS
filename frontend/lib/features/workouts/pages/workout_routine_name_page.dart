@@ -14,8 +14,7 @@ class WorkoutRoutineNamePage extends StatefulWidget {
     this.initialName = '',
     this.hint = 'Ex.: Treino A',
     this.cardTitle = 'Nome do treino',
-    this.subtitle =
-        'Escolha um nome curto, tipo Treino A ou Peito.',
+    this.subtitle = 'Escolha um nome curto, tipo Treino A ou Peito.',
   });
 
   final String title;
@@ -68,7 +67,7 @@ class _WorkoutRoutineNamePageState extends State<WorkoutRoutineNamePage> {
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.pageHorizontal,
-            AppSpacing.lg,
+            AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
             AppSpacing.pageHorizontal,
             homeShellScrollBottomInset(context),
           ),
