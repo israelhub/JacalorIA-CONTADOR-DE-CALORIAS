@@ -32,11 +32,34 @@ android {
         multiDexEnabled = true
     }
 
+    // Stable sideload cert so Google Sign-In (ApiException 10) and Digital
+    // Asset Links keep the same SHA across GitHub Actions and local builds.
+    // The previous release config used the runner debug.keystore, which is
+    // created fresh on every CI job.
+    val sideloadKeystore = file("jacaloria-sideload.keystore")
+    signingConfigs {
+        if (sideloadKeystore.exists()) {
+            create("sideload") {
+                storeFile = sideloadKeystore
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
+        getByName("debug") {
+            if (sideloadKeystore.exists()) {
+                signingConfig = signingConfigs.getByName("sideload")
+            }
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (sideloadKeystore.exists()) {
+                signingConfigs.getByName("sideload")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
