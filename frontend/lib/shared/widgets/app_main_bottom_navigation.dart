@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../core/notifications/in_app_message_store.dart';
 import '../theme/app_theme.dart';
@@ -23,7 +22,6 @@ class AppMainBottomNavigation extends StatefulWidget {
     this.onHomeTap,
     this.onMissionsTap,
     this.onSocialTap,
-    this.onCardFocusLabTap,
   });
 
   final AppMainBottomTab activeTab;
@@ -38,7 +36,6 @@ class AppMainBottomNavigation extends StatefulWidget {
   final VoidCallback? onHomeTap;
   final VoidCallback? onMissionsTap;
   final VoidCallback? onSocialTap;
-  final VoidCallback? onCardFocusLabTap;
 
   @override
   State<AppMainBottomNavigation> createState() =>
@@ -317,7 +314,6 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
                   notificationsBadgeCount: _messageStore.unreadCount,
                   onStoreTap: widget.onStoreTap,
                   onProfileTap: widget.onProfileTap,
-                  onCardFocusLabTap: widget.onCardFocusLabTap,
                 ),
               ),
             ),
@@ -387,7 +383,6 @@ class _MoreDestinationsPanel extends StatelessWidget {
     this.notificationsBadgeCount = 0,
     this.onStoreTap,
     this.onProfileTap,
-    this.onCardFocusLabTap,
   });
 
   final AppMainBottomTab activeTab;
@@ -400,18 +395,10 @@ class _MoreDestinationsPanel extends StatelessWidget {
   final int notificationsBadgeCount;
   final VoidCallback? onStoreTap;
   final VoidCallback? onProfileTap;
-  final VoidCallback? onCardFocusLabTap;
 
   @override
   Widget build(BuildContext context) {
     final buttons = <Widget>[
-      if (onCardFocusLabTap != null)
-        _MoreDestinationButton(
-          label: 'Lab foco (temp)',
-          icon: PhosphorIcons.swatches(PhosphorIconsStyle.regular),
-          selected: false,
-          onTap: onCardFocusLabTap,
-        ),
       _MoreDestinationButton(
         label: 'Missões',
         icon: AppNavIcons.missions(
@@ -523,7 +510,7 @@ class _MoreDestinationButton extends StatelessWidget {
           ),
           child: Row(
             children: [
-              PhosphorIcon(icon, size: 22, color: color),
+              Icon(icon, size: 22, color: color),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(

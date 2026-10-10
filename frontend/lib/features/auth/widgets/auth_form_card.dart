@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_form_card.dart';
 
 class AuthFormCard extends StatelessWidget {
   const AuthFormCard({super.key, required this.child});
@@ -9,14 +9,6 @@ class AuthFormCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: child,
-    );
+    return AppFormCard(child: child);
   }
 }

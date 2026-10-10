@@ -82,7 +82,7 @@ class AppInput extends StatelessWidget {
   }
 
   InputDecoration _decoration({required EdgeInsetsGeometry padding}) {
-    final sideColor = borderColor ?? AppColors.foodReviewFieldBorder;
+    final sideColor = borderColor ?? AppColors.inputBorder;
     return InputDecoration(
       hintText: hintText,
       hintStyle: AppInputStyles.hint,

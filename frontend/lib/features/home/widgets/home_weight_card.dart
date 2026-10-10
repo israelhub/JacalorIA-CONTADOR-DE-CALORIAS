@@ -15,7 +15,7 @@ class HomeWeightCard extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>> onWeightUpdated;
 
   static const double cardHeight = HomeStepsCard.cardHeight;
-  static const _mascotAsset = 'assets/images/jaca_weight.jpg';
+  static const Color _accent = AppColors.action500;
 
   @override
   State<HomeWeightCard> createState() => _HomeWeightCardState();
@@ -75,131 +75,59 @@ class _HomeWeightCardState extends State<HomeWeightCard> {
           key: const ValueKey('home-weight-card'),
           width: double.infinity,
           height: HomeWeightCard.cardHeight,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.homeWeightGradientStart,
-                AppColors.homeWeightGradientEnd,
-              ],
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.homeWeightShadow,
-                offset: Offset(0, 8),
-                blurRadius: 20,
-              ),
-            ],
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.md,
           ),
-          child: Stack(
+          decoration: BoxDecoration(
+            color: AppColors.homeCardSurface,
+            borderRadius: radius,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.45,
-                  child: Align(
-                    alignment: const Alignment(2.6, 1.9),
-                    child: FractionallySizedBox(
-                      widthFactor: 0.78,
-                      heightFactor: 0.95,
-                      child: Image.asset(
-                        HomeWeightCard._mascotAsset,
-                        fit: BoxFit.cover,
+              Text(
+                'Peso',
+                style: AppTextStyles.homeSectionTitle.copyWith(
+                  color: AppColors.brand900Variant,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Expanded(
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        _weightLabel,
+                        key: const ValueKey('home-weight-card-value'),
+                        style: AppTextStyles.statValue.copyWith(
+                          color: AppColors.brand900Variant,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                          height: 1,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        _currentUnit,
+                        style: AppTextStyles.micro.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.homeWeightGradientStart.withValues(
-                          alpha: 0.42,
-                        ),
-                        AppColors.homeWeightGradientEnd.withValues(
-                          alpha: 0.58,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.md,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.monitor_weight_outlined,
-                          size: 18,
-                          color: AppColors.surface.withValues(alpha: 0.95),
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          'Peso',
-                          style: AppTextStyles.homeSectionTitle.copyWith(
-                            color: AppColors.surface,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _weightLabel,
-                              key: const ValueKey('home-weight-card-value'),
-                              style: AppTextStyles.statValue.copyWith(
-                                color: AppColors.surface,
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800,
-                                height: 1,
-                                shadows: const [
-                                  Shadow(
-                                    color: Color(0x66000000),
-                                    blurRadius: 6,
-                                    offset: Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _currentUnit,
-                              style: AppTextStyles.micro.copyWith(
-                                color: AppColors.surface.withValues(
-                                  alpha: 0.9,
-                                ),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: _WeightAddButton(
-                        onPressed: _weightController.open,
-                      ),
-                    ),
-                  ],
+              Align(
+                alignment: Alignment.centerRight,
+                child: _WeightAddButton(
+                  onPressed: _weightController.open,
                 ),
               ),
             ],
@@ -220,7 +148,7 @@ class _WeightAddButton extends StatelessWidget {
     return Tooltip(
       message: 'Adicionar peso',
       child: Material(
-        color: AppColors.surface,
+        color: HomeWeightCard._accent,
         shape: const CircleBorder(),
         child: InkWell(
           key: const ValueKey('home-weight-add'),
@@ -231,7 +159,7 @@ class _WeightAddButton extends StatelessWidget {
             height: 40,
             child: Icon(
               Icons.add_rounded,
-              color: AppColors.homeWeightGradientEnd,
+              color: AppColors.surface,
               size: 24,
             ),
           ),

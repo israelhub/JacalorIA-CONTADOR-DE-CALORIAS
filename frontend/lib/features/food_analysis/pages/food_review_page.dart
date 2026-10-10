@@ -205,9 +205,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
                                   nameController: item.nameController,
                                   measurementController:
                                       item.measurementController,
-                                  onRemove: _items.length > 1
-                                      ? () => _removeItem(index)
-                                      : null,
+                                  onRemove: () => _removeItemById(item.id),
                                   onChanged: () {
                                     setState(() {
                                       _error = null;
@@ -249,7 +247,7 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
         ),
         child: FoodReviewConfirmButton(
           isBusy: _isBusy,
-          onTap: _isBusy ? null : _submit,
+          onTap: _isBusy || _items.isEmpty ? null : _submit,
         ),
       ),
     );
@@ -302,7 +300,12 @@ class _FoodReviewPageState extends State<FoodReviewPage> {
     );
   }
 
-  void _removeItem(int index) {
+  void _removeItemById(int id) {
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index < 0) {
+      return;
+    }
+
     final removedItem = _items.removeAt(index);
 
     setState(() {

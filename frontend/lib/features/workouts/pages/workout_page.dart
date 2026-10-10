@@ -491,13 +491,13 @@ class _WorkoutAddExerciseCard extends StatelessWidget {
               const Icon(
                 Icons.add_rounded,
                 size: 22,
-                color: AppColors.action500,
+                color: AppColors.textPrimary,
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 'Adicionar exercício',
                 style: AppTextStyles.homeAction.copyWith(
-                  color: AppColors.action500,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],

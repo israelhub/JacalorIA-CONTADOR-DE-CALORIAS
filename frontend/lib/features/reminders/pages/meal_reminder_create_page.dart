@@ -7,6 +7,7 @@ import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_time_picker.dart';
+import '../../home/widgets/home_shell_layout.dart';
 
 /// Página dedicada para criar um lembrete (nome + horário).
 ///
@@ -95,9 +96,11 @@ class _MealReminderCreatePageState extends State<MealReminderCreatePage> {
       appBar: const AppBackPageHeader(title: 'Novo lembrete'),
       body: AppBackPageContent(
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.pageHorizontal,
-            vertical: AppSpacing.lg,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.pageHorizontal,
+            AppSpacing.lg,
+            AppSpacing.pageHorizontal,
+            homeShellScrollBottomInset(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -5,6 +5,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
+import '../../home/widgets/home_shell_layout.dart';
 
 /// Edita o nome de um lembrete numa página dedicada.
 ///
@@ -46,9 +47,11 @@ class _MealReminderNamePageState extends State<MealReminderNamePage> {
       appBar: const AppBackPageHeader(title: 'Nome do lembrete'),
       body: AppBackPageContent(
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.pageHorizontal,
-            vertical: AppSpacing.lg,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.pageHorizontal,
+            AppSpacing.lg,
+            AppSpacing.pageHorizontal,
+            homeShellScrollBottomInset(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

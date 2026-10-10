@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_form_card.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../home/widgets/home_shell_layout.dart';
 import '../models/social_group_models.dart';
@@ -26,6 +27,7 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
   final TextEditingController _queryController = TextEditingController();
   final List<SocialUserSearchResult> _results = <SocialUserSearchResult>[];
   bool _searching = false;
+  bool _hasSearched = false;
 
   @override
   void dispose() {
@@ -36,11 +38,17 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
   Future<void> _runSearch() async {
     final query = _queryController.text.trim();
     if (query.isEmpty) {
-      setState(_results.clear);
+      setState(() {
+        _results.clear();
+        _hasSearched = false;
+      });
       return;
     }
 
-    setState(() => _searching = true);
+    setState(() {
+      _searching = true;
+      _hasSearched = true;
+    });
     final found = await widget.searchUsers(query);
     if (!mounted) return;
     setState(() {
@@ -59,59 +67,113 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
       appBar: const AppBackPageHeader(title: 'Buscar usuário'),
       body: AppBackPageContent(
         bottom: false,
-        child: Padding(
-          padding: homeShellNestedFillPadding(context),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.pageHorizontal,
+            AppSpacing.lg,
+            AppSpacing.pageHorizontal,
+            homeShellScrollBottomInset(context),
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextField(
-                controller: _queryController,
-                decoration: InputDecoration(
-                  hintText: 'Ex.: joao123, e-mail ou nome',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  filled: true,
-                  fillColor: AppColors.surfaceAlt,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: BorderSide.none,
-                  ),
+              AppFormCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: _queryController,
+                      textInputAction: TextInputAction.search,
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.textPrimary,
+                        height: 1.2,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Ex.: joao123, e-mail ou nome',
+                        hintStyle: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.textTertiary,
+                          fontWeight: FontWeight.w400,
+                          height: 1.2,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          color: AppColors.textSecondary,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.insetSurface,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.md,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide: const BorderSide(
+                            color: AppColors.inputBorder,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide: const BorderSide(
+                            color: AppColors.inputBorder,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide: const BorderSide(
+                            color: AppColors.inputBorder,
+                          ),
+                        ),
+                      ),
+                      onSubmitted: (_) => _runSearch(),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    AppButton(label: 'Buscar usuário', onPressed: _runSearch),
+                  ],
                 ),
-                onSubmitted: (_) => _runSearch(),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              AppButton(label: 'Buscar usuário', onPressed: _runSearch),
-              const SizedBox(height: AppSpacing.md),
-              Expanded(
-                child: _searching
-                    ? const Column(
-                        children: [
-                          AppSkeletonFriendRow(),
-                          SizedBox(height: AppSpacing.lg),
-                          AppSkeletonFriendRow(),
-                          SizedBox(height: AppSpacing.lg),
-                          AppSkeletonFriendRow(),
-                        ],
-                      )
-                    : _results.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Sem resultados ainda.',
+              if (_searching || _hasSearched) ...[
+                const SizedBox(height: AppSpacing.cardGap),
+                AppFormCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Resultados obtidos',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.brand900Variant,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (_searching)
+                        const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppSkeletonFriendRow(),
+                            SizedBox(height: AppSpacing.sm),
+                            AppSkeletonFriendRow(),
+                            SizedBox(height: AppSpacing.sm),
+                            AppSkeletonFriendRow(),
+                          ],
+                        )
+                      else if (_results.isEmpty)
+                        Text(
+                          'Nenhum usuário encontrado.',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.textSecondary,
                           ),
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: _results.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: AppSpacing.sm),
-                        itemBuilder: (context, index) {
-                          final user = _results[index];
-                          return SocialSearchResultItem(
-                            user: user,
-                            onAdd: !user.canSendRequest
+                        )
+                      else
+                        for (var index = 0; index < _results.length; index++) ...[
+                          if (index > 0) const SizedBox(height: AppSpacing.sm),
+                          SocialSearchResultItem(
+                            user: _results[index],
+                            onAdd: !_results[index].canSendRequest
                                 ? null
                                 : () async {
+                                    final user = _results[index];
                                     await widget.onAddUser(user);
                                     if (!mounted) return;
                                     setState(() {
@@ -126,10 +188,12 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
                                       );
                                     });
                                   },
-                          );
-                        },
-                      ),
-              ),
+                          ),
+                        ],
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
