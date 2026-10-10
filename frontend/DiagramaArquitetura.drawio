@@ -1,168 +1,163 @@
-<mxfile host="app.diagrams.net" agent="Cursor" version="24.7.17">
+<mxfile host="app.diagrams.net" agent="Cursor">
   <diagram id="arquitetura-jacaloria" name="Arquitetura">
-    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="950" background="#000000" math="0" shadow="0">
+    <mxGraphModel dx="1210" dy="1240" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1200" pageHeight="950" background="light-dark(#FFFFFF,#000000)" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-
-        <!-- ========== Cliente ========== -->
-        <mxCell id="cliente" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;" vertex="1" parent="1">
-          <mxGeometry x="407" y="51" width="337" height="117" as="geometry" />
+        <mxCell id="cliente" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;labelBackgroundColor=none;" value="" vertex="1">
+          <mxGeometry height="184" width="550" x="177" y="-42" as="geometry" />
         </mxCell>
-        <mxCell id="cliente-lbl" value="Cliente" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontColor=#FFFFFF;fontSize=14;fontFamily=Helvetica;" vertex="1" parent="cliente">
-          <mxGeometry x="8" y="4" width="70" height="24" as="geometry" />
+        <mxCell id="TgISYOkOPWSc0v7NfPF9-2" parent="cliente" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;fontFamily=Helvetica;strokeWidth=1;labelBackgroundColor=none;" value="" vertex="1">
+          <mxGeometry height="106.11221719457015" width="495" x="30" y="55.782805429864254" as="geometry" />
         </mxCell>
-        <mxCell id="flutter" value="Flutter" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontSize=14;fontFamily=Helvetica;strokeWidth=1;" vertex="1" parent="cliente">
-          <mxGeometry x="68" y="40" width="201" height="57" as="geometry" />
+        <mxCell id="cliente-lbl" parent="cliente" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontFamily=Helvetica;labelBackgroundColor=none;" value="Cliente" vertex="1">
+          <mxGeometry height="24" width="70" x="9.996379821958456" y="9.00059829059829" as="geometry" />
         </mxCell>
-
-        <!-- ========== AWS ========== -->
-        <mxCell id="aws" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;" vertex="1" parent="1">
-          <mxGeometry x="177" y="221" width="819" height="307" as="geometry" />
+        <mxCell id="flutter" parent="cliente" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;fontFamily=Helvetica;strokeWidth=1;labelBackgroundColor=none;" value="Android&amp;nbsp;" vertex="1">
+          <mxGeometry height="44.818431372549014" width="198.06889352818374" x="56.00425887265136" y="99.07484162895928" as="geometry" />
         </mxCell>
-        <mxCell id="aws-lbl" value="AWS" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontColor=#FFFFFF;fontSize=14;fontFamily=Helvetica;" vertex="1" parent="aws">
-          <mxGeometry x="8" y="4" width="50" height="24" as="geometry" />
+        <mxCell id="TgISYOkOPWSc0v7NfPF9-1" parent="cliente" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;fontFamily=Helvetica;strokeWidth=1;labelBackgroundColor=none;" value="WEB&amp;nbsp;" vertex="1">
+          <mxGeometry height="44.818431372549014" width="198.06889352818374" x="299.46096033402927" y="99.07174365989688" as="geometry" />
         </mxCell>
-        <mxCell id="cloudfront" value="CloudFront" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontSize=14;fontFamily=Helvetica;strokeWidth=1;" vertex="1" parent="aws">
-          <mxGeometry x="264" y="40" width="269" height="70" as="geometry" />
+        <mxCell id="TgISYOkOPWSc0v7NfPF9-22" parent="cliente" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontFamily=Helvetica;labelBackgroundColor=none;" value="Flutter" vertex="1">
+          <mxGeometry height="29" width="58" x="41" y="60.00375565610861" as="geometry" />
         </mxCell>
-        <mxCell id="s3" value="S3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontSize=14;fontFamily=Helvetica;strokeWidth=1;" vertex="1" parent="aws">
-          <mxGeometry x="594" y="40" width="164" height="70" as="geometry" />
+        <mxCell id="aws" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;labelBackgroundColor=none;" value="" vertex="1">
+          <mxGeometry height="307" width="819" x="177" y="221" as="geometry" />
         </mxCell>
-        <mxCell id="beanstalk" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;" vertex="1" parent="aws">
-          <mxGeometry x="264" y="180" width="269" height="92" as="geometry" />
+        <mxCell id="aws-lbl" parent="aws" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontFamily=Helvetica;labelBackgroundColor=none;" value="AWS" vertex="1">
+          <mxGeometry height="24" width="50" x="8" y="4" as="geometry" />
         </mxCell>
-        <mxCell id="beanstalk-lbl" value="Elastic Beanstalk" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontColor=#FFFFFF;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="beanstalk">
-          <mxGeometry x="55" y="4" width="160" height="24" as="geometry" />
+        <mxCell id="cloudfront" parent="aws" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;fontFamily=Helvetica;strokeWidth=1;labelBackgroundColor=none;" value="CloudFront" vertex="1">
+          <mxGeometry height="70" width="269" x="264" y="40" as="geometry" />
         </mxCell>
-        <mxCell id="nestjs" value="NestJS" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontSize=14;fontFamily=Helvetica;strokeWidth=1;" vertex="1" parent="beanstalk">
-          <mxGeometry x="10" y="35" width="249" height="41" as="geometry" />
+        <mxCell id="s3" parent="aws" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;fontFamily=Helvetica;strokeWidth=1;labelBackgroundColor=none;" value="S3" vertex="1">
+          <mxGeometry height="70" width="164" x="617" y="40" as="geometry" />
         </mxCell>
-
-        <!-- ========== Serviços Externo ========== -->
-        <mxCell id="externos" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;" vertex="1" parent="1">
-          <mxGeometry x="177" y="609" width="261" height="235" as="geometry" />
+        <mxCell id="beanstalk" parent="aws" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;labelBackgroundColor=none;" value="" vertex="1">
+          <mxGeometry height="92" width="269" x="264" y="180" as="geometry" />
         </mxCell>
-        <mxCell id="externos-lbl" value="Serviços Externo" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontColor=#FFFFFF;fontSize=14;fontFamily=Helvetica;" vertex="1" parent="externos">
-          <mxGeometry x="8" y="4" width="140" height="24" as="geometry" />
+        <mxCell id="beanstalk-lbl" parent="beanstalk" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontFamily=Helvetica;labelBackgroundColor=none;" value="Elastic Beanstalk" vertex="1">
+          <mxGeometry height="24" width="160" x="-22" y="5" as="geometry" />
         </mxCell>
-        <mxCell id="oauth" value="OAuth Google" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontSize=13;fontFamily=Helvetica;strokeWidth=1;" vertex="1" parent="externos">
-          <mxGeometry x="25" y="48" width="210" height="42" as="geometry" />
+        <mxCell id="nestjs" parent="beanstalk" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;fontFamily=Helvetica;strokeWidth=1;labelBackgroundColor=none;" value="NestJS" vertex="1">
+          <mxGeometry height="41" width="204.74" x="36.26" y="35" as="geometry" />
         </mxCell>
-        <mxCell id="smtp" value="SMTP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontSize=13;fontFamily=Helvetica;strokeWidth=1;" vertex="1" parent="externos">
-          <mxGeometry x="25" y="108" width="210" height="42" as="geometry" />
-        </mxCell>
-        <mxCell id="gemini" value="Google Gemini" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontSize=13;fontFamily=Helvetica;strokeWidth=1;" vertex="1" parent="externos">
-          <mxGeometry x="25" y="168" width="210" height="41" as="geometry" />
-        </mxCell>
-
-        <!-- ========== Dados ========== -->
-        <mxCell id="dados" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;" vertex="1" parent="1">
-          <mxGeometry x="501" y="609" width="495" height="235" as="geometry" />
-        </mxCell>
-        <mxCell id="dados-lbl" value="Dados" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontColor=#FFFFFF;fontSize=14;fontFamily=Helvetica;" vertex="1" parent="dados">
-          <mxGeometry x="8" y="4" width="60" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="supabase" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;" vertex="1" parent="dados">
-          <mxGeometry x="30" y="59" width="438" height="140" as="geometry" />
-        </mxCell>
-        <mxCell id="supabase-lbl" value="Supabase" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontColor=#FFFFFF;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="supabase">
-          <mxGeometry x="170" y="6" width="100" height="24" as="geometry" />
-        </mxCell>
-        <mxCell id="postgres" value="Postgres" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontSize=13;fontFamily=Helvetica;strokeWidth=1;" vertex="1" parent="supabase">
-          <mxGeometry x="13" y="54" width="185" height="62" as="geometry" />
-        </mxCell>
-        <mxCell id="storage" value="Storage (bucket)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1F2020;strokeColor=#C8C8C8;fontColor=#FFFFFF;fontSize=13;fontFamily=Helvetica;strokeWidth=1;" vertex="1" parent="supabase">
-          <mxGeometry x="233" y="54" width="185" height="62" as="geometry" />
-        </mxCell>
-
-        <!-- Shared edge style: dashed white, classic arrow, black label badge -->
-        <!-- android -->
-        <mxCell id="e-android" value="android" edge="1" parent="1" source="flutter" target="beanstalk" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=classic;endFill=1;fontColor=#FFFFFF;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=#000000;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
-          <mxGeometry x="-0.35" y="20" relative="1" as="geometry">
-            <mxPoint as="offset" />
-            <Array as="points">
-              <mxPoint x="380" y="120" />
-              <mxPoint x="380" y="447" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-
-        <!-- web -->
-        <mxCell id="e-web" value="web" edge="1" parent="1" source="flutter" target="cloudfront" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=classic;endFill=1;fontColor=#FFFFFF;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=#000000;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
-          <mxGeometry x="-0.2" y="0" relative="1" as="geometry">
+        <mxCell id="e-cf-eb" edge="1" parent="aws" source="cloudfront" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=classic;endFill=1;fontColor=default;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.482;entryY=-0.015;entryDx=0;entryDy=0;entryPerimeter=0;" target="nestjs" value="&lt;span style=&quot;background-color: light-dark(#ffffff, var(--ge-dark-color, #121212));&quot;&gt;Encaminha&lt;/span&gt;">
+          <mxGeometry relative="1" x="-0.2136" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-
-        <!-- CloudFront → S3 -->
-        <mxCell id="e-cf-s3" value="Usa" edge="1" parent="1" source="cloudfront" target="s3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=classic;endFill=1;fontColor=#FFFFFF;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=#000000;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="externos" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;labelBackgroundColor=none;" value="" vertex="1">
+          <mxGeometry height="235" width="261" x="177" y="609" as="geometry" />
         </mxCell>
-
-        <!-- CloudFront → Elastic Beanstalk -->
-        <mxCell id="e-cf-eb" value="encaminha" edge="1" parent="1" source="cloudfront" target="beanstalk" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=classic;endFill=1;fontColor=#FFFFFF;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=#000000;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="externos-lbl" parent="externos" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontFamily=Helvetica;labelBackgroundColor=none;" value="Serviços Externo" vertex="1">
+          <mxGeometry height="24" width="140" x="8" y="4" as="geometry" />
         </mxCell>
-
-        <!-- Invisible junction on the bus -->
-        <mxCell id="junction" value="" style="ellipse;fillColor=none;strokeColor=none;selectable=0;" vertex="1" parent="1">
-          <mxGeometry x="570" y="565" width="10" height="10" as="geometry" />
+        <mxCell id="oauth" parent="externos" style="rounded=0;whiteSpace=wrap;html=1;fontSize=13;fontFamily=Helvetica;strokeWidth=1;labelBackgroundColor=none;" value="OAuth Google" vertex="1">
+          <mxGeometry height="42" width="210" x="25" y="48" as="geometry" />
         </mxCell>
-
-        <!-- NestJS → junction (trunk) -->
-        <mxCell id="e-ns-junc" edge="1" parent="1" source="nestjs" target="junction" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=none;fontColor=#FFFFFF;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=#000000;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="smtp" parent="externos" style="rounded=0;whiteSpace=wrap;html=1;fontSize=13;fontFamily=Helvetica;strokeWidth=1;labelBackgroundColor=none;" value="SMTP" vertex="1">
+          <mxGeometry height="42" width="210" x="25" y="108" as="geometry" />
         </mxCell>
-
-        <!-- junction → OAuth (Usa) -->
-        <mxCell id="e-junc-oauth" value="Usa" edge="1" parent="1" source="junction" target="oauth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=classic;endFill=1;fontColor=#FFFFFF;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=#000000;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;">
-          <mxGeometry x="-0.2" y="-10" relative="1" as="geometry">
+        <mxCell id="gemini" parent="externos" style="rounded=0;whiteSpace=wrap;html=1;fontSize=13;fontFamily=Helvetica;strokeWidth=1;labelBackgroundColor=none;" value="Google Gemini" vertex="1">
+          <mxGeometry height="41" width="210" x="25" y="168" as="geometry" />
+        </mxCell>
+        <mxCell id="dados" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;labelBackgroundColor=none;" value="" vertex="1">
+          <mxGeometry height="235" width="436" x="560" y="609" as="geometry" />
+        </mxCell>
+        <mxCell id="dados-lbl" parent="dados" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontFamily=Helvetica;labelBackgroundColor=none;" value="Dados" vertex="1">
+          <mxGeometry height="24" width="60" x="7.0464646464646465" y="4" as="geometry" />
+        </mxCell>
+        <mxCell id="supabase" parent="dados" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Helvetica;strokeWidth=1;container=1;collapsible=0;labelBackgroundColor=none;" value="" vertex="1">
+          <mxGeometry height="130" width="385.79" x="26.42" y="69" as="geometry" />
+        </mxCell>
+        <mxCell id="supabase-lbl" parent="supabase" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontFamily=Helvetica;labelBackgroundColor=none;" value="Supabase" vertex="1">
+          <mxGeometry height="24" width="100" x="142.89591459302082" y="9.285714285714286" as="geometry" />
+        </mxCell>
+        <mxCell id="postgres" parent="supabase" style="rounded=0;whiteSpace=wrap;html=1;fontSize=13;fontFamily=Helvetica;strokeWidth=1;labelBackgroundColor=none;" value="PostgresSQL" vertex="1">
+          <mxGeometry height="57.57142857142858" width="162.9478310502283" x="11.450388127853882" y="50.142857142857146" as="geometry" />
+        </mxCell>
+        <mxCell id="storage" parent="supabase" style="rounded=0;whiteSpace=wrap;html=1;fontSize=13;fontFamily=Helvetica;strokeWidth=1;labelBackgroundColor=none;" value="Storage (bucket)" vertex="1">
+          <mxGeometry height="57.57142857142858" width="162.9478310502283" x="205.22618721461188" y="50.142857142857146" as="geometry" />
+        </mxCell>
+        <mxCell id="e-web" edge="1" parent="1" source="flutter" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=classic;endFill=1;fontColor=default;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="nestjs" value="">
+          <mxGeometry relative="1" x="-0.6776" y="3" as="geometry">
             <mxPoint as="offset" />
-            <Array as="points">
-              <mxPoint x="470" y="570" />
-              <mxPoint x="470" y="678" />
-            </Array>
           </mxGeometry>
         </mxCell>
-
-        <!-- junction → SMTP -->
-        <mxCell id="e-junc-smtp" edge="1" parent="1" source="junction" target="smtp" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=classic;endFill=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;">
+        <mxCell id="TgISYOkOPWSc0v7NfPF9-17" connectable="0" parent="e-web" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Requisita" vertex="1">
+          <mxGeometry relative="1" x="-0.2942" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-cf-s3" edge="1" parent="1" source="cloudfront" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=classic;endFill=1;fontColor=default;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="s3" value="&lt;span style=&quot;background-color: light-dark(#ffffff, var(--ge-dark-color, #121212));&quot;&gt;Usa&lt;/span&gt;">
           <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="470" y="570" />
-              <mxPoint x="470" y="738" />
-            </Array>
+            <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-
-        <!-- junction → Gemini -->
-        <mxCell id="e-junc-gemini" edge="1" parent="1" source="junction" target="gemini" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=classic;endFill=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
+        <mxCell id="junction" parent="1" style="ellipse;fillColor=none;strokeColor=none;selectable=0;labelBackgroundColor=none;" value="" vertex="1">
+          <mxGeometry height="10" width="10" x="570" y="565" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ns-junc" edge="1" parent="1" source="beanstalk" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=open;fontColor=default;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=none;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endFill=0;startArrow=none;startFill=0;exitX=0.731;exitY=1.002;exitDx=0;exitDy=0;exitPerimeter=0;" target="postgres">
+          <mxGeometry relative="1" x="-0.7117" as="geometry">
             <Array as="points">
-              <mxPoint x="470" y="570" />
-              <mxPoint x="470" y="798" />
+              <mxPoint x="637.6" y="569.3" />
+              <mxPoint x="679.3" y="569.3" />
             </Array>
+            <mxPoint x="584.08" y="544.06" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
-
-        <!-- junction → Postgres (SQL) -->
-        <mxCell id="e-junc-pg" value="SQL" edge="1" parent="1" source="junction" target="postgres" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=classic;endFill=1;fontColor=#FFFFFF;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=#000000;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
-          <mxGeometry x="0.2" y="10" relative="1" as="geometry">
+        <mxCell id="e-junc-gemini" edge="1" parent="1" source="beanstalk" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=classic;endFill=1;exitX=0.227;exitY=0.996;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=none;fontColor=default;exitPerimeter=0;" target="gemini">
+          <mxGeometry relative="1" x="0.0851" as="geometry" />
+        </mxCell>
+        <mxCell id="e-junc-storage" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=open;endFill=0;fontColor=default;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=none;entryX=0.5;entryY=0;entryDx=0;entryDy=0;startArrow=none;startFill=0;" target="storage" value="">
+          <mxGeometry relative="1" x="0.6395" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="636" y="570" />
+              <mxPoint x="637.8" y="569.1" />
+              <mxPoint x="873.1" y="569.1" />
             </Array>
+            <mxPoint x="637.8" y="493.74" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
-
-        <!-- junction → Storage (armazena) -->
-        <mxCell id="e-junc-storage" value="armazena" edge="1" parent="1" source="junction" target="storage" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FFFFFF;strokeWidth=1.5;endArrow=classic;endFill=1;fontColor=#FFFFFF;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=#000000;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
-          <mxGeometry x="0.15" y="-10" relative="1" as="geometry">
+        <mxCell id="TgISYOkOPWSc0v7NfPF9-13" connectable="0" parent="e-junc-storage" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;" value="Armazena" vertex="1">
+          <mxGeometry relative="1" x="0.6395" as="geometry">
             <mxPoint as="offset" />
-            <Array as="points">
-              <mxPoint x="856" y="570" />
-            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TgISYOkOPWSc0v7NfPF9-6" edge="1" parent="1" source="TgISYOkOPWSc0v7NfPF9-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=classic;endFill=1;fontColor=default;fontSize=12;fontFamily=Helvetica;labelBackgroundColor=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="cloudfront" value="">
+          <mxGeometry relative="1" x="-0.0458" y="2" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="633" y="112" as="sourcePoint" />
+            <mxPoint x="742" y="247" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TgISYOkOPWSc0v7NfPF9-19" connectable="0" parent="TgISYOkOPWSc0v7NfPF9-6" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBorderColor=none;defaultLabelBackgroundColor=page;" value="Acessa" vertex="1">
+          <mxGeometry relative="1" x="-0.0061" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TgISYOkOPWSc0v7NfPF9-8" edge="1" parent="1" source="beanstalk" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=classic;endFill=1;exitX=0.227;exitY=0.989;exitDx=0;exitDy=0;labelBackgroundColor=none;fontColor=default;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="smtp">
+          <mxGeometry relative="1" x="0.3745" as="geometry">
+            <mxPoint x="572" y="546" as="sourcePoint" />
+            <mxPoint x="460" y="728" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TgISYOkOPWSc0v7NfPF9-9" edge="1" parent="1" source="beanstalk" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1.5;endArrow=classic;endFill=1;exitX=0.227;exitY=0.996;exitDx=0;exitDy=0;labelBackgroundColor=none;fontColor=default;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitPerimeter=0;" target="oauth">
+          <mxGeometry relative="1" x="0.5663" as="geometry">
+            <mxPoint x="554" y="731" as="sourcePoint" />
+            <mxPoint x="464" y="977" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TgISYOkOPWSc0v7NfPF9-10" connectable="0" parent="TgISYOkOPWSc0v7NfPF9-9" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];defaultLabelBackgroundColor=page;" value="Usa" vertex="1">
+          <mxGeometry relative="1" x="-0.4673" y="2" as="geometry">
+            <mxPoint x="-3" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TgISYOkOPWSc0v7NfPF9-11" connectable="0" parent="TgISYOkOPWSc0v7NfPF9-9" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Consulta e persiste" vertex="1">
+          <mxGeometry relative="1" x="-0.4673" y="2" as="geometry">
+            <mxPoint x="178" y="75" as="offset" />
           </mxGeometry>
         </mxCell>
       </root>
