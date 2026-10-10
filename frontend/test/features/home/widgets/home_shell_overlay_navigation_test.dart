@@ -7,6 +7,7 @@ import 'package:jacaloria/features/profile/pages/profile_page.dart';
 import 'package:jacaloria/features/social/pages/social_create_group_page.dart';
 import 'package:jacaloria/features/support/pages/support_page.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
+import 'package:jacaloria/shared/widgets/app_bottom_navigation.dart';
 import 'package:jacaloria/shared/widgets/app_main_bottom_navigation.dart';
 import 'package:jacaloria/shared/widgets/app_page_route.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,6 +70,12 @@ Widget _shell({required Widget homePage}) {
   );
 }
 
+Finder _navItemFinder(String label) {
+  return find.byWidgetPredicate(
+    (widget) => widget is AppBottomNavigationItem && widget.label == label,
+  );
+}
+
 Future<void> _openOverlay(WidgetTester tester, Widget page) async {
   tester.view.physicalSize = const Size(412, 917);
   tester.view.devicePixelRatio = 1;
@@ -77,7 +84,8 @@ Future<void> _openOverlay(WidgetTester tester, Widget page) async {
 
   await tester.pumpWidget(_shell(homePage: _OpenOverlayPage(page: page)));
   await tester.tap(find.text('abrir overlay'));
-  await tester.pumpAndSettle();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
 }
 
 void main() {
@@ -91,9 +99,9 @@ void main() {
   testWidgets('tap em Progresso fecha o overlay e abre a aba', (tester) async {
     await _openOverlay(tester, const _OverlayDummyPage());
 
-    await tester.tap(find.text('Mais'));
+    await tester.tap(_navItemFinder('Mais'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Progresso'));
+    await tester.tap(_navItemFinder('Progresso'));
     await tester.pumpAndSettle();
 
     expect(find.text('Overlay dummy'), findsNothing);
@@ -203,7 +211,8 @@ void main() {
       ),
     );
     await tester.tap(find.text('abrir overlay'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     await tester.scrollUntilVisible(
       find.text('Sair'),
@@ -216,7 +225,8 @@ void main() {
           .first,
     );
     await tester.tap(find.text('Sair'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
 
     expect(find.byType(EnterPage), findsOneWidget);
     expect(find.byType(AppMainBottomNavigation), findsNothing);
@@ -296,5 +306,46 @@ void main() {
     );
 
     expect(content.bottom, lessThanOrEqualTo(nav.top + 0.5));
+  });
+
+  testWidgets('perfil pelo Mais no overlay pinta Mais e nao a tab', (
+    tester,
+  ) async {
+    await _openOverlay(tester, const _OverlayDummyPage());
+
+    AppBottomNavigationItem navItem(String label) {
+      return tester.widget<AppBottomNavigationItem>(
+        find.byWidgetPredicate(
+          (widget) => widget is AppBottomNavigationItem && widget.label == label,
+        ),
+      );
+    }
+
+    expect(navItem('Inicio').color, AppColors.action500);
+
+    await tester.tap(_navItemFinder('Mais'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('app-more-destinations-panel')),
+        matching: find.text('Perfil'),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
+
+    expect(find.byType(ProfilePage), findsOneWidget);
+    expect(navItem('Inicio').color, AppColors.divider);
+    expect(navItem('Social').color, AppColors.divider);
+    expect(navItem('Progresso').color, AppColors.divider);
+    expect(navItem('Mais').color, AppColors.action500);
+    expect(
+      tester
+          .widget<AppMainBottomNavigation>(
+            find.byType(AppMainBottomNavigation),
+          )
+          .overlayDestination,
+      AppMainOverlayDestination.profile,
+    );
   });
 }

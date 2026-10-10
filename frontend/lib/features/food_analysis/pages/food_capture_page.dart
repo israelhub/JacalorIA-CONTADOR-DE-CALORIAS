@@ -44,12 +44,15 @@ class FoodCapturePage extends StatefulWidget {
     this.recordedAt,
     FoodAnalysisService? analysisService,
     FoodImagePicker? imagePicker,
+    Future<OptimizedImage> Function(Uint8List original)? optimizeImage,
   }) : _analysisService = analysisService ?? const FoodAnalysisService(),
-       _imagePicker = imagePicker;
+       _imagePicker = imagePicker,
+       _optimizeImage = optimizeImage ?? optimizeForAnalysis;
 
   final DateTime? recordedAt;
   final FoodAnalysisService _analysisService;
   final FoodImagePicker? _imagePicker;
+  final Future<OptimizedImage> Function(Uint8List original) _optimizeImage;
 
   @override
   State<FoodCapturePage> createState() => _FoodCapturePageState();
@@ -95,57 +98,47 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
+      backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       appBar: const FoodAnalysisPageHeader(title: 'Nova refeição'),
       body: AppBackPageContent(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.pageHorizontal,
-                  AppBackPageHeader.scrollTopInset(
-                    context,
-                    extra: AppSpacing.xs,
+            Positioned.fill(child: _buildCameraArea(context)),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.pageHorizontal,
+                    AppSpacing.md,
+                    AppSpacing.pageHorizontal,
+                    AppSpacing.md,
                   ),
-                  AppSpacing.pageHorizontal,
-                  AppSpacing.sm,
-                ),
-                child: _buildCameraArea(context),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.pageHorizontal,
-                AppSpacing.sm,
-                AppSpacing.pageHorizontal,
-                AppSpacing.xxl,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_error != null) ...[
-                    Text(
-                      _error!,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textError,
+                  child: Column(
+                    key: const Key('food-capture-actions'),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_error != null) ...[
+                        _CaptureErrorBanner(message: _error!),
+                        const SizedBox(height: AppSpacing.sm),
+                      ],
+                      _CaptureActions(
+                        onTextEntry: _openTextEntry,
+                        onSavedMeals: _openSavedMeals,
+                        onCapture: _takePhoto,
+                        onGallery: () => _pickAndAnalyze(ImageSource.gallery),
+                        isCameraReady:
+                            _cameraController?.value.isInitialized ?? false,
+                        isBusy: _isBusy,
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                  ],
-                  _CaptureActions(
-                    onTextEntry: _openTextEntry,
-                    onSavedMeals: _openSavedMeals,
-                    onCapture: _takePhoto,
-                    onGallery: () => _pickAndAnalyze(ImageSource.gallery),
-                    isCameraReady:
-                        _cameraController?.value.isInitialized ?? false,
-                    isBusy: _isBusy,
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ],
@@ -219,7 +212,10 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
         children: [
           _CameraLivePreview(controller: controller),
           Positioned(
-            top: AppSpacing.md,
+            top: AppBackPageHeader.scrollTopInset(
+              context,
+              extra: AppSpacing.xs,
+            ),
             right: AppSpacing.md,
             child: _FlashToggleButton(
               isOn: _isFlashOn,
@@ -490,7 +486,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       final picture = await _cameraController!.takePicture();
       await _turnFlashOff();
       final rawBytes = await picture.readAsBytes();
-      final optimized = await optimizeForAnalysis(rawBytes);
+      final optimized = await widget._optimizeImage(rawBytes);
       final bytes = optimized.bytes;
 
       final analysis = await _pushAnalysisLoadingPage(
@@ -570,7 +566,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       }
 
       final rawBytes = await image.readAsBytes();
-      final optimized = await optimizeForAnalysis(rawBytes);
+      final optimized = await widget._optimizeImage(rawBytes);
       final bytes = optimized.bytes;
 
       final analysis = await _pushAnalysisLoadingPage(
@@ -706,100 +702,89 @@ class _CaptureActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.lg,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 280),
-            child: SizedBox(
-              width: double.infinity,
-              height: 40,
-              child: Material(
-                color: AppColors.surface,
-                elevation: 1,
-                shadowColor: Colors.black12,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                child: InkWell(
-                  onTap: isBusy ? null : onSavedMeals,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320),
+          child: Material(
+            color: AppColors.surface,
+            elevation: 2,
+            shadowColor: Colors.black26,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: InkWell(
+              onTap: isBusy ? null : onSavedMeals,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: Container(
+                height: 40,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.pill),
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.bookmark_border,
+                      size: 15,
+                      color: isBusy
+                          ? AppColors.textTertiary
+                          : const Color(0xFF4B5563),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.bookmark_border,
-                          size: 15,
+                    const SizedBox(width: AppSpacing.sm),
+                    Flexible(
+                      child: Text(
+                        'Usar refeição salva',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodySmall.copyWith(
                           color: isBusy
                               ? AppColors.textTertiary
-                              : const Color(0xFF4B5563),
+                              : const Color(0xFF374151),
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text(
-                          'Usar refeição salva',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: isBusy
-                                ? AppColors.textTertiary
-                                : const Color(0xFF374151),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 320),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _CaptureActionButton(
-                  icon: Icons.edit_outlined,
-                  label: 'Digitar',
-                  size: _sideButtonSize,
-                  onTap: isBusy ? null : onTextEntry,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _CaptureActionButton(
+                icon: Icons.edit_outlined,
+                label: 'Digitar',
+                size: _sideButtonSize,
+                onTap: isBusy ? null : onTextEntry,
+              ),
+              SizedBox(
+                width: _shutterSize,
+                height: _shutterSize,
+                child: _CameraShutterButton(
+                  onTap: isCameraReady && !isBusy ? onCapture : null,
+                  isBusy: isBusy,
                 ),
-                SizedBox(
-                  width: _shutterSize,
-                  height: _shutterSize,
-                  child: _CameraShutterButton(
-                    onTap: isCameraReady && !isBusy ? onCapture : null,
-                    isBusy: isBusy,
-                  ),
-                ),
-                _CaptureActionButton(
-                  icon: Icons.image_outlined,
-                  label: 'Galeria',
-                  size: _sideButtonSize,
-                  onTap: isBusy ? null : onGallery,
-                ),
-              ],
-            ),
+              ),
+              _CaptureActionButton(
+                icon: Icons.image_outlined,
+                label: 'Galeria',
+                size: _sideButtonSize,
+                onTap: isBusy ? null : onGallery,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -824,8 +809,8 @@ class _CaptureActionButton extends StatelessWidget {
 
     return Material(
       color: AppColors.surface,
-      elevation: 1,
-      shadowColor: Colors.black12,
+      elevation: 2,
+      shadowColor: Colors.black26,
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
@@ -998,13 +983,39 @@ class _CameraLivePreview extends StatelessWidget {
   }
 }
 
+class _CaptureErrorBanner extends StatelessWidget {
+  const _CaptureErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.58),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.surface),
+        ),
+      ),
+    );
+  }
+}
+
 class _CameraShell extends StatelessWidget {
   const _CameraShell({required this.child, this.clipContent = true});
 
   final Widget child;
+  // Web: never wrap HtmlElementView in ClipRRect (preview fica preta).
   final bool clipContent;
-
-  static const double _radius = AppRadius.md;
 
   @override
   Widget build(BuildContext context) {
@@ -1019,18 +1030,10 @@ class _CameraShell extends StatelessWidget {
       ),
     );
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(_radius),
-      ),
-      child: clipContent
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(_radius),
-              child: content,
-            )
-          : content,
+    // Full-bleed preview. ClipRect only on mobile; ClipRRect is never used.
+    return SizedBox.expand(
+      key: const Key('food-capture-camera'),
+      child: clipContent ? ClipRect(child: content) : content,
     );
   }
 }
