@@ -59,9 +59,6 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
     blockers: <StoreCatalogItem>[],
   );
   StoreCategory _selectedCategory = StoreCategory.blockers;
-  final Set<StoreCategory> _visitedCategories = <StoreCategory>{
-    StoreCategory.blockers,
-  };
   final Map<StoreCategory, int> _categoryPages = <StoreCategory, int>{};
   bool _isLoadingCatalog = true;
   bool _isSaving = false;
@@ -769,130 +766,93 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
             padding: homeShellNestedFillPadding(context),
             child: _isLoadingCatalog
                 ? const _StorePageSkeleton()
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      AvatarProfilePreview(
-                        avatarUrl: avatarUrl,
-                        frameId: _previewFrameId,
-                        backgroundId: _previewBackgroundId,
-                        name: name ?? 'Perfil',
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Expanded(
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            AppSpacing.md,
-                            AppSpacing.lg,
-                            AppSpacing.lg,
+                : RefreshIndicator(
+                    color: AppColors.action500,
+                    onRefresh: _loadCatalog,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          AvatarProfilePreview(
+                            avatarUrl: avatarUrl,
+                            frameId: _previewFrameId,
+                            backgroundId: _previewBackgroundId,
+                            name: name ?? 'Perfil',
                           ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _StoreCategorySwitcher(
-                                selected: _selectedCategory,
-                                onSelected: (category) {
-                                  setState(() {
-                                    _selectedCategory = category;
-                                    _visitedCategories.add(category);
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              Expanded(
-                                child: RefreshIndicator(
-                                  color: AppColors.action500,
-                                  onRefresh: _loadCatalog,
-                                  child: CustomScrollView(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(),
-                                    slivers: [
-                                      SliverFillRemaining(
-                                        hasScrollBody: false,
-                                        child: IndexedStack(
-                                          index: _selectedCategory.index,
-                                          sizing: StackFit.expand,
-                                          children: [
-                                            for (final category
-                                                in StoreCategory.values)
-                                              _visitedCategories
-                                                      .contains(category)
-                                                  ? Builder(
-                                                      builder: (context) {
-                                                        final items =
-                                                            _itemsFor(
-                                                              category,
-                                                            );
-                                                        final totalPages =
-                                                            _totalPagesFor(
-                                                              items.length,
-                                                            );
-                                                        final page = _pageFor(
-                                                          category,
-                                                          totalPages:
-                                                              totalPages,
-                                                        );
-                                                        final pageStart =
-                                                            (page - 1) *
-                                                            _StoreCategoryGrid
-                                                                .pageSize;
-                                                        final pageItems = items
-                                                            .skip(pageStart)
-                                                            .take(
-                                                              _StoreCategoryGrid
-                                                                  .pageSize,
-                                                            )
-                                                            .toList(
-                                                              growable: false,
-                                                            );
-                                                        return _StoreCategoryGrid(
-                                                          key: ValueKey(
-                                                            'store-grid-$category',
-                                                          ),
-                                                          category: category,
-                                                          items: pageItems,
-                                                          page: page,
-                                                          totalPages:
-                                                              totalPages,
-                                                          avatarUrl: avatarUrl,
-                                                          name: name,
-                                                          blockerInventory:
-                                                              _blockerInventory,
-                                                          isOwned: _isOwned,
-                                                          isEquipped:
-                                                              _isEquipped,
-                                                          isSaving: _isSaving,
-                                                          onTileTap: _onTileTap,
-                                                          onBuy:
-                                                              _confirmPurchase,
-                                                          onPageChanged:
-                                                              (next) =>
-                                                                  _onCategoryPageChanged(
-                                                                    category,
-                                                                    next,
-                                                                  ),
-                                                        );
-                                                      },
-                                                    )
-                                                  : const SizedBox.expand(),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                          const SizedBox(height: AppSpacing.lg),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.lg,
+                              AppSpacing.md,
+                              AppSpacing.lg,
+                              AppSpacing.lg,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _StoreCategorySwitcher(
+                                  selected: _selectedCategory,
+                                  onSelected: (category) {
+                                    setState(() {
+                                      _selectedCategory = category;
+                                    });
+                                  },
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: AppSpacing.md),
+                                Builder(
+                                  builder: (context) {
+                                    final category = _selectedCategory;
+                                    final items = _itemsFor(category);
+                                    final totalPages = _totalPagesFor(
+                                      items.length,
+                                    );
+                                    final page = _pageFor(
+                                      category,
+                                      totalPages: totalPages,
+                                    );
+                                    final pageStart =
+                                        (page - 1) * _StoreCategoryGrid.pageSize;
+                                    final pageItems = items
+                                        .skip(pageStart)
+                                        .take(_StoreCategoryGrid.pageSize)
+                                        .toList(growable: false);
+                                    return _StoreCategoryGrid(
+                                      key: ValueKey(
+                                        'store-grid-$category-$page',
+                                      ),
+                                      category: category,
+                                      items: pageItems,
+                                      page: page,
+                                      totalPages: totalPages,
+                                      avatarUrl: avatarUrl,
+                                      name: name,
+                                      blockerInventory: _blockerInventory,
+                                      isOwned: _isOwned,
+                                      isEquipped: _isEquipped,
+                                      isSaving: _isSaving,
+                                      onTileTap: _onTileTap,
+                                      onBuy: _confirmPurchase,
+                                      onPageChanged: (next) =>
+                                          _onCategoryPageChanged(
+                                            category,
+                                            next,
+                                          ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
           ),
         ),
@@ -917,63 +877,60 @@ class _StorePageSkeleton extends StatelessWidget {
           borderRadius: AppRadius.lg,
         ),
         const SizedBox(height: AppSpacing.lg),
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.md,
-              AppSpacing.lg,
-              AppSpacing.lg,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  height: 46,
-                  child: Row(
-                    children: [
-                      for (var i = 0; i < StoreCategory.values.length; i++)
-                        const Expanded(
-                          child: Center(
-                            child: AppSkeletonBox(
-                              width: _tabSkeletonSize,
-                              height: _tabSkeletonSize,
-                              borderRadius: AppRadius.md,
-                            ),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                height: 46,
+                child: Row(
+                  children: [
+                    for (var i = 0; i < StoreCategory.values.length; i++)
+                      const Expanded(
+                        child: Center(
+                          child: AppSkeletonBox(
+                            width: _tabSkeletonSize,
+                            height: _tabSkeletonSize,
+                            borderRadius: AppRadius.md,
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Expanded(
-                  child: GridView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: 9,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: AppSpacing.md,
-                          mainAxisSpacing: AppSpacing.md,
-                          childAspectRatio: _gridAspectRatio,
-                        ),
-                    itemBuilder: (_, _) => LayoutBuilder(
-                      builder: (context, constraints) {
-                        return AppSkeletonBox(
-                          height: constraints.maxHeight,
-                          borderRadius: AppRadius.md,
-                        );
-                      },
-                    ),
-                  ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 9,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: AppSpacing.md,
+                  mainAxisSpacing: AppSpacing.md,
+                  childAspectRatio: _gridAspectRatio,
                 ),
-              ],
-            ),
+                itemBuilder: (_, _) => LayoutBuilder(
+                  builder: (context, constraints) {
+                    return AppSkeletonBox(
+                      height: constraints.maxHeight,
+                      borderRadius: AppRadius.md,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -1002,6 +959,7 @@ class _StoreCategoryGrid extends StatelessWidget {
   static const columns = 3;
   static const maxRows = 3;
   static const pageSize = columns * maxRows;
+  static const paginationHeight = 40.0;
 
   final StoreCategory category;
   final List<StoreCatalogItem> items;
@@ -1017,78 +975,90 @@ class _StoreCategoryGrid extends StatelessWidget {
   final ValueChanged<StoreCatalogItem> onBuy;
   final ValueChanged<int> onPageChanged;
 
+  static double fullPageGridHeight(double maxWidth) {
+    final crossSpacing = AppSpacing.md * (columns - 1);
+    final cellSize = (maxWidth - crossSpacing) / columns;
+    if (cellSize <= 0) {
+      return 0;
+    }
+    return cellSize * maxRows + AppSpacing.md * (maxRows - 1);
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (items.isEmpty && totalPages <= 1) {
-      return Center(
-        child: Text(
-          'Sem itens disponíveis nesta categoria.',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-      );
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossSpacing = AppSpacing.md * (columns - 1);
+        final cellSize = (constraints.maxWidth - crossSpacing) / columns;
+        final gridHeight = fullPageGridHeight(constraints.maxWidth);
 
-    final rowCount = math.max(1, (items.length + columns - 1) ~/ columns);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final mainSpacing = AppSpacing.md * (rowCount - 1);
-              final cellHeight = math.max(
-                0.0,
-                (constraints.maxHeight - mainSpacing) / rowCount,
-              );
-
-              return GridView.builder(
-                addAutomaticKeepAlives: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                itemCount: items.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
-                  crossAxisSpacing: AppSpacing.md,
-                  mainAxisSpacing: AppSpacing.md,
-                  mainAxisExtent: cellHeight,
-                ),
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  return _StoreTileEntrance(
-                    key: ValueKey('store-tile-${category.name}-${item.id}'),
-                    index: index,
-                    child: _StoreTile(
-                      item: item,
-                      avatarUrl: avatarUrl,
-                      name: name,
-                      blockerQuantity: blockerInventory[item.id] ?? 0,
-                      blockerQuantityFallback: item.quantityOwned,
-                      isOwned: isOwned(item),
-                      isEquipped: isEquipped(item),
-                      isSaving: isSaving,
-                      onTileTap: () => onTileTap(item),
-                      onBuy: () => onBuy(item),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: gridHeight,
+              child: cellSize <= 0
+                  ? const SizedBox.shrink()
+                  : items.isEmpty && totalPages <= 1
+                  ? Center(
+                      child: Text(
+                        'Sem itens disponíveis nesta categoria.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    )
+                  : GridView.builder(
+                      addAutomaticKeepAlives: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      itemCount: items.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        crossAxisSpacing: AppSpacing.md,
+                        mainAxisSpacing: AppSpacing.md,
+                        mainAxisExtent: cellSize,
+                      ),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        return _StoreTileEntrance(
+                          key: ValueKey(
+                            'store-tile-${category.name}-${item.id}',
+                          ),
+                          index: index,
+                          child: _StoreTile(
+                            item: item,
+                            avatarUrl: avatarUrl,
+                            name: name,
+                            blockerQuantity: blockerInventory[item.id] ?? 0,
+                            blockerQuantityFallback: item.quantityOwned,
+                            isOwned: isOwned(item),
+                            isEquipped: isEquipped(item),
+                            isSaving: isSaving,
+                            onTileTap: () => onTileTap(item),
+                            onBuy: () => onBuy(item),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-        if (totalPages > 1) ...[
-          const SizedBox(height: AppSpacing.md),
-          AppPagination(
-            page: page,
-            totalPages: totalPages,
-            enabled: !isSaving,
-            onPageChanged: onPageChanged,
-          ),
-        ],
-      ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              height: paginationHeight,
+              child: totalPages > 1
+                  ? AppPagination(
+                      page: page,
+                      totalPages: totalPages,
+                      enabled: !isSaving,
+                      onPageChanged: onPageChanged,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -1540,131 +1510,127 @@ class _StoreItemPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = _resolveExtent(constraints.maxWidth);
-        final height = _resolveExtent(constraints.maxHeight);
-        final square = math.min(
-          width > 0 ? width : height,
-          height > 0 ? height : width,
-        );
-
-        switch (item.type) {
-          case StoreItemType.frame:
-            final assetPath = AvatarFrameCatalog.byId(item.id)?.assetPath;
-            if (assetPath != null && assetPath.isNotEmpty) {
-              final cacheDimension =
-                  (square * MediaQuery.devicePixelRatioOf(context)).round();
-              return SizedBox(
-                width: width,
-                height: height,
-                child: Image.asset(
-                  assetPath,
-                  cacheWidth: cacheDimension > 0 ? cacheDimension : null,
-                  cacheHeight: cacheDimension > 0 ? cacheDimension : null,
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.medium,
-                ),
-              );
-            }
-            return SizedBox(
-              width: width,
-              height: height,
-              child: Icon(
-                Icons.account_circle_outlined,
-                size: math.max(24.0, square * 0.55),
-                color: AppColors.textTertiary,
-              ),
-            );
-          case StoreItemType.background:
-            final assetPath = AvatarBackgroundCatalog.assetPathForId(item.id);
-            if (assetPath != null) {
-              final cacheWidth =
-                  (width * MediaQuery.devicePixelRatioOf(context)).round();
-              final cacheHeight =
-                  (height * MediaQuery.devicePixelRatioOf(context)).round();
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                child: SizedBox(
-                  width: width,
-                  height: height,
-                  child: Image.asset(
-                    assetPath,
-                    cacheWidth: cacheWidth > 0 ? cacheWidth : null,
-                    cacheHeight: cacheHeight > 0 ? cacheHeight : null,
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    filterQuality: FilterQuality.medium,
-                  ),
-                ),
-              );
-            }
-            return Container(
-              width: width,
-              height: height,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                gradient: const LinearGradient(
-                  colors: [AppColors.missionsXpPill, AppColors.brand300],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(color: AppColors.performanceCardBorder),
-              ),
-              child: Icon(
-                Icons.landscape_rounded,
-                size: math.max(24.0, square * 0.45),
-                color: AppColors.brand900Variant,
-              ),
-            );
-          case StoreItemType.blocker:
-            final iconSize = math.max(24.0, square * 0.37);
-            return SizedBox(
-              width: width,
-              height: height,
-              child: Center(
-                child: Container(
-                  width: square,
-                  height: square,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.surfaceAlt,
-                    border: Border.all(color: AppColors.performanceCardBorder),
-                  ),
-                  child: AppSvgIcon.blocker(
-                    size: iconSize,
-                  ),
-                ),
-              ),
-            );
-          case StoreItemType.sticker:
-            final path = JacaEmojiCatalog.byId(item.id)?.assetPath;
-            if (path != null) {
-              return SizedBox(
-                width: width,
-                height: height,
-                child: Image.asset(
-                  path,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                ),
-              );
-            }
-            return SizedBox(
-              width: width,
-              height: height,
-              child: AppSvgIcon.sticker(
-                size: math.max(24.0, square * 0.45),
-                color: AppColors.brand900Variant,
-              ),
-            );
+        final square = _resolveSquareSize(constraints);
+        if (square <= 0) {
+          return const SizedBox.shrink();
         }
+
+        return Center(
+          child: SizedBox(
+            width: square,
+            height: square,
+            child: _buildContent(context, square),
+          ),
+        );
       },
     );
   }
 
-  double _resolveExtent(double value) {
-    if (value.isFinite && value > 0) {
-      return value;
+  Widget _buildContent(BuildContext context, double square) {
+    switch (item.type) {
+      case StoreItemType.frame:
+        final assetPath = AvatarFrameCatalog.byId(item.id)?.assetPath;
+        if (assetPath != null && assetPath.isNotEmpty) {
+          final cacheDimension =
+              (square * MediaQuery.devicePixelRatioOf(context)).round();
+          return Image.asset(
+            assetPath,
+            width: square,
+            height: square,
+            cacheWidth: cacheDimension > 0 ? cacheDimension : null,
+            cacheHeight: cacheDimension > 0 ? cacheDimension : null,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.medium,
+          );
+        }
+        return Icon(
+          Icons.account_circle_outlined,
+          size: math.max(24.0, square * 0.55),
+          color: AppColors.textTertiary,
+        );
+      case StoreItemType.background:
+        final assetPath = AvatarBackgroundCatalog.assetPathForId(item.id);
+        if (assetPath != null) {
+          final cacheDimension =
+              (square * MediaQuery.devicePixelRatioOf(context)).round();
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Image.asset(
+              assetPath,
+              width: square,
+              height: square,
+              cacheWidth: cacheDimension > 0 ? cacheDimension : null,
+              cacheHeight: cacheDimension > 0 ? cacheDimension : null,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              filterQuality: FilterQuality.medium,
+            ),
+          );
+        }
+        return Container(
+          width: square,
+          height: square,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            gradient: const LinearGradient(
+              colors: [AppColors.missionsXpPill, AppColors.brand300],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(color: AppColors.performanceCardBorder),
+          ),
+          child: Icon(
+            Icons.landscape_rounded,
+            size: math.max(24.0, square * 0.45),
+            color: AppColors.brand900Variant,
+          ),
+        );
+      case StoreItemType.blocker:
+        final iconSize = math.max(24.0, square * 0.37);
+        return Container(
+          width: square,
+          height: square,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.surfaceAlt,
+            border: Border.all(color: AppColors.performanceCardBorder),
+          ),
+          child: AppSvgIcon.blocker(
+            size: iconSize,
+          ),
+        );
+      case StoreItemType.sticker:
+        final path = JacaEmojiCatalog.byId(item.id)?.assetPath;
+        if (path != null) {
+          return Image.asset(
+            path,
+            width: square,
+            height: square,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          );
+        }
+        return AppSvgIcon.sticker(
+          size: math.max(24.0, square * 0.45),
+          color: AppColors.brand900Variant,
+        );
     }
-    return 0;
+  }
+
+  double _resolveSquareSize(BoxConstraints constraints) {
+    final width =
+        constraints.maxWidth.isFinite ? constraints.maxWidth : 0.0;
+    final height =
+        constraints.maxHeight.isFinite ? constraints.maxHeight : 0.0;
+    if (width <= 0 && height <= 0) {
+      return 0;
+    }
+    if (width <= 0) {
+      return height;
+    }
+    if (height <= 0) {
+      return width;
+    }
+    return math.min(width, height);
   }
 }

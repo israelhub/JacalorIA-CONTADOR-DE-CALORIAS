@@ -120,7 +120,7 @@ class _AppDashedActionButtonState extends State<AppDashedActionButton> {
                             style:
                                 widget.labelStyle ??
                                 AppTextStyles.homeAction.copyWith(
-                                  color: AppColors.action500,
+                                  color: AppColors.textPrimary,
                                 ),
                           ),
                         ),

@@ -29,8 +29,6 @@ import '../services/steps_service.dart';
 import '../widgets/home_shell_layout.dart';
 import '../widgets/home_steps_weight_scope.dart';
 import 'home_page.dart';
-import 'home_steps_weight_focus_lab_page.dart';
-
 class HomeShellPage extends StatefulWidget {
   const HomeShellPage({
     super.key,
@@ -91,7 +89,6 @@ abstract class HomeShellController {
   Future<void> openProfile();
   Future<void> openStore();
   Future<void> openNotifications();
-  Future<void> openCardFocusLab();
 }
 
 class _HomeShellPageState extends State<HomeShellPage>
@@ -402,9 +399,6 @@ class _HomeShellPageState extends State<HomeShellPage>
   @override
   Future<void> openNotifications() => _openNotifications();
 
-  @override
-  Future<void> openCardFocusLab() => _openCardFocusLab();
-
   Future<void> _openProfile() async {
     if (_isMoreMenuOpen) {
       setState(() => _isMoreMenuOpen = false);
@@ -433,19 +427,6 @@ class _HomeShellPageState extends State<HomeShellPage>
     await nestedContext.pushSlidePage(
       InAppMessagesPage(store: InAppMessageStore.instance),
     );
-  }
-
-  Future<void> _openCardFocusLab() async {
-    if (_isMoreMenuOpen) {
-      setState(() => _isMoreMenuOpen = false);
-    }
-
-    final nestedContext = _nestedNavigatorKey.currentContext;
-    if (nestedContext == null) {
-      return;
-    }
-
-    await nestedContext.pushSlidePage(const HomeStepsWeightFocusLabPage());
   }
 
   Future<void> _openStore() async {
@@ -680,7 +661,6 @@ class _HomeShellPageState extends State<HomeShellPage>
                         onHomeTap: () => _goToTab(AppMainBottomTab.home),
                         onMissionsTap: () => _goToTab(AppMainBottomTab.missions),
                         onSocialTap: () => _goToTab(AppMainBottomTab.social),
-                        onCardFocusLabTap: _openCardFocusLab,
                         onCenterActionTap: _openFoodCapture,
                       ),
                     ),

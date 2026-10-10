@@ -45,13 +45,16 @@ class FoodReviewConfirmButton extends StatelessWidget {
       );
     }
 
-    return SizedBox(
-      key: const ValueKey('food-review-confirm-button'),
-      height: foodReviewControlHeight,
-      child: AppButton(
-        label: label,
-        onPressed: onTap,
-        trailingIcon: Icons.arrow_forward,
+    return Opacity(
+      opacity: onTap == null ? 0.45 : 1,
+      child: SizedBox(
+        key: const ValueKey('food-review-confirm-button'),
+        height: foodReviewControlHeight,
+        child: AppButton(
+          label: label,
+          onPressed: onTap,
+          trailingIcon: Icons.arrow_forward,
+        ),
       ),
     );
   }

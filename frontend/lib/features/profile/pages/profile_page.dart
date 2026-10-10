@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/analytics/analytics_service.dart';
 import '../../../../shared/theme/app_theme.dart';
-import '../../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../../shared/widgets/app_back_page_header.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_expandable_header_menu.dart';
@@ -835,27 +834,26 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
         ),
-        body: AppAmbientPageBody(
-          child: SafeArea(
-            top: false,
-            bottom: false,
-            child: AnimatedOpacity(
-              opacity: _isContentReady ? 1 : 0,
+        body: SafeArea(
+          top: false,
+          bottom: false,
+          child: AnimatedOpacity(
+            opacity: _isContentReady ? 1 : 0,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOut,
+            child: AnimatedSlide(
+              offset: _isContentReady ? Offset.zero : const Offset(0, 0.02),
               duration: const Duration(milliseconds: 280),
               curve: Curves.easeOut,
-              child: AnimatedSlide(
-                offset: _isContentReady ? Offset.zero : const Offset(0, 0.02),
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOut,
-                child: AppRefreshScrollView(
-                  onRefresh: _refreshProfileSnapshot,
-                  padding: EdgeInsets.only(
-                    bottom: homeShellScrollBottomInset(context),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      AvatarProfilePreview(
+              child: AppRefreshScrollView(
+                onRefresh: _refreshProfileSnapshot,
+                padding: EdgeInsets.only(
+                  bottom: homeShellScrollBottomInset(context),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AvatarProfilePreview(
                       avatarUrl: _avatarUrl,
                       frameId: _equippedAvatarFrameId,
                       backgroundId: _equippedBackgroundId,
@@ -1136,7 +1134,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ),
-          ),
           ),
         ),
       ),

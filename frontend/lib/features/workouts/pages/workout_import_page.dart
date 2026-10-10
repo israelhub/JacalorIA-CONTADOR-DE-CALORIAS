@@ -85,7 +85,6 @@ class _WorkoutImportPageState extends State<WorkoutImportPage> {
                   textAlignVertical: TextAlignVertical.top,
                   showBorder: true,
                   showShadow: false,
-                  borderColor: AppColors.foodReviewFieldBorder,
                   contentPadding: const EdgeInsets.all(AppSpacing.md),
                   onChanged: (_) {
                     if (_error != null) {

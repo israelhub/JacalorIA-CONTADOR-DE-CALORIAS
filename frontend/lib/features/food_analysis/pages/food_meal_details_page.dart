@@ -261,29 +261,6 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                            vertical: AppSpacing.xs,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.action500,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                          ),
-                          child: Text(
-                            _record.mealType.chipLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.captionStrong.copyWith(
-                              height: 1,
-                              color: AppColors.surface,
-                            ),
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: AppSpacing.md),
                       Container(
                         width: double.infinity,

@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
@@ -20,9 +18,8 @@ class HomeWaterCard extends StatelessWidget {
   final int goalMl;
   final VoidCallback onAdd;
 
-  static const _mascotAsset = 'assets/images/jaca_water_drink.png';
-  static const double cardHeight = 150;
-  static const double _panelWidth = 120;
+  static const double cardHeight = 120;
+  static const Color _accent = AppColors.action500;
 
   @override
   Widget build(BuildContext context) {
@@ -38,52 +35,33 @@ class HomeWaterCard extends StatelessWidget {
       key: const ValueKey('home-water-card'),
       width: double.infinity,
       height: cardHeight,
-      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.homeWater,
+        color: AppColors.homeCardSurface,
         borderRadius: radius,
       ),
-      child: Stack(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: _panelWidth,
-            child: Image.asset(
-              _mascotAsset,
-              fit: BoxFit.cover,
-              alignment: const Alignment(-0.35, -0.15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Registre sua água!',
+                  style: AppTextStyles.homeSectionTitle.copyWith(
+                    color: AppColors.brand900Variant,
+                  ),
+                ),
+                const Spacer(),
+                _WaterAmount(currentMl: selectedMl, goalMl: goalMl),
+              ],
             ),
           ),
-          Positioned.fill(
-            left: _panelWidth - AppSpacing.lg,
-            child: Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.lg),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Registre sua água!',
-                      style: AppTextStyles.homeSectionTitle.copyWith(
-                        color: AppColors.surface,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _WaterRing(milliliters: selectedMl, goalMl: goalMl),
-                        const SizedBox(width: AppSpacing.md),
-                        _CupAddButton(onPressed: onAdd),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          const SizedBox(width: AppSpacing.md),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: _WaterAddButton(onPressed: onAdd),
           ),
         ],
       ),
@@ -91,196 +69,85 @@ class HomeWaterCard extends StatelessWidget {
   }
 }
 
-class _WaterRing extends StatelessWidget {
-  const _WaterRing({required this.milliliters, required this.goalMl});
+class _WaterAmount extends StatelessWidget {
+  const _WaterAmount({required this.currentMl, required this.goalMl});
 
-  final int milliliters;
+  final int currentMl;
   final int goalMl;
 
   @override
   Widget build(BuildContext context) {
-    final progress = goalMl <= 0 ? 0.0 : (milliliters / goalMl).clamp(0.0, 1.0);
-    final inLiters = milliliters >= 1000;
-    final value = inLiters
-        ? (milliliters % 1000 == 0
-              ? (milliliters / 1000).toStringAsFixed(0)
-              : (milliliters / 1000).toStringAsFixed(1).replaceAll('.', ','))
-        : '$milliliters';
-
-    return SizedBox(
-      width: 80,
-      height: 80,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          CustomPaint(
-            size: const Size(80, 80),
-            painter: _WaterRingPainter(fraction: progress),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          '$currentMl',
+          key: const ValueKey('home-water-ring-value'),
+          style: AppTextStyles.statValue.copyWith(
+            color: AppColors.brand900Variant,
+            fontSize: 36,
+            fontWeight: FontWeight.w800,
+            height: 1,
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                value,
-                key: const ValueKey('home-water-ring-value'),
-                style: AppTextStyles.statValue.copyWith(
-                  color: AppColors.surface,
-                ),
-              ),
-              Text(
-                inLiters ? 'L' : 'ml',
-                style: AppTextStyles.micro.copyWith(color: AppColors.surface),
-              ),
-            ],
+        ),
+        Flexible(
+          child: Text(
+            ' / ${_goalText(goalMl)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w700,
+              height: 1,
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
+  }
+
+  static String _goalText(int goalMl) {
+    if (goalMl <= 0) {
+      return '—';
+    }
+    if (goalMl >= 1000 && goalMl % 1000 == 0) {
+      return '${(goalMl / 1000).toStringAsFixed(0)} L';
+    }
+    if (goalMl >= 1000) {
+      return '${(goalMl / 1000).toStringAsFixed(1).replaceAll('.', ',')} L';
+    }
+    return '$goalMl ml';
   }
 }
 
-class _CupAddButton extends StatelessWidget {
-  const _CupAddButton({required this.onPressed});
+class _WaterAddButton extends StatelessWidget {
+  const _WaterAddButton({required this.onPressed});
 
   final VoidCallback onPressed;
-
-  static const double width = 52;
-  static const double height = 68;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: 'Adicionar água',
       child: Material(
-        color: Colors.transparent,
+        color: HomeWaterCard._accent,
+        shape: const CircleBorder(),
         child: InkWell(
           key: const ValueKey('home-water-add'),
+          customBorder: const CircleBorder(),
           onTap: onPressed,
-          customBorder: const _CupBorder(),
-          child: CustomPaint(
-            size: const Size(width, height),
-            painter: const _CupPainter(),
-            child: const SizedBox(
-              width: width,
-              height: height,
-              child: Align(
-                alignment: Alignment(0, 0.12),
-                child: Icon(
-                  Icons.add_rounded,
-                  color: AppColors.homeWater,
-                  size: 26,
-                ),
-              ),
+          child: const SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(
+              Icons.add_rounded,
+              color: AppColors.surface,
+              size: 24,
             ),
           ),
         ),
       ),
     );
-  }
-}
-
-class _CupBorder extends ShapeBorder {
-  const _CupBorder();
-
-  @override
-  EdgeInsetsGeometry get dimensions => EdgeInsets.zero;
-
-  @override
-  Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
-    return _cupPath(rect);
-  }
-
-  @override
-  Path getInnerPath(Rect rect, {TextDirection? textDirection}) {
-    return _cupPath(rect);
-  }
-
-  @override
-  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {}
-
-  @override
-  ShapeBorder scale(double t) => const _CupBorder();
-}
-
-class _CupPainter extends CustomPainter {
-  const _CupPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = _cupPath(Offset.zero & size);
-    canvas.drawPath(path, Paint()..color = AppColors.surface);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CupPainter oldDelegate) => false;
-}
-
-Path _cupPath(Rect rect) {
-  final rim = rect.height * 0.14;
-  final insetTop = rect.width * 0.04;
-  final insetBottom = rect.width * 0.18;
-  final radius = rect.width * 0.16;
-  final path = Path()
-    ..moveTo(rect.left + insetTop, rect.top + rim)
-    ..lineTo(rect.left + insetBottom, rect.bottom - radius)
-    ..quadraticBezierTo(
-      rect.left + insetBottom,
-      rect.bottom,
-      rect.left + insetBottom + radius,
-      rect.bottom,
-    )
-    ..lineTo(rect.right - insetBottom - radius, rect.bottom)
-    ..quadraticBezierTo(
-      rect.right - insetBottom,
-      rect.bottom,
-      rect.right - insetBottom,
-      rect.bottom - radius,
-    )
-    ..lineTo(rect.right - insetTop, rect.top + rim)
-    ..close()
-    ..addRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(rect.left, rect.top, rect.width, rim + 3),
-        const Radius.circular(5),
-      ),
-    );
-  return path;
-}
-
-class _WaterRingPainter extends CustomPainter {
-  _WaterRingPainter({required this.fraction});
-
-  final double fraction;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const strokeWidth = 10.0;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width - strokeWidth) / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    final trackPaint = Paint()
-      ..color = AppColors.surface.withValues(alpha: 0.28)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.butt;
-
-    final fillPaint = Paint()
-      ..color = AppColors.surface
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.butt;
-
-    canvas.drawArc(rect, 0, math.pi * 2, false, trackPaint);
-
-    final sweep = math.pi * 2 * fraction.clamp(0.0, 1.0);
-    if (sweep > 0) {
-      canvas.drawArc(rect, -math.pi / 2, sweep, false, fillPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _WaterRingPainter oldDelegate) {
-    return oldDelegate.fraction != fraction;
   }
 }

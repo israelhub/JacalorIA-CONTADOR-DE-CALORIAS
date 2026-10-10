@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_form_card.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../home/widgets/home_shell_layout.dart';
@@ -59,35 +60,41 @@ class _SocialJoinGroupPageState extends State<SocialJoinGroupPage> {
             AppSpacing.pageHorizontal,
             homeShellScrollBottomInset(context),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Insira um código de convite ou encontre grupos públicos para participar.',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: AppFormCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Insira um código de convite ou encontre grupos públicos para participar.',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppInputField(
+                    label: 'Código do grupo',
+                    hint: 'Ex.: ABCD-1234',
+                    controller: _codeController,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  AppButton(
+                    label: 'Ver grupos públicos',
+                    variant: AppButtonVariant.outline,
+                    onPressed: _openPublicGroups,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppButton(
+                    label: 'Entrar',
+                    onPressed: () => Navigator.of(context).pop(
+                      SocialJoinGroupDialogResult.byCode(_codeController.text),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.lg),
-              AppInputField(
-                label: 'Código do grupo',
-                hint: 'Ex.: ABCD-1234',
-                controller: _codeController,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppButton(
-                label: 'Ver grupos públicos',
-                variant: AppButtonVariant.outline,
-                onPressed: _openPublicGroups,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppButton(
-                label: 'Entrar',
-                onPressed: () => Navigator.of(
-                  context,
-                ).pop(SocialJoinGroupDialogResult.byCode(_codeController.text)),
-              ),
-            ],
+            ),
           ),
         ),
       ),
