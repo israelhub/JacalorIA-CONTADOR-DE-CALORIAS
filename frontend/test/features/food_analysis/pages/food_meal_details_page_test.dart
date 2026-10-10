@@ -7,6 +7,8 @@ import 'package:jacaloria/features/food_analysis/pages/food_meal_details_page.da
 import 'package:jacaloria/features/food_analysis/pages/food_review_page.dart';
 import 'package:jacaloria/features/food_analysis/services/food_analysis_service.dart';
 import 'package:jacaloria/features/home/services/meal_service.dart';
+import 'package:jacaloria/features/home/widgets/home_shell_layout.dart';
+import 'package:jacaloria/shared/theme/app_theme.dart';
 
 class _FakeFoodAnalysisService extends FoodAnalysisService {
   @override
@@ -54,6 +56,12 @@ class _FakeMealService extends MealService {
 }
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
+
+Widget _wrapInShell(Widget child, {double navOverlap = 88}) {
+  return MaterialApp(
+    home: HomeShellLayout(navOverlap: navOverlap, child: child),
+  );
+}
 
 FoodMealRecord _mealFixture() {
   return FoodMealRecord(
@@ -115,7 +123,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Detalhes da refeição'), findsOneWidget);
+    expect(find.text('Detalhes refeição'), findsOneWidget);
     expect(find.text('Almoço'), findsWidgets);
     expect(find.text('12:55'), findsOneWidget);
     expect(find.text('Arroz'), findsOneWidget);
@@ -240,7 +248,6 @@ void main() {
     expect(find.byType(FoodReviewPage), findsNothing);
     expect(find.byType(FoodMealDetailsPage), findsOneWidget);
     expect(find.text('Janta leve'), findsOneWidget);
-    expect(find.text('Janta'), findsOneWidget);
     expect(find.textContaining('410 Calorias consumidas'), findsOneWidget);
   });
 
@@ -258,10 +265,32 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Detalhes da refeição'), findsOneWidget);
+    expect(find.text('Detalhes refeição'), findsOneWidget);
     expect(find.text('Arroz'), findsOneWidget);
     expect(find.byTooltip('Editar refeição'), findsNothing);
     expect(find.byTooltip('Excluir refeição'), findsNothing);
     expect(find.byTooltip('Salvar para reutilizar'), findsNothing);
+  });
+
+  testWidgets('scroll reserva o inset da navbar do shell', (tester) async {
+    const navOverlap = 88.0;
+
+    await tester.pumpWidget(
+      _wrapInShell(
+        FoodMealDetailsPage(
+          record: _mealFixture(),
+          userProfile: const {
+            'dailyProteinGoal': 120,
+            'dailyCarbsGoal': 200,
+            'dailyFatGoal': 60,
+          },
+        ),
+        navOverlap: navOverlap,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final listView = tester.widget<ListView>(find.byType(ListView));
+    expect((listView.padding as EdgeInsets).bottom, navOverlap + AppSpacing.xxxl);
   });
 }

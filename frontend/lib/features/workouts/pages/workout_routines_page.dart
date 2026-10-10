@@ -5,6 +5,7 @@ import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../helpers/workout_formatters.dart';
 import '../models/workout_models.dart';
 import '../services/workout_service.dart';
@@ -197,7 +198,7 @@ class _WorkoutRoutinesPageState extends State<WorkoutRoutinesPage> {
             AppSpacing.pageHorizontal,
             AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.lg),
             AppSpacing.pageHorizontal,
-            AppSpacing.xxxl,
+            homeShellScrollBottomInset(context),
           ),
           children: [
             Container(

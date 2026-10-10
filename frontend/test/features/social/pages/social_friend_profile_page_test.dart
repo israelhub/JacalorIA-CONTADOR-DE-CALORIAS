@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jacaloria/features/avatar_frames/models/avatar_background_catalog.dart';
 import 'package:jacaloria/features/social/models/social_friend_profile.dart';
 import 'package:jacaloria/features/social/models/social_member_daily_meals.dart';
 import 'package:jacaloria/features/social/pages/social_friend_profile_page.dart';
 import 'package:jacaloria/features/social/services/social_service.dart';
+import 'package:jacaloria/shared/widgets/app_ambient_page_glow.dart';
+import 'package:jacaloria/shared/widgets/avatar_profile_preview.dart';
 
 class _FakeSocialService extends SocialService {
   @override
@@ -17,7 +20,7 @@ class _FakeSocialService extends SocialService {
       name: 'Ana',
       avatarUrl: null,
       avatarFrameId: null,
-      avatarBackgroundId: null,
+      avatarBackgroundId: 'sky',
       streakDays: 3,
       longestStreakDays: 5,
       missionsCompleted: 1,
@@ -68,5 +71,18 @@ void main() {
 
     expect(find.text('Calorias hoje'), findsNothing);
     expect(find.text('1265/2000 kcal'), findsOneWidget);
+
+    expect(find.byType(AppAmbientPageBody), findsNothing);
+    expect(find.byType(AppAmbientPageGlow), findsNothing);
+
+    final preview = tester.widget<AvatarProfilePreview>(
+      find.byType(AvatarProfilePreview),
+    );
+    expect(preview.backgroundId, 'sky');
+    expect(preview.backgroundId, isNotNull);
+    expect(
+      AvatarBackgroundCatalog.assetPathForId(preview.backgroundId),
+      'assets/images/avatar_backgrounds/sky.png',
+    );
   });
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_skeleton.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../services/missions_service.dart';
 
 class GoldStatementPage extends StatefulWidget {
@@ -47,7 +48,7 @@ class _GoldStatementPageState extends State<GoldStatementPage> {
                   AppSpacing.pageHorizontal,
                   scrollTop,
                   AppSpacing.pageHorizontal,
-                  AppSpacing.md,
+                  homeShellScrollBottomInset(context),
                 ),
               );
             }
@@ -96,7 +97,7 @@ class _GoldStatementPageState extends State<GoldStatementPage> {
                 AppSpacing.pageHorizontal,
                 scrollTop,
                 AppSpacing.pageHorizontal,
-                AppSpacing.lg,
+                homeShellScrollBottomInset(context),
               ),
               itemCount: entries.length,
               separatorBuilder: (_, __) =>

@@ -21,8 +21,6 @@ import '../../social/models/jaca_emoji_catalog.dart';
 import '../../auth/pages/enter_page.dart';
 import '../../home/pages/home_shell_page.dart';
 import '../../home/widgets/home_shell_layout.dart';
-import '../../reminders/pages/meal_reminders_page.dart';
-import '../../support/pages/support_page.dart';
 import '../../auth/service/auth_service.dart';
 import '../../../../shared/widgets/app_main_bottom_navigation.dart';
 import '../../missions/services/missions_service.dart';
@@ -806,20 +804,6 @@ class _ProfilePageState extends State<ProfilePage> {
           trailing: AppExpandableHeaderMenu(
             showShadow: true,
             actions: [
-              AppExpandableHeaderMenuAction(
-                label: 'Lembretes de refeição',
-                icon: Icons.notifications_active_outlined,
-                onPressed: () {
-                  context.pushSlidePage(const MealRemindersPage());
-                },
-              ),
-              AppExpandableHeaderMenuAction(
-                label: 'Suporte',
-                icon: Icons.support_agent_rounded,
-                onPressed: () {
-                  context.pushSlidePage(const SupportPage());
-                },
-              ),
               AppExpandableHeaderMenuAction(
                 label: 'Editar dados pessoais',
                 icon: Icons.badge_rounded,

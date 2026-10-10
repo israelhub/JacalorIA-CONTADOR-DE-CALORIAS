@@ -10,6 +10,7 @@ import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/faded_meal_image.dart';
 import '../../../../shared/widgets/macro_progress_indicator.dart';
 import '../../home/services/meal_service.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../helpers/food_review_helpers.dart';
 import '../models/food_analysis_result.dart';
 import '../models/food_meal_record.dart';
@@ -206,7 +207,7 @@ class _FoodMealDetailsPageState extends State<FoodMealDetailsPage> {
               AppSpacing.pageHorizontal,
               AppBackPageHeader.scrollTopInset(context, extra: AppSpacing.sm),
               AppSpacing.pageHorizontal,
-              AppSpacing.xxl,
+              homeShellScrollBottomInset(context),
             ),
             children: [
               if (hasFadedMealImage(
