@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/framed_avatar.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../models/social_group_models.dart';
 
 class SocialFriendRequestsPage extends StatefulWidget {
@@ -18,7 +20,8 @@ class SocialFriendRequestsPage extends StatefulWidget {
   final Future<void> Function(SocialFriendRequest request) onReject;
 
   @override
-  State<SocialFriendRequestsPage> createState() => _SocialFriendRequestsPageState();
+  State<SocialFriendRequestsPage> createState() =>
+      _SocialFriendRequestsPageState();
 }
 
 class _SocialFriendRequestsPageState extends State<SocialFriendRequestsPage> {
@@ -52,19 +55,11 @@ class _SocialFriendRequestsPageState extends State<SocialFriendRequestsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        foregroundColor: AppColors.brand900Variant,
-        title: Text(
-          'Solicitações de amizade',
-          style: AppTextStyles.missionsSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
-          ),
-        ),
-      ),
-      body: SafeArea(
+      backgroundColor: AppColors.pageBackground,
+      extendBodyBehindAppBar: true,
+      appBar: const AppBackPageHeader(title: 'Solicitações de amizade'),
+      body: AppBackPageContent(
+        bottom: false,
         child: _requests.isEmpty
             ? Center(
                 child: Text(
@@ -75,7 +70,12 @@ class _SocialFriendRequestsPageState extends State<SocialFriendRequestsPage> {
                 ),
               )
             : ListView.separated(
-                padding: const EdgeInsets.all(AppSpacing.lg),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.pageHorizontal,
+                  AppSpacing.lg,
+                  AppSpacing.pageHorizontal,
+                  homeShellScrollBottomInset(context),
+                ),
                 itemCount: _requests.length,
                 separatorBuilder: (_, __) => const Divider(
                   color: AppColors.borderAlt,

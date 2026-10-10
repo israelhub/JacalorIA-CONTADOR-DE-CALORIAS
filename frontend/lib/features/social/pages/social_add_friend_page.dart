@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../home/widgets/home_shell_layout.dart';
 import '../widgets/social_profile_invite_card.dart';
 
 class SocialAddFriendPage extends StatelessWidget {
@@ -30,21 +32,18 @@ class SocialAddFriendPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        foregroundColor: AppColors.brand900Variant,
-        title: Text(
-          'Adicionar amigo',
-          style: AppTextStyles.missionsSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
-          ),
-        ),
-      ),
-      body: SafeArea(
+      backgroundColor: AppColors.pageBackground,
+      extendBodyBehindAppBar: true,
+      appBar: const AppBackPageHeader(title: 'Adicionar amigo'),
+      body: AppBackPageContent(
+        bottom: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.pageHorizontal,
+            AppSpacing.lg,
+            AppSpacing.pageHorizontal,
+            homeShellScrollBottomInset(context),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -81,7 +80,9 @@ class SocialAddFriendPage extends StatelessWidget {
                       variant: AppButtonVariant.outline,
                       leadingIcon: Icons.search_rounded,
                       onPressed: onSearchUser,
-                      textStyle: AppTextStyles.buttonMedium.copyWith(fontSize: 14),
+                      textStyle: AppTextStyles.buttonMedium.copyWith(
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -91,7 +92,9 @@ class SocialAddFriendPage extends StatelessWidget {
                       variant: AppButtonVariant.outline,
                       leadingIcon: Icons.qr_code_scanner_rounded,
                       onPressed: onScanQr,
-                      textStyle: AppTextStyles.buttonMedium.copyWith(fontSize: 14),
+                      textStyle: AppTextStyles.buttonMedium.copyWith(
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],

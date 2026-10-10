@@ -20,9 +20,9 @@ import {
 } from './constants/missions.seed';
 import { isCheckInExclusiveStoreItem } from './constants/store-catalog.seed';
 import {
-  ACTIVE_CHECK_IN_CAMPAIGN,
   buildCheckInReferenceKey,
   primaryCheckInRewardKind,
+  resolveCheckInCampaign,
   summarizeCheckInRewards,
   type CheckInDayDefinition,
 } from './constants/check-in.campaign';
@@ -490,11 +490,11 @@ export class MissionsService implements OnModuleInit {
   }
 
   async claimCheckIn(userId: string) {
-    const campaign = ACTIVE_CHECK_IN_CAMPAIGN;
     const now = new Date();
     const todayKey = this.streakService.toDayKeyInAppTimeZone(now);
+    const campaign = resolveCheckInCampaign(todayKey);
 
-    if (todayKey < campaign.startDayKey || todayKey > campaign.endDayKey) {
+    if (!campaign) {
       throw new BadRequestException('O check-in desta campanha não está ativo.');
     }
 
@@ -547,6 +547,7 @@ export class MissionsService implements OnModuleInit {
       const granted = await this.applyCheckInRewards({
         userId,
         user,
+        campaignId: campaign.id,
         dayDefinition,
         referenceKey,
         transaction,
@@ -1367,15 +1368,12 @@ export class MissionsService implements OnModuleInit {
     referenceDate: Date,
     transaction?: Transaction,
   ) {
-    const campaign = ACTIVE_CHECK_IN_CAMPAIGN;
     const todayKey = this.streakService.toDayKeyInAppTimeZone(referenceDate);
-    const active =
-      todayKey >= campaign.startDayKey && todayKey <= campaign.endDayKey;
+    const campaign = resolveCheckInCampaign(todayKey);
 
-    if (!active) {
+    if (!campaign) {
       return {
         active: false,
-        campaignId: campaign.id,
       };
     }
 
@@ -1481,6 +1479,7 @@ export class MissionsService implements OnModuleInit {
   private async applyCheckInRewards(params: {
     userId: string;
     user: User;
+    campaignId: string;
     dayDefinition: CheckInDayDefinition;
     referenceKey: string;
     transaction: Transaction;
@@ -1491,7 +1490,8 @@ export class MissionsService implements OnModuleInit {
     backgroundGranted: string | null;
     consolacaoGold: number;
   }> {
-    const { userId, user, dayDefinition, referenceKey, transaction } = params;
+    const { userId, user, campaignId, dayDefinition, referenceKey, transaction } =
+      params;
     let goldGranted = 0;
     let blockerGranted = 0;
     let frameGranted: string | null = null;
@@ -1610,7 +1610,7 @@ export class MissionsService implements OnModuleInit {
         sourceId: dayDefinition.dayKey,
         referenceKey,
         metadata: {
-          campaignId: ACTIVE_CHECK_IN_CAMPAIGN.id,
+          campaignId,
           dayKey: dayDefinition.dayKey,
           dayIndex: dayDefinition.dayIndex,
           rewards: dayDefinition.rewards,

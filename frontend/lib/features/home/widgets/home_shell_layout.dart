@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_bottom_navigation.dart';
 
 const homeShellFabNavGap = AppSpacing.lg;
 
-const homeShellBottomNavBodyHeight = 56.0 + AppSpacing.xs;
+const homeShellBottomNavBodyHeight = appBottomNavCardHeight;
+
+const homeShellBottomNavFloatingGap = AppSpacing.sm;
+
+const homeShellBottomNavHorizontalInset = appBottomNavHorizontalInset;
 
 class HomeShellLayout extends InheritedWidget {
   const HomeShellLayout({
@@ -35,12 +40,14 @@ double homeShellNavOverlap(BuildContext context) {
   if (mediaQuery.padding.bottom > mediaQuery.viewPadding.bottom) {
     return mediaQuery.padding.bottom;
   }
-  return homeShellBottomNavBodyHeight + mediaQuery.viewPadding.bottom;
+  return homeShellBottomNavBodyHeight +
+      homeShellBottomNavFloatingGap +
+      mediaQuery.viewPadding.bottom;
 }
 
 EdgeInsets homeShellNestedFillPadding(
   BuildContext context, {
-  double horizontal = AppSpacing.lg,
+  double horizontal = AppSpacing.pageHorizontal,
   double top = AppSpacing.lg,
 }) {
   return EdgeInsets.fromLTRB(
@@ -60,9 +67,10 @@ double homeShellScrollBottomInset(
 
 double homeShellFabBottomInset(BuildContext context) {
   // Nested Scaffold ignora o padding da nav do shell; endFloat ja soma 16px.
-  final navSurfaceOverlap = homeShellNavOverlap(context) - AppSpacing.xs;
   final inset =
-      navSurfaceOverlap - kFloatingActionButtonMargin + homeShellFabNavGap;
+      homeShellNavOverlap(context) -
+      kFloatingActionButtonMargin +
+      homeShellFabNavGap;
   return inset < 0 ? 0 : inset;
 }
 

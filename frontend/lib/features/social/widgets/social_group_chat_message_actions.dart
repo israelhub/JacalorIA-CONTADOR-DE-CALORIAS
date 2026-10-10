@@ -73,8 +73,6 @@ class SocialGroupChatMessageMenu extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-          boxShadow: AppShadows.performanceCard,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.md - 2),
@@ -146,9 +144,7 @@ class _ReactionStickerRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: selected
-                    ? AppColors.missionsXpPill
-                    : Colors.transparent,
+                color: selected ? AppColors.missionsXpPill : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
                 border: selected
                     ? Border.all(color: AppColors.action500)

@@ -166,8 +166,6 @@ class HomeDailyGoalCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.homeMetaCardSurface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.homeMetaCardBorder, width: 1.5),
-        boxShadow: AppShadows.homeMetaCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

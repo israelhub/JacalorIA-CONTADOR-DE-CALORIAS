@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/home/pages/home_shell_page.dart';
+import 'package:jacaloria/features/home/widgets/home_shell_layout.dart';
 import 'package:jacaloria/features/home/widgets/home_weight_quick_edit_button.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_floating_circle_button.dart';
 import 'package:jacaloria/shared/widgets/app_main_bottom_navigation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../helpers/fake_steps_service.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
   testWidgets('FAB de peso fica acima da bottom nav com safe area', (
     tester,
   ) async {
@@ -128,6 +135,7 @@ void main() {
           performancePage: const SizedBox.shrink(),
           missionsPage: const SizedBox.shrink(),
           socialPage: const SizedBox.shrink(),
+          stepsService: FakeStepsService(),
         ),
       ),
     );

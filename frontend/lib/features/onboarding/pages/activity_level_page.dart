@@ -9,6 +9,7 @@ import 'package:jacaloria/features/home/pages/home_shell_page.dart';
 import 'package:jacaloria/features/onboarding/widgets/onboarding_select_option_button.dart';
 import 'package:jacaloria/features/onboarding/widgets/onboarding_step_header.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
+import 'package:jacaloria/shared/widgets/app_ambient_page_glow.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
 import 'package:jacaloria/shared/widgets/app_toast.dart';
 
@@ -101,7 +102,9 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
       backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.pageHorizontal,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

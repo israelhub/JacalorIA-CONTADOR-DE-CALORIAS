@@ -9,21 +9,22 @@ class SocialProfileMetricCard extends StatelessWidget {
     required this.iconColor,
     required this.label,
     required this.value,
+    this.backgroundColor = AppColors.insetSurface,
   });
 
   final IconData icon;
   final Color iconColor;
   final String label;
   final String value;
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -62,10 +63,7 @@ class SocialProfileMetricCard extends StatelessWidget {
 /// Truncates to a single line with ellipsis when layout space is insufficient.
 /// On tap (when overflowing), shows the full text in a floating tooltip.
 class _OverflowTapTooltipText extends StatefulWidget {
-  const _OverflowTapTooltipText({
-    required this.text,
-    required this.style,
-  });
+  const _OverflowTapTooltipText({required this.text, required this.style});
 
   final String text;
   final TextStyle style;

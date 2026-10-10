@@ -21,10 +21,12 @@ class SocialInviteGroupFriendsDialog extends StatefulWidget {
   final VoidCallback onCopyId;
 
   @override
-  State<SocialInviteGroupFriendsDialog> createState() => _SocialInviteGroupFriendsDialogState();
+  State<SocialInviteGroupFriendsDialog> createState() =>
+      _SocialInviteGroupFriendsDialogState();
 }
 
-class _SocialInviteGroupFriendsDialogState extends State<SocialInviteGroupFriendsDialog> {
+class _SocialInviteGroupFriendsDialogState
+    extends State<SocialInviteGroupFriendsDialog> {
   final Set<String> _selectedFriendIds = <String>{};
 
   @override
@@ -36,14 +38,14 @@ class _SocialInviteGroupFriendsDialogState extends State<SocialInviteGroupFriend
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.pageHorizontal,
+      ),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-          boxShadow: AppShadows.performanceCard,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -88,7 +90,8 @@ class _SocialInviteGroupFriendsDialogState extends State<SocialInviteGroupFriend
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: availableFriends.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: AppSpacing.sm),
                   itemBuilder: (context, index) {
                     final friend = availableFriends[index];
                     final isSelected = _selectedFriendIds.contains(friend.id);
@@ -108,7 +111,9 @@ class _SocialInviteGroupFriendsDialogState extends State<SocialInviteGroupFriend
                         child: Container(
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.missionsXpPill.withValues(alpha: 0.45)
+                                ? AppColors.missionsXpPill.withValues(
+                                    alpha: 0.45,
+                                  )
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             border: Border.all(
@@ -133,7 +138,9 @@ class _SocialInviteGroupFriendsDialogState extends State<SocialInviteGroupFriend
                         : 'Adicionar $selectedCount amigos')
                   : 'Selecionar amigos',
               onPressed: selectedCount > 0
-                  ? () => Navigator.of(context).pop(_selectedFriendIds.toList(growable: false))
+                  ? () => Navigator.of(
+                      context,
+                    ).pop(_selectedFriendIds.toList(growable: false))
                   : null,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -147,7 +154,9 @@ class _SocialInviteGroupFriendsDialogState extends State<SocialInviteGroupFriend
                     variant: AppButtonVariant.outline,
                     leadingIcon: Icons.share_rounded,
                     onPressed: widget.onShareLink,
-                    textStyle: AppTextStyles.buttonMedium.copyWith(fontSize: 13),
+                    textStyle: AppTextStyles.buttonMedium.copyWith(
+                      fontSize: 13,
+                    ),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -157,7 +166,9 @@ class _SocialInviteGroupFriendsDialogState extends State<SocialInviteGroupFriend
                     variant: AppButtonVariant.outline,
                     leadingIcon: Icons.content_copy_rounded,
                     onPressed: widget.onCopyId,
-                    textStyle: AppTextStyles.buttonMedium.copyWith(fontSize: 13),
+                    textStyle: AppTextStyles.buttonMedium.copyWith(
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
-import '../../../shared/widgets/app_section_header.dart';
+import '../../profile/widgets/profile_section_card.dart';
 import '../models/social_group_models.dart';
 import '../widgets/social_empty_state.dart';
 import '../widgets/social_friend_list_item.dart';
@@ -35,31 +35,29 @@ class SocialFriendsTabPage extends StatelessWidget {
           onPressed: onAddFriend,
         ),
         const SizedBox(height: AppSpacing.lg),
-        AppSectionHeader(
+        ProfileSectionCard(
           title: 'Seus amigos',
-          titleStyle: AppTextStyles.missionsSectionTitle.copyWith(
-            color: AppColors.brand900Variant,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        if (friends.isEmpty)
-          const SocialEmptyState(
-            icon: Icons.people_alt_outlined,
-            title: 'Nenhum amigo ainda',
-            subtitle: 'Adicione amigos por e-mail ou link para começar.',
-          )
-        else
-          Column(
-            children: [
-              for (final friend in friends) ...[
-                SocialFriendListItem(
-                  friend: friend,
-                  onTap: () => onOpenFriendProfile(friend),
+          child: friends.isEmpty
+              ? const SocialEmptyState(
+                  icon: Icons.people_alt_outlined,
+                  title: 'Nenhum amigo ainda',
+                  subtitle:
+                      'Adicione amigos por e-mail ou link para começar.',
+                  backgroundColor: AppColors.insetSurface,
+                )
+              : Column(
+                  children: [
+                    for (var index = 0; index < friends.length; index++) ...[
+                      if (index > 0) const SizedBox(height: AppSpacing.md),
+                      SocialFriendListItem(
+                        friend: friends[index],
+                        backgroundColor: AppColors.insetSurface,
+                        onTap: () => onOpenFriendProfile(friends[index]),
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-            ],
-          ),
+        ),
       ],
     );
   }

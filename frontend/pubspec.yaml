@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.6+12
+version: 1.0.7+13
 
 environment:
   sdk: ^3.9.2
@@ -54,6 +54,14 @@ dependencies:
   flutter_timezone: ^5.1.0
   app_links: ^6.4.0
   home_widget: ^0.9.3
+  health: ^13.3.1
+  permission_handler: ^13.0.1
+  pedometer: ^4.2.0
+  phosphor_icons: 3.0.1
+
+dependency_overrides:
+  # 14.x usa AGP 9 / Kotlin embutido; app ainda em AGP 8.11
+  permission_handler_android: 13.0.1
 
 dev_dependencies:
   flutter_test:

@@ -51,6 +51,33 @@ void main() {
     expect(data.meals.first.items.first.name, 'Arroz');
   });
 
+  test('SocialMemberDailyMeals.fromJson preserva imageUrl das refeições', () {
+    final data = SocialMemberDailyMeals.fromJson({
+      'enabled': true,
+      'date': '2026-10-08',
+      'startsAt': '2026-01-01',
+      'endsAt': '2026-10-08',
+      'totalCalories': 500,
+      'meals': [
+        {
+          'id': 'meal-1',
+          'title': 'Almoço',
+          'description': 'Arroz',
+          'calories': 500,
+          'protein': 20,
+          'carbs': 60,
+          'fat': 10,
+          'timeLabel': '12:30',
+          'mealType': 'lunch',
+          'imageUrl': 'https://example.com/meals/foto.jpg',
+          'analysisItems': const [],
+        },
+      ],
+    });
+
+    expect(data.meals.single.imageUrl, 'https://example.com/meals/foto.jpg');
+  });
+
   test('SocialMemberDailyMeals.fromJson parses disabled payload', () {
     final data = SocialMemberDailyMeals.fromJson({
       'enabled': false,

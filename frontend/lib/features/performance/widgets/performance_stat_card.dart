@@ -23,10 +23,8 @@ class PerformanceStatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.insetSurface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-        boxShadow: AppShadows.performanceCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

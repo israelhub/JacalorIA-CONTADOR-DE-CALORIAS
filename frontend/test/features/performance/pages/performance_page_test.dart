@@ -109,7 +109,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Desempenho'), findsOneWidget);
+    expect(find.text('Progresso'), findsOneWidget);
     expect(find.textContaining('dia de sequência!'), findsOneWidget);
     expect(find.text('Continue!'), findsOneWidget);
     expect(find.text('Ir para hoje'), findsNothing);

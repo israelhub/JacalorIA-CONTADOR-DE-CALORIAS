@@ -26,28 +26,47 @@ SocialRankingEntry _entry({
   );
 }
 
+Widget _buildPage({
+  SocialXpRankingPeriod period = SocialXpRankingPeriod.all,
+  List<SocialRankingEntry> ranking = const [],
+  bool isLoading = false,
+  String? errorMessage,
+  int page = 1,
+  int totalPages = 0,
+  ValueChanged<SocialXpRankingPeriod>? onPeriodChanged,
+  ValueChanged<int>? onPageChanged,
+}) {
+  return MaterialApp(
+    home: Scaffold(
+      body: SingleChildScrollView(
+        child: SocialRankingTabPage(
+          period: period,
+          onPeriodChanged: onPeriodChanged ?? (_) {},
+          ranking: ranking,
+          isLoading: isLoading,
+          errorMessage: errorMessage,
+          onRetry: () {},
+          onOpenProfile: (_) {},
+          page: page,
+          totalPages: totalPages,
+          onPageChanged: onPageChanged ?? (_) {},
+        ),
+      ),
+    ),
+  );
+}
+
 void main() {
   testWidgets('mostra filtros e lista de ranking de XP', (tester) async {
     SocialXpRankingPeriod? changedPeriod;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: SocialRankingTabPage(
-              period: SocialXpRankingPeriod.all,
-              onPeriodChanged: (period) => changedPeriod = period,
-              ranking: [
-                _entry(id: 'u1', position: 1, points: 400),
-                _entry(id: 'u2', position: 2, points: 220, isCurrentUser: true),
-              ],
-              isLoading: false,
-              errorMessage: null,
-              onRetry: () {},
-              onOpenProfile: (_) {},
-            ),
-          ),
-        ),
+      _buildPage(
+        onPeriodChanged: (period) => changedPeriod = period,
+        ranking: [
+          _entry(id: 'u1', position: 1, points: 400),
+          _entry(id: 'u2', position: 2, points: 220, isCurrentUser: true),
+        ],
       ),
     );
 
@@ -73,21 +92,7 @@ void main() {
 
   testWidgets('fecha o filtro ao tocar fora do menu', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: SocialRankingTabPage(
-              period: SocialXpRankingPeriod.all,
-              onPeriodChanged: (_) {},
-              ranking: [_entry(id: 'u1', position: 1, points: 400)],
-              isLoading: false,
-              errorMessage: null,
-              onRetry: () {},
-              onOpenProfile: (_) {},
-            ),
-          ),
-        ),
-      ),
+      _buildPage(ranking: [_entry(id: 'u1', position: 1, points: 400)]),
     );
 
     await tester.tap(find.byKey(const ValueKey('xp-ranking-period-filter')));
@@ -102,21 +107,7 @@ void main() {
   testWidgets('mostra skeleton quando o ranking está carregando', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SocialRankingTabPage(
-            period: SocialXpRankingPeriod.all,
-            onPeriodChanged: (_) {},
-            ranking: const [],
-            isLoading: true,
-            errorMessage: null,
-            onRetry: () {},
-            onOpenProfile: (_) {},
-          ),
-        ),
-      ),
-    );
+    await tester.pumpWidget(_buildPage(isLoading: true));
 
     expect(find.byType(AppSkeletonBox), findsWidgets);
     expect(find.text('Ninguém no ranking ainda'), findsNothing);
@@ -124,21 +115,30 @@ void main() {
 
   testWidgets('mostra empty state quando não há ranking', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SocialRankingTabPage(
-            period: SocialXpRankingPeriod.month,
-            onPeriodChanged: (_) {},
-            ranking: const [],
-            isLoading: false,
-            errorMessage: null,
-            onRetry: () {},
-            onOpenProfile: (_) {},
-          ),
-        ),
-      ),
+      _buildPage(period: SocialXpRankingPeriod.month),
     );
 
     expect(find.text('Ninguém no ranking ainda'), findsOneWidget);
+  });
+
+  testWidgets('mostra paginação e navega para a próxima página', (
+    tester,
+  ) async {
+    var currentPage = 1;
+
+    await tester.pumpWidget(
+      _buildPage(
+        ranking: [_entry(id: 'u1', position: 1, points: 400)],
+        page: currentPage,
+        totalPages: 3,
+        onPageChanged: (page) => currentPage = page,
+      ),
+    );
+
+    expect(find.text('1 / 3'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+    await tester.pump();
+    expect(currentPage, 2);
   });
 }

@@ -19,14 +19,10 @@ class SocialActivityItemWidget extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: isHighlighted ? AppColors.missionsXpPill : AppColors.surface,
+        color: isHighlighted
+            ? AppColors.missionsXpPill
+            : AppColors.insetSurface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(
-          color: isHighlighted
-              ? AppColors.action500.withValues(alpha: 0.6)
-              : AppColors.performanceCardBorder,
-          width: 1.5,
-        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

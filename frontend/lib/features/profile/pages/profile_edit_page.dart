@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../food_analysis/helpers/image_optimizer.dart';
 import '../../../../shared/services/supabase_storage_service.dart';
 import '../../../../shared/theme/app_theme.dart';
+import '../../../../shared/widgets/app_back_page_header.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_confirm_modal.dart';
 import '../../../../shared/widgets/app_date_picker.dart';
@@ -398,23 +399,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _handleExitAttempt();
       },
       child: Scaffold(
-        backgroundColor: AppColors.surface,
-        appBar: AppBar(
-          backgroundColor: AppColors.surface,
-          surfaceTintColor: AppColors.surface,
-          title: Text(
-            'Editar dados pessoais',
-            style: AppTextStyles.headingSmall.copyWith(
-              color: AppColors.brand900Variant,
-            ),
-          ),
-        ),
-        body: SafeArea(
+        backgroundColor: AppColors.pageBackground,
+        extendBodyBehindAppBar: true,
+        appBar: const AppBackPageHeader(title: 'Editar dados pessoais'),
+        body: AppBackPageContent(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(
+              AppSpacing.pageHorizontal,
               AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
+              AppSpacing.pageHorizontal,
               AppSpacing.xxxl,
             ),
             child: Column(
@@ -469,13 +462,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 const SizedBox(height: AppSpacing.xl),
                 AppInputField(
                   label: 'Nome',
-                  hint: 'Digite seu nome',
+                  hint: 'Ex.: Maria Silva',
                   controller: _nameController,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 AppInputField(
                   label: 'Data de nascimento',
-                  hint: 'Selecione sua data de nascimento',
+                  hint: 'Ex.: 15/03/1990',
                   controller: _birthDateController,
                   readOnly: true,
                   onTap: _pickBirthDate,
@@ -488,7 +481,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 const SizedBox(height: AppSpacing.lg),
                 MeasurementInputField(
                   label: 'Peso',
-                  hint: 'Digite seu peso',
+                  hint: 'Ex.: 70',
                   controller: _weightController,
                   unitSelectorKey: const ValueKey(
                     'profile-edit-weight-unit-selector',
@@ -507,7 +500,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 const SizedBox(height: AppSpacing.lg),
                 MeasurementInputField(
                   label: 'Altura',
-                  hint: 'Digite sua altura',
+                  hint: 'Ex.: 170',
                   controller: _heightController,
                   unitSelectorKey: const ValueKey(
                     'profile-edit-height-unit-selector',
@@ -527,7 +520,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 AppSelectInputField(
                   fieldKey: const ValueKey('profile-edit-activity-field'),
                   label: 'Nível de atividade',
-                  hint: 'Selecione seu nível de atividade',
+                  hint: 'Ex.: Moderadamente ativo',
                   selectedValue: _activityController.text,
                   options: _activityLabels.values.toList(),
                   onSelected: (value) {
@@ -545,7 +538,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 AppSelectInputField(
                   fieldKey: const ValueKey('profile-edit-sex-field'),
                   label: 'Sexo',
-                  hint: 'Selecione seu sexo',
+                  hint: 'Ex.: Feminino',
                   selectedValue: _selectedSex ?? '',
                   options: _sexOptions,
                   onSelected: (value) {
@@ -558,7 +551,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 AppSelectInputField(
                   fieldKey: const ValueKey('profile-edit-objective-field'),
                   label: 'Objetivo',
-                  hint: 'Selecione seu objetivo',
+                  hint: 'Ex.: Emagrecer',
                   selectedValue: _objectiveController.text,
                   options: _objectiveLabels.values.toList(),
                   onSelected: (value) {

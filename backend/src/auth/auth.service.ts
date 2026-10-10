@@ -31,6 +31,10 @@ import {
   AVATAR_FRAME_NONE_ID,
   OFFENSIVE_BLOCKER_DEFAULT_ID,
 } from '../missions/constants/avatar-frame-store';
+import {
+  isJacaEmojiId,
+  isPaidJacaEmojiId,
+} from '../social/constants/jaca-emojis';
 import { parseNumber } from '../shared/utils/number-parser.util';
 import { Meal, MealStatus } from '../meals/models/meal.model';
 import { StreakService } from '../streak/streak.service';
@@ -517,6 +521,34 @@ export class AuthService {
       }
 
       payload.equippedAvatarBackgroundId = normalizedEquippedId;
+    }
+
+    if (payload.equippedProfileReactionEmojiId != null) {
+      const equippedId = payload.equippedProfileReactionEmojiId.trim();
+      if (equippedId.length === 0) {
+        (payload as { equippedProfileReactionEmojiId?: string | null }).equippedProfileReactionEmojiId =
+          null;
+      } else {
+        if (!isJacaEmojiId(equippedId)) {
+          throw new BadRequestException('Emoji de reação inválido.');
+        }
+        if (isPaidJacaEmojiId(equippedId)) {
+          const purchasedIds = new Set(
+            (Array.isArray(currentProfile.purchasedJacaEmojiIds)
+              ? currentProfile.purchasedJacaEmojiIds
+              : []
+            )
+              .map((value) => value.toString().trim())
+              .filter((value) => value.length > 0),
+          );
+          if (!purchasedIds.has(equippedId)) {
+            throw new BadRequestException(
+              'O emoji escolhido ainda não foi comprado.',
+            );
+          }
+        }
+        payload.equippedProfileReactionEmojiId = equippedId;
+      }
     }
 
     const user = await this.authRepository.updateProfile(userId, payload);

@@ -24,7 +24,10 @@ String socialFormatAverageCalories(num value) {
   return rounded.toStringAsFixed(1);
 }
 
-String socialFriendlyError(Object error, {String fallback = 'Algo deu errado.'}) {
+String socialFriendlyError(
+  Object error, {
+  String fallback = 'Algo deu errado.',
+}) {
   final raw = error.toString().replaceFirst('Exception: ', '').trim();
   if (raw.isEmpty) {
     return fallback;

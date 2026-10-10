@@ -5,7 +5,11 @@ import '../../../shared/widgets/framed_avatar.dart';
 import '../models/social_group_models.dart';
 
 class SocialSearchResultItem extends StatelessWidget {
-  const SocialSearchResultItem({super.key, required this.user, required this.onAdd});
+  const SocialSearchResultItem({
+    super.key,
+    required this.user,
+    required this.onAdd,
+  });
 
   final SocialUserSearchResult user;
   final VoidCallback? onAdd;

@@ -106,13 +106,30 @@ export class SocialService {
     };
   }
 
-  async getXpRanking(userId: string, periodRaw?: string) {
+  async getXpRanking(
+    userId: string,
+    periodRaw?: string,
+    pageRaw?: string,
+    limitRaw?: string,
+  ) {
     const period = this.normalizeXpRankingPeriod(periodRaw);
     const rangeStart = this.resolveXpRankingRangeStart(period);
     const sequelize = this.userCurrencyTransactionModel.sequelize;
     if (!sequelize) {
       throw new BadRequestException('Ranking de XP indisponível no momento');
     }
+
+    const maxRanking = 100;
+    // Sem page/limit: contrato legado do APK antigo (top 100 + viewer na lista).
+    const legacyMode = pageRaw == null && limitRaw == null;
+    const pageSize = legacyMode
+      ? maxRanking
+      : Math.min(
+          50,
+          Math.max(1, Number.parseInt(String(limitRaw ?? '10'), 10) || 10),
+        );
+    const page = Math.max(1, Number.parseInt(String(pageRaw ?? '1'), 10) || 1);
+    const offset = (page - 1) * pageSize;
 
     const replacements: Record<string, unknown> = {};
     const dateClause = rangeStart
@@ -122,20 +139,61 @@ export class SocialService {
       replacements.rangeStart = rangeStart;
     }
 
-    const rows = await sequelize.query<{ user_id: string; points: number | string }>(
-      `
-      SELECT t.user_id, COALESCE(SUM(t.amount_signed), 0)::int AS points
-      FROM user_currency_transactions t
-      INNER JOIN users u ON u.id = t.user_id
-      WHERE t.currency = 'xp'
-      ${dateClause}
-      GROUP BY t.user_id
-      HAVING COALESCE(SUM(t.amount_signed), 0) > 0
-      ORDER BY points DESC, t.user_id ASC
-      LIMIT 100
-      `,
-      { replacements, type: QueryTypes.SELECT },
-    );
+    const [countRows, rows] = await Promise.all([
+      sequelize.query<{ total: number | string }>(
+        `
+        SELECT LEAST(COUNT(*)::int, ${maxRanking})::int AS total
+        FROM (
+          SELECT t.user_id
+          FROM user_currency_transactions t
+          INNER JOIN users u ON u.id = t.user_id
+          WHERE t.currency = 'xp'
+          ${dateClause}
+          GROUP BY t.user_id
+          HAVING COALESCE(SUM(t.amount_signed), 0) > 0
+        ) scored
+        `,
+        { replacements, type: QueryTypes.SELECT },
+      ),
+      sequelize.query<{
+        user_id: string;
+        points: number | string;
+        position: number | string;
+      }>(
+        `
+        WITH scored AS (
+          SELECT t.user_id, COALESCE(SUM(t.amount_signed), 0)::int AS points
+          FROM user_currency_transactions t
+          INNER JOIN users u ON u.id = t.user_id
+          WHERE t.currency = 'xp'
+          ${dateClause}
+          GROUP BY t.user_id
+          HAVING COALESCE(SUM(t.amount_signed), 0) > 0
+        ),
+        top AS (
+          SELECT user_id, points
+          FROM scored
+          ORDER BY points DESC, user_id ASC
+          LIMIT ${maxRanking}
+        ),
+        ranked AS (
+          SELECT
+            user_id,
+            points,
+            RANK() OVER (ORDER BY points DESC)::int AS position
+          FROM top
+        )
+        SELECT user_id, points, position
+        FROM ranked
+        ORDER BY points DESC, user_id ASC
+        LIMIT ${pageSize} OFFSET ${offset}
+        `,
+        { replacements, type: QueryTypes.SELECT },
+      ),
+    ]);
+
+    const total = Math.max(0, parseNumber(countRows[0]?.total));
+    const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
 
     const rankedUserIds = rows.map((row) => row.user_id).filter(Boolean);
     const users = rankedUserIds.length
@@ -146,16 +204,9 @@ export class SocialService {
       : [];
     const userById = new Map(users.map((user) => [user.id, user]));
 
-    let previousPoints: number | null = null;
-    let previousPosition = 0;
-    const ranking = rows.map((row, index) => {
+    const ranking = rows.map((row) => {
       const points = parseNumber(row.points);
-      const position =
-        previousPoints !== null && points === previousPoints
-          ? previousPosition
-          : index + 1;
-      previousPoints = points;
-      previousPosition = position;
+      const position = parseNumber(row.position);
       const user = userById.get(row.user_id);
       const isCurrentUser = row.user_id === userId;
       return {
@@ -176,7 +227,7 @@ export class SocialService {
     const viewerInList = ranking.some((entry) => entry.isCurrentUser);
     let viewerPoints = ranking.find((entry) => entry.isCurrentUser)?.points ?? 0;
     let viewerPosition =
-      ranking.find((entry) => entry.isCurrentUser)?.position ?? ranking.length + 1;
+      ranking.find((entry) => entry.isCurrentUser)?.position ?? 0;
 
     if (!viewerInList) {
       viewerPoints = await this.sumXpEarnedForUser(userId, rangeStart);
@@ -185,28 +236,35 @@ export class SocialService {
         viewerPoints,
         rangeStart,
       );
-      const viewer = await this.userModel.findByPk(userId, {
-        attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'],
-      });
-      if (viewer) {
-        ranking.push({
-          id: viewer.id,
-          userId: viewer.id,
-          name: viewer.name?.trim() || 'Sem nome',
-          avatarUrl: viewer.avatarUrl ?? null,
-          avatarFrameId: viewer.equippedAvatarFrameId ?? null,
-          points: viewerPoints,
-          streakDays: 0,
-          isCurrentUser: true,
-          isLeader: false,
-          position: viewerPosition,
-          subtitle: 'Você',
+
+      if (legacyMode) {
+        const viewer = await this.userModel.findByPk(userId, {
+          attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'],
         });
+        if (viewer) {
+          ranking.push({
+            id: viewer.id,
+            userId: viewer.id,
+            name: viewer.name?.trim() || 'Sem nome',
+            avatarUrl: viewer.avatarUrl ?? null,
+            avatarFrameId: viewer.equippedAvatarFrameId ?? null,
+            points: viewerPoints,
+            streakDays: 0,
+            isCurrentUser: true,
+            isLeader: false,
+            position: viewerPosition,
+            subtitle: 'Você',
+          });
+        }
       }
     }
 
     return {
       period,
+      page,
+      pageSize,
+      total,
+      totalPages,
       ranking,
       viewer: {
         position: viewerPosition,
@@ -452,6 +510,7 @@ export class SocialService {
         'avatarUrl',
         'equippedAvatarFrameId',
         'equippedAvatarBackgroundId',
+        'equippedProfileReactionEmojiId',
         'purchasedAvatarFrameIds',
         'purchasedAvatarBackgroundIds',
         'purchasedJacaEmojiIds',
@@ -488,6 +547,7 @@ export class SocialService {
       avatarUrl: friend.avatarUrl ?? null,
       avatarFrameId: friend.equippedAvatarFrameId ?? null,
       avatarBackgroundId: friend.equippedAvatarBackgroundId ?? null,
+      profileReactionEmojiId: friend.equippedProfileReactionEmojiId ?? null,
       streakDays: streak.currentDays,
       longestStreakDays: streak.longestDays,
       missionsCompleted,
@@ -1173,7 +1233,7 @@ export class SocialService {
 
     const targetId = targetUserId.trim();
     const target = await this.userModel.findByPk(targetId, {
-      attributes: ['id', 'createdAt', 'hidePublicProfileMeals'],
+      attributes: ['id', 'createdAt', 'hidePublicProfileMeals', 'dailyCalorieGoal'],
     });
     if (!target) {
       throw new NotFoundException('Perfil não encontrado');
@@ -1198,7 +1258,10 @@ export class SocialService {
     const endDayKey = this.streakService.toDayKeyInAppTimeZone(new Date());
     const selectedDayKey = this.clampDayKey(date, startDayKey, endDayKey);
     const meals = await this.findMemberMealsForDayKey(target.id, selectedDayKey);
-    const totalCalories = meals.reduce((sum, meal) => sum + parseNumber(meal.calories), 0);
+    const totalCalories = Math.round(
+      meals.reduce((sum, meal) => sum + parseNumber(meal.calories), 0),
+    );
+    const dailyCalorieGoal = Math.round(parseNumber(target.dailyCalorieGoal, 2000));
 
     return {
       enabled: true,
@@ -1207,6 +1270,7 @@ export class SocialService {
       startsAt: startDayKey,
       endsAt: endDayKey,
       totalCalories,
+      dailyCalorieGoal,
       meals: meals.map((meal) => this.toPublicMealPayload(meal)),
     };
   }

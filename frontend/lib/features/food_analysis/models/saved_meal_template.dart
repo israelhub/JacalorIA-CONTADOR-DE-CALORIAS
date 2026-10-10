@@ -50,6 +50,8 @@ class SavedMealTemplate {
   final String? imageUrl;
   final DateTime? createdAt;
 
+  FoodMealType get mealType => foodMealTypeFromTitle(title);
+
   FoodAnalysisResult toAnalysis() {
     return FoodAnalysisResult(
       items: items,

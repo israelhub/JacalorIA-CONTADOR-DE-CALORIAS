@@ -99,6 +99,45 @@ void main() {
     expect(item.hasTacoMatch, isFalse);
   });
 
+  test('fromJson preserva imageUrl https do perfil social', () {
+    final record = FoodMealRecord.fromJson({
+      'id': 'meal-1',
+      'title': 'Almoço',
+      'description': 'Arroz',
+      'calories': 500,
+      'protein': 20,
+      'carbs': 60,
+      'fat': 10,
+      'timeLabel': '12:30',
+      'mealType': 'lunch',
+      'imageUrl':
+          'https://pfeqheolinzgyelxwref.supabase.co/storage/v1/object/public/meals/1.jpg',
+      'analysisItems': const [],
+    });
+
+    expect(
+      record.imageUrl,
+      'https://pfeqheolinzgyelxwref.supabase.co/storage/v1/object/public/meals/1.jpg',
+    );
+    expect(record.imageAsset, isNull);
+  });
+
+  test('fromJson aceita image_url snake_case', () {
+    final record = FoodMealRecord.fromJson({
+      'title': 'Jantar',
+      'description': '',
+      'calories': 400,
+      'protein': 10,
+      'carbs': 40,
+      'fat': 10,
+      'timeLabel': '20:00',
+      'image_url': 'https://example.com/meal.jpg',
+      'analysisItems': const [],
+    });
+
+    expect(record.imageUrl, 'https://example.com/meal.jpg');
+  });
+
   test('fromAnalysis replica os itens da analise', () {
     const analysis = FoodAnalysisResult(
       items: [

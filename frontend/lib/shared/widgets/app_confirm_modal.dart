@@ -49,7 +49,9 @@ class AppConfirmModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final dialog = Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.pageHorizontal,
+      ),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
@@ -89,7 +91,9 @@ class AppConfirmModal extends StatelessWidget {
                 Expanded(
                   child: AppButton(
                     label: confirmLabel,
-                    variant: isDanger ? AppButtonVariant.danger : AppButtonVariant.primary,
+                    variant: isDanger
+                        ? AppButtonVariant.danger
+                        : AppButtonVariant.primary,
                     onPressed: () => Navigator.of(context).pop(true),
                   ),
                 ),
@@ -107,4 +111,3 @@ class AppConfirmModal extends StatelessWidget {
     return PopScope(canPop: false, child: dialog);
   }
 }
-

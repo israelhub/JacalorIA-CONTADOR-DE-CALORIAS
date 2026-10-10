@@ -3,6 +3,7 @@ import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../home/pages/home_shell_page.dart';
 import '../../onboarding/pages/welcome_page.dart';
 import '../controllers/auth_controller.dart';
@@ -56,34 +57,38 @@ class _EnterPageState extends State<EnterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [const EnterHeader()],
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: AnimatedBuilder(
-                animation: _authController,
-                builder: (context, _) => EnterForm(
-                  onContinueWithGooglePressed: _authController.isLoading
-                      ? null
-                      : _handleGoogleLogin,
-                  onCreateAccountPressed: () {
-                    context.pushSlidePage(const SignUpPage());
-                  },
-                  onLoginPressed: () {
-                    context.pushSlidePage(const LoginPage());
-                  },
+      body: AppAmbientPageBody(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [const EnterHeader()],
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.pageHorizontal,
+                ),
+                child: AnimatedBuilder(
+                  animation: _authController,
+                  builder: (context, _) => EnterForm(
+                    onContinueWithGooglePressed: _authController.isLoading
+                        ? null
+                        : _handleGoogleLogin,
+                    onCreateAccountPressed: () {
+                      context.pushSlidePage(const SignUpPage());
+                    },
+                    onLoginPressed: () {
+                      context.pushSlidePage(const LoginPage());
+                    },
+                  ),
                 ),
               ),
-            ),
-            const EnterMascot(),
-          ],
+              const EnterMascot(),
+            ],
+          ),
         ),
       ),
     );

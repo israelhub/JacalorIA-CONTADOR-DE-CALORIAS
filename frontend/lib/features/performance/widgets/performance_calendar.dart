@@ -47,9 +47,7 @@ class PerformanceCalendar extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
-        boxShadow: AppShadows.performanceCard,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(
         children: <Widget>[

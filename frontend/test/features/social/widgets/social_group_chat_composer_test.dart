@@ -34,7 +34,7 @@ void main() {
     await _pumpComposer(tester, controller: controller);
     await tester.pump();
 
-    final hintFinder = find.text('Mensagem');
+    final hintFinder = find.text('Ex.: Mensagem');
     final hint = tester.getRect(hintFinder);
     final send = tester.getRect(
       find.byKey(const ValueKey('group-chat-send-button')),
@@ -46,7 +46,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Olá grupo');
     await tester.pump();
 
-    expect(find.text('Mensagem'), findsNothing);
+    expect(find.text('Ex.: Mensagem'), findsNothing);
     final typedTopLeft = tester.getTopLeft(find.text('Olá grupo'));
     expect(typedTopLeft.dx, closeTo(hintTopLeft.dx, 1));
     expect(typedTopLeft.dy, closeTo(hintTopLeft.dy, 1));

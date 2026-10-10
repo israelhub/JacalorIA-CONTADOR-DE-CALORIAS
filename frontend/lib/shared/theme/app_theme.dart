@@ -33,6 +33,11 @@ class AppColors {
   static const Color foodReviewDeleteIcon = Color(0xFFE88D8D);
   static const Color foodReviewFieldShadow = Color(0x40000000);
 
+  static const Color pageBackground = Color(0xFFEEEEEE);
+  static const Color insetSurface = Color(0xFFF6F6F6);
+  static const Color skeleton = Color(0xFFE0E0E0);
+  static const Color skeletonHighlight = Color(0xFFCBCBCB);
+  static const Color homeBackground = pageBackground;
   static const Color homeCardSurface = surface;
   static const Color homeMetaCardSurface = homeCardSurface;
   static const Color homeMetaCardBorder = Color(0xFFD4ECC4);
@@ -42,6 +47,13 @@ class AppColors {
   static const Color homeMealCardShadow = foodReviewFieldShadow;
   static const Color homeProgressTrack = Color(0xFFE8F5E1);
   static const Color homeAddMealSurface = surface;
+  static const Color homeWater = Color(0xFF4D8BD6);
+  static const Color homeStepsGradientStart = Color(0xFF0A6844);
+  static const Color homeStepsGradientEnd = Color(0xFF0A6844);
+  static const Color homeStepsShadow = Color(0x400A6844);
+  static const Color homeWeightGradientStart = Color(0xFFC47A2C);
+  static const Color homeWeightGradientEnd = Color(0xFF8A4F16);
+  static const Color homeWeightShadow = Color(0x408A4F16);
   static const Color homeMacroCarbs = action500;
   static const Color homeMacroProtein = Color(0xFFF4C842);
   static const Color homeMacroFat = Color(0xFFE86060);
@@ -55,7 +67,12 @@ class AppColors {
   static const Color missionsChallenge = Color(0xFFA855F7);
   static const Color missionsActionIconBg = Color.fromRGBO(124, 191, 77, 0.13);
   static const Color missionsAccentIconBg = Color.fromRGBO(227, 182, 64, 0.13);
-  static const Color missionsChallengeIconBg = Color.fromRGBO(168, 85, 247, 0.13);
+  static const Color missionsChallengeIconBg = Color.fromRGBO(
+    168,
+    85,
+    247,
+    0.13,
+  );
   static const Color missionsGoldPill = Color(0xFFFDF6E3);
   static const Color missionsXpPill = Color(0xFFEEF7E6);
   static const Color missionsIntroIcon = Color.fromRGBO(255, 255, 255, 0.20);
@@ -415,6 +432,9 @@ class AppSpacing {
   static const double xxl = 24;
   static const double xxxl = 32;
   static const double huge = 40;
+
+  static const double pageHorizontal = md;
+  static const double cardGap = sm;
 }
 
 class AppShadows {
@@ -497,24 +517,25 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get theme {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      primary: AppColors.primary,
-      surface: AppColors.surface,
-    ).copyWith(
-      secondary: AppColors.brand900,
-      onSecondary: AppColors.surface,
-      secondaryContainer: AppColors.brand300,
-      onSecondaryContainer: AppColors.brand900Variant,
-      tertiary: AppColors.accent500,
-      onTertiary: AppColors.brand900Variant,
-      tertiaryContainer: AppColors.missionsGoldPill,
-      onTertiaryContainer: AppColors.brand900Variant,
-      onSurface: AppColors.textPrimary,
-      onSurfaceVariant: AppColors.textSecondary,
-      outline: AppColors.inputBorder,
-      outlineVariant: AppColors.borderAlt,
-    );
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          primary: AppColors.primary,
+          surface: AppColors.surface,
+        ).copyWith(
+          secondary: AppColors.brand900,
+          onSecondary: AppColors.surface,
+          secondaryContainer: AppColors.brand300,
+          onSecondaryContainer: AppColors.brand900Variant,
+          tertiary: AppColors.accent500,
+          onTertiary: AppColors.brand900Variant,
+          tertiaryContainer: AppColors.missionsGoldPill,
+          onTertiaryContainer: AppColors.brand900Variant,
+          onSurface: AppColors.textPrimary,
+          onSurfaceVariant: AppColors.textSecondary,
+          outline: AppColors.inputBorder,
+          outlineVariant: AppColors.borderAlt,
+        );
 
     final base = ThemeData(
       useMaterial3: true,

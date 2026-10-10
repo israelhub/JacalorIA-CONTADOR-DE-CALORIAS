@@ -26,7 +26,7 @@ class SocialRankingItem extends StatelessWidget {
     final subtitle = entry.isLeader ? 'Líder do grupo' : entry.subtitle.trim();
     final rowColor = entry.isCurrentUser
         ? AppColors.missionsXpPill.withValues(alpha: 0.75)
-        : AppColors.surface;
+        : AppColors.insetSurface;
     final metric = socialRankingMetric(
       competitionType: competitionType,
       points: entry.points,
@@ -50,7 +50,10 @@ class SocialRankingItem extends StatelessWidget {
               child: InkWell(
                 onTap: onTap,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   child: Row(
                     children: [
                       SizedBox(

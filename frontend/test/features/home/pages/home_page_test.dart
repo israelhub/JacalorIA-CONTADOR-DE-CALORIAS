@@ -3,10 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/auth/service/auth_service.dart';
 import 'package:jacaloria/features/food_analysis/models/food_meal_record.dart';
 import 'package:jacaloria/features/food_analysis/models/food_analysis_result.dart';
+import 'package:jacaloria/features/home/controllers/home_steps_weight_controller.dart';
 import 'package:jacaloria/features/home/pages/home_page.dart';
 import 'package:jacaloria/features/home/services/meal_service.dart';
+import 'package:jacaloria/features/home/widgets/home_steps_weight_scope.dart';
 import 'package:jacaloria/shared/widgets/app_main_bottom_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../helpers/fake_steps_service.dart';
 
 class _FakeMealService extends MealService {
   _FakeMealService(this.meals);
@@ -27,7 +31,18 @@ class _FakeAuthService extends AuthService {
   }
 }
 
-Widget _wrap(Widget child) => MaterialApp(home: child);
+Widget _wrap(Widget child) {
+  final controller = HomeStepsWeightController(
+    stepsService: FakeStepsService(),
+  );
+  addTearDown(controller.dispose);
+  return MaterialApp(
+    home: HomeStepsWeightScope(
+      controller: controller,
+      child: child,
+    ),
+  );
+}
 
 Future<void> _pumpHomePage(WidgetTester tester) async {
   tester.view.physicalSize = const Size(412, 917);
@@ -109,11 +124,17 @@ void main() {
       expect(firstMealCard, findsOneWidget);
       expect(find.byKey(const ValueKey('home-meal-card-1')), findsNothing);
       expect(find.text('Jantar do dia 3'), findsNothing);
-      expect(find.text('02 abr'), findsOneWidget);
       expect(
-        tester.widget<Text>(find.byKey(const ValueKey('home-calorie-ring-value'))).data,
+        find.byKey(const ValueKey('home-week-calendar')),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('home-calorie-ring-value')))
+            .data,
         '100',
       );
+      expect(find.byKey(const ValueKey('home-steps-weight-row')), findsOneWidget);
     });
   });
 }

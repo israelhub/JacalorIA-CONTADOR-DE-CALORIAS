@@ -45,4 +45,40 @@ void main() {
     expect(store.messages, isEmpty);
     expect(find.text('Nenhuma mensagem por enquanto.'), findsOneWidget);
   });
+
+  testWidgets('ler tudo marca todas as mensagens como lidas', (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'meal_reminders_master_enabled': false,
+    });
+    final store = InAppMessageStore.instance;
+    await store.resetForTest();
+    await store.addMessage(
+      title: 'Hora do almoço',
+      body: 'Registre a refeição.',
+      source: 'meal_reminder',
+      id: 'msg-lunch',
+    );
+    await store.addMessage(
+      title: 'Hora do jantar',
+      body: 'Não esqueça de registrar.',
+      source: 'meal_reminder',
+      id: 'msg-dinner',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: InAppMessagesPage(store: store)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(store.unreadCount, 2);
+    expect(find.text('Ler tudo'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('in-app-messages-mark-all-read')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(store.unreadCount, 0);
+    expect(find.text('Todas as mensagens foram lidas.'), findsOneWidget);
+  });
 }

@@ -19,10 +19,10 @@ void main() {
       expect(find.text('Senha'), findsOneWidget);
       expect(find.text('Confirmar senha'), findsOneWidget);
 
-      expect(find.text('Digite seu nome'), findsOneWidget);
-      expect(find.text('Digite seu email'), findsOneWidget);
-      expect(find.text('Digite sua senha'), findsOneWidget);
-      expect(find.text('Confirme sua senha'), findsOneWidget);
+      expect(find.text('Ex.: Maria Silva'), findsOneWidget);
+      expect(find.text('Ex.: maria@email.com'), findsOneWidget);
+      expect(find.text('Ex.: sua senha'), findsOneWidget);
+      expect(find.text('Ex.: confirme a senha'), findsOneWidget);
 
       expect(find.byType(TextField), findsNWidgets(4));
       expect(find.text('Criar conta'), findsOneWidget);

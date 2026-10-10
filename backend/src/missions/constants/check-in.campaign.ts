@@ -21,8 +21,6 @@ export type CheckInCampaignDefinition = {
   days: CheckInDayDefinition[];
 };
 
-const CAMPAIGN_ID = 'aug2026';
-
 function day(
   dayKey: string,
   dayIndex: number,
@@ -31,12 +29,18 @@ function day(
   return { dayKey, dayIndex, rewards };
 }
 
+const BLOCKER_REWARD: CheckInReward = {
+  kind: 'blocker',
+  itemKey: OFFENSIVE_BLOCKER_DEFAULT_ID,
+  quantity: 1,
+};
+
 /**
- * Campanha de check-in diário até o fim de agosto/2026.
+ * Campanha de check-in diário de 15 a 31 de agosto/2026.
  * Recompensas misturam ouro, bloqueador, moldura e fundo.
  */
 export const AUGUST_2026_CHECK_IN_CAMPAIGN: CheckInCampaignDefinition = {
-  id: CAMPAIGN_ID,
+  id: 'aug2026',
   title: 'Recompensas de agosto',
   subtitle: 'Ganhe recompensas até o fim de agosto',
   startDayKey: '2026-08-15',
@@ -47,7 +51,7 @@ export const AUGUST_2026_CHECK_IN_CAMPAIGN: CheckInCampaignDefinition = {
     day('2026-08-17', 3, [{ kind: 'gold', amount: 25 }]),
     day('2026-08-18', 4, [
       { kind: 'gold', amount: 10 },
-      { kind: 'blocker', itemKey: OFFENSIVE_BLOCKER_DEFAULT_ID, quantity: 1 },
+      BLOCKER_REWARD,
     ]),
     day('2026-08-19', 5, [{ kind: 'gold', amount: 30 }]),
     day('2026-08-20', 6, [{ kind: 'gold', amount: 35 }]),
@@ -64,7 +68,7 @@ export const AUGUST_2026_CHECK_IN_CAMPAIGN: CheckInCampaignDefinition = {
     day('2026-08-25', 11, [{ kind: 'gold', amount: 50 }]),
     day('2026-08-26', 12, [
       { kind: 'gold', amount: 10 },
-      { kind: 'blocker', itemKey: OFFENSIVE_BLOCKER_DEFAULT_ID, quantity: 1 },
+      BLOCKER_REWARD,
     ]),
     day('2026-08-27', 13, [{ kind: 'gold', amount: 55 }]),
     day('2026-08-28', 14, [{ kind: 'gold', amount: 60 }]),
@@ -78,12 +82,88 @@ export const AUGUST_2026_CHECK_IN_CAMPAIGN: CheckInCampaignDefinition = {
     ]),
     day('2026-08-31', 17, [
       { kind: 'gold', amount: 100 },
-      { kind: 'blocker', itemKey: OFFENSIVE_BLOCKER_DEFAULT_ID, quantity: 1 },
+      BLOCKER_REWARD,
     ]),
   ],
 };
 
-export const ACTIVE_CHECK_IN_CAMPAIGN = AUGUST_2026_CHECK_IN_CAMPAIGN;
+type MonthCampaignSeed = {
+  id: string;
+  monthName: string;
+  year: number;
+  month: number;
+};
+
+const UPCOMING_MONTHS: MonthCampaignSeed[] = [
+  { id: 'oct2026', monthName: 'outubro', year: 2026, month: 10 },
+  { id: 'nov2026', monthName: 'novembro', year: 2026, month: 11 },
+  { id: 'dec2026', monthName: 'dezembro', year: 2026, month: 12 },
+  { id: 'jan2027', monthName: 'janeiro', year: 2027, month: 1 },
+  { id: 'feb2027', monthName: 'fevereiro', year: 2027, month: 2 },
+];
+
+function daysInMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+function ordinaryGold(dayOfMonth: number, length: number): number {
+  if (length <= 1) {
+    return 15;
+  }
+  const progress = (dayOfMonth - 1) / (length - 1);
+  return 15 + Math.round(progress * 9) * 5;
+}
+
+function blockerDayOfMonth(templateDay: number, length: number): number {
+  const raw = Math.round((templateDay / 17) * length);
+  return Math.max(1, Math.min(length - 1, raw));
+}
+
+function buildMonthCampaign(seed: MonthCampaignSeed): CheckInCampaignDefinition {
+  const length = daysInMonth(seed.year, seed.month);
+  const month = String(seed.month).padStart(2, '0');
+  const blockerDays = new Set([
+    blockerDayOfMonth(4, length),
+    blockerDayOfMonth(12, length),
+  ]);
+  const days: CheckInDayDefinition[] = [];
+
+  for (let dayOfMonth = 1; dayOfMonth <= length; dayOfMonth += 1) {
+    const dayKey = `${seed.year}-${month}-${String(dayOfMonth).padStart(2, '0')}`;
+    const isFinale = dayOfMonth === length;
+    const rewards: CheckInReward[] = isFinale
+      ? [{ kind: 'gold', amount: 100 }, BLOCKER_REWARD]
+      : blockerDays.has(dayOfMonth)
+        ? [{ kind: 'gold', amount: 10 }, BLOCKER_REWARD]
+        : [{ kind: 'gold', amount: ordinaryGold(dayOfMonth, length) }];
+
+    days.push(day(dayKey, dayOfMonth, rewards));
+  }
+
+  return {
+    id: seed.id,
+    title: `Recompensas de ${seed.monthName}`,
+    subtitle: `Ganhe recompensas até o fim de ${seed.monthName}`,
+    startDayKey: days[0].dayKey,
+    endDayKey: days[days.length - 1].dayKey,
+    days,
+  };
+}
+
+export const CHECK_IN_CAMPAIGNS: CheckInCampaignDefinition[] = [
+  AUGUST_2026_CHECK_IN_CAMPAIGN,
+  ...UPCOMING_MONTHS.map(buildMonthCampaign),
+];
+
+export function resolveCheckInCampaign(
+  dayKey: string,
+): CheckInCampaignDefinition | null {
+  return (
+    CHECK_IN_CAMPAIGNS.find(
+      (campaign) => dayKey >= campaign.startDayKey && dayKey <= campaign.endDayKey,
+    ) ?? null
+  );
+}
 
 export function buildCheckInReferenceKey(
   campaignId: string,

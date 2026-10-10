@@ -8,10 +8,7 @@ class EnterHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        top: AppSpacing.huge,
-        left: AppSpacing.lg,
-      ),
+      padding: const EdgeInsets.only(top: AppSpacing.huge, left: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

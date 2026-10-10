@@ -1,12 +1,15 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_date_picker.dart';
 import '../../../shared/widgets/app_page_route.dart';
+import '../../../shared/widgets/app_skeleton.dart';
 import '../../food_analysis/models/food_meal_record.dart';
 import '../../food_analysis/pages/food_meal_details_page.dart';
 import '../../home/helpers/home_date_helpers.dart';
 import '../../home/widgets/home_meal_card.dart';
+import '../../profile/widgets/profile_section_card.dart';
 import '../helpers/social_model_parsers.dart';
 import '../models/social_member_daily_meals.dart';
 import '../services/social_service.dart';
@@ -34,7 +37,7 @@ class SocialMemberDailyMealsSection extends StatefulWidget {
 
 class _SocialMemberDailyMealsSectionState
     extends State<SocialMemberDailyMealsSection> {
-  static const double _mealCardHeight = 88;
+  static const double _mealCardHeight = HomeMealCard.defaultHeight;
 
   SocialMemberDailyMeals? _data;
   bool _isLoading = true;
@@ -71,13 +74,15 @@ class _SocialMemberDailyMealsSectionState
         _isLoading = false;
         _isRefreshing = false;
       });
+      await _precacheMealImages(result.meals);
     } catch (error) {
       if (!mounted) return;
       final message = socialFriendlyError(
         error,
         fallback: 'Não foi possível carregar refeições do perfil.',
       );
-      final shouldHide = message.toLowerCase().contains('não encontrado') ||
+      final shouldHide =
+          message.toLowerCase().contains('não encontrado') ||
           message.toLowerCase().contains('nao encontrado');
       setState(() {
         if (shouldHide) {
@@ -138,49 +143,57 @@ class _SocialMemberDailyMealsSectionState
     await _load(date: _selectedDate);
   }
 
+  Future<void> _precacheMealImages(List<FoodMealRecord> meals) async {
+    if (!mounted) return;
+    for (final meal in meals.take(6)) {
+      final imageUrl = meal.imageUrl?.trim() ?? '';
+      if (!imageUrl.toLowerCase().startsWith('http')) {
+        continue;
+      }
+      try {
+        await precacheImage(CachedNetworkImageProvider(imageUrl), context);
+      } catch (_) {}
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Padding(
         padding: EdgeInsets.only(top: AppSpacing.xl),
-        child: Center(
-          child: SizedBox(
-            width: 28,
-            height: 28,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: AppColors.action500,
-            ),
-          ),
+        child: Column(
+          children: [
+            AppSkeletonBox(height: 22, width: 120),
+            SizedBox(height: AppSpacing.md),
+            AppSkeletonBox(height: HomeMealCard.defaultHeight),
+            SizedBox(height: AppSpacing.md),
+            AppSkeletonBox(height: HomeMealCard.defaultHeight),
+          ],
         ),
       );
     }
 
     if (_error != null) {
       return Padding(
-        padding: const EdgeInsets.only(top: AppSpacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Refeições',
-              style: AppTextStyles.missionsSectionTitle.copyWith(
-                color: AppColors.brand900Variant,
+        padding: const EdgeInsets.only(top: AppSpacing.cardGap),
+        child: ProfileSectionCard(
+          title: 'Refeições',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _error!,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              _error!,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+              const SizedBox(height: AppSpacing.sm),
+              TextButton(
+                onPressed: () => _load(date: _selectedDate),
+                child: const Text('Tentar novamente'),
               ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            TextButton(
-              onPressed: () => _load(date: _selectedDate),
-              child: const Text('Tentar novamente'),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -195,93 +208,83 @@ class _SocialMemberDailyMealsSectionState
     final meals = data.meals;
 
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Refeições',
-                  style: AppTextStyles.missionsSectionTitle.copyWith(
-                    color: AppColors.brand900Variant,
+      padding: const EdgeInsets.only(top: AppSpacing.cardGap),
+      child: ProfileSectionCard(
+        title: 'Refeições',
+        trailing: InkWell(
+          onTap: _isRefreshing ? null : _pickDate,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  formatHomeDateLabel(selectedDate),
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
-              ),
-              InkWell(
-                onTap: _isRefreshing ? null : _pickDate,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xs,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        formatHomeDateLabel(selectedDate),
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      const Icon(
-                        Icons.calendar_today_rounded,
-                        size: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ],
-                  ),
+                const SizedBox(width: AppSpacing.xs),
+                const Icon(
+                  Icons.calendar_today_rounded,
+                  size: 14,
+                  color: AppColors.textSecondary,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            '${data.totalCalories} kcal no dia',
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary,
+              ],
             ),
           ),
-          if (data.isPrivate) ...[
-            const SizedBox(height: AppSpacing.xs),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              'Visível só para você. Suas refeições estão privadas.',
+              '${data.totalCalories}/${data.dailyCalorieGoal} kcal',
               style: AppTextStyles.caption.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
-          ],
-          const SizedBox(height: AppSpacing.md),
-          if (_isRefreshing)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: AppColors.action500,
-                  ),
-                ),
-              ),
-            )
-          else if (meals.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              child: Text(
-                'Nenhuma refeição registrada neste dia.',
-                style: AppTextStyles.bodyMedium.copyWith(
+            if (data.isPrivate) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Visível só para você. Suas refeições estão privadas.',
+                style: AppTextStyles.caption.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
-            )
-          else
-            ..._buildMealCards(meals),
-        ],
+            ],
+            const SizedBox(height: AppSpacing.md),
+            if (_isRefreshing)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                child: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: AppColors.action500,
+                    ),
+                  ),
+                ),
+              )
+            else if (meals.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                child: Text(
+                  'Nenhuma refeição registrada neste dia.',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              )
+            else
+              ..._buildMealCards(meals),
+          ],
+        ),
       ),
     );
   }
@@ -291,7 +294,7 @@ class _SocialMemberDailyMealsSectionState
     for (var index = 0; index < meals.length; index++) {
       final meal = meals[index];
       if (index > 0) {
-        widgets.add(const SizedBox(height: AppSpacing.sm));
+        widgets.add(const SizedBox(height: AppSpacing.md));
       }
       widgets.add(
         HomeMealCard(
@@ -303,6 +306,7 @@ class _SocialMemberDailyMealsSectionState
           imageUrl: meal.imageUrl,
           imageAsset: meal.imageAsset,
           height: _mealCardHeight,
+          backgroundColor: AppColors.insetSurface,
           onTap: () => _openMealDetails(meal),
         ),
       );

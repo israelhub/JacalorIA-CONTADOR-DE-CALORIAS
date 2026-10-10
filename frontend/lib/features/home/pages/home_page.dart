@@ -16,16 +16,33 @@ import '../helpers/home_date_helpers.dart';
 import '../helpers/home_goal_helpers.dart';
 import '../helpers/home_greeting_helpers.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_dashed_action_button.dart';
+import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../services/meal_service.dart';
 import '../widgets/home_daily_goal_with_mascot.dart';
-import '../../../shared/widgets/app_date_picker.dart';
+import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_skeleton.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/framed_avatar.dart';
+import '../../workouts/helpers/workout_day_helpers.dart';
+import '../../workouts/helpers/workout_formatters.dart';
+import '../../workouts/models/workout_models.dart';
+import '../../workouts/services/workout_service.dart';
+import '../../workouts/widgets/workout_day_exercise_card.dart';
+import '../../workouts/pages/workout_load_form_page.dart';
+import '../../workouts/widgets/workout_form_sheets.dart';
+import '../../workouts/widgets/workout_pick_exercise_sheet.dart';
+import '../helpers/home_water_helpers.dart';
+import '../models/home_water_models.dart';
+import '../services/water_service.dart';
+import '../widgets/home_add_choice_sheet.dart';
+import '../widgets/home_add_water_sheet.dart';
 import '../widgets/home_meal_card.dart';
-import '../widgets/home_actions_fab.dart';
-import '../widgets/home_weight_quick_edit_button.dart';
+import '../widgets/home_shell_layout.dart';
+import '../widgets/home_steps_weight_row.dart';
+import '../widgets/home_steps_weight_scope.dart';
+import '../widgets/home_water_card.dart';
+import '../widgets/home_week_date_selector.dart';
 import '../../../core/notifications/meal_reminder_home_widget.dart';
 import '../../auth/service/auth_service.dart';
 import '../../profile/pages/profile_page.dart';
@@ -36,12 +53,16 @@ class HomePage extends StatefulWidget {
     super.key,
     MealService? mealService,
     AuthService? authService,
+    WorkoutService? workoutService,
+    WaterService? waterService,
     this.initialSelectedDate,
     this.onSelectedDateChanged,
     this.mealSyncVersion = 0,
     this.pendingSavedMeal,
   }) : _mealService = mealService ?? const MealService(),
-       _authService = authService ?? AuthService();
+       _authService = authService ?? AuthService(),
+       _workoutService = workoutService ?? const WorkoutService(),
+       _waterService = waterService ?? const WaterService();
 
   static const _mealAsset =
       'assets/images/smiling green cartoon crocodile@2x.webp';
@@ -53,13 +74,20 @@ class HomePage extends StatefulWidget {
       'assets/videos/jaca_assustado_mobile_fast.webp';
   static const _mascotCelebrationVideoAsset =
       'assets/videos/jaca_feliz_mobile_fast.webp';
-  static const _mealCardHeight =
-      AppSpacing.huge + AppSpacing.xxxl + AppSpacing.md - 1;
+  static const _mealCardHeight = HomeMealCard.defaultHeight;
+  static const _homeAvatarSize = AppSpacing.huge + AppSpacing.xl;
+  // Compensa a foto maior para o Jaca e o card ficarem no lugar da foto de 52.
+  static const _goalCardTopGap =
+      AppSpacing.xxxl - (_homeAvatarSize - (AppSpacing.huge + AppSpacing.md));
+  static const _headerSideInset =
+      AppSpacing.lg - AppSpacing.pageHorizontal;
   static const _newAccountFirstHomeAccessKeyPrefix =
       'new_account_first_home_access_';
 
   final MealService _mealService;
   final AuthService _authService;
+  final WorkoutService _workoutService;
+  final WaterService _waterService;
   final DateTime? initialSelectedDate;
   final ValueChanged<DateTime>? onSelectedDateChanged;
   final int mealSyncVersion;
@@ -73,6 +101,8 @@ class _HomePageState extends State<HomePage>
     with AutomaticKeepAliveClientMixin {
   final List<FoodMealRecord> _records = <FoodMealRecord>[];
   final Set<String> _loadedDateKeys = <String>{};
+  WorkoutOverview _workouts = const WorkoutOverview(routines: []);
+  WaterOverview _water = const WaterOverview();
   Map<String, dynamic>? _userProfile;
   HomeDailyGoalDaySnapshot? _dayGoalSnapshot;
   bool _isDataLoading = true;
@@ -102,6 +132,14 @@ class _HomePageState extends State<HomePage>
       _userProfile = Map<String, dynamic>.from(cachedUser);
     }
     _loadInitialData();
+  }
+
+  void _syncStepsWeightProfile(Map<String, dynamic>? profile) {
+    final controller = HomeStepsWeightScope.maybeOf(context);
+    if (controller == null) {
+      return;
+    }
+    unawaited(controller.syncProfile(profile));
   }
 
   @override
@@ -167,9 +205,13 @@ class _HomePageState extends State<HomePage>
           endDate: _startOfNextDay(_selectedDate),
         ),
         widget._authService.fetchProfile(forceRefresh: forceRefreshDayGoal),
+        _fetchWorkouts(),
+        _fetchWater(),
       ]);
       final meals = results[0] as List<FoodMealRecord>;
       final profile = results[1] as Map<String, dynamic>;
+      final workouts = results[2] as WorkoutOverview;
+      final water = results[3] as WaterOverview;
       var isFirstHomeAccess = false;
       try {
         isFirstHomeAccess = await _consumeNewAccountFirstHomeAccess(profile);
@@ -191,6 +233,8 @@ class _HomePageState extends State<HomePage>
         setState(() {
           _records.clear();
           _records.addAll(meals);
+          _workouts = workouts;
+          _water = water;
           _loadedDateKeys.add(_dateKey(_selectedDate));
           _userProfile = profile.isNotEmpty ? profile : null;
           _dayGoalSnapshot = dayGoalSnapshot;
@@ -203,6 +247,7 @@ class _HomePageState extends State<HomePage>
         }
 
         _scheduleHomeImagePrecache(meals, profile);
+        _syncStepsWeightProfile(_userProfile);
         unawaited(
           MealReminderHomeWidget.sync(
             streakDays: readHomeProfileInt(profile, const [
@@ -232,6 +277,11 @@ class _HomePageState extends State<HomePage>
 
     _loadedDateKeys.remove(_dateKey(_selectedDate));
     final mealsFuture = _loadMealsForDate(_selectedDate);
+    final workoutsFuture = _reloadWorkouts();
+    final waterFuture = _reloadWater();
+    final stepsFuture =
+        HomeStepsWeightScope.maybeOf(context)?.reloadSteps(quietly: true) ??
+        Future<void>.value();
 
     try {
       final profile = await widget._authService.fetchProfile(
@@ -250,10 +300,56 @@ class _HomePageState extends State<HomePage>
           _userProfile = profile.isNotEmpty ? profile : null;
           _dayGoalSnapshot = dayGoalSnapshot;
         });
+        _syncStepsWeightProfile(_userProfile);
       }
     } catch (_) {}
 
-    await mealsFuture;
+    await Future.wait<void>([
+      mealsFuture,
+      workoutsFuture,
+      waterFuture,
+      stepsFuture,
+    ]);
+  }
+
+  Future<WorkoutOverview> _fetchWorkouts() async {
+    try {
+      return await widget._workoutService.fetchWorkouts();
+    } catch (_) {
+      return const WorkoutOverview(routines: []);
+    }
+  }
+
+  Future<void> _reloadWorkouts() async {
+    final overview = await _fetchWorkouts();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _workouts = overview;
+    });
+  }
+
+  Future<WaterOverview> _fetchWater() async {
+    try {
+      final days = homeWaterChartDays(_selectedDate);
+      return await widget._waterService.fetchWater(
+        startDate: days.first,
+        endDate: days.last,
+      );
+    } catch (_) {
+      return const WaterOverview();
+    }
+  }
+
+  Future<void> _reloadWater() async {
+    final overview = await _fetchWater();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _water = overview;
+    });
   }
 
   Future<void> _loadMealsForDate(DateTime date) async {
@@ -490,13 +586,26 @@ class _HomePageState extends State<HomePage>
       records: _records,
       userProfile: _userProfile,
       goalUserProfile: _goalUserProfile,
-      onAddMealPressed: _openFoodCapture,
       onAvatarTap: _openProfile,
       onWeightUpdated: _onWeightUpdated,
       onMealTap: _openMealDetails,
       onRefresh: _refreshData,
       selectedDate: _selectedDate,
-      onSelectedDateTap: _pickSelectedDate,
+      workoutEntries: workoutEntriesOnDate(
+        routines: _workouts.routines,
+        date: _selectedDate,
+      ),
+      onSelectedDateChanged: _setSelectedDate,
+      onAddMealPressed: _openFoodCapture,
+      onAddWorkoutPressed: _addWorkoutToDay,
+      waterDays: fillHomeWaterDays(
+        selectedDate: _selectedDate,
+        millilitersByDate: _water.millilitersByDate,
+      ),
+      waterGoalMl: _water.goalMl,
+      onAddWaterPressed: _addWater,
+      onWorkoutTap: _editWorkoutEntry,
+      onWorkoutDelete: _deleteWorkoutEntry,
       playMascotCelebration: _playMascotCelebration,
       idleMascotVideoAsset: _resolveIdleMascotAsset(date: _selectedDate),
       mascotCelebrationVideoAsset: HomePage._mascotCelebrationVideoAsset,
@@ -514,19 +623,145 @@ class _HomePageState extends State<HomePage>
     });
   }
 
-  Future<void> _pickSelectedDate() async {
-    final pickedDate = await showAppDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-    );
-
-    if (pickedDate == null) {
+  Future<void> _addWater() async {
+    final amount = await showHomeAddWaterSheet(context);
+    if (!mounted || amount == null) {
       return;
     }
 
-    await _setSelectedDate(pickedDate);
+    try {
+      final result = await widget._waterService.addWater(
+        milliliters: amount,
+        recordedAt: _selectedDate,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _water = _water.replacingDay(result.day).copyWithGoal(result.goalMl);
+      });
+      AppToast.success(
+        context,
+        message: '${formatWaterVolume(amount)} adicionados.',
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
+  Future<void> _addWorkoutToDay() async {
+    if (_workouts.routines.isEmpty) {
+      AppToast.error(
+        context,
+        message: 'Monte uma ficha na aba Treino primeiro.',
+      );
+      return;
+    }
+
+    final routine = await showHomeWorkoutRoutineSheet(
+      context,
+      routines: _workouts.routines,
+    );
+    if (!mounted || routine == null) {
+      return;
+    }
+    if (routine.exercises.isEmpty) {
+      AppToast.error(context, message: 'Essa ficha ainda não tem exercícios.');
+      return;
+    }
+
+    final remaining = remainingExercisesOnDate(
+      routine: routine,
+      date: _selectedDate,
+    );
+    final logged = routine.exercises
+        .where((exercise) => remaining.every((item) => item.id != exercise.id))
+        .toList();
+    final picked = await showWorkoutPickExerciseSheet(
+      context,
+      routineName: routine.name,
+      remaining: remaining,
+      logged: logged,
+    );
+    if (!mounted || picked == null) {
+      return;
+    }
+    await _upsertWorkoutLoad(picked);
+  }
+
+  Future<void> _editWorkoutEntry(WorkoutDayEntry entry) async {
+    await _upsertWorkoutLoad(entry.exercise);
+  }
+
+  Future<void> _upsertWorkoutLoad(WorkoutExercise exercise) async {
+    final draft = await context.pushSlidePage<WorkoutLoadDraft>(
+      WorkoutLoadFormPage(
+        exercise: exercise,
+        recordedAt: _selectedDate,
+        lockDate: true,
+      ),
+    );
+    if (draft == null) {
+      return;
+    }
+
+    try {
+      final updated = await widget._workoutService.upsertLoad(
+        exerciseId: exercise.id,
+        weight: draft.weight,
+        recordedAt: draft.recordedAt,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _workouts = _workouts.replacingExercise(updated);
+      });
+      AppToast.success(
+        context,
+        message: '${formatWorkoutWeight(draft.weight)} kg em ${exercise.name}.',
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
+  Future<void> _deleteWorkoutEntry(WorkoutDayEntry entry) async {
+    final confirmed = await AppConfirmModal.show(
+      context,
+      title: 'Tirar ${entry.exercise.name} do dia?',
+      message: 'O peso desse dia some, o exercício continua nas Fichas.',
+      confirmLabel: 'Tirar',
+      isDanger: true,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await widget._workoutService.deleteLoad(loadId: entry.load.id);
+      await _reloadWorkouts();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+      );
+    }
   }
 
   Future<void> _setSelectedDate(DateTime date) async {
@@ -539,7 +774,7 @@ class _HomePageState extends State<HomePage>
       _selectedDate = normalized;
     });
 
-    await _loadMealsForDate(normalized);
+    await Future.wait<void>([_loadMealsForDate(normalized), _reloadWater()]);
     widget.onSelectedDateChanged?.call(normalized);
   }
 
@@ -583,6 +818,7 @@ class _HomePageState extends State<HomePage>
       _userProfile = mergedProfile;
       _dayGoalSnapshot = dayGoalSnapshot;
     });
+    _syncStepsWeightProfile(mergedProfile);
   }
 
   Future<void> _openFoodCapture() async {
@@ -677,29 +913,48 @@ class _HomeBodySkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = homeShellFabBottomInset(context);
+
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Column(
+      backgroundColor: AppColors.homeBackground,
+      body: AppAmbientPageBody(
+        child: SafeArea(
+          bottom: false,
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.pageHorizontal,
+              AppSpacing.xxl,
+              AppSpacing.pageHorizontal,
+              bottomInset + AppSpacing.xxxl,
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: AppSpacing.xxl),
-                const _HomeHeaderSkeleton(),
-                const SizedBox(height: AppSpacing.xxxl),
-                const _HomeGoalSkeleton(),
-                const SizedBox(height: AppSpacing.xl),
-                const _MealsHeaderSkeleton(),
-                const SizedBox(height: AppSpacing.sm),
-                const _AddMealActionSkeleton(),
-                const SizedBox(height: AppSpacing.lg),
-                const _MealCardSkeleton(),
-                const SizedBox(height: AppSpacing.lg),
-                const _MealCardSkeleton(),
-                const SizedBox(height: AppSpacing.lg),
-                const _MealCardSkeleton(),
-                const SizedBox(height: AppSpacing.xxxl),
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: HomePage._headerSideInset,
+                  ),
+                  child: _HomeHeaderSkeleton(),
+                ),
+                SizedBox(height: HomePage._goalCardTopGap),
+                _HomeGoalSkeleton(),
+                SizedBox(height: AppSpacing.xl),
+                AppSkeletonBox(height: 64, borderRadius: AppRadius.md),
+                SizedBox(height: AppSpacing.xl),
+                _HomeSectionSkeleton(titleWidth: 110, itemCount: 2),
+                SizedBox(height: AppSpacing.cardGap),
+                _HomeSectionSkeleton(titleWidth: 90, itemCount: 1),
+                SizedBox(height: AppSpacing.cardGap),
+                AppSkeletonBox(
+                  height: HomeWaterCard.cardHeight,
+                  borderRadius: AppRadius.lg,
+                ),
+                SizedBox(height: AppSpacing.cardGap),
+                AppSkeletonBox(
+                  height: HomeStepsWeightRow.height,
+                  borderRadius: AppRadius.lg,
+                ),
               ],
             ),
           ),
@@ -714,8 +969,8 @@ class _HomeHeaderSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: const [
+    return const Row(
+      children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -745,41 +1000,43 @@ class _HomeGoalSkeleton extends StatelessWidget {
   }
 }
 
-class _MealsHeaderSkeleton extends StatelessWidget {
-  const _MealsHeaderSkeleton();
+class _HomeSectionSkeleton extends StatelessWidget {
+  const _HomeSectionSkeleton({
+    required this.titleWidth,
+    this.itemCount = 1,
+  });
+
+  final double titleWidth;
+  final int itemCount;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        Expanded(child: AppSkeletonBox(height: AppSpacing.lg)),
-        SizedBox(width: AppSpacing.md),
-        AppSkeletonBox(height: AppSpacing.md, width: 90),
-      ],
-    );
-  }
-}
+    final itemRadius = AppRadius.lg - AppSpacing.xs;
 
-class _AddMealActionSkeleton extends StatelessWidget {
-  const _AddMealActionSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return const AppSkeletonBox(
-      height: HomePage._mealCardHeight,
-      borderRadius: AppRadius.lg,
-    );
-  }
-}
-
-class _MealCardSkeleton extends StatelessWidget {
-  const _MealCardSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return const AppSkeletonBox(
-      height: HomePage._mealCardHeight,
-      borderRadius: AppRadius.lg,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.homeCardSurface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppSkeletonBox(height: 22, width: titleWidth),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          for (var index = 0; index < itemCount; index += 1) ...[
+            if (index > 0) const SizedBox(height: AppSpacing.md),
+            AppSkeletonBox(
+              height: HomePage._mealCardHeight,
+              borderRadius: itemRadius,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -787,11 +1044,18 @@ class _MealCardSkeleton extends StatelessWidget {
 class _HomeBody extends StatelessWidget {
   const _HomeBody({
     required this.records,
-    required this.onAddMealPressed,
     required this.onMealTap,
     required this.onRefresh,
     required this.selectedDate,
-    required this.onSelectedDateTap,
+    required this.onSelectedDateChanged,
+    required this.onAddMealPressed,
+    required this.onAddWorkoutPressed,
+    required this.waterDays,
+    required this.waterGoalMl,
+    required this.onAddWaterPressed,
+    required this.workoutEntries,
+    required this.onWorkoutTap,
+    required this.onWorkoutDelete,
     required this.playMascotCelebration,
     required this.idleMascotVideoAsset,
     required this.mascotCelebrationVideoAsset,
@@ -803,11 +1067,18 @@ class _HomeBody extends StatelessWidget {
   });
 
   final List<FoodMealRecord> records;
-  final VoidCallback onAddMealPressed;
   final Future<void> Function(FoodMealRecord record) onMealTap;
   final Future<void> Function() onRefresh;
   final DateTime selectedDate;
-  final VoidCallback onSelectedDateTap;
+  final ValueChanged<DateTime> onSelectedDateChanged;
+  final VoidCallback onAddMealPressed;
+  final VoidCallback onAddWorkoutPressed;
+  final List<HomeWaterDay> waterDays;
+  final int waterGoalMl;
+  final VoidCallback onAddWaterPressed;
+  final List<WorkoutDayEntry> workoutEntries;
+  final ValueChanged<WorkoutDayEntry> onWorkoutTap;
+  final ValueChanged<WorkoutDayEntry> onWorkoutDelete;
   final bool playMascotCelebration;
   final String idleMascotVideoAsset;
   final String mascotCelebrationVideoAsset;
@@ -835,33 +1106,36 @@ class _HomeBody extends StatelessWidget {
         .toList(growable: false);
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: onWeightUpdated == null
-          ? null
-          : Padding(
-              padding: EdgeInsets.only(bottom: bottomInset),
-              child: HomeActionsFab(
-                userProfile: userProfile,
-                onWeightUpdated: onWeightUpdated!,
-              ),
+      backgroundColor: AppColors.homeBackground,
+      body: AppAmbientPageBody(
+        child: SafeArea(
+          bottom: false,
+          child: AppRefreshScrollView(
+            onRefresh: onRefresh,
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.pageHorizontal,
+              AppSpacing.xxl,
+              AppSpacing.pageHorizontal,
+              bottomInset + AppSpacing.xxxl,
             ),
-      body: SafeArea(
-        child: AppRefreshScrollView(
-          onRefresh: onRefresh,
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.xxl,
-            AppSpacing.lg,
-            // SafeArea already clears the bottom nav; only reserve
-            // space so the last meal isn't hidden under the FAB.
-            56 + homeShellFabNavGap,
-          ),
-          child: Column(
-            children: [
-              _Header(userProfile: userProfile, onAvatarTap: onAvatarTap),
-              const SizedBox(height: AppSpacing.xxxl),
-              HomeDailyGoalWithMascot(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: HomePage._headerSideInset,
+                  ),
+                  child: _Header(
+                    userProfile: userProfile,
+                    streakDays: readHomeProfileInt(userProfile, const [
+                      'streakDays',
+                      'streak_days',
+                    ]),
+                    onAvatarTap: onAvatarTap,
+                  ),
+                ),
+                const SizedBox(height: HomePage._goalCardTopGap),
+                HomeDailyGoalWithMascot(
                 mascotAsset: HomePage._mealAsset,
                 idleMascotVideoAsset: idleMascotVideoAsset,
                 mascotVideoAsset: mascotCelebrationVideoAsset,
@@ -872,28 +1146,77 @@ class _HomeBody extends StatelessWidget {
                 userProfile: goalUserProfile ?? userProfile,
               ),
               const SizedBox(height: AppSpacing.xl),
-              _MealsHeader(
+              HomeWeekDateSelector(
                 selectedDate: selectedDate,
-                onTap: onSelectedDateTap,
+                onSelected: onSelectedDateChanged,
               ),
-              const SizedBox(height: AppSpacing.sm),
-              _AddMealAction(onTap: onAddMealPressed),
-              for (final (index, record) in dayRecords.indexed) ...[
-                const SizedBox(height: AppSpacing.lg),
-                HomeMealCard(
-                  cardKey: ValueKey('home-meal-card-$index'),
-                  title: record.title,
-                  description: record.description,
-                  kcal: record.kcalLabel,
-                  time: record.timeLabel,
-                  imageAsset: record.imageAsset,
-                  imageBytes: record.imageBytes,
-                  imageUrl: record.imageUrl,
-                  height: HomePage._mealCardHeight,
-                  onTap: () => onMealTap(record),
+              const SizedBox(height: AppSpacing.xl),
+              _HomeSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _SectionHeader(title: 'Refeições'),
+                    const SizedBox(height: AppSpacing.md),
+                    _HomeSectionAddCard(
+                      cardKey: const ValueKey('home-section-meals-add'),
+                      label: 'Adicionar refeição',
+                      onTap: onAddMealPressed,
+                    ),
+                    for (final (index, record) in dayRecords.indexed) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      HomeMealCard(
+                        cardKey: ValueKey('home-meal-card-$index'),
+                        title: record.title,
+                        description: record.description,
+                        kcal: record.kcalLabel,
+                        time: record.timeLabel,
+                        imageAsset: record.imageAsset,
+                        imageBytes: record.imageBytes,
+                        imageUrl: record.imageUrl,
+                        height: HomePage._mealCardHeight,
+                        backgroundColor: AppColors.insetSurface,
+                        onTap: () => onMealTap(record),
+                      ),
+                    ],
+                  ],
                 ),
+              ),
+              const SizedBox(height: AppSpacing.cardGap),
+              _HomeSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _SectionHeader(title: 'Treinos'),
+                    const SizedBox(height: AppSpacing.md),
+                    _HomeSectionAddCard(
+                      cardKey: const ValueKey('home-section-workouts-add'),
+                      label: 'Adicionar treino',
+                      onTap: onAddWorkoutPressed,
+                    ),
+                    for (final (index, entry) in workoutEntries.indexed) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      WorkoutDayExerciseCard(
+                        key: ValueKey('home-workout-card-$index'),
+                        entry: entry,
+                        backgroundColor: AppColors.insetSurface,
+                        onTap: () => onWorkoutTap(entry),
+                        onDelete: () => onWorkoutDelete(entry),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.cardGap),
+              HomeWaterCard(
+                days: waterDays,
+                selectedDate: selectedDate,
+                goalMl: waterGoalMl,
+                onAdd: onAddWaterPressed,
+              ),
+              const SizedBox(height: AppSpacing.cardGap),
+                HomeStepsWeightRow(onWeightUpdated: onWeightUpdated),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -902,8 +1225,9 @@ class _HomeBody extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({this.userProfile, this.onAvatarTap});
+  const _Header({this.userProfile, this.streakDays = 0, this.onAvatarTap});
   final Map<String, dynamic>? userProfile;
+  final int streakDays;
   final VoidCallback? onAvatarTap;
 
   @override
@@ -922,10 +1246,12 @@ class _Header extends StatelessWidget {
     final greeting = homeGreetingFor(DateTime.now());
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 '${greeting.emoji} ${greeting.label}',
@@ -943,53 +1269,28 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        GestureDetector(
-          onTap: onAvatarTap,
-          child: FramedAvatar(
-            size: AppSpacing.huge + AppSpacing.md,
-            avatarUrl: avatarUrl,
-            frameId: avatarFrameId,
-            fallbackText: trimmedName,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MealsHeader extends StatelessWidget {
-  const _MealsHeader({required this.selectedDate, required this.onTap});
-
-  final DateTime selectedDate;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'Refeições do dia',
-            style: AppTextStyles.homeSectionTitle.copyWith(
-              color: AppColors.brand900Variant,
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xs,
-            ),
-            child: Text(
-              formatHomeDateLabel(selectedDate),
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.textSecondary,
+        const SizedBox(width: AppSpacing.md),
+        SizedBox(
+          width: HomePage._homeAvatarSize,
+          height: HomePage._homeAvatarSize,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
+            children: [
+              GestureDetector(
+                onTap: onAvatarTap,
+                child: FramedAvatar(
+                  size: HomePage._homeAvatarSize,
+                  avatarUrl: avatarUrl,
+                  frameId: avatarFrameId,
+                  fallbackText: trimmedName,
+                ),
               ),
-            ),
+              Positioned(
+                top: HomePage._homeAvatarSize,
+                child: _StreakChip(days: streakDays),
+              ),
+            ],
           ),
         ),
       ],
@@ -997,30 +1298,122 @@ class _MealsHeader extends StatelessWidget {
   }
 }
 
-class _AddMealAction extends StatelessWidget {
-  const _AddMealAction({required this.onTap});
+class _StreakChip extends StatelessWidget {
+  const _StreakChip({required this.days});
 
+  final int days;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = days == 1 ? '1 dia de sequência' : '$days dias de sequência';
+
+    return Semantics(
+      label: label,
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.local_fire_department_rounded,
+            size: 12,
+            color: AppColors.socialMetricStreak,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            '$days',
+            key: const ValueKey('home-streak-days'),
+            style: AppTextStyles.captionStrong.copyWith(
+              color: AppColors.socialMetricStreak,
+              fontSize: 10,
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeSectionCard extends StatelessWidget {
+  const _HomeSectionCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.homeCardSurface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: AppTextStyles.homeSectionTitle.copyWith(
+        color: AppColors.brand900Variant,
+      ),
+    );
+  }
+}
+
+class _HomeSectionAddCard extends StatelessWidget {
+  const _HomeSectionAddCard({
+    required this.cardKey,
+    required this.label,
+    required this.onTap,
+  });
+
+  final Key cardKey;
+  final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return AppDashedActionButton(
-      label: 'Adicionar refeição',
-      onTap: onTap,
-      height: HomePage._mealCardHeight,
-      borderRadius: AppRadius.lg - AppSpacing.xs,
-      labelStyle: AppTextStyles.homeAction.copyWith(color: AppColors.action500),
-      leading: Container(
-        width: AppSpacing.xxl + AppSpacing.xs,
-        height: AppSpacing.xxl + AppSpacing.xs,
-        decoration: const BoxDecoration(
-          color: AppColors.action500,
-          shape: BoxShape.circle,
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          '+',
-          style: AppTextStyles.buttonMedium.copyWith(color: AppColors.surface),
+    final radius = BorderRadius.circular(AppRadius.lg - AppSpacing.xs);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: cardKey,
+        onTap: onTap,
+        borderRadius: radius,
+        child: Container(
+          width: double.infinity,
+          height: HomePage._mealCardHeight,
+          decoration: BoxDecoration(
+            color: AppColors.insetSurface,
+            borderRadius: radius,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.add_rounded,
+                size: 22,
+                color: AppColors.action500,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                label,
+                style: AppTextStyles.homeAction.copyWith(
+                  color: AppColors.action500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

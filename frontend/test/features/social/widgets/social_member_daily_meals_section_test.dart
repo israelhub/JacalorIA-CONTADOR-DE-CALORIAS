@@ -36,6 +36,7 @@ void main() {
               'startsAt': '2026-01-01',
               'endsAt': '2026-08-15',
               'totalCalories': 500,
+              'dailyCalorieGoal': 2200,
               'meals': [
                 {
                   'id': 'meal-1',
@@ -58,7 +59,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Refeições'), findsOneWidget);
-    expect(find.text('500 kcal no dia'), findsOneWidget);
+    expect(find.text('500/2200 kcal'), findsOneWidget);
     expect(find.text('Almoço'), findsOneWidget);
   });
 
@@ -85,6 +86,7 @@ void main() {
                   'fat': 10,
                   'timeLabel': '12:30',
                   'mealType': 'lunch',
+                  'imageUrl': 'https://example.com/meals/foto.jpg',
                   'analysisItems': [
                     {
                       'name': 'Arroz',
@@ -108,8 +110,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(FoodMealDetailsPage), findsOneWidget);
-    expect(find.text('Detalhes da refeição'), findsOneWidget);
+    expect(find.textContaining('Detalhes'), findsOneWidget);
     expect(find.text('Arroz'), findsOneWidget);
+    expect(find.text('Imagem não cadastrada'), findsNothing);
     expect(find.byTooltip('Editar refeição'), findsNothing);
   });
 

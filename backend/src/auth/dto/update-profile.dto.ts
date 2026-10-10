@@ -95,6 +95,10 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  equippedProfileReactionEmojiId?: string;
+
+  @IsOptional()
+  @IsString()
   equippedOffensiveBlockerId?: string;
 
   @IsOptional()
