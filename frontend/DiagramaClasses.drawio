@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="937" dy="1229" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2542" math="0" shadow="0">
+    <mxGraphModel dx="1124" dy="1315" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2542" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -262,11 +262,12 @@
         <mxCell id="e319" edge="1" parent="p1" source="f140" style="endArrow=none;startArrow=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;edgeStyle=none;exitX=1.008;exitY=0.087;exitDx=0;exitDy=0;entryX=-0.005;entryY=0.087;entryDx=0;entryDy=0;entryPerimeter=0;exitPerimeter=0;" target="gen_c149_2" value="0..1  liquida  1">
           <mxGeometry relative="1" x="-0.0368" as="geometry" />
         </mxCell>
-        <mxCell id="e336" edge="1" parent="p1" source="f111" style="endArrow=none;startArrow=none;edgeStyle=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="gen_c149_2b" value="0..1  credita  0..*">
-          <mxGeometry relative="1" as="geometry">
+        <mxCell id="e336" edge="1" parent="p1" source="c110" style="endArrow=none;startArrow=none;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.122;entryY=0.007;entryDx=0;entryDy=0;entryPerimeter=0;" target="c149" value="0..1  credita  0..*">
+          <mxGeometry relative="1" x="-0.0051" as="geometry">
+            <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="640" y="380" />
-              <mxPoint x="950" y="380" />
+              <mxPoint x="516.5" y="37.2" />
+              <mxPoint x="996.1" y="37.2" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -358,11 +359,11 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="ee503" edge="1" parent="p1" source="enCodigoMoeda" style="endArrow=none;startArrow=none;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="gen_c149_3">
-          <mxGeometry relative="1" x="-0.2938" as="geometry">
+          <mxGeometry relative="1" x="-0.2093" as="geometry">
             <Array as="points">
               <mxPoint x="1002" y="332.3" />
-              <mxPoint x="979.7" y="332.3" />
-              <mxPoint x="979.7" y="139" />
+              <mxPoint x="943.2" y="332.3" />
+              <mxPoint x="943.2" y="155" />
             </Array>
           </mxGeometry>
         </mxCell>
