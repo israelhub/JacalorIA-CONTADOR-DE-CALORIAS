@@ -187,7 +187,7 @@
           <mxGeometry height="16" width="206" y="242" as="geometry" />
         </mxCell>
         <mxCell id="c138" parent="p1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="CompraLoja" vertex="1">
-          <mxGeometry height="258" width="212" x="1080" y="73" as="geometry" />
+          <mxGeometry height="210" width="212" x="1080" y="73" as="geometry" />
         </mxCell>
         <mxCell id="f139" parent="c138" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="-id: UUID" vertex="1">
           <mxGeometry height="16" width="212" y="26" as="geometry" />
@@ -216,23 +216,14 @@
         <mxCell id="m90024" parent="c138" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" value="" vertex="1">
           <mxGeometry height="8" width="212" y="154" as="geometry" />
         </mxCell>
-        <mxCell id="m90025" parent="c138" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+efetuarCompra(usuario, item): void" vertex="1">
+        <mxCell id="m90028" parent="c138" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+vincularTransacao(transacao): void" vertex="1">
           <mxGeometry height="16" width="212" y="162" as="geometry" />
         </mxCell>
-        <mxCell id="m90026" parent="c138" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+registrarDeCheckIn(usuario, item): void" vertex="1">
+        <mxCell id="m90029" parent="c138" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+equiparItemAposCompra(): void" vertex="1">
           <mxGeometry height="16" width="212" y="178" as="geometry" />
         </mxCell>
-        <mxCell id="m90027" parent="c138" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+registrarMigracao(usuario, item): void" vertex="1">
-          <mxGeometry height="16" width="212" y="194" as="geometry" />
-        </mxCell>
-        <mxCell id="m90028" parent="c138" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+vincularTransacao(transacao): void" vertex="1">
-          <mxGeometry height="16" width="212" y="210" as="geometry" />
-        </mxCell>
-        <mxCell id="m90029" parent="c138" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+equiparItemAposCompra(): void" vertex="1">
-          <mxGeometry height="16" width="212" y="226" as="geometry" />
-        </mxCell>
         <mxCell id="m90030" parent="c138" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+incrementarInventarioBloqueador(qtd): void" vertex="1">
-          <mxGeometry height="16" width="212" y="242" as="geometry" />
+          <mxGeometry height="16" width="212" y="194" as="geometry" />
         </mxCell>
         <mxCell id="enTipoMissao" parent="p1" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#E8E8E8;swimlaneFillColor=#E8E8E8;strokeColor=#000000;fontSize=10;" value="«enumeration»&#xa;TipoMissao" vertex="1">
           <mxGeometry height="104" width="105" x="67" y="347" as="geometry" />
@@ -1427,7 +1418,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="c9" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="Usuario" vertex="1">
-          <mxGeometry height="866" width="340" x="1402" y="158" as="geometry" />
+          <mxGeometry height="914" width="340" x="1402" y="158" as="geometry" />
         </mxCell>
         <mxCell id="f10" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="-id: UUID" vertex="1">
           <mxGeometry height="16" width="340" y="26" as="geometry" />
@@ -1587,6 +1578,15 @@
         </mxCell>
         <mxCell id="m90152" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+registrarAtividade(): void" vertex="1">
           <mxGeometry height="16" width="340" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="m90153" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+efetuarCompra(item): CompraLoja" vertex="1">
+          <mxGeometry height="16" width="340" y="866" as="geometry" />
+        </mxCell>
+        <mxCell id="m90154" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+registrarCheckIn(item): CompraLoja" vertex="1">
+          <mxGeometry height="16" width="340" y="882" as="geometry" />
+        </mxCell>
+        <mxCell id="m90155" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+registrarMigracao(item): CompraLoja" vertex="1">
+          <mxGeometry height="16" width="340" y="898" as="geometry" />
         </mxCell>
         <mxCell id="c296" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="&lt;span style=&quot;white-space: nowrap;&quot;&gt;AnaliseEvento&lt;/span&gt;" vertex="1">
           <mxGeometry height="194" width="250" x="740" y="1311" as="geometry" />
