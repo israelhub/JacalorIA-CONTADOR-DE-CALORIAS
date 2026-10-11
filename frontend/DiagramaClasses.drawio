@@ -1194,7 +1194,7 @@
             <mxPoint x="1319.245" y="-38.511999999999944" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e310_ms" connectable="0" parent="e310" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..*" vertex="1">
+        <mxCell id="e310_ms" connectable="0" parent="e310" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="*" vertex="1">
           <mxGeometry relative="1" x="-0.9" as="geometry">
             <mxPoint x="-14" y="2" as="offset" />
           </mxGeometry>
