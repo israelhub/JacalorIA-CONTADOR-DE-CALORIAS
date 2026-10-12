@@ -392,7 +392,7 @@
           <mxGeometry height="735" width="467" x="740" y="166" as="geometry" />
         </mxCell>
         <mxCell id="c49" parent="p3" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="Refeicao" vertex="1">
-          <mxGeometry height="338" width="206" x="29.5" y="49" as="geometry" />
+          <mxGeometry height="322" width="206" x="29.5" y="49" as="geometry" />
         </mxCell>
         <mxCell id="f50" parent="c49" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="-id: UUID" vertex="1">
           <mxGeometry height="16" width="206" y="26" as="geometry" />
@@ -445,14 +445,11 @@
         <mxCell id="m90038" parent="c49" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" value="" vertex="1">
           <mxGeometry height="8" width="206" y="282" as="geometry" />
         </mxCell>
-        <mxCell id="m90039" parent="c49" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+registrar(titulo, macros): void" vertex="1">
+        <mxCell id="m90040" parent="c49" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+atualizar(dados): void" vertex="1">
           <mxGeometry height="16" width="206" y="290" as="geometry" />
         </mxCell>
-        <mxCell id="m90040" parent="c49" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+atualizar(dados): void" vertex="1">
-          <mxGeometry height="16" width="206" y="306" as="geometry" />
-        </mxCell>
         <mxCell id="m90041" parent="c49" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+excluir(): void" vertex="1">
-          <mxGeometry height="16" width="206" y="322" as="geometry" />
+          <mxGeometry height="16" width="206" y="306" as="geometry" />
         </mxCell>
         <mxCell id="c69" parent="p3" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="RefeicaoSalva" vertex="1">
           <mxGeometry height="274" width="206" x="29.5" y="432" as="geometry" />
@@ -1443,7 +1440,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="c9" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="Usuario" vertex="1">
-          <mxGeometry height="914" width="340" x="1266" y="166" as="geometry" />
+          <mxGeometry height="930" width="340" x="1266" y="166" as="geometry" />
         </mxCell>
         <mxCell id="f10" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="-id: UUID" vertex="1">
           <mxGeometry height="16" width="340" y="26" as="geometry" />
@@ -1612,6 +1609,9 @@
         </mxCell>
         <mxCell id="m90155" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+registrarMigracao(item): CompraLoja" vertex="1">
           <mxGeometry height="16" width="340" y="898" as="geometry" />
+        </mxCell>
+        <mxCell id="m90156" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+registrarRefeicao(titulo, macros): Refeicao" vertex="1">
+          <mxGeometry height="16" width="340" y="914" as="geometry" />
         </mxCell>
         <mxCell id="c296" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="&lt;span style=&quot;white-space: nowrap;&quot;&gt;AnaliseEvento&lt;/span&gt;" vertex="1">
           <mxGeometry height="194" width="206" x="770" y="1100" as="geometry" />
