@@ -12,3 +12,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Shared sideload key so CI APKs keep a stable SHA-1 for Google Sign-In.
+# Not a Play Store upload key — rotate into GitHub secrets before Play.
+!app/jacaloria-sideload.keystore

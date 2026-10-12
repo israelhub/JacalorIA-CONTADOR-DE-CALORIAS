@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/config/api_config.dart';
 import '../../../core/notifications/meal_reminder_home_widget.dart';
+import 'google_sign_in_config.dart';
 
 class AuthService {
   static const Duration _apiTimeout = Duration(seconds: 90);
@@ -19,16 +20,19 @@ class AuthService {
   static Future<Map<String, dynamic>>? _inflightProfileFetch;
 
   static String get _baseUrl => ApiConfig.baseUrl;
-  static const String _googleWebClientId = String.fromEnvironment(
+  static const String _googleWebClientIdEnv = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
-    defaultValue:
-        '618330390967-emagf9ea3j4l5kaeroi2s1bs527ugc0i.apps.googleusercontent.com',
   );
+  static String get _googleWebClientId =>
+      GoogleSignInConfig.resolveWebClientId(_googleWebClientIdEnv);
+
+  // Android: `serverClientId` must be the Web OAuth client. The Android
+  // OAuth client (package + SHA-1) is resolved by Google Play services
+  // from the signing cert — it must exist in the same Cloud project.
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: const ['email', 'openid'],
-    clientId: (kIsWeb || defaultTargetPlatform == TargetPlatform.android)
-        ? _googleWebClientId
-        : null,
+    clientId: kIsWeb ? _googleWebClientId : null,
+    serverClientId: _googleWebClientId,
   );
 
   static Future<void> initialize() async {
