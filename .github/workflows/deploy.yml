@@ -191,17 +191,19 @@ jobs:
               --content-type "application/json"
           fi
 
-          # Pagina publica de privacidade (Play Store exige HTML estatico, sem login).
-          if [ -f "$WEB_DIR/privacidade.html" ]; then
-            aws s3 cp "$WEB_DIR/privacidade.html" \
-              "s3://$BUCKET/privacidade.html" \
-              --cache-control "no-cache,must-revalidate" \
-              --content-type "text/html; charset=utf-8"
-            aws s3 cp "$WEB_DIR/privacidade.html" \
-              "s3://$BUCKET/privacidade" \
-              --cache-control "no-cache,must-revalidate" \
-              --content-type "text/html; charset=utf-8"
-          fi
+          # Paginas legais publicas (Play Store exige HTML estatico, sem login).
+          for legal_page in privacidade excluir-conta; do
+            if [ -f "$WEB_DIR/${legal_page}.html" ]; then
+              aws s3 cp "$WEB_DIR/${legal_page}.html" \
+                "s3://$BUCKET/${legal_page}.html" \
+                --cache-control "no-cache,must-revalidate" \
+                --content-type "text/html; charset=utf-8"
+              aws s3 cp "$WEB_DIR/${legal_page}.html" \
+                "s3://$BUCKET/${legal_page}" \
+                --cache-control "no-cache,must-revalidate" \
+                --content-type "text/html; charset=utf-8"
+            fi
+          done
 
       - name: Invalidar cache do CloudFront
         run: |
@@ -218,6 +220,8 @@ jobs:
               "/baixar" \
               "/privacidade.html" \
               "/privacidade" \
+              "/excluir-conta.html" \
+              "/excluir-conta" \
               "/app/*" \
               "/main.dart.js" \
               "/main.dart.wasm" \
