@@ -4,7 +4,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../models/jaca_emoji_catalog.dart';
 import '../models/social_group_chat_message.dart';
 
-enum SocialGroupChatMessageAction { reply, edit, delete, view }
+enum SocialGroupChatMessageAction { reply, edit, delete, view, report }
 
 class SocialGroupChatMessageMenu extends StatelessWidget {
   const SocialGroupChatMessageMenu({
@@ -63,6 +63,14 @@ class SocialGroupChatMessageMenu extends StatelessWidget {
               label: 'Excluir',
               color: AppColors.textError,
               action: SocialGroupChatMessageAction.delete,
+            ),
+          if (!message.isCurrentUser && !message.isDeleted)
+            (
+              key: const ValueKey('group-chat-action-report'),
+              icon: Icons.flag_outlined,
+              label: 'Denunciar',
+              color: AppColors.textError,
+              action: SocialGroupChatMessageAction.report,
             ),
         ];
 

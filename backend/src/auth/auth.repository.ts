@@ -231,6 +231,16 @@ export class AuthRepository {
          WHERE user_low_id = :userId OR user_high_id = :userId`,
       );
       await run(`DELETE FROM social_friend_links WHERE user_id = :userId`);
+      await run(
+        `DELETE FROM social_user_blocks
+         WHERE blocker_id = :userId OR blocked_id = :userId`,
+      );
+      await run(`DELETE FROM social_content_reports WHERE reporter_id = :userId`);
+      await run(
+        `UPDATE social_content_reports
+         SET target_user_id = NULL
+         WHERE target_user_id = :userId`,
+      );
       await run(`DELETE FROM workout_load_entries WHERE user_id = :userId`);
       await run(`DELETE FROM workout_exercises WHERE user_id = :userId`);
       await run(`DELETE FROM workout_routines WHERE user_id = :userId`);

@@ -16,6 +16,8 @@ import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
 import { UpdateSocialGroupDto } from './dto/update-social-group.dto';
 import { isJacaEmojiId, isPaidJacaEmojiId, JACA_EMOJI_IDS } from './constants/jaca-emojis';
 import { ReactGroupMessageDto } from './dto/react-group-message.dto';
+import { CreateSocialReportDto } from './dto/create-social-report.dto';
+import { SocialContentReport } from './models/social-content-report.model';
 import { SocialFriendLink } from './models/social-friend-link.model';
 import { SocialFriendRequest } from './models/social-friend-request.model';
 import { SocialFriendship } from './models/social-friendship.model';
@@ -24,6 +26,7 @@ import { SocialGroupMember } from './models/social-group-member.model';
 import { SocialGroupMessage } from './models/social-group-message.model';
 import { SocialGroupMessageReaction } from './models/social-group-message-reaction.model';
 import { SocialGroup } from './models/social-group.model';
+import { SocialUserBlock } from './models/social-user-block.model';
 import { StreakService } from '../streak/streak.service';
 import { hasReachedCalorieGoal } from '../shared/utils/calorie-goal.util';
 import { parseNumber } from '../shared/utils/number-parser.util';
@@ -55,6 +58,10 @@ export class SocialService {
     private readonly socialFriendLinkModel: typeof SocialFriendLink,
     @InjectModel(SocialFriendRequest)
     private readonly socialFriendRequestModel: typeof SocialFriendRequest,
+    @InjectModel(SocialUserBlock)
+    private readonly socialUserBlockModel: typeof SocialUserBlock,
+    @InjectModel(SocialContentReport)
+    private readonly socialContentReportModel: typeof SocialContentReport,
     @InjectModel(User)
     private readonly userModel: typeof User,
     @InjectModel(Meal)
@@ -352,6 +359,11 @@ export class SocialService {
       throw new NotFoundException('Solicitação de amizade não encontrada');
     }
 
+    if (await this.isBlockedEitherWay(userId, request.requesterId)) {
+      await request.update({ status: 'rejected', respondedAt: new Date() } as never);
+      throw new BadRequestException('Não é possível aceitar solicitação deste usuário');
+    }
+
     await this.createFriendship(userId, request.requesterId);
     await request.update({ status: 'accepted', respondedAt: new Date() } as never);
     await this.socialFriendRequestModel.update(
@@ -399,6 +411,155 @@ export class SocialService {
       throw new NotFoundException('Amizade não encontrada');
     }
     return this.listFriends(userId);
+  }
+
+  async blockUser(userId: string, targetUserId: string) {
+    const blockedId = targetUserId.trim();
+    if (!blockedId || blockedId === userId) {
+      throw new BadRequestException('Não é possível bloquear este usuário');
+    }
+
+    const target = await this.userModel.findByPk(blockedId, { attributes: ['id'] });
+    if (!target) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    const existing = await this.socialUserBlockModel.findOne({
+      where: { blockerId: userId, blockedId },
+      attributes: ['id'],
+    });
+    if (!existing) {
+      await this.socialUserBlockModel.create({
+        blockerId: userId,
+        blockedId,
+      } as never);
+    }
+
+    const [lowId, highId] = [userId, blockedId].sort();
+    await this.socialFriendshipModel.destroy({
+      where: { userLowId: lowId, userHighId: highId },
+    });
+    await this.socialFriendRequestModel.update(
+      { status: 'rejected', respondedAt: new Date() } as never,
+      {
+        where: {
+          status: 'pending',
+          [Op.or]: [
+            { requesterId: userId, recipientId: blockedId },
+            { requesterId: blockedId, recipientId: userId },
+          ],
+        },
+      },
+    );
+
+    await this.analyticsService.trackSafe(userId, {
+      eventName: 'user_blocked',
+      properties: { blocked_user_id: blockedId },
+    });
+
+    return { blocked: true, userId: blockedId };
+  }
+
+  async unblockUser(userId: string, targetUserId: string) {
+    const blockedId = targetUserId.trim();
+    const deleted = await this.socialUserBlockModel.destroy({
+      where: { blockerId: userId, blockedId },
+    });
+    if (!deleted) {
+      throw new NotFoundException('Bloqueio não encontrado');
+    }
+    return { blocked: false, userId: blockedId };
+  }
+
+  async listBlockedUsers(userId: string) {
+    const blocks = await this.socialUserBlockModel.findAll({
+      where: { blockerId: userId },
+      include: [
+        {
+          model: User,
+          as: 'blocked',
+          attributes: ['id', 'name', 'avatarUrl', 'equippedAvatarFrameId'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    return {
+      users: blocks
+        .map((block) => block.blocked)
+        .filter((user): user is User => Boolean(user))
+        .map((user) => ({
+          id: user.id,
+          name: user.name ?? 'Sem nome',
+          avatarUrl: user.avatarUrl ?? null,
+          avatarFrameId: user.equippedAvatarFrameId ?? null,
+        })),
+    };
+  }
+
+  async createContentReport(userId: string, dto: CreateSocialReportDto) {
+    const targetUserId = dto.targetUserId?.trim() || null;
+    const messageId = dto.messageId?.trim() || null;
+    const groupId = dto.groupId?.trim() || null;
+    const details = dto.details?.trim() || null;
+
+    if (!targetUserId && !messageId) {
+      throw new BadRequestException('Informe o usuário ou a mensagem denunciada');
+    }
+    if (targetUserId && targetUserId === userId) {
+      throw new BadRequestException('Não é possível denunciar a si mesmo');
+    }
+
+    let resolvedTargetUserId = targetUserId;
+    let targetType: 'user' | 'message' = targetUserId ? 'user' : 'message';
+
+    if (messageId) {
+      const message = await this.socialGroupMessageModel.findByPk(messageId, {
+        attributes: ['id', 'userId', 'groupId'],
+      });
+      if (!message) {
+        throw new NotFoundException('Mensagem não encontrada');
+      }
+      if (groupId && message.groupId !== groupId) {
+        throw new BadRequestException('Mensagem não pertence a este grupo');
+      }
+      await this.findGroupForMember(message.groupId, userId);
+      if (message.userId === userId) {
+        throw new BadRequestException('Não é possível denunciar a própria mensagem');
+      }
+      resolvedTargetUserId = message.userId;
+      targetType = 'message';
+    } else if (targetUserId) {
+      const target = await this.userModel.findByPk(targetUserId, { attributes: ['id'] });
+      if (!target) {
+        throw new NotFoundException('Usuário não encontrado');
+      }
+    }
+
+    const report = await this.socialContentReportModel.create({
+      reporterId: userId,
+      targetType,
+      targetUserId: resolvedTargetUserId,
+      messageId,
+      groupId: groupId || null,
+      reason: dto.reason,
+      details,
+    } as never);
+
+    await this.analyticsService.trackSafe(userId, {
+      eventName: 'content_reported',
+      properties: {
+        target_type: targetType,
+        reason: dto.reason,
+        target_user_id: resolvedTargetUserId,
+        message_id: messageId,
+      },
+    });
+
+    return {
+      id: report.id,
+      message: 'Denúncia enviada. Vamos analisar o conteúdo.',
+    };
   }
 
   async searchUsers(userId: string, query: string) {
@@ -466,9 +627,17 @@ export class SocialService {
       ? { email: { [Op.iLike]: normalizedQuery } }
       : fuzzyClause;
 
+    const blockedIds = await this.getBlockedEitherWayIds(userId);
+
     const users = await this.userModel.findAll({
       where: {
-        [Op.and]: [{ id: { [Op.ne]: userId } }, queryClause],
+        [Op.and]: [
+          { id: { [Op.ne]: userId } },
+          ...(blockedIds.size
+            ? [{ id: { [Op.notIn]: [...blockedIds] } }]
+            : []),
+          queryClause,
+        ],
       },
       attributes: ['id', 'name', 'email', 'avatarUrl', 'equippedAvatarFrameId'],
       limit: 20,
@@ -545,6 +714,8 @@ export class SocialService {
     const friendRequestStatus = isSelf || isFriend
       ? 'none'
       : await this.getFriendRequestStatusBetween(viewerId, friendId);
+    const isBlocked =
+      !isSelf && (await this.hasBlock(viewerId, friendId));
 
     return {
       id: friend.id,
@@ -567,6 +738,7 @@ export class SocialService {
       createdAt: friend.createdAt ?? null,
       isFriend,
       isSelf,
+      isBlocked,
       friendRequestStatus,
     };
   }
@@ -1058,7 +1230,11 @@ export class SocialService {
       limit,
     });
 
-    const ordered = fetchNewestFirst ? [...rows].reverse() : rows;
+    const blockedIds = await this.getBlockedEitherWayIds(userId);
+    const visibleRows = blockedIds.size
+      ? rows.filter((message) => !blockedIds.has(message.userId))
+      : rows;
+    const ordered = fetchNewestFirst ? [...visibleRows].reverse() : visibleRows;
     const reactionsByMessageId = await this.loadReactionsByMessageId(
       ordered.map((message) => message.id),
     );
@@ -1483,6 +1659,7 @@ export class SocialService {
   }
 
   private async listPendingRequests(userId: string) {
+    const blockedIds = await this.getBlockedEitherWayIds(userId);
     const requests = await this.socialFriendRequestModel.findAll({
       where: { recipientId: userId, status: 'pending' },
       include: [
@@ -1495,15 +1672,17 @@ export class SocialService {
       order: [['createdAt', 'DESC']],
     });
 
-    return requests.map((request) => ({
-      id: request.id,
-      requesterId: request.requesterId,
-      requesterName: request.requester?.name ?? 'Sem nome',
-      requesterEmail: request.requester?.email ?? '',
-      requesterAvatarUrl: request.requester?.avatarUrl ?? null,
-      requesterAvatarFrameId: request.requester?.equippedAvatarFrameId ?? null,
-      createdAt: request.createdAt,
-    }));
+    return requests
+      .filter((request) => !blockedIds.has(request.requesterId))
+      .map((request) => ({
+        id: request.id,
+        requesterId: request.requesterId,
+        requesterName: request.requester?.name ?? 'Sem nome',
+        requesterEmail: request.requester?.email ?? '',
+        requesterAvatarUrl: request.requester?.avatarUrl ?? null,
+        requesterAvatarFrameId: request.requester?.equippedAvatarFrameId ?? null,
+        createdAt: request.createdAt,
+      }));
   }
 
   private async createFriendRequest(currentUserId: string, friendUserId: string) {
@@ -1515,6 +1694,10 @@ export class SocialService {
     const friend = await this.userModel.findByPk(normalizedFriendId, { attributes: ['id'] });
     if (!friend) {
       throw new NotFoundException('Usuário não encontrado');
+    }
+
+    if (await this.isBlockedEitherWay(currentUserId, normalizedFriendId)) {
+      throw new BadRequestException('Não é possível enviar solicitação para este usuário');
     }
 
     if (await this.areFriends(currentUserId, normalizedFriendId)) {
@@ -1591,10 +1774,13 @@ export class SocialService {
       where: { [Op.or]: [{ userLowId: userId }, { userHighId: userId }] },
       order: [['createdAt', 'DESC']],
     });
+    const blockedIds = await this.getBlockedEitherWayIds(userId);
 
-    const friendIds = friendships.map((item) =>
-      item.userLowId === userId ? item.userHighId : item.userLowId,
-    );
+    const friendIds = friendships
+      .map((item) =>
+        item.userLowId === userId ? item.userHighId : item.userLowId,
+      )
+      .filter((friendId) => !blockedIds.has(friendId));
     const users = friendIds.length
       ? await this.userModel.findAll({
           where: { id: { [Op.in]: friendIds } },
@@ -1615,6 +1801,41 @@ export class SocialService {
         avatarFrameId: user.equippedAvatarFrameId ?? null,
         streakDays: streakByUserId.get(user.id) ?? 0,
       }));
+  }
+
+  private async hasBlock(blockerId: string, blockedId: string): Promise<boolean> {
+    const block = await this.socialUserBlockModel.findOne({
+      where: { blockerId, blockedId },
+      attributes: ['id'],
+    });
+    return Boolean(block);
+  }
+
+  private async isBlockedEitherWay(userA: string, userB: string): Promise<boolean> {
+    const block = await this.socialUserBlockModel.findOne({
+      where: {
+        [Op.or]: [
+          { blockerId: userA, blockedId: userB },
+          { blockerId: userB, blockedId: userA },
+        ],
+      },
+      attributes: ['id'],
+    });
+    return Boolean(block);
+  }
+
+  private async getBlockedEitherWayIds(userId: string): Promise<Set<string>> {
+    const blocks = await this.socialUserBlockModel.findAll({
+      where: {
+        [Op.or]: [{ blockerId: userId }, { blockedId: userId }],
+      },
+      attributes: ['blockerId', 'blockedId'],
+    });
+    const ids = new Set<string>();
+    for (const block of blocks) {
+      ids.add(block.blockerId === userId ? block.blockedId : block.blockerId);
+    }
+    return ids;
   }
 
   private async canViewUserProfile(
