@@ -191,6 +191,18 @@ jobs:
               --content-type "application/json"
           fi
 
+          # Pagina publica de privacidade (Play Store exige HTML estatico, sem login).
+          if [ -f "$WEB_DIR/privacidade.html" ]; then
+            aws s3 cp "$WEB_DIR/privacidade.html" \
+              "s3://$BUCKET/privacidade.html" \
+              --cache-control "no-cache,must-revalidate" \
+              --content-type "text/html; charset=utf-8"
+            aws s3 cp "$WEB_DIR/privacidade.html" \
+              "s3://$BUCKET/privacidade" \
+              --cache-control "no-cache,must-revalidate" \
+              --content-type "text/html; charset=utf-8"
+          fi
+
       - name: Invalidar cache do CloudFront
         run: |
           aws cloudfront create-invalidation \
@@ -204,6 +216,8 @@ jobs:
               "/manifest.json" \
               "/baixar.html" \
               "/baixar" \
+              "/privacidade.html" \
+              "/privacidade" \
               "/app/*" \
               "/main.dart.js" \
               "/main.dart.wasm" \
