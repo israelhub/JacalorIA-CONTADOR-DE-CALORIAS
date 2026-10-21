@@ -78,6 +78,10 @@ app.*.map.json
 **/.env.*
 !**/.env.example
 !**/.env.*.example
+**/*.jks
+**/*.keystore
+**/key.properties
+**/jacaloria-android-signing/
 
 # Node build output
 node_modules/
