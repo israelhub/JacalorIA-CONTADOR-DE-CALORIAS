@@ -511,6 +511,63 @@ class AuthService {
     _inflightProfileFetch = null;
   }
 
+  Future<Map<String, dynamic>> exportUserData() async {
+    final token = _requireToken();
+    final uri = Uri.parse('$_baseUrl/auth/export');
+    final response = await _sendWithRetry(
+      () => http.get(
+        uri,
+        headers: {'Authorization': 'Bearer $token'},
+      ),
+      timeoutMessage: 'Timeout ao exportar dados',
+    );
+
+    final body = jsonDecode(response.body);
+    if (response.statusCode == 200 && body is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(body);
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('Sessao invalida. Faca login novamente.');
+    }
+    final message = body is Map<String, dynamic>
+        ? _extractMessage(body, 'Erro ao exportar dados')
+        : 'Erro ao exportar dados';
+    throw Exception(message);
+  }
+
+  Future<void> deleteAccount() async {
+    final token = _requireToken();
+    final uri = Uri.parse('$_baseUrl/auth/account');
+    final response = await _sendWithRetry(
+      () => http.delete(
+        uri,
+        headers: {'Authorization': 'Bearer $token'},
+      ),
+      timeoutMessage: 'Timeout ao excluir conta',
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      await signOut();
+      return;
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('Sessao invalida. Faca login novamente.');
+    }
+
+    Map<String, dynamic>? body;
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        body = decoded;
+      }
+    } catch (_) {}
+    throw Exception(
+      body != null
+          ? _extractMessage(body, 'Erro ao excluir conta')
+          : 'Erro ao excluir conta',
+    );
+  }
+
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
     final uri = Uri.parse('$_baseUrl/auth/profile');
     final headers = _getHeaders();

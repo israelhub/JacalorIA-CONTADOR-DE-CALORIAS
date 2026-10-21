@@ -104,7 +104,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             const SizedBox(height: AppSpacing.xl),
                             AppInputField(
                               label: 'E-mail',
-                              hint: 'Ex.: maria@email.com',
+                              hint: '',
                               controller: _emailController,
                               onChanged: (_) => _authController.clearError(),
                             ),

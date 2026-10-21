@@ -201,7 +201,7 @@ export class MailService {
   }
 
   async sendSupportMessage(params: {
-    subjectType: 'bug' | 'suggestion';
+    subjectType: 'bug' | 'suggestion' | 'privacy';
     description: string;
     userId?: string;
     userName?: string;
@@ -226,7 +226,12 @@ export class MailService {
       return false;
     }
 
-    const subjectLabel = params.subjectType === 'bug' ? 'Bug' : 'Sugestao';
+    const subjectLabel =
+      params.subjectType === 'bug'
+        ? 'Bug'
+        : params.subjectType === 'privacy'
+          ? 'Privacidade / LGPD'
+          : 'Sugestao';
     const replyTo = params.contactEmail ?? params.userEmail;
     const textLines = [
       `Tipo: ${subjectLabel}`,

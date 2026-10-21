@@ -133,20 +133,30 @@ class StepsService {
 
       final now = DateTime.now();
       final start = DateTime(now.year, now.month, now.day);
-      final steps = await _health.getTotalStepsInInterval(start, now) ?? 0;
+      final steps = await _resolveHealthSteps(start, now);
 
-      final distance = await _readDistanceKm(start, now);
-      final calories = await _readActiveCalories(start, now);
+      final estimatedDistance = estimateStepsDistanceKm(
+        steps: steps,
+        heightCm: heightCm,
+      );
+      final estimatedCalories = estimateStepsCaloriesKcal(
+        steps: steps,
+        weightKg: weightKg,
+      );
+      final distance = pickStepsMetric(
+        measured: await _readDistanceKm(start, now),
+        estimate: estimatedDistance,
+      );
+      final calories = pickStepsMetric(
+        measured: (await _readActiveCalories(start, now))?.toDouble(),
+        estimate: estimatedCalories.toDouble(),
+      );
 
       return HomeStepsOverview(
         steps: steps,
         goalSteps: goal,
-        distanceKm:
-            distance ??
-            estimateStepsDistanceKm(steps: steps, heightCm: heightCm),
-        caloriesKcal:
-            calories ??
-            estimateStepsCaloriesKcal(steps: steps, weightKg: weightKg),
+        distanceKm: distance ?? estimatedDistance,
+        caloriesKcal: (calories ?? estimatedCalories.toDouble()).round(),
         status: HomeStepsStatus.ready,
         sourceLabel: _isIOS ? 'Apple Saúde' : 'Health Connect',
       );
@@ -243,6 +253,48 @@ class StepsService {
     return prefs.getInt(_goalKey) ?? HomeStepsOverview.defaultDailyStepsGoal;
   }
 
+  Future<int> _resolveHealthSteps(DateTime start, DateTime end) async {
+    final aggregate =
+        await _health.getTotalStepsInInterval(start, end) ?? 0;
+
+    try {
+      final points = await _health.getHealthDataFromTypes(
+        types: const [HealthDataType.STEPS],
+        startTime: start,
+        endTime: end,
+      );
+      final unique = _health.removeDuplicates(points);
+      final samples = <StepsIntervalSample>[];
+      for (final point in unique) {
+        final value = point.value;
+        if (value is! NumericHealthValue) {
+          continue;
+        }
+        final count = value.numericValue.round();
+        if (count <= 0) {
+          continue;
+        }
+        samples.add(
+          StepsIntervalSample(
+            start: point.dateFrom,
+            end: point.dateTo,
+            count: count,
+            sourceKey: point.sourceName.isNotEmpty
+                ? point.sourceName
+                : point.sourceId,
+          ),
+        );
+      }
+
+      return resolveDedupedStepsTotal(
+        samples,
+        aggregateFallback: aggregate,
+      );
+    } catch (_) {
+      return aggregate.clamp(0, 500000);
+    }
+  }
+
   Future<double?> _readDistanceKm(DateTime start, DateTime end) async {
     try {
       final types = _isIOS
@@ -253,8 +305,9 @@ class StepsService {
         startTime: start,
         endTime: end,
       );
+      final unique = _health.removeDuplicates(points);
       var meters = 0.0;
-      for (final point in points) {
+      for (final point in unique) {
         final value = point.value;
         if (value is NumericHealthValue) {
           meters += value.numericValue.toDouble();
@@ -276,8 +329,9 @@ class StepsService {
         startTime: start,
         endTime: end,
       );
+      final unique = _health.removeDuplicates(points);
       var kcal = 0.0;
-      for (final point in points) {
+      for (final point in unique) {
         final value = point.value;
         if (value is NumericHealthValue) {
           kcal += value.numericValue.toDouble();

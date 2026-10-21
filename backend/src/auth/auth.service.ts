@@ -38,6 +38,11 @@ import {
 import { parseNumber } from '../shared/utils/number-parser.util';
 import { Meal, MealStatus } from '../meals/models/meal.model';
 import { StreakService } from '../streak/streak.service';
+import {
+  LEGAL_PRIVACY_VERSION,
+  LEGAL_TERMS_VERSION,
+} from './constants/legal-documents';
+import { assertMinimumAge } from './utils/age-gate.util';
 
 interface JwtSessionPayload {
   sub: string;
@@ -66,6 +71,16 @@ export class AuthService {
     private readonly streakService: StreakService,
   ) {}
 
+  private legalAcceptancePayload() {
+    const now = new Date();
+    return {
+      termsAcceptedAt: now,
+      privacyAcceptedAt: now,
+      termsVersion: LEGAL_TERMS_VERSION,
+      privacyVersion: LEGAL_PRIVACY_VERSION,
+    };
+  }
+
   async register(dto: RegisterDto) {
     const existing = await this.authRepository.findByEmail(dto.email);
 
@@ -85,6 +100,7 @@ export class AuthService {
       passwordHash,
       verificationCode,
       verificationCodeExpiresAt,
+      ...this.legalAcceptancePayload(),
     });
 
     const emailSent = await this.mailService.sendVerificationCode(
@@ -93,7 +109,7 @@ export class AuthService {
     );
 
     if (!emailSent) {
-      console.log(`[DEV] Código de verificação para ${user.email}: ${verificationCode}`);
+      console.log('[DEV] Codigo de verificacao gerado (email omitido).');
     }
 
     return {
@@ -123,6 +139,8 @@ export class AuthService {
       throw new UnauthorizedException('Email não verificado. Verifique sua caixa de entrada.');
     }
 
+    await this.ensureLegalAcceptance(user.id);
+
     const token = this.generateToken(user);
 
     return {
@@ -134,6 +152,24 @@ export class AuthService {
         name: user.name,
       },
     };
+  }
+
+  private async ensureLegalAcceptance(userId: string) {
+    const profile = await this.authRepository.findProfileById(userId);
+    if (!profile) {
+      return;
+    }
+    if (
+      !profile.termsAcceptedAt ||
+      !profile.privacyAcceptedAt ||
+      profile.termsVersion !== LEGAL_TERMS_VERSION ||
+      profile.privacyVersion !== LEGAL_PRIVACY_VERSION
+    ) {
+      await this.authRepository.stampLegalAcceptance(
+        userId,
+        this.legalAcceptancePayload(),
+      );
+    }
   }
 
   async signInWithGoogle(dto: GoogleAuthDto) {
@@ -200,10 +236,9 @@ export class AuthService {
           name: googleUser.name?.trim() || null,
           email,
           passwordHash: fallbackPasswordHash,
+          ...this.legalAcceptancePayload(),
         });
-        console.log(
-          `[AUTH][GOOGLE] user created id=${user.id} email=${user.email}`,
-        );
+        console.log(`[AUTH][GOOGLE] user created id=${user.id}`);
       } catch (error) {
         if (error instanceof UniqueConstraintError) {
           console.log(
@@ -232,6 +267,7 @@ export class AuthService {
       throw new UnauthorizedException('Nao foi possivel autenticar com Google');
     }
 
+    await this.ensureLegalAcceptance(user.id);
     const profile = await this.authRepository.findProfileById(user.id);
     const needsOnboarding = this.userNeedsOnboarding(profile);
     console.log(
@@ -310,7 +346,7 @@ export class AuthService {
     );
 
     if (!emailSent) {
-      console.log(`[DEV] Novo código para ${user.email}: ${verificationCode}`);
+      console.log('[DEV] Novo codigo de verificacao gerado (email omitido).');
     }
 
     return {
@@ -348,7 +384,7 @@ export class AuthService {
     );
 
     if (!emailSent) {
-      console.log(`[DEV] Codigo de reset para ${user.email}: ${resetCode}`);
+      console.log('[DEV] Codigo de reset gerado (email omitido).');
     }
 
     return {
@@ -422,6 +458,10 @@ export class AuthService {
     const currentProfile = await this.authRepository.findProfileById(userId);
     if (!currentProfile) {
       throw new UnauthorizedException('Usuário não encontrado');
+    }
+
+    if (dto.birthDate !== undefined) {
+      assertMinimumAge(dto.birthDate);
     }
 
     const mergedProfileInput = {
@@ -557,6 +597,87 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async exportUserData(userId: string) {
+    const profile = await this.authRepository.findProfileById(userId);
+    if (!profile) {
+      throw new UnauthorizedException('Usuário não encontrado');
+    }
+
+    const sequelize = this.mealModel.sequelize;
+    if (!sequelize) {
+      throw new BadRequestException('Nao foi possivel exportar os dados.');
+    }
+
+    const [meals] = await sequelize.query(
+      `SELECT id, title, description, calories, protein, carbs, fat, time_label,
+              meal_type, image_url, analysis_items, status, created_at, updated_at
+       FROM meals WHERE user_id = :userId ORDER BY created_at DESC`,
+      { replacements: { userId } },
+    );
+    const [mealTemplates] = await sequelize.query(
+      `SELECT id, title, description, calories, protein, carbs, fat, image_url,
+              analysis_items, status, created_at, updated_at
+       FROM meal_templates WHERE user_id = :userId ORDER BY created_at DESC`,
+      { replacements: { userId } },
+    );
+    const [weightEntries] = await sequelize.query(
+      `SELECT id, weight, recorded_at, created_at
+       FROM user_weight_entries WHERE user_id = :userId ORDER BY recorded_at DESC`,
+      { replacements: { userId } },
+    );
+    const [waterEntries] = await sequelize.query(
+      `SELECT id, milliliters, recorded_at, created_at
+       FROM water_intake_entries WHERE user_id = :userId ORDER BY recorded_at DESC`,
+      { replacements: { userId } },
+    );
+    const [workoutRoutines] = await sequelize.query(
+      `SELECT id, name, created_at, updated_at
+       FROM workout_routines WHERE user_id = :userId ORDER BY created_at DESC`,
+      { replacements: { userId } },
+    );
+    const [workoutExercises] = await sequelize.query(
+      `SELECT id, routine_id, name, created_at, updated_at
+       FROM workout_exercises WHERE user_id = :userId ORDER BY created_at DESC`,
+      { replacements: { userId } },
+    );
+    const [workoutLoads] = await sequelize.query(
+      `SELECT id, exercise_id, weight, recorded_at, created_at
+       FROM workout_load_entries WHERE user_id = :userId ORDER BY created_at DESC`,
+      { replacements: { userId } },
+    );
+
+    const profileJson = profile.toJSON() as Record<string, unknown>;
+    delete profileJson.passwordHash;
+
+    return {
+      exportedAt: new Date().toISOString(),
+      legal: {
+        termsVersion: profile.termsVersion,
+        privacyVersion: profile.privacyVersion,
+        termsAcceptedAt: profile.termsAcceptedAt,
+        privacyAcceptedAt: profile.privacyAcceptedAt,
+      },
+      profile: profileJson,
+      meals,
+      mealTemplates,
+      weightEntries,
+      waterEntries,
+      workoutRoutines,
+      workoutExercises,
+      workoutLoads,
+    };
+  }
+
+  async deleteAccount(userId: string) {
+    const profile = await this.authRepository.findProfileById(userId);
+    if (!profile) {
+      throw new UnauthorizedException('Usuário não encontrado');
+    }
+
+    await this.authRepository.deleteAccountCompletely(userId);
+    return { message: 'Conta e dados pessoais excluidos com sucesso.' };
   }
 
   async getFallbackProfile() {

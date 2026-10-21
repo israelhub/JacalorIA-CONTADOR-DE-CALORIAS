@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/onboarding/pages/objective_page.dart';
 import 'package:jacaloria/features/onboarding/pages/personal_data_page.dart';
-import 'package:jacaloria/features/onboarding/widgets/onboarding_input_field.dart';
 import 'package:jacaloria/features/onboarding/widgets/onboarding_step_header.dart';
 import 'package:jacaloria/shared/theme/app_theme.dart';
+import 'package:jacaloria/shared/widgets/app_dropdown_menu.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
 
@@ -35,7 +35,7 @@ void main() {
       expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
       expect(find.byKey(const ValueKey('personal-weight-unit-selector')), findsOneWidget);
       expect(find.byKey(const ValueKey('personal-height-unit-selector')), findsOneWidget);
-      expect(find.byType(OnboardingInputField), findsOneWidget);
+      expect(find.byType(AppDropdownMenu), findsOneWidget);
     });
 
     testWidgets('abre calendário ao tocar no campo de data', (tester) async {
@@ -47,9 +47,7 @@ void main() {
       expect(find.byType(CalendarDatePicker), findsOneWidget);
     });
 
-    testWidgets('sexo possui opções abrangentes e prefiro não informar', (
-      tester,
-    ) async {
+    testWidgets('sexo possui masculino e feminino', (tester) async {
       await _pumpPersonalDataPage(tester);
 
       await tester.tap(find.byKey(const ValueKey('personal-sex-field')));
@@ -57,8 +55,8 @@ void main() {
 
       expect(find.text('Masculino'), findsOneWidget);
       expect(find.text('Feminino'), findsOneWidget);
-      expect(find.text('Demais'), findsOneWidget);
-      expect(find.text('Prefiro não informar'), findsOneWidget);
+      expect(find.text('Demais'), findsNothing);
+      expect(find.text('Prefiro não informar'), findsNothing);
     });
 
     testWidgets('navega para tela de objetivo ao tocar em avançar', (

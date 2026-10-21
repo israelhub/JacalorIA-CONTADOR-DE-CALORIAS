@@ -96,6 +96,12 @@ class AvatarBackgroundCatalog {
       assetPath: 'assets/images/avatar_backgrounds/aug_dusk_glow.png',
     ),
     AvatarBackgroundItem(
+      id: 'tutorial_spark_field',
+      name: 'Campo de Faíscas',
+      description: 'Fundo por concluir o tutorial inicial.',
+      assetPath: 'assets/images/avatar_backgrounds/tutorial_spark_field.png',
+    ),
+    AvatarBackgroundItem(
       id: 'aug_mint_lagoon',
       name: 'Laguna de Menta',
       description: 'Fundo exclusivo do check-in de agosto, com aguas de menta.',

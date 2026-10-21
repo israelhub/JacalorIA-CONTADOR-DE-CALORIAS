@@ -173,7 +173,7 @@ class _HomeStepsPageState extends State<HomeStepsPage> {
                     AppInput(
                       key: const ValueKey('home-steps-goal-field'),
                       controller: _goalController,
-                      hintText: 'Ex.: 10000',
+                      hintText: '',
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       showBorder: true,

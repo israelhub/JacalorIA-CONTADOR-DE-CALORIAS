@@ -124,6 +124,7 @@ class FramedAvatar extends StatelessWidget {
       case 'soft_blue':
       case 'aug_sunset_ring':
       case 'aug_mint_leaf':
+      case 'tutorial_star_ring':
         return 0.8;
       default:
         return framedAvatarScale;

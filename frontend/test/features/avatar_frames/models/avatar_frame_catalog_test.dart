@@ -5,7 +5,14 @@ void main() {
   test('catalogo sempre inclui moldura padrao gratuita', () {
     expect(AvatarFrameCatalog.items.first.id, AvatarFrameCatalog.noneId);
     expect(AvatarFrameCatalog.items.first.isFree, isTrue);
-    expect(AvatarFrameCatalog.purchasableItems, hasLength(7));
+    expect(
+      AvatarFrameCatalog.purchasableItems.length,
+      AvatarFrameCatalog.items.length - 1,
+    );
+    expect(
+      AvatarFrameCatalog.byId('tutorial_star_ring')?.assetPath,
+      'assets/images/avatar_frames/tutorial_star_ring.png',
+    );
   });
 
   test('normaliza ids comprados vindos do perfil', () {

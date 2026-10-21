@@ -114,7 +114,7 @@ class _MealReminderCreatePageState extends State<MealReminderCreatePage> {
               const SizedBox(height: AppSpacing.xl),
               AppInputField(
                 label: 'Nome',
-                hint: 'Ex.: Lanche da tarde',
+                hint: '',
                 controller: _titleController,
                 keyboardType: TextInputType.text,
                 onChanged: (_) {

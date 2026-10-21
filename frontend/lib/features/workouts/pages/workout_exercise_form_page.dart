@@ -147,7 +147,7 @@ class _WorkoutExerciseFormPageState extends State<WorkoutExerciseFormPage> {
                   label: 'Exercício',
                   input: AppInput(
                     controller: _nameController,
-                    hintText: 'Ex.: Supino reto',
+                    hintText: '',
                     showBorder: true,
                     showShadow: false,
                     onChanged: (_) => _clearError(),
@@ -162,7 +162,7 @@ class _WorkoutExerciseFormPageState extends State<WorkoutExerciseFormPage> {
                         label: 'Séries',
                         input: AppInput(
                           controller: _setsController,
-                          hintText: 'Ex.: 3',
+                          hintText: '',
                           textAlign: TextAlign.center,
                           keyboardType: TextInputType.number,
                           inputFormatters: [
@@ -202,7 +202,7 @@ class _WorkoutExerciseFormPageState extends State<WorkoutExerciseFormPage> {
                         label: 'Repetições',
                         input: AppInput(
                           controller: _repsController,
-                          hintText: 'Ex.: 12',
+                          hintText: '',
                           textAlign: TextAlign.center,
                           keyboardType: TextInputType.number,
                           inputFormatters: [

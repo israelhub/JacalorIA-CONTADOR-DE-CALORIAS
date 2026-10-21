@@ -15,6 +15,8 @@ import '../helpers/home_daily_goal_day_lock.dart';
 import '../helpers/home_date_helpers.dart';
 import '../helpers/home_goal_helpers.dart';
 import '../helpers/home_greeting_helpers.dart';
+import '../helpers/home_shell_product_tour_targets.dart';
+import '../../profile/helpers/user_manual_guided_tour_targets.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_refresh_scroll_view.dart';
@@ -59,10 +61,12 @@ class HomePage extends StatefulWidget {
     this.onSelectedDateChanged,
     this.mealSyncVersion = 0,
     this.pendingSavedMeal,
+    ScrollController? scrollController,
   }) : _mealService = mealService ?? const MealService(),
        _authService = authService ?? AuthService(),
        _workoutService = workoutService ?? const WorkoutService(),
-       _waterService = waterService ?? const WaterService();
+       _waterService = waterService ?? const WaterService(),
+       _scrollController = scrollController;
 
   static const _mealAsset =
       'assets/images/smiling green cartoon crocodile@2x.webp';
@@ -87,6 +91,7 @@ class HomePage extends StatefulWidget {
   final AuthService _authService;
   final WorkoutService _workoutService;
   final WaterService _waterService;
+  final ScrollController? _scrollController;
   final DateTime? initialSelectedDate;
   final ValueChanged<DateTime>? onSelectedDateChanged;
   final int mealSyncVersion;
@@ -108,6 +113,8 @@ class _HomePageState extends State<HomePage>
   bool _playMascotCelebration = false;
   bool _isFirstHomeAccess = false;
   late DateTime _selectedDate;
+  late final ScrollController _scrollController;
+  late final bool _ownsScrollController;
 
   @override
   bool get wantKeepAlive => true;
@@ -122,6 +129,9 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
+    final externalScroll = widget._scrollController;
+    _ownsScrollController = externalScroll == null;
+    _scrollController = externalScroll ?? ScrollController();
     _selectedDate = normalizeHomeDate(
       widget.initialSelectedDate ?? DateTime.now(),
     );
@@ -131,6 +141,14 @@ class _HomePageState extends State<HomePage>
       _userProfile = Map<String, dynamic>.from(cachedUser);
     }
     _loadInitialData();
+  }
+
+  @override
+  void dispose() {
+    if (_ownsScrollController) {
+      _scrollController.dispose();
+    }
+    super.dispose();
   }
 
   void _syncStepsWeightProfile(Map<String, dynamic>? profile) {
@@ -582,6 +600,7 @@ class _HomePageState extends State<HomePage>
     }
 
     return _HomeBody(
+      scrollController: _scrollController,
       records: _records,
       userProfile: _userProfile,
       goalUserProfile: _goalUserProfile,
@@ -1037,6 +1056,7 @@ class _HomeSectionSkeleton extends StatelessWidget {
 
 class _HomeBody extends StatelessWidget {
   const _HomeBody({
+    required this.scrollController,
     required this.records,
     required this.onMealTap,
     required this.onRefresh,
@@ -1060,6 +1080,7 @@ class _HomeBody extends StatelessWidget {
     this.onWeightUpdated,
   });
 
+  final ScrollController scrollController;
   final List<FoodMealRecord> records;
   final Future<void> Function(FoodMealRecord record) onMealTap;
   final Future<void> Function() onRefresh;
@@ -1106,6 +1127,7 @@ class _HomeBody extends StatelessWidget {
         child: SafeArea(
           bottom: false,
           child: AppRefreshScrollView(
+            controller: scrollController,
             onRefresh: onRefresh,
             padding: EdgeInsets.fromLTRB(
               AppSpacing.pageHorizontal,
@@ -1148,6 +1170,7 @@ class _HomeBody extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xl),
                 AppScrollReveal(
                   child: _HomeSectionCard(
+                    key: HomeShellProductTourTargets.mealsSection,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -1210,11 +1233,14 @@ class _HomeBody extends StatelessWidget {
                 const SizedBox(height: AppSpacing.cardGap),
                 AppScrollReveal(
                   delay: const Duration(milliseconds: 80),
-                  child: HomeWaterCard(
-                    days: waterDays,
-                    selectedDate: selectedDate,
-                    goalMl: waterGoalMl,
-                    onAdd: onAddWaterPressed,
+                  child: KeyedSubtree(
+                    key: ManualGuidedTourTargets.waterCard,
+                    child: HomeWaterCard(
+                      days: waterDays,
+                      selectedDate: selectedDate,
+                      goalMl: waterGoalMl,
+                      onAdd: onAddWaterPressed,
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.cardGap),
@@ -1342,7 +1368,7 @@ class _StreakChip extends StatelessWidget {
 }
 
 class _HomeSectionCard extends StatelessWidget {
-  const _HomeSectionCard({required this.child});
+  const _HomeSectionCard({super.key, required this.child});
 
   final Widget child;
 

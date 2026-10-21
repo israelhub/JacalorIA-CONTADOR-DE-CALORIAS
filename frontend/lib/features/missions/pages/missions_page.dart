@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../avatar_frames/pages/avatar_frame_store_page.dart';
+import '../../home/helpers/home_shell_product_tour_targets.dart';
 import '../../auth/service/auth_service.dart';
 import '../../home/widgets/home_weight_quick_edit_button.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_button.dart';
-import '../../../shared/widgets/app_guide_card.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_scroll_reveal.dart';
@@ -39,40 +38,15 @@ class MissionsPage extends StatefulWidget {
 
 class _MissionsPageState extends State<MissionsPage>
     with AutomaticKeepAliveClientMixin {
-  static const String _hideIntroLocalKey = 'missions_hide_intro_local';
   MissionsOverview? _overview;
   Map<String, dynamic>? _profile;
   bool _isLoading = true;
-  bool _showIntro = true;
   bool _isClaimingCheckIn = false;
   String? _errorMessage;
   final _weightController = HomeWeightQuickEditController();
 
   @override
   bool get wantKeepAlive => true;
-
-  bool _asBool(dynamic value) {
-    if (value is bool) {
-      return value;
-    }
-    if (value is num) {
-      return value != 0;
-    }
-    if (value is String) {
-      final normalized = value.trim().toLowerCase();
-      return normalized == 'true' || normalized == '1';
-    }
-    return false;
-  }
-
-  bool _isGuideHidden(Map<String, dynamic> profile) {
-    return _asBool(profile['hideGuideMe']) ||
-        _asBool(profile['hideSocialGuideMe']) ||
-        _asBool(profile['hideMissionsGuideMe']) ||
-        _asBool(profile['hide_guide_me']) ||
-        _asBool(profile['hide_social_guide_me']) ||
-        _asBool(profile['hide_missions_guide_me']);
-  }
 
   @override
   void initState() {
@@ -124,7 +98,6 @@ class _MissionsPageState extends State<MissionsPage>
 
       final result = results[0] as MissionsOverview;
       final profile = results[1] as Map<String, dynamic>;
-      final hideIntroLocal = await _readHideIntroLocal();
       if (!mounted) {
         return;
       }
@@ -132,7 +105,6 @@ class _MissionsPageState extends State<MissionsPage>
       setState(() {
         _overview = result;
         _profile = profile;
-        _showIntro = !(hideIntroLocal || _isGuideHidden(profile));
         _isLoading = false;
       });
     } catch (error) {
@@ -146,20 +118,6 @@ class _MissionsPageState extends State<MissionsPage>
           _isLoading = false;
         }
       });
-    }
-  }
-
-  Future<bool> _readHideIntroLocal() async {
-    try {
-      final authUser = AuthService.globalUser;
-      final rawUserId =
-          authUser?['id'] ?? authUser?['email'] ?? authUser?['name'] ?? 'user';
-      final userId = rawUserId.toString();
-      final key = '$_hideIntroLocalKey:$userId';
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(key) ?? false;
-    } catch (_) {
-      return false;
     }
   }
 
@@ -245,6 +203,7 @@ class _MissionsPageState extends State<MissionsPage>
             xp: overview.xp,
             onOpenStore: _openStore,
             onOpenGoldStatement: _openGoldStatement,
+            openStoreButtonKey: HomeShellProductTourTargets.openStoreButton,
           ),
           Padding(
             padding: EdgeInsets.fromLTRB(
@@ -268,31 +227,6 @@ class _MissionsPageState extends State<MissionsPage>
                   ),
                   const SizedBox(height: AppSpacing.cardGap),
                 ],
-                if (_showIntro) ...<Widget>[
-                  AppScrollReveal(
-                    delay: const Duration(milliseconds: 60),
-                    child: AppGuideCard(
-                      title: overview.introTitle,
-                      description: overview.introDescription,
-                      icon: Icons.campaign_rounded,
-                      backgroundColor: AppColors.action500,
-                      iconBackgroundColor: AppColors.missionsIntroIcon,
-                      iconColor: AppColors.surface,
-                      titleStyle: AppTextStyles.missionsIntroTitle.copyWith(
-                        color: AppColors.surface,
-                      ),
-                      descriptionStyle: AppTextStyles.missionsIntroDescription
-                          .copyWith(color: AppColors.surface),
-                      onClose: () {
-                        setState(() {
-                          _showIntro = false;
-                        });
-                        _persistGuidePreference();
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.cardGap),
-                ],
                 if (showWeekendSection) ...<Widget>[
                   AppScrollReveal(
                     child: _MissionSectionCard(
@@ -312,6 +246,10 @@ class _MissionsPageState extends State<MissionsPage>
                 ) ...<Widget>[
                   AppScrollReveal(
                     child: _MissionSectionCard(
+                      key:
+                          regularSections[sectionIndex].id == MissionType.daily
+                          ? HomeShellProductTourTargets.dailyMissionsSection
+                          : null,
                       title: regularSections[sectionIndex].title,
                       subtitle: regularSections[sectionIndex].subtitle,
                       children: _buildMissionCards(
@@ -451,27 +389,6 @@ class _MissionsPageState extends State<MissionsPage>
       return int.tryParse(value) ?? fallback;
     }
     return fallback;
-  }
-
-  Future<void> _persistGuidePreference() async {
-    try {
-      await (widget.authService ?? AuthService()).updateProfile(
-        <String, dynamic>{
-          'hideGuideMe': true,
-          'hideMissionsGuideMe': true,
-          'hideSocialGuideMe': true,
-        },
-      );
-    } catch (_) {}
-    try {
-      final authUser = AuthService.globalUser;
-      final rawUserId =
-          authUser?['id'] ?? authUser?['email'] ?? authUser?['name'] ?? 'user';
-      final userId = rawUserId.toString();
-      final key = '$_hideIntroLocalKey:$userId';
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(key, true);
-    } catch (_) {}
   }
 
   Future<void> _openStore() async {
@@ -709,6 +626,7 @@ class _CheckInDaySkeleton extends StatelessWidget {
 
 class _MissionSectionCard extends StatelessWidget {
   const _MissionSectionCard({
+    super.key,
     required this.title,
     required this.subtitle,
     required this.children,

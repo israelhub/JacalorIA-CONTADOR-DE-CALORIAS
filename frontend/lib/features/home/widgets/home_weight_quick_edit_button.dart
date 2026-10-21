@@ -383,7 +383,7 @@ class _HomeWeightEditSheetState extends State<_HomeWeightEditSheet> {
                           decoration: InputDecoration(
                             isDense: true,
                             border: InputBorder.none,
-                            hintText: 'Ex.: 70',
+                            hintText: '',
                             hintStyle: AppTextStyles.headingLarge.copyWith(
                               color: AppColors.textSecondary.withValues(
                                 alpha: 0.45,

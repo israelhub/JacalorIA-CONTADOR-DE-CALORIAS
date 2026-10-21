@@ -132,6 +132,10 @@ export class User extends Model {
   streakBlockerAppliedDayKeys: string[];
 
   @Default(false)
+  @Column({ type: DataType.BOOLEAN, field: 'home_product_tour_completed' })
+  homeProductTourCompleted: boolean;
+
+  @Default(false)
   @Column({ type: DataType.BOOLEAN, field: 'hide_missions_guide_me' })
   hideMissionsGuideMe: boolean;
 
@@ -150,6 +154,26 @@ export class User extends Model {
   @Default(false)
   @Column({ type: DataType.BOOLEAN, field: 'hide_public_profile_workouts' })
   hidePublicProfileWorkouts: boolean;
+
+  @AllowNull(true)
+  @Column({ type: DataType.DATE, field: 'terms_accepted_at' })
+  termsAcceptedAt: Date | null;
+
+  @AllowNull(true)
+  @Column({ type: DataType.DATE, field: 'privacy_accepted_at' })
+  privacyAcceptedAt: Date | null;
+
+  @AllowNull(true)
+  @Column({ type: DataType.STRING(32), field: 'terms_version' })
+  termsVersion: string | null;
+
+  @AllowNull(true)
+  @Column({ type: DataType.STRING(32), field: 'privacy_version' })
+  privacyVersion: string | null;
+
+  @Default(false)
+  @Column({ type: DataType.BOOLEAN, field: 'analytics_opt_out' })
+  analyticsOptOut: boolean;
 
   @AllowNull(true)
   @Column({ type: DataType.DATE, field: 'last_active_at' })

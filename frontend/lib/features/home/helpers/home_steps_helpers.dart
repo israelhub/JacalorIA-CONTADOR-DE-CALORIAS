@@ -9,8 +9,120 @@ const minDailyStepsGoal = 1000;
 const maxDailyStepsGoal = 50000;
 const homeStepsGoalPresets = <int>[5000, 8000, 10000, 12000, 15000];
 
+const preferredStepsSourceHints = <String>[
+  'shealth',
+  'samsung.health',
+  'samsung.android.health',
+  'com.sec.android.app.shealth',
+];
+
+class StepsIntervalSample {
+  const StepsIntervalSample({
+    required this.start,
+    required this.end,
+    required this.count,
+    this.sourceKey = '',
+  });
+
+  final DateTime start;
+  final DateTime end;
+  final int count;
+  final String sourceKey;
+}
+
 int clampDailyStepsGoal(int goal) {
   return goal.clamp(minDailyStepsGoal, maxDailyStepsGoal);
+}
+
+bool isPreferredStepsSource(String? source) {
+  if (source == null || source.isEmpty) {
+    return false;
+  }
+  final normalized = source.toLowerCase();
+  return preferredStepsSourceHints.any(normalized.contains);
+}
+
+int resolveDedupedStepsTotal(
+  List<StepsIntervalSample> samples, {
+  int? aggregateFallback,
+}) {
+  final aggregate = (aggregateFallback ?? 0).clamp(0, 500000);
+  if (samples.isEmpty) {
+    return aggregate;
+  }
+
+  final preferred = samples
+      .where((sample) => isPreferredStepsSource(sample.sourceKey))
+      .toList(growable: false);
+  final scoped = preferred.isNotEmpty ? preferred : samples;
+  final deduped = _dedupeStepsByMinuteMax(scoped).clamp(0, 500000);
+
+  if (deduped <= 0) {
+    return aggregate;
+  }
+
+  // Samsung Health (e fontes parecidas) publica telefone+relogio sem
+  // deduplicar; o agregado do Health Connect pode ficar ~2x a UI do Samsung.
+  if (aggregate <= 0) {
+    return deduped;
+  }
+  return deduped < aggregate ? deduped : aggregate;
+}
+
+int _dedupeStepsByMinuteMax(List<StepsIntervalSample> samples) {
+  final buckets = <int, double>{};
+
+  for (final sample in samples) {
+    if (sample.count <= 0) {
+      continue;
+    }
+
+    var startMs = sample.start.millisecondsSinceEpoch;
+    var endMs = sample.end.millisecondsSinceEpoch;
+    if (endMs < startMs) {
+      final swap = startMs;
+      startMs = endMs;
+      endMs = swap;
+    }
+    if (endMs == startMs) {
+      endMs += 1;
+    }
+
+    final startMinute = startMs ~/ 60000;
+    final endMinute = (endMs - 1) ~/ 60000;
+    final minuteSpan = (endMinute - startMinute + 1).clamp(1, 24 * 60);
+    final perMinute = sample.count / minuteSpan;
+
+    for (var minute = startMinute; minute <= endMinute; minute++) {
+      final current = buckets[minute] ?? 0;
+      if (perMinute > current) {
+        buckets[minute] = perMinute;
+      }
+    }
+  }
+
+  if (buckets.isEmpty) {
+    return 0;
+  }
+
+  final total = buckets.values.fold<double>(0, (sum, value) => sum + value);
+  return total.round();
+}
+
+double? pickStepsMetric({
+  required double? measured,
+  required double estimate,
+}) {
+  if (measured == null || measured <= 0) {
+    return estimate > 0 ? estimate : null;
+  }
+  if (estimate <= 0) {
+    return measured;
+  }
+  if (measured > estimate * 1.35) {
+    return estimate;
+  }
+  return measured;
 }
 
 double resolveStepStrideMeters({num? heightCm}) {

@@ -108,6 +108,10 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsBoolean()
+  homeProductTourCompleted?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   hideMissionsGuideMe?: boolean;
 
   @IsOptional()
@@ -125,4 +129,8 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsBoolean()
   hidePublicProfileWorkouts?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  analyticsOptOut?: boolean;
 }

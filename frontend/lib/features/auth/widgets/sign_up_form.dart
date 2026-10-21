@@ -7,6 +7,7 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/or_divider.dart';
+import '../../legal/pages/privacy_policy_page.dart';
 import '../../legal/pages/terms_page.dart';
 import '../../support/pages/support_page.dart';
 
@@ -40,6 +41,7 @@ class _SignUpFormState extends State<SignUpForm> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   late final TapGestureRecognizer _termsTapRecognizer;
+  late final TapGestureRecognizer _privacyTapRecognizer;
 
   @override
   void initState() {
@@ -48,11 +50,16 @@ class _SignUpFormState extends State<SignUpForm> {
       ..onTap = () {
         context.pushSlidePage(const TermsPage());
       };
+    _privacyTapRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        context.pushSlidePage(const PrivacyPolicyPage());
+      };
   }
 
   @override
   void dispose() {
     _termsTapRecognizer.dispose();
+    _privacyTapRecognizer.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -80,7 +87,7 @@ class _SignUpFormState extends State<SignUpForm> {
         children: [
           AppInputField(
             label: 'Nome',
-            hint: 'Ex.: Maria Silva',
+            hint: '',
             controller: _nameController,
             enabled: !widget.isLoading,
             validator: (value) {
@@ -93,7 +100,7 @@ class _SignUpFormState extends State<SignUpForm> {
           const SizedBox(height: AppSpacing.lg),
           AppInputField(
             label: 'E-mail',
-            hint: 'Ex.: maria@email.com',
+            hint: '',
             controller: _emailController,
             enabled: !widget.isLoading,
             validator: (value) {
@@ -106,7 +113,7 @@ class _SignUpFormState extends State<SignUpForm> {
           const SizedBox(height: AppSpacing.lg),
           AppInputField(
             label: 'Senha',
-            hint: 'Ex.: sua senha',
+            hint: '',
             obscureText: true,
             controller: _passwordController,
             enabled: !widget.isLoading,
@@ -120,7 +127,7 @@ class _SignUpFormState extends State<SignUpForm> {
           const SizedBox(height: AppSpacing.lg),
           AppInputField(
             label: 'Confirmar senha',
-            hint: 'Ex.: confirme a senha',
+            hint: '',
             obscureText: true,
             controller: _confirmPasswordController,
             enabled: !widget.isLoading,
@@ -143,7 +150,7 @@ class _SignUpFormState extends State<SignUpForm> {
           const SizedBox(height: AppSpacing.md),
           Text.rich(
             TextSpan(
-              text: 'Ao se cadastrar, você concorda com os ',
+              text: 'Ao continuar, você concorda com os ',
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.textMuted,
               ),
@@ -155,6 +162,26 @@ class _SignUpFormState extends State<SignUpForm> {
                     fontWeight: FontWeight.w700,
                   ),
                   recognizer: _termsTapRecognizer,
+                ),
+                TextSpan(
+                  text: ' e a ',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                TextSpan(
+                  text: 'Política de Privacidade',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.action500,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  recognizer: _privacyTapRecognizer,
+                ),
+                TextSpan(
+                  text: '.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textMuted,
+                  ),
                 ),
               ],
             ),

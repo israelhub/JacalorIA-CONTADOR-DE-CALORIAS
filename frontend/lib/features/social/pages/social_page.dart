@@ -8,12 +8,12 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_floating_circle_button.dart';
-import '../../../shared/widgets/app_guide_card.dart';
 import '../../../shared/widgets/app_page_header.dart';
 import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../home/helpers/home_shell_product_tour_targets.dart';
 import '../../home/widgets/home_shell_layout.dart';
 import '../controllers/social_page_controller.dart';
 import '../helpers/social_data_invalidator.dart';
@@ -235,21 +235,12 @@ class _SocialPageState extends State<SocialPage>
           const AppPageHeader(title: 'Social', icon: Icons.groups_2_rounded),
           const SizedBox(height: AppSpacing.lg),
           SocialSegmentedControl(
+            key: HomeShellProductTourTargets.socialTabs,
             selectedIndex: _controller.tabIndex,
             labels: const ['Amigos', 'Grupos', 'Ranking'],
             onChanged: _controller.changeTab,
           ),
           const SizedBox(height: AppSpacing.lg),
-          if (_controller.showIntro) ...[
-            AppGuideCard(
-              title: 'Conte calorias com seus amigos',
-              description:
-                  'Adicione amigos por e-mail ou link. Crie grupos e compartilhe links de entrada.',
-              icon: Icons.emoji_events_rounded,
-              onClose: _controller.hideIntro,
-            ),
-            const SizedBox(height: AppSpacing.cardGap),
-          ],
           AnimatedSwitcher(
             duration: _tabTransitionDuration,
             switchInCurve: Curves.easeOutCubic,

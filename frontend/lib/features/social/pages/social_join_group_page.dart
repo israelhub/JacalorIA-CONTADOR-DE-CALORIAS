@@ -76,7 +76,7 @@ class _SocialJoinGroupPageState extends State<SocialJoinGroupPage> {
                   const SizedBox(height: AppSpacing.md),
                   AppInputField(
                     label: 'Código do grupo',
-                    hint: 'Ex.: ABCD-1234',
+                    hint: '',
                     controller: _codeController,
                   ),
                   const SizedBox(height: AppSpacing.sm),

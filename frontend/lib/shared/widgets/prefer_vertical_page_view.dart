@@ -6,11 +6,13 @@ class PreferVerticalPageView extends StatefulWidget {
     required this.controller,
     required this.onPageChanged,
     required this.children,
+    this.allowHorizontalSwipe = true,
   });
 
   final PageController controller;
   final ValueChanged<int> onPageChanged;
   final List<Widget> children;
+  final bool allowHorizontalSwipe;
 
   @override
   State<PreferVerticalPageView> createState() => _PreferVerticalPageViewState();
@@ -108,7 +110,7 @@ class _PreferVerticalPageViewState extends State<PreferVerticalPageView> {
             return PageView(
               controller: widget.controller,
               onPageChanged: widget.onPageChanged,
-              physics: lockSwipe
+              physics: !widget.allowHorizontalSwipe || lockSwipe
                   ? const NeverScrollableScrollPhysics()
                   : const _TabPageScrollPhysics(),
               children: widget.children,

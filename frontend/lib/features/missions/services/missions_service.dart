@@ -130,6 +130,14 @@ class MissionsService {
     );
   }
 
+  Future<Map<String, dynamic>> claimProductTourRewards() {
+    return _postJsonWithFallback(
+      const <String>['/missions/product-tour/claim-rewards'],
+      body: const <String, dynamic>{},
+      fallbackError: 'Erro ao receber recompensas do tutorial.',
+    );
+  }
+
   Future<List<Map<String, dynamic>>> fetchGoldStatement() async {
     final body = await _getJsonWithFallback(const <String>[
       '/missions/wallet/gold-statement',

@@ -11,6 +11,11 @@ Parameters:
   BackendOriginDomain:
     Type: String
     Description: Dominio (sem https://) do ambiente Elastic Beanstalk, ex jacaloria-backend-env.eba-xxxx.sa-east-1.elasticbeanstalk.com
+  UseCustomDomain:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Se false, sobe CloudFront so com dominio *.cloudfront.net (sem ACM/aliases).
   CustomDomainName:
     Type: String
     Default: jacaloria.online
@@ -21,8 +26,11 @@ Parameters:
     Description: Subdominio www apontando para o CloudFront
   AcmCertificateArn:
     Type: String
-    Default: 'arn:aws:acm:us-east-1:942226532350:certificate/c48ca261-9e69-4ccb-8a7c-6ac3c6e828cd'
-    Description: Certificado ACM em us-east-1 para o dominio customizado
+    Default: ''
+    Description: Certificado ACM em us-east-1 para o dominio customizado (obrigatorio se UseCustomDomain=true).
+
+Conditions:
+  WithCustomDomain: !Equals [!Ref UseCustomDomain, 'true']
 
 Resources:
   FrontendBucket:
@@ -58,13 +66,17 @@ Resources:
         HttpVersion: http2and3
         IPV6Enabled: true
         PriceClass: PriceClass_All
-        Aliases:
-          - !Ref CustomDomainName
-          - !Ref WwwDomainName
-        ViewerCertificate:
-          AcmCertificateArn: !Ref AcmCertificateArn
-          SslSupportMethod: sni-only
-          MinimumProtocolVersion: TLSv1.2_2021
+        Aliases: !If
+          - WithCustomDomain
+          - - !Ref CustomDomainName
+            - !Ref WwwDomainName
+          - !Ref AWS::NoValue
+        ViewerCertificate: !If
+          - WithCustomDomain
+          - AcmCertificateArn: !Ref AcmCertificateArn
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+          - CloudFrontDefaultCertificate: true
         Origins:
           - Id: s3-frontend
             DomainName: !GetAtt FrontendBucket.RegionalDomainName
@@ -224,6 +236,12 @@ Outputs:
     Description: Dominio CloudFront padrao
     Value: !GetAtt Distribution.DomainName
   AppUrl:
-    Value: !Sub 'https://${CustomDomainName}'
+    Value: !If
+      - WithCustomDomain
+      - !Sub 'https://${CustomDomainName}'
+      - !Sub 'https://${Distribution.DomainName}'
   ApiBaseUrl:
-    Value: !Sub 'https://${CustomDomainName}/api'
+    Value: !If
+      - WithCustomDomain
+      - !Sub 'https://${CustomDomainName}/api'
+      - !Sub 'https://${Distribution.DomainName}/api'

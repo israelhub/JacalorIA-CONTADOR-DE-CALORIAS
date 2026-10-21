@@ -6,6 +6,7 @@ describe('isJacaEmojiId', () => {
   it('aceita os emojis do catalogo', () => {
     assert.equal(isJacaEmojiId('feliz'), true);
     assert.equal(isJacaEmojiId('forca'), true);
+    assert.equal(isJacaEmojiId('estreante'), true);
   });
 
   it('rejeita ids desconhecidos', () => {
@@ -15,12 +16,13 @@ describe('isJacaEmojiId', () => {
 });
 
 describe('isPaidJacaEmojiId', () => {
-  it('marca as 5 figurinhas da loja', () => {
+  it('marca as figurinhas pagas da loja', () => {
     assert.equal(isPaidJacaEmojiId('amor'), true);
     assert.equal(isPaidJacaEmojiId('fogo'), true);
     assert.equal(isPaidJacaEmojiId('festa'), true);
     assert.equal(isPaidJacaEmojiId('sono'), true);
     assert.equal(isPaidJacaEmojiId('forca'), true);
+    assert.equal(isPaidJacaEmojiId('estreante'), true);
   });
 
   it('mantem as 5 figurinhas livres', () => {

@@ -94,6 +94,12 @@ export class SupportService {
   }
 
   static subjectTypeLabel(subjectType: SupportSubjectType): string {
-    return subjectType === 'bug' ? 'Bug' : 'Sugestao';
+    if (subjectType === 'bug') {
+      return 'Bug';
+    }
+    if (subjectType === 'privacy') {
+      return 'Privacidade / LGPD';
+    }
+    return 'Sugestao';
   }
 }

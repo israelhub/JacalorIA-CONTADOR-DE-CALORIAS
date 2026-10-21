@@ -124,7 +124,7 @@ class _ResetPasswordNewPasswordPageState
                             const SizedBox(height: AppSpacing.xl),
                             AppInputField(
                               label: 'Nova senha',
-                              hint: 'Ex.: sua nova senha',
+                              hint: '',
                               controller: _newPasswordController,
                               obscureText: true,
                               onChanged: (_) => _authController.clearError(),
@@ -132,7 +132,7 @@ class _ResetPasswordNewPasswordPageState
                             const SizedBox(height: AppSpacing.xl),
                             AppInputField(
                               label: 'Confirmar senha',
-                              hint: 'Ex.: confirme a nova senha',
+                              hint: '',
                               controller: _confirmPasswordController,
                               obscureText: true,
                               onChanged: (_) => _authController.clearError(),

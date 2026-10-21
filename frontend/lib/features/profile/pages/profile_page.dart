@@ -30,7 +30,9 @@ import '../helpers/profile_date_helpers.dart';
 import '../widgets/profile_achievements_card.dart';
 import '../widgets/profile_reaction_emoji_sheet.dart';
 import '../widgets/profile_section_card.dart';
+import '../helpers/user_manual_guided_tour_targets.dart';
 import 'profile_edit_page.dart';
+import 'user_manual_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, this.initialProfile});
@@ -117,6 +119,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final profile = await _authService.fetchProfile();
       if (!mounted) return;
+      AnalyticsService.instance.syncOptOutFromProfile(profile);
       setState(() {
         _profileData = Map<String, dynamic>.from(profile);
         _hydrateProfile();
@@ -173,6 +176,10 @@ class _ProfilePageState extends State<ProfilePage> {
     final blockerPriceGold = storeCatalog?.blockers.isNotEmpty == true
         ? storeCatalog!.blockers.first.priceGold
         : 0;
+
+    if (!mounted) {
+      return;
+    }
 
     final result = await showModalBottomSheet<_ProfileCustomizationSelection>(
       context: context,
@@ -836,17 +843,20 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AvatarProfilePreview(
-                      avatarUrl: _avatarUrl,
-                      frameId: _equippedAvatarFrameId,
-                      backgroundId: _equippedBackgroundId,
-                      reactionEmojiId: _equippedReactionEmojiId,
-                      showReactionBubble: true,
-                      onReactionTap: _openReactionEmojiSheet,
-                      name: _profileName,
-                      height: bannerHeight,
-                      composeHeight: bannerComposeHeight,
-                      borderRadius: BorderRadius.zero,
+                    KeyedSubtree(
+                      key: ManualGuidedTourTargets.profileBanner,
+                      child: AvatarProfilePreview(
+                        avatarUrl: _avatarUrl,
+                        frameId: _equippedAvatarFrameId,
+                        backgroundId: _equippedBackgroundId,
+                        reactionEmojiId: _equippedReactionEmojiId,
+                        showReactionBubble: true,
+                        onReactionTap: _openReactionEmojiSheet,
+                        name: _profileName,
+                        height: bannerHeight,
+                        composeHeight: bannerComposeHeight,
+                        borderRadius: BorderRadius.zero,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     Padding(
@@ -1099,6 +1109,23 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xl),
+                          SizedBox(
+                            key: ManualGuidedTourTargets.profileManual,
+                            height: AppSpacing.huge + AppSpacing.xs,
+                            child: AppButton(
+                              label: 'Manual do usuário',
+                              onPressed: (_isSaving || _isSigningOut)
+                                  ? null
+                                  : () {
+                                      context.pushSlidePage(
+                                        const UserManualPage(),
+                                      );
+                                    },
+                              variant: AppButtonVariant.outline,
+                              trailingIcon: Icons.menu_book_rounded,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
                           SizedBox(
                             height: AppSpacing.huge + AppSpacing.xs,
                             child: AppButton(

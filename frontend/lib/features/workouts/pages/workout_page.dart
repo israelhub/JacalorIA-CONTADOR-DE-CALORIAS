@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_section_header.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../home/widgets/home_shell_layout.dart';
+import '../../profile/helpers/user_manual_guided_tour_targets.dart';
 import '../helpers/workout_formatters.dart';
 import '../models/workout_models.dart';
 import '../services/workout_service.dart';
@@ -165,6 +166,12 @@ class _WorkoutPageState extends State<WorkoutPage>
   }
 
   Future<void> _deleteRoutine(WorkoutRoutine routine) async {
+    final routineCount = _overview?.routines.length ?? 0;
+    if (routineCount <= 1) {
+      AppToast.show(context, message: 'Mantenha pelo menos um treino.');
+      return;
+    }
+
     final confirmed = await AppConfirmModal.show(
       context,
       title: 'Apagar ${routine.name}?',
@@ -359,7 +366,9 @@ class _WorkoutPageState extends State<WorkoutPage>
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [_buildPlanCard(routines)],
+                children: [
+                  _buildPlanCard(routines),
+                ],
               ),
             ),
           ),
@@ -381,47 +390,52 @@ class _WorkoutPageState extends State<WorkoutPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppSectionHeader(
-            title: 'Fichas',
-            trailing: _FolderButton(
-              onTap: _isBusy ? null : _openRoutinesFolder,
+          KeyedSubtree(
+            key: ManualGuidedTourTargets.workoutPlanCard,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppSectionHeader(
+                  title: 'Fichas',
+                  trailing: _FolderButton(
+                    onTap: _isBusy ? null : _openRoutinesFolder,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                if (routines.isEmpty)
+                  WorkoutEmptyState(onCreateRoutine: _createRoutine)
+                else if (routine != null)
+                  WorkoutRoutineChips(
+                    routines: routines,
+                    selectedRoutineId: routine.id,
+                    onSelect: (id) {
+                      setState(() {
+                        _selectedRoutineId = id;
+                      });
+                    },
+                    onRename: _renameRoutine,
+                    onDelete: _deleteRoutine,
+                  ),
+              ],
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          if (routines.isEmpty)
-            WorkoutEmptyState(onCreateRoutine: _createRoutine)
-          else if (routine != null) ...[
-            WorkoutRoutineChips(
-              routines: routines,
-              selectedRoutineId: routine.id,
-              onSelect: (id) {
-                setState(() {
-                  _selectedRoutineId = id;
-                });
-              },
-              onRename: _renameRoutine,
-              onDelete: _deleteRoutine,
-            ),
+          if (routines.isNotEmpty && routine != null) ...[
             const SizedBox(height: AppSpacing.md),
-            if (routine.exercises.isEmpty) ...[
-              Text(
-                'Coloca os exercícios dessa ficha. O peso você anota na Home.',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            for (final (index, exercise) in routine.exercises.indexed) ...[
+              if (index > 0) const SizedBox(height: AppSpacing.md),
+              WorkoutExerciseCard(
+                exercise: exercise,
+                onTap: () => _openExerciseDetails(exercise),
               ),
-              const SizedBox(height: AppSpacing.md),
-            ] else ...[
-              for (final (index, exercise) in routine.exercises.indexed) ...[
-                if (index > 0) const SizedBox(height: AppSpacing.md),
-                WorkoutExerciseCard(
-                  exercise: exercise,
-                  onTap: () => _openExerciseDetails(exercise),
-                ),
-              ],
-              const SizedBox(height: AppSpacing.md),
             ],
-            _WorkoutAddExerciseCard(onTap: _isBusy ? null : _createExercise),
+            if (routine.exercises.isNotEmpty)
+              const SizedBox(height: AppSpacing.md),
+            KeyedSubtree(
+              key: ManualGuidedTourTargets.workoutAddExercise,
+              child: _WorkoutAddExerciseCard(
+                onTap: _isBusy ? null : _createExercise,
+              ),
+            ),
           ],
         ],
       ),

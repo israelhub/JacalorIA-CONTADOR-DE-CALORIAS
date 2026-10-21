@@ -58,5 +58,90 @@ void main() {
         'Health Connect',
       );
     });
+
+    test('deduplica telefone e relogio no mesmo intervalo', () {
+      final start = DateTime(2026, 10, 20, 10);
+      final end = DateTime(2026, 10, 20, 10, 30);
+      final total = resolveDedupedStepsTotal(
+        [
+          StepsIntervalSample(
+            start: start,
+            end: end,
+            count: 2000,
+            sourceKey: 'com.sec.android.app.shealth',
+          ),
+          StepsIntervalSample(
+            start: start,
+            end: end,
+            count: 2100,
+            sourceKey: 'com.sec.android.app.shealth',
+          ),
+        ],
+        aggregateFallback: 4100,
+      );
+
+      expect(total, 2100);
+    });
+
+    test('soma intervalos sem sobreposicao', () {
+      final morningStart = DateTime(2026, 10, 20, 8);
+      final morningEnd = DateTime(2026, 10, 20, 9);
+      final eveningStart = DateTime(2026, 10, 20, 18);
+      final eveningEnd = DateTime(2026, 10, 20, 19);
+      final total = resolveDedupedStepsTotal(
+        [
+          StepsIntervalSample(
+            start: morningStart,
+            end: morningEnd,
+            count: 1200,
+            sourceKey: 'com.sec.android.app.shealth',
+          ),
+          StepsIntervalSample(
+            start: eveningStart,
+            end: eveningEnd,
+            count: 800,
+            sourceKey: 'com.sec.android.app.shealth',
+          ),
+        ],
+        aggregateFallback: 2000,
+      );
+
+      expect(total, 2000);
+    });
+
+    test('prioriza fonte Samsung quando ha outras fontes', () {
+      final start = DateTime(2026, 10, 20, 10);
+      final end = DateTime(2026, 10, 20, 11);
+      final total = resolveDedupedStepsTotal(
+        [
+          StepsIntervalSample(
+            start: start,
+            end: end,
+            count: 3000,
+            sourceKey: 'com.sec.android.app.shealth',
+          ),
+          StepsIntervalSample(
+            start: start,
+            end: end,
+            count: 5000,
+            sourceKey: 'com.google.android.apps.fitness',
+          ),
+        ],
+        aggregateFallback: 8000,
+      );
+
+      expect(total, 3000);
+    });
+
+    test('descarta metrica inflada em favor da estimativa', () {
+      expect(
+        pickStepsMetric(measured: 10, estimate: 5),
+        closeTo(5, 0.001),
+      );
+      expect(
+        pickStepsMetric(measured: 5.2, estimate: 5),
+        closeTo(5.2, 0.001),
+      );
+    });
   });
 }

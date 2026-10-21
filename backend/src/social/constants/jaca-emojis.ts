@@ -9,6 +9,7 @@ export const JACA_EMOJI_IDS = [
   'joinha',
   'sono',
   'forca',
+  'estreante',
 ] as const;
 
 export const PAID_JACA_EMOJI_IDS = [
@@ -17,6 +18,7 @@ export const PAID_JACA_EMOJI_IDS = [
   'festa',
   'sono',
   'forca',
+  'estreante',
 ] as const;
 
 export type JacaEmojiId = (typeof JACA_EMOJI_IDS)[number];

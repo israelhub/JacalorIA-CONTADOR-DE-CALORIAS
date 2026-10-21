@@ -11,7 +11,11 @@ import {
 } from 'sequelize-typescript';
 import { StoreCatalogCategory } from './store-catalog-item.model';
 
-export type StorePurchaseAcquireSource = 'purchase' | 'check_in' | 'migration';
+export type StorePurchaseAcquireSource =
+  | 'purchase'
+  | 'check_in'
+  | 'migration'
+  | 'tutorial';
 
 @Table({
   tableName: 'store_purchases',

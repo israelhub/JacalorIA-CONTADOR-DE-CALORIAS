@@ -34,6 +34,19 @@ class AppMainBottomNavigation extends StatefulWidget {
     this.onHomeTap,
     this.onMissionsTap,
     this.onSocialTap,
+    this.performanceTabKey,
+    this.homeTabKey,
+    this.socialTabKey,
+    this.moreTabKey,
+    this.missionsDestinationKey,
+    this.workoutDestinationKey,
+    this.profileDestinationKey,
+    this.remindersDestinationKey,
+    this.notificationsDestinationKey,
+    this.morePanelKey,
+    this.moreBundleKey,
+    this.centerActionKey,
+    this.suppressMoreScrim = false,
   });
 
   final AppMainBottomTab activeTab;
@@ -51,6 +64,19 @@ class AppMainBottomNavigation extends StatefulWidget {
   final VoidCallback? onHomeTap;
   final VoidCallback? onMissionsTap;
   final VoidCallback? onSocialTap;
+  final Key? performanceTabKey;
+  final Key? homeTabKey;
+  final Key? socialTabKey;
+  final Key? moreTabKey;
+  final Key? missionsDestinationKey;
+  final Key? workoutDestinationKey;
+  final Key? profileDestinationKey;
+  final Key? remindersDestinationKey;
+  final Key? notificationsDestinationKey;
+  final Key? morePanelKey;
+  final Key? moreBundleKey;
+  final Key? centerActionKey;
+  final bool suppressMoreScrim;
 
   @override
   State<AppMainBottomNavigation> createState() =>
@@ -66,13 +92,12 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
   static const _moreCardRadius = AppRadius.xl;
   static const _openDuration = Duration(milliseconds: 600);
   static const _closeDuration = Duration(milliseconds: 450);
-  static const _ensembleSlide = 16.0;
 
   late final AnimationController _moreController;
   final _scrimOverlay = OverlayPortalController();
   final InAppMessageStore _messageStore = InAppMessageStore.instance;
   final _navCardKey = GlobalKey(debugLabel: 'app-main-nav-card');
-  final _moreCardKey = GlobalKey(debugLabel: 'app-main-more-card');
+  late final GlobalKey _moreCardKey;
 
   bool get _hasOverlayDestination {
     return widget.overlayDestination != AppMainOverlayDestination.none;
@@ -103,6 +128,9 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
   @override
   void initState() {
     super.initState();
+    _moreCardKey = widget.morePanelKey is GlobalKey
+        ? widget.morePanelKey! as GlobalKey
+        : GlobalKey(debugLabel: 'app-main-more-card');
     _messageStore.addListener(_onMessagesChanged);
     _moreController = AnimationController(
       vsync: this,
@@ -110,9 +138,9 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
       reverseDuration: _closeDuration,
       value: widget.isMoreMenuOpen ? 1 : 0,
     );
-    if (widget.isMoreMenuOpen) {
+    if (widget.isMoreMenuOpen && !widget.suppressMoreScrim) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !widget.isMoreMenuOpen) {
+        if (!mounted || !widget.isMoreMenuOpen || widget.suppressMoreScrim) {
           return;
         }
         _scrimOverlay.show();
@@ -123,17 +151,27 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
   @override
   void didUpdateWidget(covariant AppMainBottomNavigation oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isMoreMenuOpen == oldWidget.isMoreMenuOpen) {
+    if (widget.suppressMoreScrim && _scrimOverlay.isShowing) {
+      _scrimOverlay.hide();
+    }
+    if (widget.isMoreMenuOpen == oldWidget.isMoreMenuOpen &&
+        widget.suppressMoreScrim == oldWidget.suppressMoreScrim) {
       return;
     }
     if (widget.isMoreMenuOpen) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !widget.isMoreMenuOpen) {
-          return;
-        }
-        _scrimOverlay.show();
-      });
-      _moreController.forward();
+      if (!widget.suppressMoreScrim) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !widget.isMoreMenuOpen || widget.suppressMoreScrim) {
+            return;
+          }
+          _scrimOverlay.show();
+        });
+      } else if (_scrimOverlay.isShowing) {
+        _scrimOverlay.hide();
+      }
+      if (widget.isMoreMenuOpen != oldWidget.isMoreMenuOpen) {
+        _moreController.forward();
+      }
     } else {
       _moreController.reverse().whenComplete(() {
         if (!mounted || widget.isMoreMenuOpen) {
@@ -203,6 +241,56 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
     );
   }
 
+  Widget _buildMorePanel({required double progress}) {
+    if (progress <= 0) {
+      return const SizedBox(width: double.infinity);
+    }
+
+    final panel = DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(_moreCardRadius),
+        boxShadow: AppShadows.sm,
+        border: Border.all(color: AppColors.borderBrandAlt, width: 1.4),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_moreCardRadius),
+        child: IgnorePointer(
+          ignoring: progress < 0.55,
+          child: _MoreDestinationsPanel(
+            activeTab: widget.activeTab,
+            overlayDestination: widget.overlayDestination,
+            onMissionsTap: widget.onMissionsTap,
+            onWorkoutTap: widget.onWorkoutTap,
+            onNotificationsTap: widget.onNotificationsTap,
+            notificationsBadgeCount: _messageStore.unreadCount,
+            onStoreTap: widget.onStoreTap,
+            onProfileTap: widget.onProfileTap,
+            onRemindersTap: widget.onRemindersTap,
+            onSupportTap: widget.onSupportTap,
+            missionsDestinationKey: widget.missionsDestinationKey,
+            workoutDestinationKey: widget.workoutDestinationKey,
+            profileDestinationKey: widget.profileDestinationKey,
+            remindersDestinationKey: widget.remindersDestinationKey,
+            notificationsDestinationKey: widget.notificationsDestinationKey,
+          ),
+        ),
+      ),
+    );
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: _moreNavGap * progress),
+      child: ClipRect(
+        child: Align(
+          key: _moreCardKey,
+          alignment: Alignment.bottomCenter,
+          heightFactor: progress,
+          child: panel,
+        ),
+      ),
+    );
+  }
+
   Widget _buildNavCard() {
     return DecoratedBox(
       key: _navCardKey,
@@ -217,8 +305,12 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
         showTopBorder: false,
         backgroundColor: Colors.transparent,
         contentHorizontalPadding: AppSpacing.sm,
+        centerActionKey:
+            widget.centerActionKey ??
+            const ValueKey('app-bottom-nav-center-action'),
         items: [
           _buildTabItem(
+            key: widget.performanceTabKey,
             onTap: widget.onPerformanceTap,
             child: AppBottomNavigationItem(
               label: 'Progresso',
@@ -229,6 +321,7 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
             ),
           ),
           _buildTabItem(
+            key: widget.homeTabKey,
             onTap: widget.onHomeTap,
             child: AppBottomNavigationItem(
               label: 'Inicio',
@@ -239,6 +332,7 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
             ),
           ),
           _buildTabItem(
+            key: widget.socialTabKey,
             onTap: widget.onSocialTap,
             child: AppBottomNavigationItem(
               label: 'Social',
@@ -249,6 +343,7 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
             ),
           ),
           _buildTabItem(
+            key: widget.moreTabKey,
             onTap: widget.onMoreTap,
             child: AppBottomNavigationItem(
               label: 'Mais',
@@ -280,67 +375,14 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
           safeBottom + AppSpacing.sm,
         ),
         child: Column(
+          key: widget.moreBundleKey,
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedBuilder(
               animation: _moreController,
-              builder: (context, _) {
-                if (_moreController.value == 0) {
-                  return const SizedBox(width: double.infinity);
-                }
-                final t = _moreProgress(_moreController.value);
-                return Padding(
-                  padding: EdgeInsets.only(bottom: _moreNavGap * t),
-                  child: ClipRect(
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      heightFactor: t,
-                      child: Opacity(
-                        opacity: t,
-                        child: Transform.translate(
-                          offset: Offset(0, _ensembleSlide * (1 - t)),
-                          child: DecoratedBox(
-                            key: _moreCardKey,
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(
-                                _moreCardRadius,
-                              ),
-                              boxShadow: AppShadows.sm,
-                              border: Border.all(
-                                color: AppColors.borderBrandAlt,
-                                width: 1.4,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                _moreCardRadius,
-                              ),
-                              child: IgnorePointer(
-                                ignoring: t < 0.55,
-                                child: _MoreDestinationsPanel(
-                                  activeTab: widget.activeTab,
-                                  overlayDestination: widget.overlayDestination,
-                                  revealProgress: t,
-                                  onMissionsTap: widget.onMissionsTap,
-                                  onWorkoutTap: widget.onWorkoutTap,
-                                  onNotificationsTap: widget.onNotificationsTap,
-                                  notificationsBadgeCount:
-                                      _messageStore.unreadCount,
-                                  onStoreTap: widget.onStoreTap,
-                                  onProfileTap: widget.onProfileTap,
-                                  onRemindersTap: widget.onRemindersTap,
-                                  onSupportTap: widget.onSupportTap,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
+              builder: (context, _) => _buildMorePanel(
+                progress: _moreProgress(_moreController.value),
+              ),
             ),
             _buildNavCard(),
           ],
@@ -349,8 +391,12 @@ class _AppMainBottomNavigationState extends State<AppMainBottomNavigation>
     );
   }
 
-  Widget _buildTabItem({required Widget child, VoidCallback? onTap}) {
-    return _PressableMainNavItem(onTap: onTap, child: child);
+  Widget _buildTabItem({
+    Key? key,
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
+    return _PressableMainNavItem(key: key, onTap: onTap, child: child);
   }
 
   Color _tabColor(AppMainBottomTab tab) {
@@ -400,7 +446,6 @@ class _MoreDestinationsPanel extends StatelessWidget {
   const _MoreDestinationsPanel({
     required this.activeTab,
     required this.overlayDestination,
-    required this.revealProgress,
     this.onMissionsTap,
     this.onWorkoutTap,
     this.onNotificationsTap,
@@ -409,11 +454,15 @@ class _MoreDestinationsPanel extends StatelessWidget {
     this.onProfileTap,
     this.onRemindersTap,
     this.onSupportTap,
+    this.missionsDestinationKey,
+    this.workoutDestinationKey,
+    this.profileDestinationKey,
+    this.remindersDestinationKey,
+    this.notificationsDestinationKey,
   });
 
   final AppMainBottomTab activeTab;
   final AppMainOverlayDestination overlayDestination;
-  final double revealProgress;
   final VoidCallback? onMissionsTap;
   final VoidCallback? onWorkoutTap;
   final VoidCallback? onNotificationsTap;
@@ -422,6 +471,11 @@ class _MoreDestinationsPanel extends StatelessWidget {
   final VoidCallback? onProfileTap;
   final VoidCallback? onRemindersTap;
   final VoidCallback? onSupportTap;
+  final Key? missionsDestinationKey;
+  final Key? workoutDestinationKey;
+  final Key? profileDestinationKey;
+  final Key? remindersDestinationKey;
+  final Key? notificationsDestinationKey;
 
   bool get _hasOverlay {
     return overlayDestination != AppMainOverlayDestination.none;
@@ -433,57 +487,6 @@ class _MoreDestinationsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = <Widget>[
-      _MoreDestinationButton(
-        label: 'Missões',
-        icon: AppNavIcons.missions(
-          selected: _isTabSelected(AppMainBottomTab.missions),
-        ),
-        selected: _isTabSelected(AppMainBottomTab.missions),
-        onTap: onMissionsTap,
-      ),
-      _MoreDestinationButton(
-        label: 'Treino',
-        icon: AppNavIcons.workout(
-          selected: _isTabSelected(AppMainBottomTab.workout),
-        ),
-        selected: _isTabSelected(AppMainBottomTab.workout),
-        onTap: onWorkoutTap,
-      ),
-      _MoreDestinationButton(
-        label: 'Perfil',
-        icon: AppNavIcons.profile,
-        selected: overlayDestination == AppMainOverlayDestination.profile,
-        onTap: onProfileTap,
-      ),
-      _MoreDestinationButton(
-        label: 'Loja',
-        icon: AppNavIcons.store,
-        selected: overlayDestination == AppMainOverlayDestination.store,
-        onTap: onStoreTap,
-      ),
-      _MoreDestinationButton(
-        label: 'Notificações',
-        icon: AppNavIcons.notifications,
-        selected:
-            overlayDestination == AppMainOverlayDestination.notifications,
-        badgeCount: notificationsBadgeCount,
-        onTap: onNotificationsTap,
-      ),
-      _MoreDestinationButton(
-        label: 'Lembretes de refeição',
-        icon: Icons.notifications_active_outlined,
-        selected: overlayDestination == AppMainOverlayDestination.reminders,
-        onTap: onRemindersTap,
-      ),
-      _MoreDestinationButton(
-        label: 'Suporte',
-        icon: Icons.support_agent_rounded,
-        selected: overlayDestination == AppMainOverlayDestination.support,
-        onTap: onSupportTap,
-      ),
-    ];
-
     return Padding(
       key: const ValueKey('app-more-destinations-panel'),
       padding: const EdgeInsets.fromLTRB(
@@ -495,40 +498,60 @@ class _MoreDestinationsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (var index = 0; index < items.length; index++)
-            _staggerReveal(
-              progress: revealProgress,
-              index: index,
-              count: items.length,
-              child: items[index],
+          _MoreDestinationButton(
+            key: missionsDestinationKey,
+            label: 'Missões',
+            icon: AppNavIcons.missions(
+              selected: _isTabSelected(AppMainBottomTab.missions),
             ),
+            selected: _isTabSelected(AppMainBottomTab.missions),
+            onTap: onMissionsTap,
+          ),
+          _MoreDestinationButton(
+            key: workoutDestinationKey,
+            label: 'Treino',
+            icon: AppNavIcons.workout(
+              selected: _isTabSelected(AppMainBottomTab.workout),
+            ),
+            selected: _isTabSelected(AppMainBottomTab.workout),
+            onTap: onWorkoutTap,
+          ),
+          _MoreDestinationButton(
+            key: profileDestinationKey,
+            label: 'Perfil',
+            icon: AppNavIcons.profile,
+            selected: overlayDestination == AppMainOverlayDestination.profile,
+            onTap: onProfileTap,
+          ),
+          _MoreDestinationButton(
+            label: 'Loja',
+            icon: AppNavIcons.store,
+            selected: overlayDestination == AppMainOverlayDestination.store,
+            onTap: onStoreTap,
+          ),
+          _MoreDestinationButton(
+            key: notificationsDestinationKey,
+            label: 'Notificações',
+            icon: AppNavIcons.notifications,
+            selected:
+                overlayDestination == AppMainOverlayDestination.notifications,
+            badgeCount: notificationsBadgeCount,
+            onTap: onNotificationsTap,
+          ),
+          _MoreDestinationButton(
+            key: remindersDestinationKey,
+            label: 'Lembretes de refeição',
+            icon: Icons.notifications_active_outlined,
+            selected: overlayDestination == AppMainOverlayDestination.reminders,
+            onTap: onRemindersTap,
+          ),
+          _MoreDestinationButton(
+            label: 'Suporte',
+            icon: Icons.support_agent_rounded,
+            selected: overlayDestination == AppMainOverlayDestination.support,
+            onTap: onSupportTap,
+          ),
         ],
-      ),
-    );
-  }
-
-  /// Last visual item (bottom) leads the open; first item trails.
-  /// Closing uses the same progress, so the motion reverses.
-  Widget _staggerReveal({
-    required double progress,
-    required int index,
-    required int count,
-    required Widget child,
-  }) {
-    final indexFromBottom = count - 1 - index;
-    const staggerShare = 0.28;
-    final step = count > 1 ? staggerShare / (count - 1) : 0.0;
-    final start = indexFromBottom * step;
-    final span = 1.0 - staggerShare;
-    final local = span <= 0
-        ? progress
-        : ((progress - start) / span).clamp(0.0, 1.0);
-    final curved = Curves.easeOutCubic.transform(local);
-    return Opacity(
-      opacity: curved,
-      child: Transform.translate(
-        offset: Offset(0, 12 * (1 - curved)),
-        child: child,
       ),
     );
   }
@@ -536,6 +559,7 @@ class _MoreDestinationsPanel extends StatelessWidget {
 
 class _MoreDestinationButton extends StatelessWidget {
   const _MoreDestinationButton({
+    super.key,
     required this.label,
     required this.selected,
     required this.icon,
@@ -602,7 +626,11 @@ class _MoreDestinationButton extends StatelessWidget {
 }
 
 class _PressableMainNavItem extends StatefulWidget {
-  const _PressableMainNavItem({required this.child, required this.onTap});
+  const _PressableMainNavItem({
+    super.key,
+    required this.child,
+    required this.onTap,
+  });
 
   final Widget child;
   final VoidCallback? onTap;

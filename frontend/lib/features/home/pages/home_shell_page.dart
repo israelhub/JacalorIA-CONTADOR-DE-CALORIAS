@@ -8,8 +8,10 @@ import '../../../core/notifications/meal_reminder_service.dart';
 import '../../../core/notifications/meal_reminder_home_widget.dart';
 import '../../../core/notifications/in_app_message_store.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_coach_mark_overlay.dart';
 import '../../../shared/widgets/app_main_bottom_navigation.dart';
 import '../../../shared/widgets/app_page_route.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/prefer_vertical_page_view.dart';
 import '../../auth/service/auth_service.dart';
 import '../../avatar_frames/pages/avatar_frame_store_page.dart';
@@ -18,6 +20,9 @@ import '../../food_analysis/pages/food_capture_page.dart';
 import '../../missions/pages/missions_page.dart';
 import '../../notifications/pages/in_app_messages_page.dart';
 import '../../performance/pages/performance_page.dart';
+import '../../profile/helpers/user_manual_content.dart';
+import '../../profile/helpers/user_manual_guided_tour_steps.dart';
+import '../../profile/helpers/user_manual_guided_tour_targets.dart';
 import '../../profile/pages/profile_page.dart';
 import '../../reminders/pages/meal_reminders_page.dart';
 import '../../social/helpers/social_data_invalidator.dart';
@@ -27,10 +32,16 @@ import '../../workouts/pages/workout_page.dart';
 import '../controllers/home_steps_weight_controller.dart';
 import '../helpers/home_date_helpers.dart';
 import '../helpers/home_greeting_helpers.dart';
+import '../helpers/home_shell_product_tour_prefs.dart';
+import '../helpers/home_shell_product_tour_steps.dart';
+import '../helpers/home_shell_product_tour_targets.dart';
 import '../services/steps_service.dart';
+import '../widgets/home_product_tour_congrats_dialog.dart';
 import '../widgets/home_shell_layout.dart';
 import '../widgets/home_steps_weight_scope.dart';
 import 'home_page.dart';
+
+enum HomeShellProductTourMode { auto, force, off }
 
 class HomeShellPage extends StatefulWidget {
   const HomeShellPage({
@@ -42,6 +53,8 @@ class HomeShellPage extends StatefulWidget {
     this.socialPage,
     this.workoutPage,
     this.stepsService,
+    this.productTourMode = HomeShellProductTourMode.auto,
+    this.productTourPrefs,
   });
 
   /// Opens Social when a friend/group invite deep link is pending.
@@ -61,6 +74,8 @@ class HomeShellPage extends StatefulWidget {
   final Widget? socialPage;
   final Widget? workoutPage;
   final StepsService? stepsService;
+  final HomeShellProductTourMode productTourMode;
+  final HomeShellProductTourPrefs? productTourPrefs;
 
   static HomeShellController? _controller;
 
@@ -96,6 +111,8 @@ abstract class HomeShellController {
   Future<void> openNotifications();
   Future<void> openReminders();
   Future<void> openSupport();
+  Future<void> restartProductTour();
+  Future<void> startManualGuidedTour(UserManualGuidedTourId tourId);
 }
 
 class _HomeShellPageState extends State<HomeShellPage>
@@ -132,15 +149,50 @@ class _HomeShellPageState extends State<HomeShellPage>
   final GlobalKey _missionsPageKey = GlobalKey();
   final GlobalKey _socialPageKey = GlobalKey();
   final GlobalKey _workoutPageKey = GlobalKey();
+  final GlobalKey _tourContentKey = GlobalKey();
+  final ScrollController _homeScrollController = ScrollController();
+  final GlobalKey _performanceTabKey = GlobalKey(
+    debugLabel: 'product-tour-performance-tab',
+  );
+  final GlobalKey _homeTabKey = GlobalKey(debugLabel: 'product-tour-home-tab');
+  final GlobalKey _socialTabKey = GlobalKey(
+    debugLabel: 'product-tour-social-tab',
+  );
+  final GlobalKey _moreTabKey = GlobalKey(debugLabel: 'product-tour-more-tab');
+  final GlobalKey _missionsDestinationKey = GlobalKey(
+    debugLabel: 'product-tour-missions-destination',
+  );
+  final GlobalKey _morePanelKey = GlobalKey(
+    debugLabel: 'product-tour-more-panel',
+  );
+  final GlobalKey _moreBundleKey = GlobalKey(
+    debugLabel: 'product-tour-more-bundle',
+  );
+  final GlobalKey _centerActionKey = GlobalKey(
+    debugLabel: 'product-tour-center-action',
+  );
   final GlobalKey<NavigatorState> _nestedNavigatorKey =
       GlobalKey<NavigatorState>();
   late final _ShellNestedNavigatorObserver _nestedNavObserver;
   late final HomeStepsWeightController _stepsWeightController;
+  late final HomeShellProductTourPrefs _productTourPrefs;
+  bool _productTourVisible = false;
+  bool _productTourChromeVisible = false;
+  bool _productTourIsReplay = false;
+  UserManualGuidedTourId? _manualGuidedTourId;
+  List<ManualGuidedTourStep> _manualGuidedSteps = const <ManualGuidedTourStep>[];
+  int _productTourStepIndex = 0;
+  List<AppCoachMarkHighlight> _productTourHighlights =
+      const <AppCoachMarkHighlight>[];
+  bool _productTourBusy = false;
+  int _productTourPrepareToken = 0;
 
   @override
   void initState() {
     super.initState();
     HomeShellPage._attach(this);
+    _productTourPrefs =
+        widget.productTourPrefs ?? HomeShellProductTourPrefs();
     _stepsWeightController = HomeStepsWeightController(
       stepsService: widget.stepsService,
     );
@@ -178,6 +230,9 @@ class _HomeShellPageState extends State<HomeShellPage>
     unawaited(InAppMessageStore.instance.syncDueMealReminders());
     unawaited(InAppMessageStore.instance.syncRemoteCatalog());
     InviteLinkService.revision.addListener(_onPendingInviteRevision);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_maybeStartProductTour());
+    });
   }
 
   void _onPendingInviteRevision() {
@@ -194,9 +249,29 @@ class _HomeShellPageState extends State<HomeShellPage>
     WidgetsBinding.instance.removeObserver(this);
     unawaited(AnalyticsService.instance.leaveForeground(reason: 'dispose'));
     _pageController.dispose();
+    _homeScrollController.dispose();
     _stepsWeightController.dispose();
     _navigationListenable.dispose();
     super.dispose();
+  }
+
+  void _scrollHomeToTop() {
+    if (!_homeScrollController.hasClients) {
+      return;
+    }
+    _homeScrollController.jumpTo(0);
+  }
+
+  void _scrollHomeToTopSoon() {
+    void attempt() {
+      if (!mounted) {
+        return;
+      }
+      _scrollHomeToTop();
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => attempt());
+    Future<void>.delayed(const Duration(milliseconds: 260), attempt);
   }
 
   @override
@@ -443,6 +518,112 @@ class _HomeShellPageState extends State<HomeShellPage>
   @override
   Future<void> openSupport() => _openSupport();
 
+  @override
+  Future<void> restartProductTour() async {
+    if (!mounted ||
+        widget.productTourMode == HomeShellProductTourMode.off ||
+        _productTourBusy) {
+      return;
+    }
+
+    _productTourPrepareToken += 1;
+    if (_productTourVisible) {
+      setState(() {
+        _productTourVisible = false;
+        _productTourChromeVisible = false;
+        _productTourHighlights = const <AppCoachMarkHighlight>[];
+        _productTourBusy = false;
+        _isMoreMenuOpen = false;
+        _manualGuidedTourId = null;
+        _manualGuidedSteps = const <ManualGuidedTourStep>[];
+      });
+    }
+
+    await _productTourPrefs.clearProgress();
+    if (!mounted) {
+      return;
+    }
+
+    _productTourIsReplay = true;
+    _manualGuidedTourId = null;
+    _manualGuidedSteps = const <ManualGuidedTourStep>[];
+    await _goToTab(AppMainBottomTab.home);
+    if (!mounted) {
+      return;
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (!mounted || _productTourVisible) {
+      return;
+    }
+
+    AnalyticsService.instance.track(
+      'product_tour_started',
+      properties: {'resume_index': 0, 'replay': true},
+    );
+    setState(() {
+      _productTourVisible = true;
+      _productTourChromeVisible = false;
+      _productTourStepIndex = 0;
+      _productTourHighlights = const <AppCoachMarkHighlight>[];
+    });
+    await _prepareProductTourStep(0);
+  }
+
+  @override
+  Future<void> startManualGuidedTour(UserManualGuidedTourId tourId) async {
+    if (!mounted || _productTourBusy) {
+      return;
+    }
+    if (tourId == UserManualGuidedTourId.initial) {
+      await restartProductTour();
+      return;
+    }
+
+    final steps = manualGuidedTourStepsById[tourId];
+    if (steps == null || steps.isEmpty) {
+      return;
+    }
+
+    _productTourPrepareToken += 1;
+    if (_productTourVisible) {
+      setState(() {
+        _productTourVisible = false;
+        _productTourChromeVisible = false;
+        _productTourHighlights = const <AppCoachMarkHighlight>[];
+        _productTourBusy = false;
+        _isMoreMenuOpen = false;
+      });
+    }
+
+    _productTourIsReplay = false;
+    setState(() {
+      _manualGuidedTourId = tourId;
+      _manualGuidedSteps = steps;
+    });
+
+    await _goToTab(AppMainBottomTab.home);
+    if (!mounted) {
+      return;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 280));
+    if (!mounted) {
+      return;
+    }
+
+    AnalyticsService.instance.track(
+      'manual_guided_tour_started',
+      properties: {'tour': tourId.name},
+    );
+    setState(() {
+      _productTourVisible = true;
+      _productTourChromeVisible = false;
+      _productTourStepIndex = 0;
+      _productTourHighlights = const <AppCoachMarkHighlight>[];
+    });
+    await _prepareManualGuidedTourStep(0);
+  }
+
   Future<T?> _pushOverlay<T>(
     AppMainOverlayDestination destination,
     Future<T?> Function(BuildContext nestedContext) push,
@@ -605,6 +786,7 @@ class _HomeShellPageState extends State<HomeShellPage>
         widget.homePage ??
             HomePage(
               key: _homePageKey,
+              scrollController: _homeScrollController,
               initialSelectedDate: _selectedHomeDate,
               mealSyncVersion: _homeMealSyncVersion,
               pendingSavedMeal: _pendingSavedMeal,
@@ -655,6 +837,7 @@ class _HomeShellPageState extends State<HomeShellPage>
   Widget _buildTabsPageView() {
     return PreferVerticalPageView(
       controller: _pageController,
+      allowHorizontalSwipe: !_productTourVisible,
       onPageChanged: (index) {
         if (!mounted || index == _currentIndex) {
           return;
@@ -675,6 +858,626 @@ class _HomeShellPageState extends State<HomeShellPage>
     );
   }
 
+  Future<bool> _resolveShouldShowProductTour() async {
+    try {
+      final profile = await AuthService().fetchProfile(forceRefresh: true);
+      return HomeShellProductTourPrefs.shouldShow(profile);
+    } catch (_) {
+      if (HomeShellProductTourPrefs.shouldShow()) {
+        return true;
+      }
+      // Token sem perfil em cache: tenta de novo depois do boot da sessao.
+      if (AuthService.globalToken != null && AuthService.globalUser == null) {
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        try {
+          final profile = await AuthService().fetchProfile(forceRefresh: true);
+          return HomeShellProductTourPrefs.shouldShow(profile);
+        } catch (_) {
+          return false;
+        }
+      }
+      return false;
+    }
+  }
+
+  Future<void> _maybeStartProductTour() async {
+    if (!mounted ||
+        widget.productTourMode == HomeShellProductTourMode.off ||
+        _productTourVisible) {
+      return;
+    }
+
+    final shouldStart = switch (widget.productTourMode) {
+      HomeShellProductTourMode.force => true,
+      HomeShellProductTourMode.off => false,
+      HomeShellProductTourMode.auto => await _resolveShouldShowProductTour(),
+    };
+    if (!mounted || !shouldStart || _productTourVisible) {
+      return;
+    }
+
+    final resumeIndex = widget.productTourMode == HomeShellProductTourMode.force
+        ? 0
+        : await _productTourPrefs.resolveResumeIndex(homeShellProductTourSteps);
+    if (!mounted || _productTourVisible) {
+      return;
+    }
+
+    AnalyticsService.instance.track(
+      'product_tour_started',
+      properties: {'resume_index': resumeIndex},
+    );
+    _productTourIsReplay = false;
+    _manualGuidedTourId = null;
+    _manualGuidedSteps = const <ManualGuidedTourStep>[];
+    setState(() {
+      _productTourVisible = true;
+      _productTourChromeVisible = false;
+      _productTourStepIndex = resumeIndex;
+      _productTourHighlights = const <AppCoachMarkHighlight>[];
+    });
+    await _prepareProductTourStep(resumeIndex);
+  }
+
+  HomeShellProductTourStep get _currentProductTourStep {
+    return homeShellProductTourSteps[_productTourStepIndex];
+  }
+
+  List<({GlobalKey key, double inflate, double radius})>
+  _targetsForProductTourStep(HomeShellProductTourStep step) {
+    return switch (step.id) {
+      HomeShellProductTourStepId.home => [
+        (key: _homeTabKey, inflate: 6, radius: AppRadius.md),
+      ],
+      HomeShellProductTourStepId.dailyGoal => [
+        (
+          key: HomeShellProductTourTargets.dailyGoalCard,
+          inflate: 0,
+          radius: AppRadius.lg,
+        ),
+      ],
+      HomeShellProductTourStepId.meals => [
+        (
+          key: HomeShellProductTourTargets.mealsSection,
+          inflate: 0,
+          radius: AppRadius.lg,
+        ),
+        (key: _centerActionKey, inflate: 10, radius: AppRadius.md),
+      ],
+      HomeShellProductTourStepId.social => [
+        (key: _socialTabKey, inflate: 6, radius: AppRadius.md),
+      ],
+      HomeShellProductTourStepId.socialTabs => [
+        (
+          key: HomeShellProductTourTargets.socialTabs,
+          inflate: 0,
+          radius: AppRadius.lg,
+        ),
+      ],
+      HomeShellProductTourStepId.performance => [
+        (key: _performanceTabKey, inflate: 6, radius: AppRadius.md),
+      ],
+      HomeShellProductTourStepId.more => [
+        (key: _morePanelKey, inflate: 2, radius: AppRadius.xl),
+        (key: _moreTabKey, inflate: 6, radius: AppRadius.md),
+      ],
+      HomeShellProductTourStepId.missions => [
+        (
+          key: HomeShellProductTourTargets.dailyMissionsSection,
+          inflate: 0,
+          radius: AppRadius.lg,
+        ),
+      ],
+      HomeShellProductTourStepId.store => [
+        (
+          key: HomeShellProductTourTargets.openStoreButton,
+          inflate: 8,
+          radius: AppRadius.md,
+        ),
+      ],
+    };
+  }
+
+  Rect? _rectForKey(GlobalKey key, {double inflate = 0}) {
+    final context = key.currentContext;
+    if (context == null) {
+      return null;
+    }
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize || !box.attached) {
+      return null;
+    }
+    final offset = box.localToGlobal(Offset.zero);
+    final rect = offset & box.size;
+    return inflate == 0 ? rect : rect.inflate(inflate);
+  }
+
+  Future<Rect?> _waitForTargetRect(
+    GlobalKey key, {
+    double inflate = 0,
+    int attempts = 6,
+  }) async {
+    for (var i = 0; i < attempts; i++) {
+      final rect = _rectForKey(key, inflate: inflate);
+      if (rect != null && rect.width > 8 && rect.height > 8) {
+        return rect;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      if (!mounted) {
+        return null;
+      }
+    }
+    return _rectForKey(key, inflate: inflate);
+  }
+
+  Future<void> _prepareProductTourStep(int index) async {
+    if (!mounted || index < 0 || index >= homeShellProductTourSteps.length) {
+      return;
+    }
+
+    final prepareToken = ++_productTourPrepareToken;
+    _productTourBusy = true;
+    final step = homeShellProductTourSteps[index];
+
+    // Oculta card/highlight, navega/carrega, so revela quando o alvo estiver pronto.
+    setState(() {
+      _productTourChromeVisible = false;
+      _productTourHighlights = const <AppCoachMarkHighlight>[];
+      if (!step.openMoreMenu && _isMoreMenuOpen) {
+        _isMoreMenuOpen = false;
+      }
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    if (!mounted || prepareToken != _productTourPrepareToken) {
+      return;
+    }
+
+    if (step.openMoreMenu) {
+      if (step.tab != null) {
+        await _goToTab(step.tab!);
+      }
+      if (mounted) {
+        setState(() {
+          _isMoreMenuOpen = true;
+        });
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 650));
+    } else if (step.tab != null) {
+      await _goToTab(step.tab!);
+      await Future<void>.delayed(
+        Duration(milliseconds: step.waitForTarget ? 280 : 180),
+      );
+    } else {
+      await Future<void>.delayed(const Duration(milliseconds: 180));
+    }
+    if (!mounted || prepareToken != _productTourPrepareToken) {
+      return;
+    }
+
+    final targets = _targetsForProductTourStep(step);
+    final highlights = <AppCoachMarkHighlight>[];
+    final attempts = step.waitForTarget ? 40 : 8;
+
+    if (targets.isNotEmpty) {
+      final primary = targets.first;
+      await _waitForTargetRect(
+        primary.key,
+        inflate: primary.inflate,
+        attempts: attempts,
+      );
+      if (!mounted || prepareToken != _productTourPrepareToken) {
+        return;
+      }
+      final primaryContext = primary.key.currentContext;
+      if (primaryContext != null && primaryContext.mounted) {
+        await Scrollable.ensureVisible(
+          primaryContext,
+          duration: const Duration(milliseconds: 300),
+          alignment: 0.18,
+          curve: Curves.easeOutCubic,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+      if (!mounted || prepareToken != _productTourPrepareToken) {
+        return;
+      }
+      for (final target in targets) {
+        final rect = _rectForKey(target.key, inflate: target.inflate);
+        if (rect != null) {
+          highlights.add(
+            AppCoachMarkHighlight(rect: rect, radius: target.radius),
+          );
+        }
+      }
+    }
+
+    if (!mounted || prepareToken != _productTourPrepareToken) {
+      return;
+    }
+
+    AnalyticsService.instance.track(
+      'product_tour_step_viewed',
+      properties: {
+        'step': step.id.name,
+        'index': index,
+      },
+    );
+
+    setState(() {
+      _productTourStepIndex = index;
+      _productTourHighlights = highlights;
+      _productTourChromeVisible = true;
+      _productTourBusy = false;
+    });
+    unawaited(_productTourPrefs.saveProgress(step.id));
+  }
+
+  Future<void> _openMissionsFromProductTour() async {
+    if (!_productTourVisible || _productTourBusy) {
+      return;
+    }
+    if (_currentProductTourStep.id != HomeShellProductTourStepId.more) {
+      await _goToTab(AppMainBottomTab.missions);
+      return;
+    }
+    final missionsIndex = homeShellProductTourSteps.indexWhere(
+      (step) => step.id == HomeShellProductTourStepId.missions,
+    );
+    if (missionsIndex < 0) {
+      return;
+    }
+    await _prepareProductTourStep(missionsIndex);
+  }
+
+  Future<void> _onProductTourNext() async {
+    if (_manualGuidedTourId != null) {
+      if (_productTourBusy) {
+        return;
+      }
+      await _onManualGuidedTourNext();
+      return;
+    }
+    final nextIndex = _productTourStepIndex + 1;
+    final isLastStep = nextIndex >= homeShellProductTourSteps.length;
+    // Concluir nao pode ser engolido por busy preso de um prepare anterior.
+    if (_productTourBusy && !isLastStep) {
+      return;
+    }
+    if (_currentProductTourStep.id == HomeShellProductTourStepId.more) {
+      await _openMissionsFromProductTour();
+      return;
+    }
+    if (isLastStep) {
+      await _finishProductTour(completed: true);
+      return;
+    }
+    await _prepareProductTourStep(nextIndex);
+  }
+
+  ManualGuidedTourStep get _currentManualGuidedStep {
+    return _manualGuidedSteps[_productTourStepIndex];
+  }
+
+  GlobalKey? _manualGuidedKeyFor(String targetId) {
+    return switch (targetId) {
+      ManualGuidedTourTargetIds.workoutDestination =>
+        ManualGuidedTourTargets.workoutDestination,
+      ManualGuidedTourTargetIds.profileDestination =>
+        ManualGuidedTourTargets.profileDestination,
+      ManualGuidedTourTargetIds.remindersDestination =>
+        ManualGuidedTourTargets.remindersDestination,
+      ManualGuidedTourTargetIds.notificationsDestination =>
+        ManualGuidedTourTargets.notificationsDestination,
+      ManualGuidedTourTargetIds.workoutPlanCard =>
+        ManualGuidedTourTargets.workoutPlanCard,
+      ManualGuidedTourTargetIds.workoutImportButton =>
+        ManualGuidedTourTargets.workoutImportButton,
+      ManualGuidedTourTargetIds.workoutAddExercise =>
+        ManualGuidedTourTargets.workoutAddExercise,
+      ManualGuidedTourTargetIds.profileBanner =>
+        ManualGuidedTourTargets.profileBanner,
+      ManualGuidedTourTargetIds.profileManual =>
+        ManualGuidedTourTargets.profileManual,
+      ManualGuidedTourTargetIds.remindersList =>
+        ManualGuidedTourTargets.remindersList,
+      ManualGuidedTourTargetIds.notificationsList =>
+        ManualGuidedTourTargets.notificationsList,
+      ManualGuidedTourTargetIds.waterCard => ManualGuidedTourTargets.waterCard,
+      ManualGuidedTourTargetIds.stepsCard => ManualGuidedTourTargets.stepsCard,
+      ManualGuidedTourTargetIds.weightCard => ManualGuidedTourTargets.weightCard,
+      _ => null,
+    };
+  }
+
+  Future<void> _openManualGuidedOverlay(ManualGuidedTourOverlay overlay) {
+    return switch (overlay) {
+      ManualGuidedTourOverlay.profile => _openProfile(),
+      ManualGuidedTourOverlay.reminders => _openReminders(),
+      ManualGuidedTourOverlay.notifications => _openNotifications(),
+      ManualGuidedTourOverlay.support => _openSupport(),
+    };
+  }
+
+  Future<void> _prepareManualGuidedTourStep(int index) async {
+    if (!mounted ||
+        index < 0 ||
+        index >= _manualGuidedSteps.length ||
+        _manualGuidedTourId == null) {
+      return;
+    }
+
+    final prepareToken = ++_productTourPrepareToken;
+    final step = _manualGuidedSteps[index];
+    setState(() {
+      _productTourBusy = true;
+      _productTourChromeVisible = false;
+      _productTourHighlights = const <AppCoachMarkHighlight>[];
+      _productTourStepIndex = index;
+    });
+
+    if (step.kind == ManualGuidedTourStepKind.openMore) {
+      if (!_isMoreMenuOpen) {
+        setState(() => _isMoreMenuOpen = true);
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+    } else if (step.kind == ManualGuidedTourStepKind.tab && step.tab != null) {
+      setState(() => _isMoreMenuOpen = false);
+      await _goToTab(step.tab!);
+      await Future<void>.delayed(
+        Duration(milliseconds: step.waitForTarget ? 280 : 160),
+      );
+    } else if (step.kind == ManualGuidedTourStepKind.openOverlay &&
+        step.overlay != null) {
+      setState(() => _isMoreMenuOpen = false);
+      if (_overlayDestination == AppMainOverlayDestination.none ||
+          (step.overlay == ManualGuidedTourOverlay.profile &&
+              _overlayDestination != AppMainOverlayDestination.profile) ||
+          (step.overlay == ManualGuidedTourOverlay.reminders &&
+              _overlayDestination != AppMainOverlayDestination.reminders) ||
+          (step.overlay == ManualGuidedTourOverlay.notifications &&
+              _overlayDestination != AppMainOverlayDestination.notifications)) {
+        unawaited(_openManualGuidedOverlay(step.overlay!));
+        await Future<void>.delayed(const Duration(milliseconds: 420));
+      } else {
+        await Future<void>.delayed(const Duration(milliseconds: 180));
+      }
+    } else {
+      await Future<void>.delayed(const Duration(milliseconds: 160));
+    }
+
+    if (!mounted || prepareToken != _productTourPrepareToken) {
+      return;
+    }
+
+    final highlights = <AppCoachMarkHighlight>[];
+    final attempts = step.waitForTarget ? 40 : 8;
+    for (final targetId in step.targetIds) {
+      final key = _manualGuidedKeyFor(targetId);
+      if (key == null) {
+        continue;
+      }
+      await _waitForTargetRect(
+        key,
+        inflate: step.highlightInflate,
+        attempts: attempts,
+      );
+      if (!mounted || prepareToken != _productTourPrepareToken) {
+        return;
+      }
+      final targetContext = key.currentContext;
+      if (targetContext != null && targetContext.mounted) {
+        await Scrollable.ensureVisible(
+          targetContext,
+          duration: const Duration(milliseconds: 280),
+          alignment: step.scrollAlignment,
+          curve: Curves.easeOutCubic,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 320));
+      }
+      if (!mounted || prepareToken != _productTourPrepareToken) {
+        return;
+      }
+      final rect = _rectForKey(key, inflate: step.highlightInflate);
+      if (rect != null) {
+        highlights.add(
+          AppCoachMarkHighlight(
+            rect: rect,
+            radius: step.highlightRadius,
+          ),
+        );
+      }
+    }
+
+    if (!mounted || prepareToken != _productTourPrepareToken) {
+      return;
+    }
+
+    setState(() {
+      _productTourStepIndex = index;
+      _productTourHighlights = highlights;
+      _productTourChromeVisible = true;
+      _productTourBusy = false;
+    });
+  }
+
+  bool get _isManualGuidedTourActive =>
+      _productTourVisible && _manualGuidedTourId != null;
+
+  bool get _isAnyTourActive => _productTourVisible;
+
+  bool get _isProductTourMoreStep =>
+      _productTourVisible &&
+      _manualGuidedTourId == null &&
+      !_productTourBusy &&
+      _currentProductTourStep.id == HomeShellProductTourStepId.more &&
+      _currentProductTourStep.allowHighlightTap;
+
+  bool _manualGuidedAllowsTab(AppMainBottomTab tab) {
+    if (!_isManualGuidedTourActive || _productTourBusy) {
+      return false;
+    }
+    final step = _currentManualGuidedStep;
+    return step.allowHighlightTap && step.tab == tab;
+  }
+
+  bool _manualGuidedAllowsOverlay(ManualGuidedTourOverlay overlay) {
+    if (!_isManualGuidedTourActive || _productTourBusy) {
+      return false;
+    }
+    final step = _currentManualGuidedStep;
+    return step.allowHighlightTap && step.overlay == overlay;
+  }
+
+  Future<void> _advanceManualGuidedAfterDestination() async {
+    final nextIndex = _productTourStepIndex + 1;
+    if (nextIndex >= _manualGuidedSteps.length) {
+      await _finishProductTour(completed: true);
+      return;
+    }
+    await _prepareManualGuidedTourStep(nextIndex);
+  }
+
+  Future<void> _onManualGuidedTourNext() async {
+    if (_productTourBusy || _manualGuidedTourId == null) {
+      return;
+    }
+    final step = _currentManualGuidedStep;
+
+    if (step.kind == ManualGuidedTourStepKind.openMore) {
+      setState(() => _isMoreMenuOpen = false);
+      if (step.tab != null) {
+        await _goToTab(step.tab!);
+        await Future<void>.delayed(const Duration(milliseconds: 220));
+      } else if (step.overlay != null) {
+        unawaited(_openManualGuidedOverlay(step.overlay!));
+        await Future<void>.delayed(const Duration(milliseconds: 350));
+      }
+      await _advanceManualGuidedAfterDestination();
+      return;
+    }
+
+    if (step.allowHighlightTap &&
+        step.kind == ManualGuidedTourStepKind.tab &&
+        step.tab != null) {
+      await _goToTab(step.tab!);
+      await _advanceManualGuidedAfterDestination();
+      return;
+    }
+
+    if (step.allowHighlightTap &&
+        step.kind == ManualGuidedTourStepKind.openOverlay &&
+        step.overlay != null) {
+      unawaited(_openManualGuidedOverlay(step.overlay!));
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      await _advanceManualGuidedAfterDestination();
+      return;
+    }
+
+    final nextIndex = _productTourStepIndex + 1;
+    if (nextIndex >= _manualGuidedSteps.length) {
+      await _finishProductTour(completed: true);
+      return;
+    }
+    await _prepareManualGuidedTourStep(nextIndex);
+  }
+
+  Future<void> _finishProductTour({required bool completed}) async {
+    // Nao depende de !_productTourBusy: prepare cancelado podia deixar busy true
+    // e engolir o Concluir sem abrir o modal.
+    if (!_productTourVisible) {
+      return;
+    }
+    final isReplay = _productTourIsReplay;
+    final manualTourId = _manualGuidedTourId;
+    final stepIndex = _productTourStepIndex;
+    _productTourPrepareToken += 1;
+    setState(() {
+      _productTourBusy = true;
+      _productTourVisible = false;
+      _productTourChromeVisible = false;
+      _productTourHighlights = const <AppCoachMarkHighlight>[];
+      _isMoreMenuOpen = false;
+      _productTourIsReplay = false;
+      _manualGuidedTourId = null;
+      _manualGuidedSteps = const <ManualGuidedTourStep>[];
+    });
+    if (manualTourId != null) {
+      AnalyticsService.instance.track(
+        completed
+            ? 'manual_guided_tour_completed'
+            : 'manual_guided_tour_skipped',
+        properties: {
+          'tour': manualTourId.name,
+          'step_index': stepIndex,
+        },
+      );
+      if (mounted && completed) {
+        AppToast.success(context, message: 'Tutorial guiado concluído.');
+      }
+      if (mounted) {
+        setState(() => _productTourBusy = false);
+      }
+      return;
+    }
+    AnalyticsService.instance.track(
+      completed ? 'product_tour_completed' : 'product_tour_skipped',
+      properties: {
+        'step_index': stepIndex,
+        'step': homeShellProductTourSteps[stepIndex.clamp(
+          0,
+          homeShellProductTourSteps.length - 1,
+        )].id.name,
+        'replay': isReplay,
+      },
+    );
+    unawaited(() async {
+      try {
+        if (isReplay) {
+          await _productTourPrefs.clearProgress();
+        } else {
+          await _productTourPrefs.markCompleted();
+        }
+      } catch (_) {}
+    }());
+    if (!mounted) {
+      return;
+    }
+    if (!completed) {
+      await _goToTab(AppMainBottomTab.home);
+      _scrollHomeToTopSoon();
+      if (mounted) {
+        setState(() => _productTourBusy = false);
+      }
+      return;
+    }
+    if (isReplay) {
+      AppToast.success(context, message: 'Tour inicial concluído de novo.');
+      await _goToTab(AppMainBottomTab.home);
+      _scrollHomeToTopSoon();
+      if (mounted) {
+        setState(() => _productTourBusy = false);
+      }
+      return;
+    }
+
+    // Modal antes de trocar de aba: navegacao concorrente engolia o dialog.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) {
+      return;
+    }
+    try {
+      await HomeProductTourCongratsDialog.show(context);
+    } catch (_) {}
+    if (!mounted) {
+      return;
+    }
+    await _goToTab(AppMainBottomTab.home);
+    _scrollHomeToTopSoon();
+    if (mounted) {
+      setState(() => _productTourBusy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final nestedCanPop = _nestedNavigatorKey.currentState?.canPop() ?? false;
@@ -682,15 +1485,51 @@ class _HomeShellPageState extends State<HomeShellPage>
         homeShellBottomNavBodyHeight +
         homeShellBottomNavFloatingGap +
         MediaQuery.viewPaddingOf(context).bottom;
+    final isManualTour =
+        _productTourVisible && _manualGuidedTourId != null;
+    final productTourStep =
+        _productTourVisible && !isManualTour ? _currentProductTourStep : null;
+    final manualTourStep = isManualTour ? _currentManualGuidedStep : null;
+    final coachTitle = manualTourStep?.title ?? productTourStep?.title;
+    final coachDescription =
+        manualTourStep?.description ?? productTourStep?.description;
+    final stepCount = isManualTour
+        ? _manualGuidedSteps.length
+        : homeShellProductTourSteps.length;
+    final isLastTourStep = _productTourStepIndex >= stepCount - 1;
+    final allowTourHighlightTap =
+        ((manualTourStep?.allowHighlightTap ?? false) ||
+            (productTourStep?.allowHighlightTap ?? false)) &&
+        _productTourChromeVisible;
+    final tourNextLabel = isLastTourStep
+        ? 'Concluir'
+        : (manualTourStep?.nextLabel ??
+              productTourStep?.nextLabel ??
+              'Próximo');
+    final coachTooltipPlacement = manualTourStep != null
+        ? (manualTourStep.tooltipAbove
+              ? AppCoachMarkTooltipPlacement.above
+              : AppCoachMarkTooltipPlacement.below)
+        : switch (productTourStep?.tooltipPlacement) {
+            HomeShellProductTourTooltipPlacement.above =>
+              AppCoachMarkTooltipPlacement.above,
+            HomeShellProductTourTooltipPlacement.below =>
+              AppCoachMarkTooltipPlacement.below,
+            HomeShellProductTourTooltipPlacement.auto || null =>
+              AppCoachMarkTooltipPlacement.auto,
+          };
 
     return HomeStepsWeightScope(
       controller: _stepsWeightController,
       child: HomeShellLayout(
         navOverlap: navOverlap,
         child: PopScope(
-          canPop: !nestedCanPop,
+          canPop: !nestedCanPop && !_productTourVisible,
           onPopInvokedWithResult: (didPop, result) {
             if (didPop) {
+              return;
+            }
+            if (_productTourVisible) {
               return;
             }
             _nestedNavigatorKey.currentState?.maybePop();
@@ -709,50 +1548,185 @@ class _HomeShellPageState extends State<HomeShellPage>
                   children: [
                     MediaQuery(
                       data: paddedMediaQuery,
-                      child: Navigator(
-                        key: _nestedNavigatorKey,
-                        observers: <NavigatorObserver>[_nestedNavObserver],
-                        onGenerateRoute: (settings) {
-                          return PageRouteBuilder<void>(
-                            settings: settings,
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) {
-                                  return _buildShellBody();
-                                },
-                            transitionDuration: Duration.zero,
-                            reverseTransitionDuration: Duration.zero,
-                          );
-                        },
+                      child: KeyedSubtree(
+                        key: _tourContentKey,
+                        child: Navigator(
+                          key: _nestedNavigatorKey,
+                          observers: <NavigatorObserver>[_nestedNavObserver],
+                          onGenerateRoute: (settings) {
+                            return PageRouteBuilder<void>(
+                              settings: settings,
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) {
+                                    return _buildShellBody();
+                                  },
+                              transitionDuration: Duration.zero,
+                              reverseTransitionDuration: Duration.zero,
+                            );
+                          },
+                        ),
                       ),
                     ),
                     Positioned(
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      child: AppMainBottomNavigation(
-                        activeTab: _activeTab,
-                        overlayDestination: _overlayDestination,
-                        isMoreMenuOpen: _isMoreMenuOpen,
-                        onMoreTap: () {
-                          setState(() {
-                            _isMoreMenuOpen = !_isMoreMenuOpen;
-                          });
-                        },
-                        onPerformanceTap: () =>
-                            _goToTab(AppMainBottomTab.performance),
-                        onWorkoutTap: () => _goToTab(AppMainBottomTab.workout),
-                        onNotificationsTap: _openNotifications,
-                        onRemindersTap: _openReminders,
-                        onSupportTap: _openSupport,
-                        onStoreTap: _openStore,
-                        onProfileTap: _openProfile,
-                        onHomeTap: () => _goToTab(AppMainBottomTab.home),
-                        onMissionsTap: () =>
-                            _goToTab(AppMainBottomTab.missions),
-                        onSocialTap: () => _goToTab(AppMainBottomTab.social),
-                        onCenterActionTap: _openFoodCapture,
+                      child: IgnorePointer(
+                        ignoring: _productTourVisible && !allowTourHighlightTap,
+                        child: AppMainBottomNavigation(
+                          activeTab: _activeTab,
+                          overlayDestination: _overlayDestination,
+                          isMoreMenuOpen: _isMoreMenuOpen,
+                          suppressMoreScrim: _productTourVisible,
+                          performanceTabKey: _performanceTabKey,
+                          homeTabKey: _homeTabKey,
+                          socialTabKey: _socialTabKey,
+                          moreTabKey: _moreTabKey,
+                          missionsDestinationKey: _missionsDestinationKey,
+                          workoutDestinationKey:
+                              ManualGuidedTourTargets.workoutDestination,
+                          profileDestinationKey:
+                              ManualGuidedTourTargets.profileDestination,
+                          remindersDestinationKey:
+                              ManualGuidedTourTargets.remindersDestination,
+                          notificationsDestinationKey:
+                              ManualGuidedTourTargets.notificationsDestination,
+                          morePanelKey: _morePanelKey,
+                          moreBundleKey: _moreBundleKey,
+                          centerActionKey: _centerActionKey,
+                          onMoreTap: () {
+                            if (_isAnyTourActive) {
+                              return;
+                            }
+                            setState(() {
+                              _isMoreMenuOpen = !_isMoreMenuOpen;
+                            });
+                          },
+                          onPerformanceTap: () {
+                            if (_isAnyTourActive) {
+                              return;
+                            }
+                            unawaited(_goToTab(AppMainBottomTab.performance));
+                          },
+                          onWorkoutTap: () {
+                            if (_isManualGuidedTourActive) {
+                              if (_manualGuidedAllowsTab(
+                                AppMainBottomTab.workout,
+                              )) {
+                                unawaited(_onManualGuidedTourNext());
+                              }
+                              return;
+                            }
+                            if (_isAnyTourActive) {
+                              return;
+                            }
+                            unawaited(_goToTab(AppMainBottomTab.workout));
+                          },
+                          onNotificationsTap: () {
+                            if (_isManualGuidedTourActive) {
+                              if (_manualGuidedAllowsOverlay(
+                                ManualGuidedTourOverlay.notifications,
+                              )) {
+                                unawaited(_onManualGuidedTourNext());
+                              }
+                              return;
+                            }
+                            if (_isAnyTourActive) {
+                              return;
+                            }
+                            unawaited(_openNotifications());
+                          },
+                          onRemindersTap: () {
+                            if (_isManualGuidedTourActive) {
+                              if (_manualGuidedAllowsOverlay(
+                                ManualGuidedTourOverlay.reminders,
+                              )) {
+                                unawaited(_onManualGuidedTourNext());
+                              }
+                              return;
+                            }
+                            if (_isAnyTourActive) {
+                              return;
+                            }
+                            unawaited(_openReminders());
+                          },
+                          onSupportTap: () {
+                            if (_isAnyTourActive) {
+                              return;
+                            }
+                            unawaited(_openSupport());
+                          },
+                          onStoreTap: () {
+                            if (_isAnyTourActive) {
+                              return;
+                            }
+                            unawaited(_openStore());
+                          },
+                          onProfileTap: () {
+                            if (_isManualGuidedTourActive) {
+                              if (_manualGuidedAllowsOverlay(
+                                ManualGuidedTourOverlay.profile,
+                              )) {
+                                unawaited(_onManualGuidedTourNext());
+                              }
+                              return;
+                            }
+                            if (_isAnyTourActive) {
+                              return;
+                            }
+                            unawaited(_openProfile());
+                          },
+                          onHomeTap: () {
+                            if (_isAnyTourActive) {
+                              return;
+                            }
+                            unawaited(_goToTab(AppMainBottomTab.home));
+                          },
+                          onMissionsTap: () {
+                            if (_isManualGuidedTourActive) {
+                              return;
+                            }
+                            if (_isProductTourMoreStep || _productTourVisible) {
+                              unawaited(_openMissionsFromProductTour());
+                              return;
+                            }
+                            unawaited(_goToTab(AppMainBottomTab.missions));
+                          },
+                          onSocialTap: () {
+                            if (_isAnyTourActive) {
+                              return;
+                            }
+                            unawaited(_goToTab(AppMainBottomTab.social));
+                          },
+                          onCenterActionTap: () {
+                            if (_isAnyTourActive) {
+                              return;
+                            }
+                            unawaited(_openFoodCapture());
+                          },
+                        ),
                       ),
                     ),
+                    if (coachTitle != null && coachDescription != null)
+                      Positioned.fill(
+                        child: AppCoachMarkOverlay(
+                          key: ValueKey(
+                            'coach-tour-${_manualGuidedTourId?.name ?? 'product'}-'
+                            '$_productTourStepIndex-'
+                            '${_productTourChromeVisible ? 'on' : 'off'}',
+                          ),
+                          title: coachTitle,
+                          description: coachDescription,
+                          stepIndex: _productTourStepIndex,
+                          stepCount: stepCount,
+                          highlights: _productTourHighlights,
+                          allowHighlightTap: allowTourHighlightTap,
+                          showChrome: _productTourChromeVisible,
+                          tooltipPlacement: coachTooltipPlacement,
+                          nextLabel: tourNextLabel,
+                          onNext: () => unawaited(_onProductTourNext()),
+                        ),
+                      ),
                   ],
                 ),
               );

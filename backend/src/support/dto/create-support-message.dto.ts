@@ -8,12 +8,12 @@ import {
   MinLength,
 } from 'class-validator';
 
-export const SUPPORT_SUBJECT_TYPES = ['bug', 'suggestion'] as const;
+export const SUPPORT_SUBJECT_TYPES = ['bug', 'suggestion', 'privacy'] as const;
 export type SupportSubjectType = (typeof SUPPORT_SUBJECT_TYPES)[number];
 
 export class CreateSupportMessageDto {
   @IsIn(SUPPORT_SUBJECT_TYPES, {
-    message: 'Tipo de assunto invalido. Use bug ou suggestion.',
+    message: 'Tipo de assunto invalido. Use bug, suggestion ou privacy.',
   })
   subjectType: SupportSubjectType;
 

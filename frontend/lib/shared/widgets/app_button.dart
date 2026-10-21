@@ -144,7 +144,7 @@ class _OutlineButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = textStyle?.color ?? AppColors.action500;
+    final foreground = textStyle?.color ?? AppColors.textPrimary;
     final resolvedStyle = (textStyle ?? AppTextStyles.buttonMedium).copyWith(
       color: foreground,
     );

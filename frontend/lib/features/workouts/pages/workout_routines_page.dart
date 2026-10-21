@@ -139,6 +139,10 @@ class _WorkoutRoutinesPageState extends State<WorkoutRoutinesPage> {
     if (_isBusy) {
       return;
     }
+    if (_routines.length <= 1) {
+      AppToast.show(context, message: 'Mantenha pelo menos um treino.');
+      return;
+    }
 
     final confirmed = await AppConfirmModal.show(
       context,

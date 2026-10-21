@@ -82,9 +82,7 @@ class MissionCard extends StatelessWidget {
                           child: Text(
                             mission.progressLabel,
                             style: AppTextStyles.missionsProgress.copyWith(
-                              color: percent >= 45
-                                  ? AppColors.surface
-                                  : AppColors.brand900Variant,
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
                               fontSize: 12,
                               height: 1,

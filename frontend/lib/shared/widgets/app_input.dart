@@ -9,6 +9,11 @@ abstract final class AppInputStyles {
     vertical: AppSpacing.lg,
   );
 
+  static const EdgeInsets floatingLabelContentPadding = EdgeInsets.symmetric(
+    horizontal: AppSpacing.sm,
+    vertical: AppSpacing.lg + AppSpacing.xs,
+  );
+
   static double get singleLineHeight =>
       singleLineContentPadding.vertical + 22;
 
@@ -22,12 +27,25 @@ abstract final class AppInputStyles {
         fontWeight: FontWeight.w400,
         height: 1.2,
       );
+
+  static TextStyle get floatingLabel => AppTextStyles.bodyMedium.copyWith(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
+        height: 1.2,
+      );
+
+  static TextStyle get restingLabel => AppTextStyles.bodyLarge.copyWith(
+        color: AppColors.textTertiary,
+        fontWeight: FontWeight.w400,
+        height: 1.2,
+      );
 }
 
 class AppInput extends StatelessWidget {
   const AppInput({
     super.key,
     required this.controller,
+    this.labelText,
     this.hintText,
     this.onChanged,
     this.onTap,
@@ -51,6 +69,7 @@ class AppInput extends StatelessWidget {
   });
 
   final TextEditingController controller;
+  final String? labelText;
   final String? hintText;
   final ValueChanged<String>? onChanged;
   final VoidCallback? onTap;
@@ -74,6 +93,8 @@ class AppInput extends StatelessWidget {
 
   bool get _isMultiline => (maxLines ?? 1) > 1 || (minLines ?? 1) > 1;
 
+  bool get _hasLabel => (labelText ?? '').trim().isNotEmpty;
+
   OutlineInputBorder _border(Color color) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.md),
@@ -83,11 +104,24 @@ class AppInput extends StatelessWidget {
 
   InputDecoration _decoration({required EdgeInsetsGeometry padding}) {
     final sideColor = borderColor ?? AppColors.inputBorder;
+    final trimmedHint = hintText?.trim();
+    final trimmedLabel = labelText?.trim();
+
     return InputDecoration(
-      hintText: hintText,
+      labelText: _hasLabel ? trimmedLabel : null,
+      labelStyle: AppInputStyles.restingLabel,
+      floatingLabelStyle: AppInputStyles.floatingLabel,
+      floatingLabelBehavior: _hasLabel
+          ? FloatingLabelBehavior.auto
+          : FloatingLabelBehavior.never,
+      hintText: (trimmedHint != null && trimmedHint.isNotEmpty)
+          ? trimmedHint
+          : null,
       hintStyle: AppInputStyles.hint,
       filled: true,
       fillColor: AppColors.surface,
+      hoverColor: AppColors.surface,
+      focusColor: AppColors.surface,
       isDense: true,
       contentPadding: padding,
       suffixIcon: suffixIcon,
@@ -116,7 +150,10 @@ class AppInput extends StatelessWidget {
   }
 
   Widget _buildSingleLine() {
-    final padding = contentPadding ?? AppInputStyles.singleLineContentPadding;
+    final padding = contentPadding ??
+        (_hasLabel
+            ? AppInputStyles.floatingLabelContentPadding
+            : AppInputStyles.singleLineContentPadding);
 
     return TextFormField(
       controller: controller,
@@ -164,7 +201,7 @@ class AppInputField extends StatefulWidget {
   const AppInputField({
     super.key,
     required this.label,
-    required this.hint,
+    this.hint = '',
     this.controller,
     this.enabled = true,
     this.readOnly = false,
@@ -235,23 +272,10 @@ class _AppInputFieldState extends State<AppInputField> {
       return _buildWithValidation();
     }
 
-    final showLabel = widget.label.trim().isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (showLabel) ...[
-          _buildLabel(),
-          const SizedBox(height: AppSpacing.sm),
-        ],
-        _buildInput(onChanged: widget.onChanged),
-      ],
-    );
+    return _buildInput(onChanged: widget.onChanged);
   }
 
   Widget _buildWithValidation() {
-    final showLabel = widget.label.trim().isNotEmpty;
-
     return FormField<String>(
       initialValue: _controller.text,
       validator: widget.validator,
@@ -259,10 +283,6 @@ class _AppInputFieldState extends State<AppInputField> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (showLabel) ...[
-              _buildLabel(),
-              const SizedBox(height: AppSpacing.sm),
-            ],
             _buildInput(onChanged: (value) {
               state.didChange(value);
               widget.onChanged?.call(value);
@@ -283,16 +303,6 @@ class _AppInputFieldState extends State<AppInputField> {
           ],
         );
       },
-    );
-  }
-
-  Widget _buildLabel() {
-    return Text(
-      widget.label,
-      style: AppTextStyles.bodyLarge.copyWith(
-        color: AppColors.textPrimary,
-        fontWeight: FontWeight.w700,
-      ),
     );
   }
 
@@ -319,6 +329,7 @@ class _AppInputFieldState extends State<AppInputField> {
   Widget _buildInput({ValueChanged<String>? onChanged}) {
     return AppInput(
       controller: _controller,
+      labelText: widget.label,
       hintText: widget.hint,
       enabled: widget.enabled,
       readOnly: widget.readOnly,

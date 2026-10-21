@@ -23,6 +23,7 @@ import {
 } from './workout-import.util';
 
 const LOAD_HISTORY_LIMIT = 12;
+const DEFAULT_ROUTINE_NAME = 'Treino A';
 
 @Injectable()
 export class WorkoutsService {
@@ -38,6 +39,8 @@ export class WorkoutsService {
   ) {}
 
   async list(userId: string) {
+    await this.ensureDefaultRoutine(userId);
+
     const routines = await this.routineModel.findAll({
       where: { userId },
       include: [
@@ -69,6 +72,18 @@ export class WorkoutsService {
     };
   }
 
+  private async ensureDefaultRoutine(userId: string) {
+    const count = await this.routineModel.count({ where: { userId } });
+    if (count > 0) {
+      return;
+    }
+    await this.routineModel.create({
+      userId,
+      name: DEFAULT_ROUTINE_NAME,
+      sortOrder: 1,
+    });
+  }
+
   async createRoutine(userId: string, dto: CreateRoutineDto) {
     const name = this.requireRoutineName(dto.name);
     const maxSort = await this.routineModel.max('sortOrder', { where: { userId } });
@@ -90,6 +105,10 @@ export class WorkoutsService {
   }
 
   async deleteRoutine(userId: string, routineId: string) {
+    const count = await this.routineModel.count({ where: { userId } });
+    if (count <= 1) {
+      throw new BadRequestException('Mantenha pelo menos um treino.');
+    }
     const routine = await this.findRoutineOrThrow(userId, routineId);
     await routine.destroy();
   }

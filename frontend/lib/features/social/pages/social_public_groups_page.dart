@@ -126,7 +126,7 @@ class _SocialPublicGroupsPageState extends State<SocialPublicGroupsPage> {
               children: [
                 AppInputField(
                   label: '',
-                  hint: 'Ex.: Família Saudável',
+                  hint: '',
                   controller: _queryController,
                   suffixIcon: IconButton(
                     onPressed: _load,
