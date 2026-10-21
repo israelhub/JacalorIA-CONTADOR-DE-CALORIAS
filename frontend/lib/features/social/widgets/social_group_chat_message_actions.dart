@@ -60,7 +60,7 @@ class SocialGroupChatMessageMenu extends StatelessWidget {
             (
               key: const ValueKey('group-chat-action-delete'),
               icon: Icons.delete_outline_rounded,
-              label: 'Excluir',
+              label: message.canModerate ? 'Remover (moderação)' : 'Excluir',
               color: AppColors.textError,
               action: SocialGroupChatMessageAction.delete,
             ),
