@@ -65,7 +65,7 @@ class _MealReminderNamePageState extends State<MealReminderNamePage> {
               const SizedBox(height: AppSpacing.xl),
               AppInputField(
                 label: 'Nome',
-                hint: 'Ex.: Lanche da tarde',
+                hint: '',
                 controller: _controller,
                 keyboardType: TextInputType.text,
                 onChanged: (_) => setState(() {}),

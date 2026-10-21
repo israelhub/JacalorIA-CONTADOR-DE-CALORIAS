@@ -117,14 +117,14 @@ class _LoginPageState extends State<LoginPage> {
                           children: [
                             AppInputField(
                               label: 'E-mail',
-                              hint: 'Ex.: maria@email.com',
+                              hint: '',
                               controller: _emailController,
                               onChanged: (_) => _authController.clearError(),
                             ),
                             const SizedBox(height: AppSpacing.xxl),
                             AppInputField(
                               label: 'Senha',
-                              hint: 'Ex.: sua senha',
+                              hint: '',
                               controller: _passwordController,
                               obscureText: true,
                               onChanged: (_) => _authController.clearError(),

@@ -27,6 +27,7 @@ HomeShellPage _shell({
     socialPage: socialPage,
     workoutPage: workoutPage,
     stepsService: FakeStepsService(),
+    productTourMode: HomeShellProductTourMode.off,
   );
 }
 

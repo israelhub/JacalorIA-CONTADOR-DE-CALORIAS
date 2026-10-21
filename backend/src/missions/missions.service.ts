@@ -18,7 +18,13 @@ import {
   WEEKEND_GOAL_MISSION_KEY,
   WEEKLY_UPDATE_WEIGHT_MISSION_KEY,
 } from './constants/missions.seed';
-import { isCheckInExclusiveStoreItem } from './constants/store-catalog.seed';
+import {
+  isCheckInExclusiveStoreItem,
+  isTutorialExclusiveStoreItem,
+  PRODUCT_TOUR_REWARD_BACKGROUND_KEY,
+  PRODUCT_TOUR_REWARD_EMOJI_KEY,
+  PRODUCT_TOUR_REWARD_FRAME_KEY,
+} from './constants/store-catalog.seed';
 import {
   buildCheckInReferenceKey,
   primaryCheckInRewardKind,
@@ -91,7 +97,7 @@ type StoreItem = {
   quantityOwned?: number;
   quantityPerPurchase?: number;
   storeAction?: 'inventory_blocker';
-  acquireSource?: 'purchase' | 'check_in';
+  acquireSource?: 'purchase' | 'check_in' | 'tutorial';
 };
 
 @Injectable()
@@ -603,6 +609,163 @@ export class MissionsService implements OnModuleInit {
     return response;
   }
 
+  async claimProductTourRewards(userId: string) {
+    const sequelize = this.userModel.sequelize;
+    if (!sequelize) {
+      throw new BadRequestException('Serviço indisponível no momento.');
+    }
+
+    const response = await sequelize.transaction(async (transaction) => {
+      const user = await this.userModel.findByPk(userId, {
+        attributes: [
+          'id',
+          'purchasedAvatarFrameIds',
+          'purchasedAvatarBackgroundIds',
+          'purchasedJacaEmojiIds',
+          'homeProductTourCompleted',
+        ],
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (!user) {
+        throw new BadRequestException('Usuário não encontrado.');
+      }
+
+      if (!user.homeProductTourCompleted) {
+        await user.update(
+          { homeProductTourCompleted: true },
+          { transaction },
+        );
+        user.homeProductTourCompleted = true;
+      }
+
+      const purchasedFrames = await this.syncUserPurchasedAvatarFrames(
+        user,
+        transaction,
+      );
+      const purchasedBackgrounds = await this.syncUserPurchasedAvatarBackgrounds(
+        user,
+        transaction,
+      );
+      const purchasedEmojis = new Set(
+        await this.loadOwnedItemKeys(
+          userId,
+          'jaca_emoji',
+          user.purchasedJacaEmojiIds,
+          transaction,
+        ),
+      );
+
+      const granted = {
+        frameGranted: null as string | null,
+        backgroundGranted: null as string | null,
+        emojiGranted: null as string | null,
+      };
+
+      if (!purchasedFrames.has(PRODUCT_TOUR_REWARD_FRAME_KEY)) {
+        purchasedFrames.add(PRODUCT_TOUR_REWARD_FRAME_KEY);
+        await user.update(
+          {
+            purchasedAvatarFrameIds: Array.from(purchasedFrames).sort(),
+          },
+          { transaction },
+        );
+        user.purchasedAvatarFrameIds = Array.from(purchasedFrames).sort();
+        granted.frameGranted = PRODUCT_TOUR_REWARD_FRAME_KEY;
+        await this.recordStorePurchase(
+          {
+            userId,
+            itemKey: PRODUCT_TOUR_REWARD_FRAME_KEY,
+            category: 'avatar_frame',
+            quantity: 1,
+            priceGold: 0,
+            currencyTransactionId: null,
+            acquireSource: 'tutorial',
+            referenceKey: `product_tour_reward:frame:${PRODUCT_TOUR_REWARD_FRAME_KEY}`,
+          },
+          transaction,
+        );
+      }
+
+      if (!purchasedBackgrounds.has(PRODUCT_TOUR_REWARD_BACKGROUND_KEY)) {
+        purchasedBackgrounds.add(PRODUCT_TOUR_REWARD_BACKGROUND_KEY);
+        await user.update(
+          {
+            purchasedAvatarBackgroundIds: Array.from(
+              purchasedBackgrounds,
+            ).sort(),
+          },
+          { transaction },
+        );
+        user.purchasedAvatarBackgroundIds = Array.from(
+          purchasedBackgrounds,
+        ).sort();
+        granted.backgroundGranted = PRODUCT_TOUR_REWARD_BACKGROUND_KEY;
+        await this.recordStorePurchase(
+          {
+            userId,
+            itemKey: PRODUCT_TOUR_REWARD_BACKGROUND_KEY,
+            category: 'avatar_background',
+            quantity: 1,
+            priceGold: 0,
+            currencyTransactionId: null,
+            acquireSource: 'tutorial',
+            referenceKey: `product_tour_reward:background:${PRODUCT_TOUR_REWARD_BACKGROUND_KEY}`,
+          },
+          transaction,
+        );
+      }
+
+      if (!purchasedEmojis.has(PRODUCT_TOUR_REWARD_EMOJI_KEY)) {
+        purchasedEmojis.add(PRODUCT_TOUR_REWARD_EMOJI_KEY);
+        await user.update(
+          {
+            purchasedJacaEmojiIds: Array.from(purchasedEmojis).sort(),
+          },
+          { transaction },
+        );
+        user.purchasedJacaEmojiIds = Array.from(purchasedEmojis).sort();
+        granted.emojiGranted = PRODUCT_TOUR_REWARD_EMOJI_KEY;
+        await this.recordStorePurchase(
+          {
+            userId,
+            itemKey: PRODUCT_TOUR_REWARD_EMOJI_KEY,
+            category: 'jaca_emoji',
+            quantity: 1,
+            priceGold: 0,
+            currencyTransactionId: null,
+            acquireSource: 'tutorial',
+            referenceKey: `product_tour_reward:emoji:${PRODUCT_TOUR_REWARD_EMOJI_KEY}`,
+          },
+          transaction,
+        );
+      }
+
+      return {
+        message: 'Recompensas do tutorial sincronizadas.',
+        granted,
+        profile: {
+          homeProductTourCompleted: true,
+          purchasedAvatarFrameIds: this.normalizeIdList(
+            user.purchasedAvatarFrameIds,
+          ),
+          purchasedAvatarBackgroundIds: this.normalizeIdList(
+            user.purchasedAvatarBackgroundIds,
+          ),
+          purchasedJacaEmojiIds: this.normalizeIdList(user.purchasedJacaEmojiIds),
+        },
+      };
+    });
+
+    await this.analyticsService.trackSafe(userId, {
+      eventName: 'product_tour_rewards_claimed',
+      properties: response.granted,
+    });
+
+    return response;
+  }
+
   async getStore(userId: string) {
     await Promise.all([
       this.ensurePurchasedAvatarFramesSynced(userId),
@@ -664,7 +827,9 @@ export class MissionsService implements OnModuleInit {
       equipped: equippedFrameId === entry.itemKey,
       acquireSource: isCheckInExclusiveStoreItem(entry.itemKey)
         ? 'check_in'
-        : 'purchase',
+        : isTutorialExclusiveStoreItem(entry.itemKey)
+          ? 'tutorial'
+          : 'purchase',
     }));
 
     const backgroundItems: StoreItem[] = backgroundCatalog.map((entry) => ({
@@ -676,7 +841,9 @@ export class MissionsService implements OnModuleInit {
       equipped: equippedBackgroundId === entry.itemKey,
       acquireSource: isCheckInExclusiveStoreItem(entry.itemKey)
         ? 'check_in'
-        : 'purchase',
+        : isTutorialExclusiveStoreItem(entry.itemKey)
+          ? 'tutorial'
+          : 'purchase',
     }));
 
     const stickerItems: StoreItem[] = stickerCatalog.map((entry) => ({
@@ -686,6 +853,9 @@ export class MissionsService implements OnModuleInit {
       priceGold: entry.priceGold,
       owned: purchasedJacaEmojis.has(entry.itemKey),
       equipped: false,
+      acquireSource: isTutorialExclusiveStoreItem(entry.itemKey)
+        ? 'tutorial'
+        : 'purchase',
     }));
 
     const defaultBlocker = blockerCatalog.find(
@@ -807,6 +977,11 @@ export class MissionsService implements OnModuleInit {
       if (isCheckInExclusiveStoreItem(normalizedFrameId)) {
         throw new BadRequestException(
           'Esta moldura é exclusiva do check-in. Abra Missões para resgatar.',
+        );
+      }
+      if (isTutorialExclusiveStoreItem(normalizedFrameId)) {
+        throw new BadRequestException(
+          'Esta moldura é exclusiva do tutorial inicial.',
         );
       }
 
@@ -959,6 +1134,11 @@ export class MissionsService implements OnModuleInit {
           'Este fundo é exclusivo do check-in. Abra Missões para resgatar.',
         );
       }
+      if (isTutorialExclusiveStoreItem(normalizedBackgroundId)) {
+        throw new BadRequestException(
+          'Este fundo é exclusivo do tutorial inicial.',
+        );
+      }
 
       const currentGold = await this.getBalanceByCurrency(userId, 'gold', transaction);
       if (currentGold < priceGold) {
@@ -1104,6 +1284,12 @@ export class MissionsService implements OnModuleInit {
             xpLifetimeSpent: wallet.xpLifetimeSpent,
           },
         };
+      }
+
+      if (isTutorialExclusiveStoreItem(normalizedEmojiId)) {
+        throw new BadRequestException(
+          'Esta figurinha é exclusiva do tutorial inicial.',
+        );
       }
 
       const currentGold = await this.getBalanceByCurrency(userId, 'gold', transaction);
@@ -2099,7 +2285,7 @@ export class MissionsService implements OnModuleInit {
       quantity: number;
       priceGold: number;
       currencyTransactionId: string | null;
-      acquireSource: 'purchase' | 'check_in' | 'migration';
+      acquireSource: 'purchase' | 'check_in' | 'migration' | 'tutorial';
       referenceKey: string | null;
     },
     transaction?: Transaction,

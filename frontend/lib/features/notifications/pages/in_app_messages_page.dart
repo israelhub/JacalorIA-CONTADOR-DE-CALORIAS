@@ -8,6 +8,7 @@ import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../home/widgets/home_shell_layout.dart';
+import '../../profile/helpers/user_manual_guided_tour_targets.dart';
 
 class InAppMessagesPage extends StatefulWidget {
   const InAppMessagesPage({super.key, this.store});
@@ -110,26 +111,40 @@ class _InAppMessagesPageState extends State<InAppMessagesPage> {
         backButtonKey: const ValueKey('in-app-messages-back'),
         onBack: () => Navigator.of(context).maybePop(),
         trailing: (!_loading && messages.isNotEmpty)
-            ? Material(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                clipBehavior: Clip.antiAlias,
-                child: TextButton(
-                  key: const ValueKey('in-app-messages-mark-all-read'),
-                  onPressed: hasUnread ? _markAllRead : null,
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.brand900Variant,
-                    disabledForegroundColor: AppColors.textSecondary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ),
-                    minimumSize: const Size(0, AppBackPageHeaderBar.chipHeight),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'Ler tudo',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
+            ? DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  boxShadow: AppShadows.sm,
+                ),
+                child: Material(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  clipBehavior: Clip.antiAlias,
+                  child: SizedBox(
+                    height: AppBackPageHeaderBar.chipHeight,
+                    child: TextButton(
+                      key: const ValueKey('in-app-messages-mark-all-read'),
+                      onPressed: hasUnread ? _markAllRead : null,
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.brand900Variant,
+                        disabledForegroundColor: AppColors.textSecondary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                        ),
+                        minimumSize: Size.zero,
+                        maximumSize: const Size(
+                          double.infinity,
+                          AppBackPageHeaderBar.chipHeight,
+                        ),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      child: Text(
+                        'Ler tudo',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -150,18 +165,21 @@ class _InAppMessagesPageState extends State<InAppMessagesPage> {
                     )
                   : messages.isEmpty
                   ? Center(
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          AppSpacing.xxl,
-                          scrollTop,
-                          AppSpacing.xxl,
-                          AppSpacing.xxl,
-                        ),
-                        child: Text(
-                          'Nenhuma mensagem por enquanto.',
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
+                      child: KeyedSubtree(
+                        key: ManualGuidedTourTargets.notificationsList,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            AppSpacing.xxl,
+                            scrollTop,
+                            AppSpacing.xxl,
+                            AppSpacing.xxl,
+                          ),
+                          child: Text(
+                            'Nenhuma mensagem por enquanto.',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ),
                       ),
@@ -179,13 +197,20 @@ class _InAppMessagesPageState extends State<InAppMessagesPage> {
                       itemBuilder: (context, index) {
                         final message = messages[index];
                         final expanded = _expandedId == message.id;
-                        return _MessageCard(
+                        final card = _MessageCard(
                           message: message,
                           expanded: expanded,
                           whenLabel: _formatWhen(message.createdAt),
                           onTap: () => _openMessage(message),
                           onDelete: () => _deleteMessage(message),
                         );
+                        if (index == 0) {
+                          return KeyedSubtree(
+                            key: ManualGuidedTourTargets.notificationsList,
+                            child: card,
+                          );
+                        }
+                        return card;
                       },
                     ),
             ),

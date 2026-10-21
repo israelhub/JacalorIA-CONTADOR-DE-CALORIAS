@@ -99,6 +99,16 @@ export class MissionsController {
     return this.missionsService.claimCheckIn(userId);
   }
 
+  @Post('product-tour/claim-rewards')
+  async claimProductTourRewards(@Req() req: any) {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+
+    return this.missionsService.claimProductTourRewards(userId);
+  }
+
   @Get('wallet/gold-statement')
   async getGoldStatement(@Req() req: any) {
     const userId = req.user?.sub;

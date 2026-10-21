@@ -130,7 +130,7 @@ class _ResetPasswordCodePageState extends State<ResetPasswordCodePage> {
                             const SizedBox(height: AppSpacing.xl),
                             AppInputField(
                               label: 'Codigo',
-                              hint: 'Ex.: 123456',
+                              hint: '',
                               controller: _codeController,
                               keyboardType: TextInputType.number,
                               onChanged: (_) => _authController.clearError(),

@@ -90,7 +90,7 @@ class _SocialSearchUserPageState extends State<SocialSearchUserPage> {
                         height: 1.2,
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Ex.: joao123, e-mail ou nome',
+                        hintText: '',
                         hintStyle: AppTextStyles.bodyLarge.copyWith(
                           color: AppColors.textTertiary,
                           fontWeight: FontWeight.w400,

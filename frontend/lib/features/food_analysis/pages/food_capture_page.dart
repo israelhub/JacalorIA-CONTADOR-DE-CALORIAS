@@ -1046,9 +1046,6 @@ class _ManualFoodEntrySheet extends StatefulWidget {
 }
 
 class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
-  static const String _entryHint =
-      'Ex.: Arroz branco cozido 120g, feijão preto cozido 100g e frango grelhado 150g';
-
   static const String _entryInstructions =
       'Escreva os alimentos com seus preparos e quantidade que você consumiu.\n'
       '\n'
@@ -1142,10 +1139,6 @@ class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
                   color: AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
-                  hintText: _entryHint,
-                  hintStyle: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,

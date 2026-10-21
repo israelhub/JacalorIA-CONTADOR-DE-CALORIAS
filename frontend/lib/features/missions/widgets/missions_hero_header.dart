@@ -10,12 +10,14 @@ class MissionsHeroHeader extends StatelessWidget {
     required this.xp,
     required this.onOpenStore,
     this.onOpenGoldStatement,
+    this.openStoreButtonKey,
   });
 
   final int gold;
   final int xp;
   final VoidCallback onOpenStore;
   final VoidCallback? onOpenGoldStatement;
+  final Key? openStoreButtonKey;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +77,7 @@ class MissionsHeroHeader extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 10),
             child: SizedBox(
+              key: openStoreButtonKey,
               width: double.infinity,
               height: 52,
               child: FilledButton.icon(

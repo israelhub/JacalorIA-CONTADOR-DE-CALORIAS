@@ -26,7 +26,7 @@ class OnboardingStepHeader extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: Transform.translate(
-              offset: const Offset(-AppSpacing.lg, 0),
+              offset: const Offset(-AppSpacing.sm, 0),
               child: IconButton(
                 onPressed: onBack,
                 icon: const Icon(Icons.arrow_back),

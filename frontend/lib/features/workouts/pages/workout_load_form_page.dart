@@ -143,7 +143,7 @@ class _WorkoutLoadFormPageState extends State<WorkoutLoadFormPage> {
                 const SizedBox(height: AppSpacing.sm),
                 AppInput(
                   controller: _weightController,
-                  hintText: 'Ex.: 40',
+                  hintText: '',
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),

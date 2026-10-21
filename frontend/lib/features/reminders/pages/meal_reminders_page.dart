@@ -14,6 +14,7 @@ import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_time_picker.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../home/widgets/home_shell_layout.dart';
+import '../../profile/helpers/user_manual_guided_tour_targets.dart';
 import 'meal_reminder_create_page.dart';
 import 'meal_reminder_name_page.dart';
 
@@ -249,6 +250,7 @@ class _MealRemindersPageState extends State<MealRemindersPage> {
                   ),
                   const SizedBox(height: AppSpacing.cardGap),
                   AppFormCard(
+                    key: ManualGuidedTourTargets.remindersList,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [

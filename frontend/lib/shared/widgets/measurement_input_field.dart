@@ -8,7 +8,7 @@ class MeasurementInputField extends StatelessWidget {
   const MeasurementInputField({
     super.key,
     required this.label,
-    required this.hint,
+    this.hint = '',
     required this.controller,
     required this.selectedUnit,
     required this.unitOptions,

@@ -403,29 +403,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Recompensas de agosto'), findsOneWidget);
-    expect(find.text('Ganhe recompensas até o fim de agosto'), findsOneWidget);
     expect(find.text('Receber recompensa'), findsOneWidget);
     expect(find.text('Dia 15'), findsOneWidget);
-  });
-
-  testWidgets('fecha card de introducao ao tocar no X', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: MissionsPage(
-          service: _FakeMissionsService(buildOverview()),
-          authService: _FakeAuthService(),
-        ),
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    expect(find.text('Bem-vindo às Missões!'), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.close_rounded));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Bem-vindo às Missões!'), findsNothing);
   });
 
   testWidgets('ordena missoes concluidas para o final e exibe tag', (

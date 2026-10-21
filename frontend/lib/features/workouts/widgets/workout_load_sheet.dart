@@ -156,7 +156,7 @@ class _WorkoutLoadSheetState extends State<_WorkoutLoadSheet> {
                         decoration: InputDecoration(
                           isDense: true,
                           border: InputBorder.none,
-                          hintText: 'Ex.: 40',
+                          hintText: '',
                           hintStyle: AppTextStyles.headingLarge.copyWith(
                             color: AppColors.textSecondary.withValues(
                               alpha: 0.45,

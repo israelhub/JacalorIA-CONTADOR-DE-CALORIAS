@@ -1,0 +1,2 @@
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS home_product_tour_completed BOOLEAN NOT NULL DEFAULT FALSE;

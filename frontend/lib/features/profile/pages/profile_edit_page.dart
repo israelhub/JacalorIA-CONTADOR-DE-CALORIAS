@@ -1,7 +1,13 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
+import 'package:share_plus/share_plus.dart';
 
+import '../../../../core/analytics/analytics_service.dart';
 import '../../food_analysis/helpers/image_optimizer.dart';
 import '../../../../shared/services/supabase_storage_service.dart';
 import '../../../../shared/theme/app_theme.dart';
@@ -12,12 +18,18 @@ import '../../../../shared/widgets/app_date_picker.dart';
 import '../../../../shared/widgets/app_dropdown_menu.dart';
 import '../../../../shared/widgets/app_form_card.dart';
 import '../../../../shared/widgets/app_input.dart';
+import '../../../../shared/widgets/app_page_route.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/measurement_input_field.dart';
+import '../../auth/pages/enter_page.dart';
 import '../../auth/service/auth_service.dart';
 import '../../home/widgets/home_shell_layout.dart';
+import '../../legal/helpers/age_gate.dart';
+import '../../legal/pages/privacy_policy_page.dart';
+import '../../legal/pages/terms_page.dart';
 import '../helpers/profile_date_helpers.dart';
 import '../widgets/profile_privacy_card.dart';
+import '../widgets/profile_section_card.dart';
 
 class ProfileEditPage extends StatefulWidget {
   const ProfileEditPage({super.key, required this.initialProfile});
@@ -45,6 +57,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String _selectedHeightUnit = 'cm';
   bool _isSaving = false;
   bool _isHandlingExit = false;
+  bool _isEditing = false;
+  bool _isExportingData = false;
+  bool _isDeletingAccount = false;
+  bool _didSave = false;
 
   String _initialName = '';
   String _initialBirthDate = '';
@@ -60,12 +76,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   bool _initialHidePublicProfileMeals = false;
   bool _hidePublicProfileWorkouts = false;
   bool _initialHidePublicProfileWorkouts = false;
+  bool _analyticsOptOut = false;
+  bool _initialAnalyticsOptOut = false;
 
   static const List<String> _sexOptions = [
     'Masculino',
     'Feminino',
-    'Demais',
-    'Prefiro não informar',
   ];
 
   static const Map<String, String> _objectiveLabels = {
@@ -162,6 +178,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       'hidePublicProfileWorkouts',
       'hide_public_profile_workouts',
     ]);
+    _analyticsOptOut = _boolFromProfile(profile, const [
+      'analyticsOptOut',
+      'analytics_opt_out',
+    ]);
+    AnalyticsService.instance.syncOptOutFromProfile(profile);
     _captureInitialSnapshot();
   }
 
@@ -178,6 +199,25 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     _initialHeightUnit = _selectedHeightUnit;
     _initialHidePublicProfileMeals = _hidePublicProfileMeals;
     _initialHidePublicProfileWorkouts = _hidePublicProfileWorkouts;
+    _initialAnalyticsOptOut = _analyticsOptOut;
+  }
+
+  void _restoreFromSnapshot() {
+    _nameController.text = _initialName;
+    _birthDateController.text = _initialBirthDate;
+    _weightController.text = _initialWeight;
+    _heightController.text = _initialHeight;
+    _selectedSex = _initialSex;
+    _selectedObjective = _initialObjective;
+    _selectedActivityLevel = _initialActivityLevel;
+    _avatarUrl = _initialAvatarUrl;
+    _selectedWeightUnit = _initialWeightUnit;
+    _selectedHeightUnit = _initialHeightUnit;
+    _hidePublicProfileMeals = _initialHidePublicProfileMeals;
+    _hidePublicProfileWorkouts = _initialHidePublicProfileWorkouts;
+    _analyticsOptOut = _initialAnalyticsOptOut;
+    _objectiveController.text = _objectiveLabels[_selectedObjective] ?? '';
+    _activityController.text = _activityLabels[_selectedActivityLevel] ?? '';
   }
 
   bool get _hasUnsavedChanges {
@@ -192,16 +232,50 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _selectedWeightUnit != _initialWeightUnit ||
         _selectedHeightUnit != _initialHeightUnit ||
         _hidePublicProfileMeals != _initialHidePublicProfileMeals ||
-        _hidePublicProfileWorkouts != _initialHidePublicProfileWorkouts;
+        _hidePublicProfileWorkouts != _initialHidePublicProfileWorkouts ||
+        _analyticsOptOut != _initialAnalyticsOptOut;
+  }
+
+  bool get _busy =>
+      _isSaving || _isExportingData || _isDeletingAccount || _isHandlingExit;
+
+  String _displayOrDash(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? '—' : trimmed;
+  }
+
+  String get _weightDisplay {
+    final value = _weightController.text.trim();
+    if (value.isEmpty) {
+      return '—';
+    }
+    return '$value $_selectedWeightUnit';
+  }
+
+  String get _heightDisplay {
+    final value = _heightController.text.trim();
+    if (value.isEmpty) {
+      return '—';
+    }
+    return '$value $_selectedHeightUnit';
   }
 
   Future<void> _handleExitAttempt() async {
-    if (_isHandlingExit || _isSaving) {
+    if (_busy) {
       return;
     }
 
+    if (_isEditing) {
+      await _cancelEditing();
+      return;
+    }
+
+    Navigator.of(context).pop(_didSave);
+  }
+
+  Future<void> _cancelEditing() async {
     if (!_hasUnsavedChanges) {
-      Navigator.of(context).pop(false);
+      setState(() => _isEditing = false);
       return;
     }
 
@@ -224,7 +298,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       if (shouldSave) {
         await _saveProfile();
       } else {
-        Navigator.of(context).pop(false);
+        setState(() {
+          _restoreFromSnapshot();
+          _isEditing = false;
+        });
       }
     } finally {
       _isHandlingExit = false;
@@ -280,14 +357,14 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   }
 
   Future<void> _pickBirthDate() async {
-    final now = DateTime.now();
-    final initialDate = DateTime(now.year - 18, now.month, now.day);
+    final maxBirth = AgeGate.maxBirthDate();
+    final initialDate = maxBirth;
 
     final selectedDate = await showAppDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: DateTime(1900),
-      lastDate: now,
+      firstDate: AgeGate.minBirthDate(),
+      lastDate: maxBirth,
     );
 
     if (selectedDate == null) {
@@ -298,13 +375,17 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     final month = selectedDate.month.toString().padLeft(2, '0');
     final year = selectedDate.year.toString();
 
-    _birthDateController.text = '$day/$month/$year';
+    setState(() {
+      _birthDateController.text = '$day/$month/$year';
+    });
   }
 
   Future<void> _pickAvatar() async {
+    if (!_isEditing || _busy) {
+      return;
+    }
+
     final picker = ImagePicker();
-    // Avatar renderiza no máximo ~200px lógicos; 640px físicos cobre telas 3x
-    // e derruba o upload/download de ~2 MB para dezenas de KB.
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
       maxWidth: 640,
@@ -350,6 +431,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       return;
     }
 
+    final birthDisplay = _birthDateController.text.trim();
+    if (birthDisplay.isNotEmpty && !AgeGate.isAtLeastMinimumAge(birthDisplay)) {
+      AppToast.error(context, message: AgeGate.minimumAgeMessage());
+      return;
+    }
+
     final weight = double.tryParse(_weightController.text.replaceAll(',', '.'));
     final height = double.tryParse(_heightController.text.replaceAll(',', '.'));
 
@@ -369,6 +456,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       if (_avatarUrl != null && _avatarUrl!.isNotEmpty) 'avatarUrl': _avatarUrl,
       'hidePublicProfileMeals': _hidePublicProfileMeals,
       'hidePublicProfileWorkouts': _hidePublicProfileWorkouts,
+      'analyticsOptOut': _analyticsOptOut,
     };
 
     setState(() {
@@ -376,11 +464,16 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     });
 
     try {
-      await _authService.updateProfile(data);
+      final updated = await _authService.updateProfile(data);
+      await AnalyticsService.instance.setOptOut(_analyticsOptOut);
+      AnalyticsService.instance.syncOptOutFromProfile(updated);
       if (!mounted) {
         return;
       }
-      Navigator.of(context).pop(true);
+      _captureInitialSnapshot();
+      _didSave = true;
+      setState(() => _isEditing = false);
+      AppToast.success(context, message: 'Dados salvos.');
     } catch (e) {
       if (mounted) {
         AppToast.error(context, message: 'Erro ao salvar perfil: $e');
@@ -394,13 +487,362 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Future<void> _exportMyData() async {
+    if (_busy) {
+      return;
+    }
+
+    setState(() => _isExportingData = true);
+    try {
+      final payload = await _authService.exportUserData();
+      final jsonText = const JsonEncoder.withIndent('  ').convert(payload);
+      final bytes = Uint8List.fromList(utf8.encode(jsonText));
+      final file = XFile.fromData(
+        bytes,
+        mimeType: 'application/json',
+        name: 'jacaloria-meus-dados.json',
+      );
+      await Share.shareXFiles(
+        [file],
+        subject: 'Meus dados JacalorIA',
+        text: 'Exportação dos seus dados pessoais (LGPD).',
+      );
+      if (!mounted) {
+        return;
+      }
+      AppToast.success(
+        context,
+        message: 'Arquivo pronto para salvar ou enviar.',
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingData = false);
+      }
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    if (_busy) {
+      return;
+    }
+
+    final confirmed = await AppConfirmModal.show(
+      context,
+      title: 'Excluir conta?',
+      message:
+          'Isso apaga permanentemente sua conta, refeições, treinos e demais '
+          'dados pessoais. Esta ação não pode ser desfeita.',
+      confirmLabel: 'Excluir conta',
+      isDanger: true,
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    setState(() => _isDeletingAccount = true);
+    try {
+      await _authService.deleteAccount();
+      if (!mounted) {
+        return;
+      }
+      AppToast.success(context, message: 'Conta excluída com sucesso.');
+      context.pushAndRemoveUntilSlidePage(const EnterPage(), (route) => false);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isDeletingAccount = false);
+      }
+    }
+  }
+
+  Widget _buildAvatar({required bool editable}) {
     final avatarUrl = _avatarUrl;
     final initial = _nameController.text.trim().isNotEmpty
         ? _nameController.text.trim()[0].toUpperCase()
         : 'P';
 
+    return Center(
+      child: GestureDetector(
+        onTap: editable && !_busy ? _pickAvatar : null,
+        child: Stack(
+          children: [
+            CircleAvatar(
+              radius: 44,
+              backgroundColor: AppColors.insetSurface,
+              backgroundImage: avatarUrl?.startsWith('http') == true
+                  ? CachedNetworkImageProvider(avatarUrl!)
+                  : null,
+              child: avatarUrl?.startsWith('http') == true
+                  ? null
+                  : Text(
+                      initial,
+                      style: AppTextStyles.headingSmall.copyWith(
+                        color: AppColors.brand900Variant,
+                      ),
+                    ),
+            ),
+            if (editable)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.action500,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(color: AppColors.surface, width: 2),
+                  ),
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  child: const Icon(
+                    Icons.edit_rounded,
+                    size: 14,
+                    color: AppColors.surface,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildViewFields() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _ProfileDataRow(
+            icon: PhosphorIcons.user(PhosphorIconsStyle.regular),
+            label: 'Nome',
+            value: _displayOrDash(_nameController.text),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _ProfileDataRow(
+            icon: PhosphorIcons.calendarBlank(PhosphorIconsStyle.regular),
+            label: 'Data de nascimento',
+            value: _displayOrDash(_birthDateController.text),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _ProfileDataRow(
+            icon: PhosphorIcons.scales(PhosphorIconsStyle.regular),
+            label: 'Peso',
+            value: _weightDisplay,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _ProfileDataRow(
+            icon: PhosphorIcons.ruler(PhosphorIconsStyle.regular),
+            label: 'Altura',
+            value: _heightDisplay,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _ProfileDataRow(
+            icon: PhosphorIcons.personSimpleRun(PhosphorIconsStyle.regular),
+            label: 'Nível de atividade',
+            value: _displayOrDash(_activityController.text),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _ProfileDataRow(
+            icon: PhosphorIcons.genderIntersex(PhosphorIconsStyle.regular),
+            label: 'Sexo',
+            value: _displayOrDash(_selectedSex ?? ''),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _ProfileDataRow(
+            icon: PhosphorIcons.target(PhosphorIconsStyle.regular),
+            label: 'Objetivo',
+            value: _displayOrDash(_objectiveController.text),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppInputField(
+          label: 'Nome',
+          hint: '',
+          controller: _nameController,
+          enabled: !_busy,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AppInputField(
+          label: 'Data de nascimento',
+          hint: '',
+          controller: _birthDateController,
+          readOnly: true,
+          enabled: !_busy,
+          onTap: _busy ? null : _pickBirthDate,
+          suffixIcon: IconButton(
+            onPressed: _busy ? null : _pickBirthDate,
+            color: AppColors.textSecondary,
+            icon: const Icon(Icons.calendar_today_outlined),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        MeasurementInputField(
+          label: 'Peso',
+          hint: '',
+          controller: _weightController,
+          unitSelectorKey: const ValueKey('profile-edit-weight-unit-selector'),
+          selectedUnit: _selectedWeightUnit,
+          unitOptions: const ['kg', 'lb', 'g'],
+          onUnitSelected: _busy
+              ? (_) {}
+              : (unit) {
+                  setState(() {
+                    _selectedWeightUnit = unit;
+                  });
+                },
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        MeasurementInputField(
+          label: 'Altura',
+          hint: '',
+          controller: _heightController,
+          unitSelectorKey: const ValueKey('profile-edit-height-unit-selector'),
+          selectedUnit: _selectedHeightUnit,
+          unitOptions: const ['cm', 'm', 'ft', 'in'],
+          onUnitSelected: _busy
+              ? (_) {}
+              : (unit) {
+                  setState(() {
+                    _selectedHeightUnit = unit;
+                  });
+                },
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AppDropdownMenu(
+          fieldKey: const ValueKey('profile-edit-activity-field'),
+          label: 'Nível de atividade',
+          hint: '',
+          selectedValue: _activityController.text,
+          options: _activityLabels.values.toList(),
+          onSelected: _busy
+              ? (_) {}
+              : (value) {
+                  final entry = _activityLabels.entries.firstWhere(
+                    (entry) => entry.value == value,
+                    orElse: () => const MapEntry('sedentary', 'Sedentário'),
+                  );
+                  setState(() {
+                    _selectedActivityLevel = entry.key;
+                    _activityController.text = entry.value;
+                  });
+                },
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AppDropdownMenu(
+          fieldKey: const ValueKey('profile-edit-sex-field'),
+          label: 'Sexo',
+          hint: '',
+          selectedValue: _selectedSex ?? '',
+          options: _sexOptions,
+          onSelected: _busy
+              ? (_) {}
+              : (value) {
+                  setState(() {
+                    _selectedSex = value;
+                  });
+                },
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AppDropdownMenu(
+          fieldKey: const ValueKey('profile-edit-objective-field'),
+          label: 'Objetivo',
+          hint: '',
+          selectedValue: _objectiveController.text,
+          options: _objectiveLabels.values.toList(),
+          onSelected: _busy
+              ? (_) {}
+              : (value) {
+                  final entry = _objectiveLabels.entries.firstWhere(
+                    (entry) => entry.value == value,
+                    orElse: () =>
+                        const MapEntry('maintainWeight', 'Manter peso'),
+                  );
+                  setState(() {
+                    _selectedObjective = entry.key;
+                    _objectiveController.text = entry.value;
+                  });
+                },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegalActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: AppSpacing.huge + AppSpacing.xs,
+          child: AppButton(
+            label: 'Política de Privacidade',
+            onPressed: _busy
+                ? null
+                : () {
+                    context.pushSlidePage(const PrivacyPolicyPage());
+                  },
+            variant: AppButtonVariant.outline,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          height: AppSpacing.huge + AppSpacing.xs,
+          child: AppButton(
+            label: 'Termos e Condições',
+            onPressed: _busy
+                ? null
+                : () {
+                    context.pushSlidePage(const TermsPage());
+                  },
+            variant: AppButtonVariant.outline,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          height: AppSpacing.huge + AppSpacing.xs,
+          child: AppButton(
+            label: _isExportingData ? 'Exportando...' : 'Baixar meus dados',
+            onPressed: _busy ? null : _exportMyData,
+            variant: AppButtonVariant.outline,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          height: AppSpacing.huge + AppSpacing.xs,
+          child: AppButton(
+            label: _isDeletingAccount ? 'Excluindo...' : 'Excluir conta',
+            onPressed: _busy ? null : _deleteAccount,
+            variant: AppButtonVariant.danger,
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -424,169 +866,72 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               AppSpacing.pageHorizontal,
               homeShellScrollBottomInset(context),
             ),
-            child: AppFormCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: GestureDetector(
-                      onTap: _isSaving ? null : _pickAvatar,
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 44,
-                            backgroundColor: AppColors.insetSurface,
-                            backgroundImage:
-                                avatarUrl?.startsWith('http') == true
-                                ? CachedNetworkImageProvider(avatarUrl!)
-                                : null,
-                            child: avatarUrl?.startsWith('http') == true
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppFormCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildAvatar(editable: _isEditing),
+                      const SizedBox(height: AppSpacing.xl),
+                      if (_isEditing)
+                        _buildEditFields()
+                      else
+                        _buildViewFields(),
+                      const SizedBox(height: AppSpacing.xxxl),
+                      if (_isEditing) ...[
+                        SizedBox(
+                          height: AppSpacing.huge + AppSpacing.xs,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: AppButton(
+                                  label: 'Cancelar',
+                                  onPressed: _busy ? null : _cancelEditing,
+                                  variant: AppButtonVariant.outline,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: AppButton(
+                                  label: _isSaving
+                                      ? 'Salvando...'
+                                      : 'Salvar',
+                                  onPressed: _busy ? null : _saveProfile,
+                                  variant: AppButtonVariant.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        SizedBox(
+                          height: AppSpacing.huge + AppSpacing.xs,
+                          child: AppButton(
+                            label: 'Editar',
+                            onPressed: _busy
                                 ? null
-                                : Text(
-                                    initial,
-                                    style: AppTextStyles.headingSmall.copyWith(
-                                      color: AppColors.brand900Variant,
-                                    ),
-                                  ),
+                                : () {
+                                    setState(() => _isEditing = true);
+                                  },
+                            variant: AppButtonVariant.primary,
+                            trailingIcon: Icons.edit_rounded,
                           ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.action500,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.pill,
-                                ),
-                                border: Border.all(
-                                  color: AppColors.surface,
-                                  width: 2,
-                                ),
-                              ),
-                              padding: const EdgeInsets.all(AppSpacing.xs),
-                              child: const Icon(
-                                Icons.edit_rounded,
-                                size: 14,
-                                color: AppColors.surface,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-                  AppInputField(
-                    label: 'Nome',
-                    hint: 'Ex.: Maria Silva',
-                    controller: _nameController,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  AppInputField(
-                    label: 'Data de nascimento',
-                    hint: 'Ex.: 15/03/1990',
-                    controller: _birthDateController,
-                    readOnly: true,
-                    onTap: _pickBirthDate,
-                    suffixIcon: IconButton(
-                      onPressed: _pickBirthDate,
-                      color: AppColors.textSecondary,
-                      icon: const Icon(Icons.calendar_today_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  MeasurementInputField(
-                    label: 'Peso',
-                    hint: 'Ex.: 70',
-                    controller: _weightController,
-                    unitSelectorKey: const ValueKey(
-                      'profile-edit-weight-unit-selector',
-                    ),
-                    selectedUnit: _selectedWeightUnit,
-                    unitOptions: const ['kg', 'lb', 'g'],
-                    onUnitSelected: (unit) {
-                      setState(() {
-                        _selectedWeightUnit = unit;
-                      });
-                    },
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  MeasurementInputField(
-                    label: 'Altura',
-                    hint: 'Ex.: 170',
-                    controller: _heightController,
-                    unitSelectorKey: const ValueKey(
-                      'profile-edit-height-unit-selector',
-                    ),
-                    selectedUnit: _selectedHeightUnit,
-                    unitOptions: const ['cm', 'm', 'ft', 'in'],
-                    onUnitSelected: (unit) {
-                      setState(() {
-                        _selectedHeightUnit = unit;
-                      });
-                    },
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  AppDropdownMenu(
-                    fieldKey: const ValueKey('profile-edit-activity-field'),
-                    label: 'Nível de atividade',
-                    hint: 'Ex.: Moderadamente ativo',
-                    selectedValue: _activityController.text,
-                    options: _activityLabels.values.toList(),
-                    onSelected: (value) {
-                      final entry = _activityLabels.entries.firstWhere(
-                        (entry) => entry.value == value,
-                        orElse: () => const MapEntry('sedentary', 'Sedentário'),
-                      );
-                      setState(() {
-                        _selectedActivityLevel = entry.key;
-                        _activityController.text = entry.value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  AppDropdownMenu(
-                    fieldKey: const ValueKey('profile-edit-sex-field'),
-                    label: 'Sexo',
-                    hint: 'Ex.: Feminino',
-                    selectedValue: _selectedSex ?? '',
-                    options: _sexOptions,
-                    onSelected: (value) {
-                      setState(() {
-                        _selectedSex = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  AppDropdownMenu(
-                    fieldKey: const ValueKey('profile-edit-objective-field'),
-                    label: 'Objetivo',
-                    hint: 'Ex.: Emagrecer',
-                    selectedValue: _objectiveController.text,
-                    options: _objectiveLabels.values.toList(),
-                    onSelected: (value) {
-                      final entry = _objectiveLabels.entries.firstWhere(
-                        (entry) => entry.value == value,
-                        orElse: () =>
-                            const MapEntry('maintainWeight', 'Manter peso'),
-                      );
-                      setState(() {
-                        _selectedObjective = entry.key;
-                        _objectiveController.text = entry.value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  ProfilePrivacyCard(
+                ),
+                const SizedBox(height: AppSpacing.cardGap),
+                ProfileSectionCard(
+                  title: 'Privacidade',
+                  child: ProfilePrivacyCard(
+                    showTitle: false,
                     mealsVisible: !_hidePublicProfileMeals,
                     workoutsVisible: !_hidePublicProfileWorkouts,
-                    busy: _isSaving,
+                    analyticsEnabled: !_analyticsOptOut,
+                    busy: !_isEditing || _busy,
                     onMealsVisibleChanged: (visible) {
                       setState(() {
                         _hidePublicProfileMeals = !visible;
@@ -597,22 +942,68 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         _hidePublicProfileWorkouts = !visible;
                       });
                     },
+                    onAnalyticsEnabledChanged: (enabled) {
+                      setState(() {
+                        _analyticsOptOut = !enabled;
+                      });
+                    },
                   ),
-                  const SizedBox(height: AppSpacing.xxxl),
-                  SizedBox(
-                    height: AppSpacing.huge + AppSpacing.xs,
-                    child: AppButton(
-                      label: _isSaving ? 'Salvando...' : 'Salvar alterações',
-                      onPressed: _isSaving ? null : _saveProfile,
-                      variant: AppButtonVariant.primary,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: AppSpacing.cardGap),
+                ProfileSectionCard(
+                  title: 'Privacidade e dados',
+                  child: _buildLegalActions(),
+                ),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ProfileDataRow extends StatelessWidget {
+  const _ProfileDataRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 22, color: AppColors.textPrimary),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                value,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

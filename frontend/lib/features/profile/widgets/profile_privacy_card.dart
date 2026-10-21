@@ -7,19 +7,58 @@ class ProfilePrivacyCard extends StatelessWidget {
     super.key,
     required this.mealsVisible,
     required this.workoutsVisible,
+    required this.analyticsEnabled,
     required this.busy,
     required this.onMealsVisibleChanged,
     required this.onWorkoutsVisibleChanged,
+    required this.onAnalyticsEnabledChanged,
+    this.showTitle = true,
   });
 
   final bool mealsVisible;
   final bool workoutsVisible;
+  final bool analyticsEnabled;
   final bool busy;
   final ValueChanged<bool> onMealsVisibleChanged;
   final ValueChanged<bool> onWorkoutsVisibleChanged;
+  final ValueChanged<bool> onAnalyticsEnabledChanged;
+  final bool showTitle;
 
   @override
   Widget build(BuildContext context) {
+    final switches = Column(
+      children: [
+        _PrivacySwitchRow(
+          label: 'Mostrar refeições no perfil público',
+          value: mealsVisible,
+          busy: busy,
+          onChanged: onMealsVisibleChanged,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Divider(height: 1, color: AppColors.inputBorder),
+        const SizedBox(height: AppSpacing.md),
+        _PrivacySwitchRow(
+          label: 'Mostrar treinos no perfil público',
+          value: workoutsVisible,
+          busy: busy,
+          onChanged: onWorkoutsVisibleChanged,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Divider(height: 1, color: AppColors.inputBorder),
+        const SizedBox(height: AppSpacing.md),
+        _PrivacySwitchRow(
+          label: 'Permitir analytics de uso',
+          value: analyticsEnabled,
+          busy: busy,
+          onChanged: onAnalyticsEnabledChanged,
+        ),
+      ],
+    );
+
+    if (!showTitle) {
+      return switches;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -31,37 +70,7 @@ class ProfilePrivacyCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.insetSurface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.inputBorder),
-          ),
-          child: Column(
-            children: [
-              _PrivacySwitchRow(
-                label: 'Mostrar refeições no perfil público',
-                value: mealsVisible,
-                busy: busy,
-                onChanged: onMealsVisibleChanged,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Divider(height: 1, color: AppColors.inputBorder),
-              const SizedBox(height: AppSpacing.md),
-              _PrivacySwitchRow(
-                label: 'Mostrar treinos no perfil público',
-                value: workoutsVisible,
-                busy: busy,
-                onChanged: onWorkoutsVisibleChanged,
-              ),
-            ],
-          ),
-        ),
+        switches,
       ],
     );
   }

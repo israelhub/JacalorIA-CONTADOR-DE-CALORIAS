@@ -52,8 +52,10 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
   late Map<String, int> _blockerInventory;
   late String _equippedFrameId;
   late String _equippedBackgroundId;
+  late String? _equippedReactionEmojiId;
   late String _previewFrameId;
   late String _previewBackgroundId;
+  late String? _previewReactionEmojiId;
   late int _goldBalance;
   late Map<String, dynamic> _profileSnapshot;
   StoreCatalogData _catalog = const StoreCatalogData(
@@ -93,8 +95,12 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
           _profileSnapshot,
         );
+    _equippedReactionEmojiId = JacaEmojiCatalog.reactionIdFromProfile(
+      _profileSnapshot,
+    );
     _previewFrameId = _equippedFrameId;
     _previewBackgroundId = _equippedBackgroundId;
+    _previewReactionEmojiId = _equippedReactionEmojiId;
     _blockerInventory = AvatarFrameCatalog.blockerInventoryFromProfile(
       _profileSnapshot,
     );
@@ -143,6 +149,10 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
           _profileSnapshot,
         );
+    _equippedReactionEmojiId = JacaEmojiCatalog.reactionIdFromProfile(
+      _profileSnapshot,
+    );
+    _previewReactionEmojiId = _equippedReactionEmojiId;
     _blockerInventory = AvatarFrameCatalog.blockerInventoryFromProfile(
       _profileSnapshot,
     );
@@ -306,6 +316,7 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
       case StoreItemType.background:
         return _equippedBackgroundId == item.id;
       case StoreItemType.sticker:
+        return _equippedReactionEmojiId == item.id;
       case StoreItemType.blocker:
         return false;
     }
@@ -336,6 +347,16 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         return;
       }
       Navigator.of(context).pop('go_to_missions');
+      return;
+    }
+    if (item.isTutorialExclusive && !_isOwned(item)) {
+      if (!mounted) {
+        return;
+      }
+      AppToast.show(
+        context,
+        message: 'Conclua o tutorial inicial para desbloquear este item.',
+      );
       return;
     }
 
@@ -372,8 +393,8 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         case StoreItemType.sticker:
           response = await _missionsService.purchaseJacaEmoji(item.id);
           successMessage = isOwned
-              ? 'Figurinha já desbloqueada.'
-              : 'Figurinha desbloqueada.';
+              ? 'Emoji já desbloqueado.'
+              : 'Emoji desbloqueado e adicionado à reação.';
           break;
         case StoreItemType.blocker:
           response = await _missionsService.purchaseBlocker(
@@ -385,6 +406,9 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
       }
 
       _applyResponseState(response);
+      if (item.type == StoreItemType.sticker && !isOwned) {
+        await _equipReactionEmoji(item.id, persist: true);
+      }
       // A resposta da compra já traz perfil/saldo atualizados; o catálogo
       // revalida em segundo plano sem travar o botão.
       AuthService.invalidateProfileCache();
@@ -493,9 +517,7 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
   }
 
   Future<void> _onTileTap(StoreCatalogItem item) async {
-    if (!_isOwned(item) ||
-        item.isInventoryBlocker ||
-        item.type == StoreItemType.sticker) {
+    if (!_isOwned(item) || item.isInventoryBlocker) {
       _previewItem(item);
       return;
     }
@@ -535,7 +557,38 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
           value: nextId,
         ),
       );
+      return;
     }
+
+    if (item.type == StoreItemType.sticker) {
+      final nextId = _equippedReactionEmojiId == item.id ? null : item.id;
+      unawaited(_equipReactionEmoji(nextId, persist: true));
+      _showToast(
+        nextId == null
+            ? 'Reação removida.'
+            : 'Emoji adicionado à reação.',
+      );
+    }
+  }
+
+  Future<void> _equipReactionEmoji(
+    String? emojiId, {
+    required bool persist,
+  }) async {
+    setState(() {
+      _equippedReactionEmojiId = emojiId;
+      _previewReactionEmojiId = emojiId;
+      _profileSnapshot['equippedProfileReactionEmojiId'] = emojiId ?? '';
+      _profileSnapshot['equipped_profile_reaction_emoji_id'] = emojiId ?? '';
+    });
+    _hasChanges = true;
+    if (!persist) {
+      return;
+    }
+    await _persistEquippedCosmetic(
+      field: 'equippedProfileReactionEmojiId',
+      value: emojiId ?? '',
+    );
   }
 
   Future<void> _persistEquippedCosmetic({
@@ -564,6 +617,16 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         return;
       }
       Navigator.of(context).pop('go_to_missions');
+      return;
+    }
+    if (item.isTutorialExclusive && !_isOwned(item)) {
+      if (!mounted) {
+        return;
+      }
+      AppToast.show(
+        context,
+        message: 'Conclua o tutorial inicial para desbloquear este item.',
+      );
       return;
     }
     if (!item.isInventoryBlocker && _isOwned(item)) {
@@ -699,8 +762,12 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
           AvatarBackgroundCatalog.equippedBackgroundIdFromProfile(
             _profileSnapshot,
           );
+      _equippedReactionEmojiId = JacaEmojiCatalog.reactionIdFromProfile(
+        _profileSnapshot,
+      );
       _previewFrameId = _equippedFrameId;
       _previewBackgroundId = _equippedBackgroundId;
+      _previewReactionEmojiId = _equippedReactionEmojiId;
       _blockerInventory = AvatarFrameCatalog.blockerInventoryFromProfile(
         _profileSnapshot,
       );
@@ -721,6 +788,10 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
         });
         return;
       case StoreItemType.sticker:
+        setState(() {
+          _previewReactionEmojiId = item.id;
+        });
+        return;
       case StoreItemType.blocker:
         return;
     }
@@ -795,19 +866,24 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                       builder: (context, constraints) {
                         final category = _selectedCategory;
                         final items = _itemsFor(category);
-                        final cardInnerWidth = constraints.maxWidth;
-                        final gridBudget =
+                        const rowCount = _StoreCategoryGrid.rows;
+                        final cardInnerWidth =
+                            constraints.maxWidth - (AppSpacing.lg * 2);
+                        final maxCardInnerHeight =
                             constraints.maxHeight -
                             AvatarProfilePreview.defaultHeight -
                             AppSpacing.lg -
+                            (AppSpacing.lg * 2);
+                        final gridBudget =
+                            maxCardInnerHeight -
                             _StoreCategorySwitcher.height -
                             AppSpacing.md -
-                            (AppSpacing.lg * 2) -
                             _StoreCategoryGrid.paginationHeight -
                             AppSpacing.sm;
-                        final rowCount = _StoreCategoryGrid.resolveRowCount(
-                          availableHeight: gridBudget,
+                        final cellSize = _StoreCategoryGrid.cellSizeFor(
                           maxWidth: cardInnerWidth,
+                          availableHeight: math.max(0.0, gridBudget),
+                          rowCount: rowCount,
                         );
                         final pageSize = _StoreCategoryGrid.pageSizeFor(
                           rowCount,
@@ -833,52 +909,51 @@ class _AvatarFrameStorePageState extends State<AvatarFrameStorePage> {
                               avatarUrl: avatarUrl,
                               frameId: _previewFrameId,
                               backgroundId: _previewBackgroundId,
+                              reactionEmojiId: _previewReactionEmojiId,
+                              showReactionBubble: true,
                               name: name ?? 'Perfil',
                             ),
                             const SizedBox(height: AppSpacing.lg),
-                            Expanded(
-                              child: AppFormCard(
-                                key: const ValueKey('store-catalog-card'),
-                                expand: true,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    _StoreCategorySwitcher(
-                                      selected: _selectedCategory,
-                                      onSelected: (next) {
-                                        setState(() {
-                                          _selectedCategory = next;
-                                        });
-                                      },
+                            AppFormCard(
+                              key: const ValueKey('store-catalog-card'),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _StoreCategorySwitcher(
+                                    selected: _selectedCategory,
+                                    onSelected: (next) {
+                                      setState(() {
+                                        _selectedCategory = next;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  _StoreCategoryGrid(
+                                    key: ValueKey(
+                                      'store-grid-$category-$page-$rowCount',
                                     ),
-                                    const SizedBox(height: AppSpacing.md),
-                                    Expanded(
-                                      child: _StoreCategoryGrid(
-                                        key: ValueKey(
-                                          'store-grid-$category-$page-$rowCount',
+                                    category: category,
+                                    items: pageItems,
+                                    rowCount: rowCount,
+                                    cellSize: cellSize,
+                                    page: page,
+                                    totalPages: totalPages,
+                                    avatarUrl: avatarUrl,
+                                    name: name,
+                                    blockerInventory: _blockerInventory,
+                                    isOwned: _isOwned,
+                                    isEquipped: _isEquipped,
+                                    isSaving: _isSaving,
+                                    onTileTap: _onTileTap,
+                                    onBuy: _confirmPurchase,
+                                    onPageChanged: (next) =>
+                                        _onCategoryPageChanged(
+                                          category,
+                                          next,
                                         ),
-                                        category: category,
-                                        items: pageItems,
-                                        rowCount: rowCount,
-                                        page: page,
-                                        totalPages: totalPages,
-                                        avatarUrl: avatarUrl,
-                                        name: name,
-                                        blockerInventory: _blockerInventory,
-                                        isOwned: _isOwned,
-                                        isEquipped: _isEquipped,
-                                        isSaving: _isSaving,
-                                        onTileTap: _onTileTap,
-                                        onBuy: _confirmPurchase,
-                                        onPageChanged: (next) =>
-                                            _onCategoryPageChanged(
-                                              category,
-                                              next,
-                                            ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -902,22 +977,22 @@ class _StorePageSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final gridBudget =
+        const rowCount = _StoreCategoryGrid.rows;
+        final cardInnerWidth = constraints.maxWidth - (AppSpacing.lg * 2);
+        final maxCardInnerHeight =
             constraints.maxHeight -
             AvatarProfilePreview.defaultHeight -
             AppSpacing.lg -
+            (AppSpacing.lg * 2);
+        final gridBudget =
+            maxCardInnerHeight -
             _StoreCategorySwitcher.height -
             AppSpacing.md -
-            (AppSpacing.lg * 2) -
             _StoreCategoryGrid.paginationHeight -
             AppSpacing.sm;
-        final rowCount = _StoreCategoryGrid.resolveRowCount(
-          availableHeight: gridBudget,
-          maxWidth: constraints.maxWidth,
-        );
         final cellSize = _StoreCategoryGrid.cellSizeFor(
-          maxWidth: constraints.maxWidth,
-          availableHeight: gridBudget,
+          maxWidth: cardInnerWidth,
+          availableHeight: math.max(0.0, gridBudget),
           rowCount: rowCount,
         );
         final gridHeight = _StoreCategoryGrid.gridHeightFor(
@@ -996,6 +1071,7 @@ class _StoreCategoryGrid extends StatelessWidget {
     required this.category,
     required this.items,
     required this.rowCount,
+    required this.cellSize,
     required this.page,
     required this.totalPages,
     required this.avatarUrl,
@@ -1010,13 +1086,13 @@ class _StoreCategoryGrid extends StatelessWidget {
   });
 
   static const columns = 3;
-  static const minRows = 2;
-  static const maxRows = 3;
+  static const rows = 3;
   static const paginationHeight = 40.0;
 
   final StoreCategory category;
   final List<StoreCatalogItem> items;
   final int rowCount;
+  final double cellSize;
   final int page;
   final int totalPages;
   final String? avatarUrl;
@@ -1031,28 +1107,12 @@ class _StoreCategoryGrid extends StatelessWidget {
 
   static int pageSizeFor(int rowCount) => columns * rowCount;
 
-  static int resolveRowCount({
-    required double availableHeight,
-    required double maxWidth,
-  }) {
-    final crossSpacing = AppSpacing.md * (columns - 1);
-    final cellSize = (maxWidth - crossSpacing) / columns;
-    if (cellSize <= 0) {
-      return minRows;
-    }
-    final heightForMax = cellSize * maxRows + AppSpacing.md * (maxRows - 1);
-    if (availableHeight + 0.5 >= heightForMax) {
-      return maxRows;
-    }
-    return minRows;
-  }
-
   static double cellSizeFor({
     required double maxWidth,
     required double availableHeight,
     required int rowCount,
   }) {
-    final rows = rowCount.clamp(minRows, maxRows);
+    final rows = rowCount.clamp(1, _StoreCategoryGrid.rows);
     final crossSpacing = AppSpacing.md * (columns - 1);
     final widthBased = (maxWidth - crossSpacing) / columns;
     if (widthBased <= 0) {
@@ -1070,7 +1130,7 @@ class _StoreCategoryGrid extends StatelessWidget {
     required int rowCount,
     required double cellSize,
   }) {
-    final rows = rowCount.clamp(minRows, maxRows);
+    final rows = rowCount.clamp(1, _StoreCategoryGrid.rows);
     if (cellSize <= 0) {
       return 0;
     }
@@ -1079,87 +1139,74 @@ class _StoreCategoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final rows = rowCount.clamp(minRows, maxRows);
-        final paginationSlot = paginationHeight + AppSpacing.sm;
-        final gridBudget = constraints.maxHeight.isFinite
-            ? math.max(0.0, constraints.maxHeight - paginationSlot)
-            : double.infinity;
-        final cellSize = cellSizeFor(
-          maxWidth: constraints.maxWidth,
-          availableHeight: gridBudget.isFinite ? gridBudget : double.infinity,
-          rowCount: rows,
-        );
-        final gridHeight = gridHeightFor(rowCount: rows, cellSize: cellSize);
+    final rows = rowCount.clamp(1, _StoreCategoryGrid.rows);
+    final gridHeight = gridHeightFor(rowCount: rows, cellSize: cellSize);
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              height: gridHeight,
-              child: cellSize <= 0
-                  ? const SizedBox.shrink()
-                  : items.isEmpty && totalPages <= 1
-                  ? Center(
-                      child: Text(
-                        'Sem itens disponíveis nesta categoria.',
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    )
-                  : GridView.builder(
-                      addAutomaticKeepAlives: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: EdgeInsets.zero,
-                      itemCount: items.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        crossAxisSpacing: AppSpacing.md,
-                        mainAxisSpacing: AppSpacing.md,
-                        mainAxisExtent: cellSize,
-                      ),
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        return _StoreTileEntrance(
-                          key: ValueKey(
-                            'store-tile-${category.name}-${item.id}',
-                          ),
-                          index: index,
-                          child: _StoreTile(
-                            item: item,
-                            avatarUrl: avatarUrl,
-                            name: name,
-                            blockerQuantity: blockerInventory[item.id] ?? 0,
-                            blockerQuantityFallback: item.quantityOwned,
-                            isOwned: isOwned(item),
-                            isEquipped: isEquipped(item),
-                            isSaving: isSaving,
-                            onTileTap: () => onTileTap(item),
-                            onBuy: () => onBuy(item),
-                          ),
-                        );
-                      },
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: gridHeight,
+          child: cellSize <= 0
+              ? const SizedBox.shrink()
+              : items.isEmpty && totalPages <= 1
+              ? Center(
+                  child: Text(
+                    'Sem itens disponíveis nesta categoria.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
                     ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            SizedBox(
-              height: paginationHeight,
-              child: totalPages > 1
-                  ? AppPagination(
-                      page: page,
-                      totalPages: totalPages,
-                      enabled: !isSaving,
-                      onPageChanged: onPageChanged,
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
-        );
-      },
+                  ),
+                )
+              : GridView.builder(
+                  addAutomaticKeepAlives: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemCount: items.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: AppSpacing.md,
+                    mainAxisSpacing: AppSpacing.md,
+                    mainAxisExtent: cellSize,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    return _StoreTileEntrance(
+                      key: ValueKey(
+                        'store-tile-${category.name}-${item.id}',
+                      ),
+                      index: index,
+                      child: _StoreTile(
+                        item: item,
+                        avatarUrl: avatarUrl,
+                        name: name,
+                        blockerQuantity: blockerInventory[item.id] ?? 0,
+                        blockerQuantityFallback: item.quantityOwned,
+                        isOwned: isOwned(item),
+                        isEquipped: isEquipped(item),
+                        isSaving: isSaving,
+                        onTileTap: () => onTileTap(item),
+                        onBuy: () => onBuy(item),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        SizedBox(
+          height: paginationHeight,
+          child: totalPages > 1
+              ? AppPagination(
+                  page: page,
+                  totalPages: totalPages,
+                  enabled: !isSaving,
+                  onPageChanged: onPageChanged,
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 }
@@ -1484,10 +1531,11 @@ class _StoreTile extends StatelessWidget {
     final effectiveBlockerQuantity = blockerQuantity > 0
         ? blockerQuantity
         : blockerQuantityFallback;
-    final isCheckInExclusive = item.isCheckInExclusive && !isOwned;
+    final isExclusiveLocked =
+        item.isExclusiveLockedSource && !isOwned;
     final showPrice =
-        item.isInventoryBlocker || (!isOwned && !isCheckInExclusive);
-    final showChip = showPrice || isCheckInExclusive;
+        item.isInventoryBlocker || (!isOwned && !isExclusiveLocked);
+    final showChip = showPrice || isExclusiveLocked;
 
     return GestureDetector(
       onTap: onTileTap,
@@ -1524,14 +1572,14 @@ class _StoreTile extends StatelessWidget {
                       vertical: 7,
                     ),
                     decoration: BoxDecoration(
-                      color: isCheckInExclusive
+                      color: isExclusiveLocked
                           ? AppColors.missionsXpPill
                           : AppColors.missionsGoldPill,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
-                    child: isCheckInExclusive
+                    child: isExclusiveLocked
                         ? Text(
-                            'Check-in',
+                            item.isTutorialExclusive ? 'Tutorial' : 'Check-in',
                             style: AppTextStyles.missionsPillValue.copyWith(
                               color: AppColors.brand900Variant,
                             ),

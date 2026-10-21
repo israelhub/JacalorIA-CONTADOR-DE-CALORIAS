@@ -8,6 +8,7 @@ import '../../food_analysis/models/food_meal_record.dart';
 import '../helpers/home_date_helpers.dart';
 import '../helpers/home_goal_helpers.dart';
 import '../helpers/home_greeting_helpers.dart';
+import '../helpers/home_shell_product_tour_targets.dart';
 
 class HomeDailyGoalWithMascot extends StatefulWidget {
   const HomeDailyGoalWithMascot({
@@ -94,7 +95,7 @@ class _HomeDailyGoalWithMascotState extends State<HomeDailyGoalWithMascot> {
       alignment: Alignment.topCenter,
       children: [
         HomeDailyGoalCard(
-          key: const ValueKey('home-daily-goal-card'),
+          key: HomeShellProductTourTargets.dailyGoalCard,
           records: widget.records,
           selectedDate: widget.selectedDate,
           userProfile: widget.userProfile,

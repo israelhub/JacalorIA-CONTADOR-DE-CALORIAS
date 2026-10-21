@@ -12,7 +12,7 @@ class WorkoutRoutineNamePage extends StatefulWidget {
     required this.title,
     required this.confirmLabel,
     this.initialName = '',
-    this.hint = 'Ex.: Treino A',
+    this.hint = '',
     this.cardTitle = 'Nome do treino',
     this.subtitle = 'Escolha um nome curto, tipo Treino A ou Peito.',
   });

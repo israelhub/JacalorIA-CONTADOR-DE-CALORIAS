@@ -71,6 +71,12 @@ class JacaEmojiCatalog {
       assetPath: 'assets/images/jaca_emojis/forca.png',
       isPurchasable: true,
     ),
+    JacaEmojiItem(
+      id: 'estreante',
+      label: 'Estreante',
+      assetPath: 'assets/images/jaca_emojis/estreante.png',
+      isPurchasable: true,
+    ),
   ];
 
   static const ids = [
@@ -84,9 +90,17 @@ class JacaEmojiCatalog {
     'joinha',
     'sono',
     'forca',
+    'estreante',
   ];
 
-  static const paidIds = {'amor', 'fogo', 'festa', 'sono', 'forca'};
+  static const paidIds = {
+    'amor',
+    'fogo',
+    'festa',
+    'sono',
+    'forca',
+    'estreante',
+  };
 
   static JacaEmojiItem? byId(String? id) {
     final normalized = id?.trim();

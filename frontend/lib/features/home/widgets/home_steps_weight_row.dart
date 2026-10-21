@@ -7,6 +7,7 @@ import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../models/home_steps_models.dart';
 import '../pages/home_steps_page.dart';
+import '../../profile/helpers/user_manual_guided_tour_targets.dart';
 import 'home_steps_card.dart';
 import 'home_steps_weight_scope.dart';
 import 'home_weight_card.dart';
@@ -30,23 +31,29 @@ class HomeStepsWeightRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: HomeStepsCard(
-            overview: controller.steps,
-            isLoading: controller.isStepsLoading,
-            onActivate: () => _activateSteps(context),
-            onOpenDetails: () => _openDetails(context),
+          child: KeyedSubtree(
+            key: ManualGuidedTourTargets.stepsCard,
+            child: HomeStepsCard(
+              overview: controller.steps,
+              isLoading: controller.isStepsLoading,
+              onActivate: () => _activateSteps(context),
+              onOpenDetails: () => _openDetails(context),
+            ),
           ),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(
-          child: HomeWeightCard(
-            userProfile: controller.userProfile,
-            onWeightUpdated: (profile) {
-              unawaited(() async {
-                await controller.applyWeightUpdate(profile);
-                onWeightUpdated?.call(profile);
-              }());
-            },
+          child: KeyedSubtree(
+            key: ManualGuidedTourTargets.weightCard,
+            child: HomeWeightCard(
+              userProfile: controller.userProfile,
+              onWeightUpdated: (profile) {
+                unawaited(() async {
+                  await controller.applyWeightUpdate(profile);
+                  onWeightUpdated?.call(profile);
+                }());
+              },
+            ),
           ),
         ),
       ],
