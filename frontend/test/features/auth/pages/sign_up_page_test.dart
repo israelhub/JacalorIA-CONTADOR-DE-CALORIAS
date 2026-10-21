@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jacaloria/features/auth/pages/email_confirmation_page.dart';
 import 'package:jacaloria/features/auth/pages/login_page.dart';
 import 'package:jacaloria/features/auth/pages/sign_up_page.dart';
-import 'package:jacaloria/shared/theme/app_theme.dart';
 import 'package:jacaloria/shared/widgets/app_button.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: child);
@@ -19,10 +18,10 @@ void main() {
       expect(find.text('Senha'), findsOneWidget);
       expect(find.text('Confirmar senha'), findsOneWidget);
 
-      expect(find.text('Ex.: Maria Silva'), findsOneWidget);
-      expect(find.text('Ex.: maria@email.com'), findsOneWidget);
-      expect(find.text('Ex.: sua senha'), findsOneWidget);
-      expect(find.text('Ex.: confirme a senha'), findsOneWidget);
+      expect(find.text('Ex.: Maria Silva'), findsNothing);
+      expect(find.text('Ex.: maria@email.com'), findsNothing);
+      expect(find.text('Ex.: sua senha'), findsNothing);
+      expect(find.text('Ex.: confirme a senha'), findsNothing);
 
       expect(find.byType(TextField), findsNWidgets(4));
       expect(find.text('Criar conta'), findsOneWidget);
@@ -41,29 +40,22 @@ void main() {
       expect(buttons[1].variant, AppButtonVariant.google);
     });
 
-    testWidgets('campos possuem borda inferior mais espessa', (tester) async {
+    testWidgets('campos usam floating label', (tester) async {
       await tester.pumpWidget(_wrap(const SignUpPage()));
 
-      final decoratedContainers = tester.widgetList<Container>(find.byType(Container)).where((container) {
-        final decoration = container.decoration;
-        if (decoration is! BoxDecoration || decoration.border is! Border) {
-          return false;
-        }
+      final decorations = tester
+          .widgetList<TextField>(find.byType(TextField))
+          .map((field) => field.decoration)
+          .whereType<InputDecoration>()
+          .toList();
 
-        final border = decoration.border! as Border;
-        return border.bottom.width > border.top.width;
-      }).toList();
-
-      expect(decoratedContainers.length >= 4, isTrue);
-
-      for (final container in decoratedContainers.take(4)) {
-        final boxDecoration = container.decoration! as BoxDecoration;
-        final border = boxDecoration.border! as Border;
-
-        expect(border.top.width, AppSpacing.xs / 4);
-        expect(border.left.width, AppSpacing.xs / 4);
-        expect(border.right.width, AppSpacing.xs / 4);
-        expect(border.bottom.width, AppSpacing.xs / 2);
+      expect(decorations, hasLength(4));
+      expect(
+        decorations.map((d) => d.labelText).toList(),
+        ['Nome', 'E-mail', 'Senha', 'Confirmar senha'],
+      );
+      for (final decoration in decorations) {
+        expect(decoration.floatingLabelBehavior, FloatingLabelBehavior.auto);
       }
     });
 
@@ -78,22 +70,24 @@ void main() {
       expect(find.byType(EmailConfirmationPage), findsNothing);
     });
 
-    testWidgets('navega para confirmação de e-mail quando formulário está válido', (
-      tester,
-    ) async {
+    testWidgets('aceita formulário válido e tenta criar conta', (tester) async {
       await tester.pumpWidget(_wrap(const SignUpPage()));
 
       final fields = find.byType(TextField);
       await tester.enterText(fields.at(0), 'Jon');
       await tester.enterText(fields.at(1), 'jon@email.com');
-      await tester.enterText(fields.at(2), '123456');
-      await tester.enterText(fields.at(3), '123456');
+      await tester.enterText(fields.at(2), 'Senha@123');
+      await tester.enterText(fields.at(3), 'Senha@123');
 
       await tester.ensureVisible(find.text('Criar conta'));
       await tester.tap(find.text('Criar conta'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(EmailConfirmationPage), findsOneWidget);
+      expect(find.byType(SignUpPage), findsOneWidget);
+      expect(find.text('Informe seu nome'), findsNothing);
+      expect(find.text('Informe um e-mail válido'), findsNothing);
+      expect(find.text('As senhas não conferem'), findsNothing);
     });
 
     testWidgets('navega para login ao tocar em Entrar', (tester) async {

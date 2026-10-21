@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../profile/helpers/user_manual_guided_tour_targets.dart';
 
 const workoutHeroContentOverlap = 48.0;
 
@@ -81,6 +82,7 @@ class WorkoutHeroHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 64),
                   SizedBox(
+                    key: ManualGuidedTourTargets.workoutImportButton,
                     width: double.infinity,
                     height: 52,
                     child: FilledButton.icon(

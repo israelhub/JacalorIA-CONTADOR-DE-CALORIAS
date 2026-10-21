@@ -201,14 +201,14 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
                     children: [
                       AppInputField(
                         label: 'Nome do grupo',
-                        hint: 'Ex.: Família Saudável',
+                        hint: '',
                         controller: _nameController,
                         onChanged: (_) => setState(() {}),
                       ),
                       const SizedBox(height: AppSpacing.md),
                       AppInputField(
                         label: 'Descrição (opcional)',
-                        hint: 'Ex.: Grupo para compartilhar metas',
+                        hint: '',
                         controller: _descriptionController,
                         onChanged: (_) => setState(() {}),
                       ),

@@ -111,6 +111,14 @@ export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
     sortOrder: 210,
   },
   {
+    itemKey: 'tutorial_star_ring',
+    category: 'avatar_frame',
+    name: 'Anel Estrela',
+    description: 'Recompensa por concluir o tutorial inicial.',
+    priceGold: 0,
+    sortOrder: 220,
+  },
+  {
     itemKey: 'sky',
     category: 'avatar_background',
     name: 'Sky',
@@ -223,6 +231,14 @@ export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
     sortOrder: 210,
   },
   {
+    itemKey: 'tutorial_spark_field',
+    category: 'avatar_background',
+    name: 'Campo de Faíscas',
+    description: 'Recompensa por concluir o tutorial inicial.',
+    priceGold: 0,
+    sortOrder: 220,
+  },
+  {
     itemKey: 'amor',
     category: 'jaca_emoji',
     name: 'Amor',
@@ -263,6 +279,14 @@ export const DEFAULT_STORE_CATALOG_ITEMS: StoreCatalogSeedItem[] = [
     sortOrder: 50,
   },
   {
+    itemKey: 'estreante',
+    category: 'jaca_emoji',
+    name: 'Estreante',
+    description: 'Figurinha por concluir o tutorial inicial.',
+    priceGold: 0,
+    sortOrder: 60,
+  },
+  {
     itemKey: 'offensive_guard',
     category: 'offensive_blocker',
     name: 'Bloqueador de sequência',
@@ -287,8 +311,24 @@ export const CHECK_IN_EXCLUSIVE_STORE_ITEM_KEYS = [
   'aug_mint_lagoon',
 ] as const;
 
+export const PRODUCT_TOUR_REWARD_FRAME_KEY = 'tutorial_star_ring';
+export const PRODUCT_TOUR_REWARD_BACKGROUND_KEY = 'tutorial_spark_field';
+export const PRODUCT_TOUR_REWARD_EMOJI_KEY = 'estreante';
+
+export const TUTORIAL_EXCLUSIVE_STORE_ITEM_KEYS = [
+  PRODUCT_TOUR_REWARD_FRAME_KEY,
+  PRODUCT_TOUR_REWARD_BACKGROUND_KEY,
+  PRODUCT_TOUR_REWARD_EMOJI_KEY,
+] as const;
+
 export function isCheckInExclusiveStoreItem(itemKey: string): boolean {
   return (CHECK_IN_EXCLUSIVE_STORE_ITEM_KEYS as readonly string[]).includes(
+    itemKey.trim(),
+  );
+}
+
+export function isTutorialExclusiveStoreItem(itemKey: string): boolean {
+  return (TUTORIAL_EXCLUSIVE_STORE_ITEM_KEYS as readonly string[]).includes(
     itemKey.trim(),
   );
 }

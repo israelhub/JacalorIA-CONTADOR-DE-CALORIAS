@@ -117,24 +117,41 @@ class _AppDropdownMenuState extends State<AppDropdownMenu> {
     final label = widget.label?.trim() ?? '';
     final hasLabel = label.isNotEmpty;
     final hasValue = widget.selectedValue.trim().isNotEmpty;
+    final trimmedHint = widget.hint?.trim();
 
-    final field = Material(
+    return Material(
       color: Colors.transparent,
       child: InkWell(
         key: widget.fieldKey,
         onTap: widget.enabled ? _openMenu : null,
         borderRadius: BorderRadius.circular(AppRadius.md),
+        hoverColor: Colors.transparent,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
         child: InputDecorator(
           key: _anchorKey,
           isEmpty: !hasValue,
           decoration: InputDecoration(
-            hintText: widget.hint,
+            labelText: hasLabel ? label : null,
+            labelStyle: AppInputStyles.restingLabel,
+            floatingLabelStyle: AppInputStyles.floatingLabel,
+            floatingLabelBehavior: hasLabel
+                ? FloatingLabelBehavior.auto
+                : FloatingLabelBehavior.never,
+            hintText: (trimmedHint != null && trimmedHint.isNotEmpty)
+                ? trimmedHint
+                : null,
             hintStyle: AppInputStyles.hint,
             filled: true,
             fillColor: AppColors.surface,
+            hoverColor: AppColors.surface,
+            focusColor: AppColors.surface,
             isDense: true,
             enabled: widget.enabled,
-            contentPadding: AppInputStyles.singleLineContentPadding,
+            contentPadding: hasLabel
+                ? AppInputStyles.floatingLabelContentPadding
+                : AppInputStyles.singleLineContentPadding,
             suffixIcon: Icon(
               Icons.keyboard_arrow_down_rounded,
               color: widget.enabled
@@ -167,25 +184,6 @@ class _AppDropdownMenuState extends State<AppDropdownMenu> {
           ),
         ),
       ),
-    );
-
-    if (!hasLabel) {
-      return field;
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.bodyLarge.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        field,
-      ],
     );
   }
 }

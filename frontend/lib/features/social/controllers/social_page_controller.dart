@@ -32,9 +32,6 @@ class SocialPageController extends ChangeNotifier {
   bool _hasLoadedOnce = false;
   bool get hasLoadedOnce => _hasLoadedOnce;
 
-  bool _showIntro = false;
-  bool get showIntro => _showIntro;
-
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
@@ -62,7 +59,6 @@ class SocialPageController extends ChangeNotifier {
   int get previousTabIndex => _previousTabIndex;
   static const String _viewedFinishedGroupsKey =
       'social_viewed_finished_groups';
-  static const String _hideIntroLocalKeyPrefix = 'social_hide_intro_local';
   final Set<String> _viewedFinishedGroupIds = <String>{};
 
   static const int xpRankingPageSize = 10;
@@ -112,54 +108,8 @@ class SocialPageController extends ChangeNotifier {
       ..addAll(entries);
   }
 
-  String _hideIntroLocalKeyForUserId(String userId) {
-    final normalized = userId.trim().isEmpty ? 'user' : userId.trim();
-    return '$_hideIntroLocalKeyPrefix:$normalized';
-  }
-
-  String _resolveLocalUserId() {
-    final authUser = AuthService.globalUser;
-    final rawUserId =
-        authUser?['id'] ?? authUser?['email'] ?? authUser?['name'] ?? 'user';
-    return rawUserId.toString();
-  }
-
-  Future<bool> _readHideIntroLocal(String userId) async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_hideIntroLocalKeyForUserId(userId)) ?? false;
-  }
-
-  bool _asBool(dynamic value) {
-    if (value is bool) {
-      return value;
-    }
-    if (value is num) {
-      return value != 0;
-    }
-    if (value is String) {
-      final normalized = value.trim().toLowerCase();
-      return normalized == 'true' || normalized == '1';
-    }
-    return false;
-  }
-
-  bool _isGuideHidden(Map<String, dynamic> profile) {
-    return _asBool(profile['hideGuideMe']) ||
-        _asBool(profile['hideSocialGuideMe']) ||
-        _asBool(profile['hideMissionsGuideMe']) ||
-        _asBool(profile['hide_guide_me']) ||
-        _asBool(profile['hide_social_guide_me']) ||
-        _asBool(profile['hide_missions_guide_me']);
-  }
-
   Future<void> loadAll({bool silent = false}) async {
     final hadData = _hasLoadedOnce;
-    final localUserId = _resolveLocalUserId();
-    try {
-      if (await _readHideIntroLocal(localUserId)) {
-        _showIntro = false;
-      }
-    } catch (_) {}
 
     // Keep showing cached content while refreshing in the background.
     final nextLoading = silent ? false : !hadData;
@@ -191,12 +141,6 @@ class SocialPageController extends ChangeNotifier {
       final friendsData = results[1] as SocialFriendsData;
       final canonicalProfile = results[2] as Map<String, dynamic>;
       AuthService.globalUser = canonicalProfile;
-      final canonicalUserId =
-          canonicalProfile['id']?.toString() ??
-          canonicalProfile['email']?.toString() ??
-          canonicalProfile['name']?.toString() ??
-          localUserId;
-      final hideIntroLocal = await _readHideIntroLocal(canonicalUserId);
 
       _groups
         ..clear()
@@ -209,7 +153,6 @@ class SocialPageController extends ChangeNotifier {
           : 'Seu perfil';
       _currentUserAvatarUrl = profile['avatarUrl']?.toString();
       _currentUserAvatarFrameId = profile['equippedAvatarFrameId']?.toString();
-      _showIntro = !(hideIntroLocal || _isGuideHidden(profile));
       _hasLoadedOnce = true;
       _isLoading = false;
       notifyListeners();
@@ -223,30 +166,6 @@ class SocialPageController extends ChangeNotifier {
       }
       notifyListeners();
     }
-  }
-
-  void hideIntro() {
-    if (!_showIntro) return;
-    _showIntro = false;
-    notifyListeners();
-    _persistGuidePreference();
-  }
-
-  Future<void> _persistGuidePreference() async {
-    try {
-      await _authService.updateProfile(<String, dynamic>{
-        'hideGuideMe': true,
-        'hideSocialGuideMe': true,
-        'hideMissionsGuideMe': true,
-      });
-    } catch (_) {}
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(
-        _hideIntroLocalKeyForUserId(_resolveLocalUserId()),
-        true,
-      );
-    } catch (_) {}
   }
 
   void changeTab(int index) {

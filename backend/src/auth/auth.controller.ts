@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   Headers,
   UseGuards,
@@ -89,6 +90,18 @@ export class AuthController {
   @Patch('profile')
   updateProfile(@Request() req, @Body() dto: UpdateProfileDto) {
     return this.authService.updateProfile(req.user.sub, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('export')
+  exportUserData(@Request() req) {
+    return this.authService.exportUserData(req.user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('account')
+  deleteAccount(@Request() req) {
+    return this.authService.deleteAccount(req.user.sub);
   }
 
   @Get('profile/dev')

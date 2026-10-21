@@ -31,6 +31,15 @@ export class AnalyticsService {
       return { accepted: 0 };
     }
 
+    if (userId) {
+      const user = await this.userModel.findByPk(userId, {
+        attributes: ['id', 'analyticsOptOut'],
+      });
+      if (user?.analyticsOptOut) {
+        return { accepted: 0 };
+      }
+    }
+
     const rows = events.map((event) => ({
       userId,
       eventName: event.eventName,

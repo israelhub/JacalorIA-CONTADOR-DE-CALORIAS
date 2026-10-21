@@ -96,6 +96,20 @@ void main() {
     expect(find.byType(Switch), findsNothing);
   });
 
+  testWidgets('exibe manual do usuario acima de sair', (tester) async {
+    await _pumpProfile(
+      tester,
+      const ProfilePage(initialProfile: {'name': 'Ana'}),
+    );
+
+    expect(find.text('Manual do usuário'), findsOneWidget);
+    expect(find.text('Sair'), findsOneWidget);
+
+    final manualY = tester.getTopLeft(find.text('Manual do usuário')).dy;
+    final sairY = tester.getTopLeft(find.text('Sair')).dy;
+    expect(manualY < sairY, isTrue);
+  });
+
   testWidgets('menu do perfil mantem editar e personalizar', (tester) async {
     await _pumpProfile(
       tester,

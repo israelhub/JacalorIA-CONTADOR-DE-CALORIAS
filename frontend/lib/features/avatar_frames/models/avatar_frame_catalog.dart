@@ -40,6 +40,9 @@ class StoreCatalogItem {
   bool get isConsumable => type == StoreItemType.blocker;
   bool get isInventoryBlocker => isConsumable;
   bool get isCheckInExclusive => acquireSource == 'check_in';
+  bool get isTutorialExclusive => acquireSource == 'tutorial';
+  bool get isExclusiveLockedSource =>
+      isCheckInExclusive || isTutorialExclusive;
 }
 
 class StoreCatalogData {
@@ -201,6 +204,12 @@ class AvatarFrameCatalog {
       description:
           'Moldura exclusiva do check-in de agosto, com folhas de menta.',
       assetPath: 'assets/images/avatar_frames/aug_mint_leaf.png',
+    ),
+    AvatarFrameItem(
+      id: 'tutorial_star_ring',
+      name: 'Anel Estrela',
+      description: 'Moldura por concluir o tutorial inicial.',
+      assetPath: 'assets/images/avatar_frames/tutorial_star_ring.png',
     ),
   ];
 
@@ -373,8 +382,11 @@ List<StoreCatalogItem> _parseStoreItems(
             map['quantityOwned'] ?? map['quantity'] ?? map['count'],
           ),
           acquireSource:
-              acquireSource == 'check_in' ||
-                  _checkInExclusiveIds.contains(idTrimmed)
+              acquireSource == 'tutorial' ||
+                  _tutorialExclusiveIds.contains(idTrimmed)
+              ? 'tutorial'
+              : acquireSource == 'check_in' ||
+                    _checkInExclusiveIds.contains(idTrimmed)
               ? 'check_in'
               : 'purchase',
         );
@@ -389,4 +401,10 @@ const Set<String> _checkInExclusiveIds = {
   'aug_mint_leaf',
   'aug_dusk_glow',
   'aug_mint_lagoon',
+};
+
+const Set<String> _tutorialExclusiveIds = {
+  'tutorial_star_ring',
+  'tutorial_spark_field',
+  'estreante',
 };

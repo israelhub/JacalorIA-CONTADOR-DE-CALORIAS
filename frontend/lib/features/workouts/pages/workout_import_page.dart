@@ -79,9 +79,9 @@ class _WorkoutImportPageState extends State<WorkoutImportPage> {
                 AppInput(
                   key: const ValueKey('workout-import-entry-field'),
                   controller: _controller,
+                  hintText: workoutImportTemplate.trim(),
                   maxLines: 16,
                   minLines: 12,
-                  hintText: workoutImportTemplate.trim(),
                   textAlignVertical: TextAlignVertical.top,
                   showBorder: true,
                   showShadow: false,

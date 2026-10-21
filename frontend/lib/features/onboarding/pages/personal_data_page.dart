@@ -3,15 +3,16 @@ import '../../../shared/widgets/app_page_route.dart';
 
 import '../../../core/analytics/analytics_service.dart';
 import 'objective_page.dart';
-import '../widgets/onboarding_input_field.dart';
 import '../widgets/onboarding_step_header.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_dropdown_menu.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_date_picker.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/measurement_input_field.dart';
-import '../../../shared/widgets/app_select_input_field.dart';
+import '../../legal/helpers/age_gate.dart';
 
 class PersonalDataPage extends StatefulWidget {
   const PersonalDataPage({super.key});
@@ -38,8 +39,6 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   static const List<String> _sexOptions = [
     'Masculino',
     'Feminino',
-    'Demais',
-    'Prefiro não informar',
   ];
 
   @override
@@ -51,14 +50,13 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   }
 
   Future<void> _pickBirthDate() async {
-    final now = DateTime.now();
-    final initialDate = DateTime(now.year - 18, now.month, now.day);
+    final maxBirth = AgeGate.maxBirthDate();
 
     final selectedDate = await showAppDatePicker(
       context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(1900),
-      lastDate: now,
+      initialDate: maxBirth,
+      firstDate: AgeGate.minBirthDate(),
+      lastDate: maxBirth,
     );
 
     if (selectedDate == null) {
@@ -128,7 +126,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                         AppInputField(
                           key: const ValueKey('personal-birthdate-field'),
                           label: 'Data de nascimento',
-                          hint: 'Ex.: 15/03/1990',
+                          hint: '',
                           controller: _birthDateController,
                           readOnly: true,
                           onTap: _pickBirthDate,
@@ -141,7 +139,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                         const SizedBox(height: AppSpacing.xxl),
                         MeasurementInputField(
                           label: 'Peso',
-                          hint: 'Ex.: 70',
+                          hint: '',
                           controller: _weightController,
                           unitSelectorKey: const ValueKey(
                             'personal-weight-unit-selector',
@@ -160,7 +158,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                         const SizedBox(height: AppSpacing.xxl),
                         MeasurementInputField(
                           label: 'Altura',
-                          hint: 'Ex.: 170',
+                          hint: '',
                           controller: _heightController,
                           unitSelectorKey: const ValueKey(
                             'personal-height-unit-selector',
@@ -177,20 +175,16 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xxl),
-                        OnboardingInputField(
+                        AppDropdownMenu(
+                          fieldKey: const ValueKey('personal-sex-field'),
                           label: 'Sexo',
-                          child: AppSelectInputField(
-                            fieldKey: const ValueKey('personal-sex-field'),
-                            label: '',
-                            hint: 'Ex.: Feminino',
-                            selectedValue: _selectedSex ?? '',
-                            options: _sexOptions,
-                            onSelected: (value) {
-                              setState(() {
-                                _selectedSex = value;
-                              });
-                            },
-                          ),
+                          selectedValue: _selectedSex ?? '',
+                          options: _sexOptions,
+                          onSelected: (value) {
+                            setState(() {
+                              _selectedSex = value;
+                            });
+                          },
                         ),
                         const SizedBox(
                           height: AppSpacing.huge + AppSpacing.xxl,
@@ -202,7 +196,16 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                           child: AppButton(
                             label: 'Avançar',
                             onPressed: () {
-                              final birthDate = _birthDateController.text;
+                              final birthDate = _birthDateController.text.trim();
+                              if (birthDate.isNotEmpty &&
+                                  !AgeGate.isAtLeastMinimumAge(birthDate)) {
+                                AppToast.error(
+                                  context,
+                                  message: AgeGate.minimumAgeMessage(),
+                                );
+                                return;
+                              }
+
                               final weight =
                                   double.tryParse(_weightController.text) ??
                                   0.0;

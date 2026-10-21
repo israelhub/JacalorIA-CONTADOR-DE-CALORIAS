@@ -24,11 +24,14 @@ class AnalyticsService {
   static const _sessionTimeout = Duration(minutes: 30);
   static const _maxBatch = 40;
 
+  static const _optOutPrefsKey = 'analytics_opt_out';
+
   final List<Map<String, dynamic>> _queue = <Map<String, dynamic>>[];
   Timer? _flushTimer;
   Timer? _heartbeatTimer;
   String? _sessionId;
   bool _flushing = false;
+  bool _optOut = false;
   DateTime? _lastAppOpenAt;
 
   DateTime? _sessionStartedAt;
@@ -51,8 +54,11 @@ class AnalyticsService {
 
   String? get sessionId => _sessionId;
 
+  bool get optOut => _optOut;
+
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
+    _optOut = prefs.getBool(_optOutPrefsKey) ?? false;
     var sessionId = prefs.getString(_sessionPrefsKey);
     if (sessionId == null || sessionId.isEmpty) {
       sessionId = _generateSessionId();
@@ -63,6 +69,25 @@ class AnalyticsService {
     _flushTimer = Timer.periodic(_flushInterval, (_) {
       unawaited(flush());
     });
+  }
+
+  Future<void> setOptOut(bool value) async {
+    _optOut = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_optOutPrefsKey, value);
+    if (value) {
+      _queue.clear();
+    }
+  }
+
+  void syncOptOutFromProfile(Map<String, dynamic>? profile) {
+    if (profile == null) {
+      return;
+    }
+    final raw = profile['analyticsOptOut'] ?? profile['analytics_opt_out'];
+    if (raw is bool) {
+      unawaited(setOptOut(raw));
+    }
   }
 
   /// Starts a new analytics session (e.g. after login).
@@ -82,7 +107,7 @@ class AnalyticsService {
     Map<String, dynamic>? properties,
     DateTime? occurredAt,
   }) {
-    if (eventName.trim().isEmpty) return;
+    if (_optOut || eventName.trim().isEmpty) return;
 
     final props = <String, dynamic>{
       if (_currentScreen != null) 'screen': _currentScreen,
@@ -220,6 +245,10 @@ class AnalyticsService {
   }
 
   Future<void> flush() async {
+    if (_optOut) {
+      _queue.clear();
+      return;
+    }
     if (_flushing || _queue.isEmpty) return;
 
     final token = AuthService.globalToken;

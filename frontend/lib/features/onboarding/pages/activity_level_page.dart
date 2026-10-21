@@ -100,119 +100,123 @@ class _ActivityLevelPageState extends State<ActivityLevelPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.pageHorizontal,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: AppSpacing.lg),
-              OnboardingStepHeader(
-                activeStep: 3,
-                onBack: () {
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-              const SizedBox(height: AppSpacing.xxxl),
-              Text(
-                'Qual seu nível de atividade física?',
-                style: AppTextStyles.headingLarge.copyWith(
-                  color: AppColors.brand900Variant,
+      body: AppAmbientPageBody(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.pageHorizontal,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: AppSpacing.lg),
+                OnboardingStepHeader(
+                  activeStep: 3,
+                  onBack: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
+                  },
                 ),
-              ),
-              const SizedBox(height: AppSpacing.huge + AppSpacing.lg),
-              OnboardingSelectOptionButton(
-                key: const ValueKey('activity-option-sedentary'),
-                boxKey: const ValueKey('activity-option-box-sedentary'),
-                label: 'Sedentário (não pratico exercícios)',
-                isSelected:
-                    _selectedActivityLevel == ActivityLevelType.sedentary,
-                height: AppSpacing.huge + AppSpacing.lg,
-                textStyle: AppTextStyles.label,
-                unselectedTextColor: AppColors.brand900Variant,
-                onTap: () {
-                  setState(() {
-                    _selectedActivityLevel = ActivityLevelType.sedentary;
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              OnboardingSelectOptionButton(
-                key: const ValueKey('activity-option-lightly'),
-                boxKey: const ValueKey('activity-option-box-lightly'),
-                label: 'Levemente ativo (1-2 dias por semana)',
-                isSelected: _selectedActivityLevel == ActivityLevelType.lightly,
-                height: AppSpacing.huge + AppSpacing.lg,
-                textStyle: AppTextStyles.label,
-                unselectedTextColor: AppColors.brand900Variant,
-                onTap: () {
-                  setState(() {
-                    _selectedActivityLevel = ActivityLevelType.lightly;
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              OnboardingSelectOptionButton(
-                key: const ValueKey('activity-option-moderate'),
-                boxKey: const ValueKey('activity-option-box-moderate'),
-                label: 'Moderadamente ativo (3-4 dias por semana)',
-                isSelected:
-                    _selectedActivityLevel == ActivityLevelType.moderate,
-                height: AppSpacing.huge + AppSpacing.lg,
-                textStyle: AppTextStyles.label,
-                unselectedTextColor: AppColors.brand900Variant,
-                onTap: () {
-                  setState(() {
-                    _selectedActivityLevel = ActivityLevelType.moderate;
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              OnboardingSelectOptionButton(
-                key: const ValueKey('activity-option-very'),
-                boxKey: const ValueKey('activity-option-box-very'),
-                label: 'Muito ativo (5-6 dias por semana)',
-                isSelected: _selectedActivityLevel == ActivityLevelType.very,
-                height: AppSpacing.huge + AppSpacing.lg,
-                textStyle: AppTextStyles.label,
-                unselectedTextColor: AppColors.brand900Variant,
-                onTap: () {
-                  setState(() {
-                    _selectedActivityLevel = ActivityLevelType.very;
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              OnboardingSelectOptionButton(
-                key: const ValueKey('activity-option-extreme'),
-                boxKey: const ValueKey('activity-option-box-extreme'),
-                label: 'Extremamente ativo (todos os dias)',
-                isSelected: _selectedActivityLevel == ActivityLevelType.extreme,
-                height: AppSpacing.huge + AppSpacing.lg,
-                textStyle: AppTextStyles.label,
-                unselectedTextColor: AppColors.brand900Variant,
-                onTap: () {
-                  setState(() {
-                    _selectedActivityLevel = ActivityLevelType.extreme;
-                  });
-                },
-              ),
-              const SizedBox(height: AppSpacing.huge),
-              SizedBox(
-                key: const ValueKey('activity-finish-button-box'),
-                width: double.infinity,
-                height: AppSpacing.huge + AppSpacing.xs,
-                child: AppButton(
-                  label: _isLoading ? 'Salvando...' : 'Finalizar',
-                  onPressed: _isLoading ? null : _submitAndFinish,
-                  variant: AppButtonVariant.primary,
+                const SizedBox(height: AppSpacing.xxxl),
+                Text(
+                  'Qual seu nível de atividade física?',
+                  style: AppTextStyles.headingLarge.copyWith(
+                    color: AppColors.brand900Variant,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.huge + AppSpacing.lg),
+                OnboardingSelectOptionButton(
+                  key: const ValueKey('activity-option-sedentary'),
+                  boxKey: const ValueKey('activity-option-box-sedentary'),
+                  label: 'Sedentário (não pratico exercícios)',
+                  isSelected:
+                      _selectedActivityLevel == ActivityLevelType.sedentary,
+                  height: AppSpacing.huge + AppSpacing.xs / 2,
+                  textStyle: AppTextStyles.buttonSmall,
+                  unselectedTextColor: AppColors.brand900Variant,
+                  onTap: () {
+                    setState(() {
+                      _selectedActivityLevel = ActivityLevelType.sedentary;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                OnboardingSelectOptionButton(
+                  key: const ValueKey('activity-option-lightly'),
+                  boxKey: const ValueKey('activity-option-box-lightly'),
+                  label: 'Levemente ativo (1-2 dias por semana)',
+                  isSelected:
+                      _selectedActivityLevel == ActivityLevelType.lightly,
+                  height: AppSpacing.huge + AppSpacing.xs / 2,
+                  textStyle: AppTextStyles.buttonSmall,
+                  unselectedTextColor: AppColors.brand900Variant,
+                  onTap: () {
+                    setState(() {
+                      _selectedActivityLevel = ActivityLevelType.lightly;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                OnboardingSelectOptionButton(
+                  key: const ValueKey('activity-option-moderate'),
+                  boxKey: const ValueKey('activity-option-box-moderate'),
+                  label: 'Moderadamente ativo (3-4 dias por semana)',
+                  isSelected:
+                      _selectedActivityLevel == ActivityLevelType.moderate,
+                  height: AppSpacing.huge + AppSpacing.xs / 2,
+                  textStyle: AppTextStyles.buttonSmall,
+                  unselectedTextColor: AppColors.brand900Variant,
+                  onTap: () {
+                    setState(() {
+                      _selectedActivityLevel = ActivityLevelType.moderate;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                OnboardingSelectOptionButton(
+                  key: const ValueKey('activity-option-very'),
+                  boxKey: const ValueKey('activity-option-box-very'),
+                  label: 'Muito ativo (5-6 dias por semana)',
+                  isSelected: _selectedActivityLevel == ActivityLevelType.very,
+                  height: AppSpacing.huge + AppSpacing.xs / 2,
+                  textStyle: AppTextStyles.buttonSmall,
+                  unselectedTextColor: AppColors.brand900Variant,
+                  onTap: () {
+                    setState(() {
+                      _selectedActivityLevel = ActivityLevelType.very;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                OnboardingSelectOptionButton(
+                  key: const ValueKey('activity-option-extreme'),
+                  boxKey: const ValueKey('activity-option-box-extreme'),
+                  label: 'Extremamente ativo (todos os dias)',
+                  isSelected:
+                      _selectedActivityLevel == ActivityLevelType.extreme,
+                  height: AppSpacing.huge + AppSpacing.xs / 2,
+                  textStyle: AppTextStyles.buttonSmall,
+                  unselectedTextColor: AppColors.brand900Variant,
+                  onTap: () {
+                    setState(() {
+                      _selectedActivityLevel = ActivityLevelType.extreme;
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.huge),
+                SizedBox(
+                  key: const ValueKey('activity-finish-button-box'),
+                  width: double.infinity,
+                  height: AppSpacing.huge + AppSpacing.xs,
+                  child: AppButton(
+                    label: _isLoading ? 'Salvando...' : 'Finalizar',
+                    onPressed: _isLoading ? null : _submitAndFinish,
+                    variant: AppButtonVariant.primary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

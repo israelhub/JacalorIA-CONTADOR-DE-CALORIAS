@@ -7,7 +7,8 @@ import '../../auth/service/auth_service.dart';
 
 enum SupportSubjectType {
   bug('bug'),
-  suggestion('suggestion');
+  suggestion('suggestion'),
+  privacy('privacy');
 
   const SupportSubjectType(this.apiValue);
 
@@ -19,6 +20,8 @@ enum SupportSubjectType {
         return 'Bug';
       case SupportSubjectType.suggestion:
         return 'Sugestão';
+      case SupportSubjectType.privacy:
+        return 'Privacidade / LGPD';
     }
   }
 }

@@ -113,7 +113,7 @@ class _HomeAddWaterSheetState extends State<_HomeAddWaterSheet> {
                         decoration: InputDecoration(
                           isDense: true,
                           border: InputBorder.none,
-                          hintText: 'Ex.: 250',
+                          hintText: '',
                           hintStyle: AppTextStyles.headingLarge.copyWith(
                             color: AppColors.textSecondary.withValues(
                               alpha: 0.45,
