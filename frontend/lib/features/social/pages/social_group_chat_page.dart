@@ -348,11 +348,14 @@ class _SocialGroupChatPageState extends State<SocialGroupChatPage> {
   }
 
   Future<void> _confirmDelete(SocialGroupChatMessage message) async {
+    final isModeration = message.canModerate && !message.isCurrentUser;
     final shouldDelete = await AppConfirmModal.show(
       context,
-      title: 'Excluir mensagem',
-      message: 'Essa mensagem some para todo o grupo. Quer excluir?',
-      confirmLabel: 'Excluir',
+      title: isModeration ? 'Remover mensagem' : 'Excluir mensagem',
+      message: isModeration
+          ? 'Como líder, você remove essa mensagem do chat do grupo.'
+          : 'Essa mensagem some para todo o grupo. Quer excluir?',
+      confirmLabel: isModeration ? 'Remover' : 'Excluir',
       cancelLabel: 'Cancelar',
       isDanger: true,
     );
