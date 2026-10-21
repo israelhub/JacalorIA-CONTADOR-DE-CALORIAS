@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AddGroupMembersDto } from './dto/add-group-members.dto';
 import { AddFriendByEmailDto } from './dto/add-friend-by-email.dto';
 import { CreateSocialGroupDto } from './dto/create-social-group.dto';
+import { CreateSocialReportDto } from './dto/create-social-report.dto';
 import { ReactGroupMessageDto } from './dto/react-group-message.dto';
 import { SendGroupMessageDto } from './dto/send-group-message.dto';
 import { UpdateGroupMessageDto } from './dto/update-group-message.dto';
@@ -52,6 +53,26 @@ export class SocialController {
   @Post('friends/:friendUserId/remove')
   removeFriend(@Req() req: any, @Param('friendUserId') friendUserId: string) {
     return this.socialService.removeFriend(req.user.sub, friendUserId);
+  }
+
+  @Get('blocks')
+  listBlockedUsers(@Req() req: any) {
+    return this.socialService.listBlockedUsers(req.user.sub);
+  }
+
+  @Post('blocks/:userId')
+  blockUser(@Req() req: any, @Param('userId') userId: string) {
+    return this.socialService.blockUser(req.user.sub, userId);
+  }
+
+  @Delete('blocks/:userId')
+  unblockUser(@Req() req: any, @Param('userId') userId: string) {
+    return this.socialService.unblockUser(req.user.sub, userId);
+  }
+
+  @Post('reports')
+  createContentReport(@Req() req: any, @Body() dto: CreateSocialReportDto) {
+    return this.socialService.createContentReport(req.user.sub, dto);
   }
 
   @Get('friends/:friendUserId/profile')

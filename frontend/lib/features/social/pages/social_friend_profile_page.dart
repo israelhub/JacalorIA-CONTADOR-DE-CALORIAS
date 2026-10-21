@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
+import '../../../shared/widgets/app_expandable_header_menu.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -18,6 +19,7 @@ import '../widgets/social_member_daily_meals_section.dart';
 import '../widgets/social_member_daily_workouts_section.dart';
 import '../widgets/social_profile_info_card.dart';
 import '../widgets/social_profile_metric_card.dart';
+import '../widgets/social_report_sheet.dart';
 import 'social_user_friends_page.dart';
 
 class SocialFriendProfilePage extends StatefulWidget {
@@ -48,6 +50,7 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
   bool _isLoading = true;
   bool _isRemovingFriend = false;
   bool _isAddingFriend = false;
+  bool _isUpdatingBlock = false;
   String? _error;
 
   @override
@@ -125,6 +128,26 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
             ? widget.initialFriendName!
             : 'Perfil',
         backgroundColor: Colors.transparent,
+        trailing: _profile != null && !_profile!.isSelf
+            ? AppExpandableHeaderMenu(
+                showShadow: true,
+                actions: [
+                  AppExpandableHeaderMenuAction(
+                    label: 'Denunciar',
+                    icon: Icons.flag_outlined,
+                    onPressed: _onReportPressed,
+                  ),
+                  AppExpandableHeaderMenuAction(
+                    label: _profile!.isBlocked ? 'Desbloquear' : 'Bloquear',
+                    icon: _profile!.isBlocked
+                        ? Icons.lock_open_rounded
+                        : Icons.block_rounded,
+                    color: _profile!.isBlocked ? null : AppColors.textError,
+                    onPressed: _onBlockPressed,
+                  ),
+                ],
+              )
+            : null,
       ),
       body: SafeArea(
         top: false,
@@ -473,6 +496,78 @@ class _SocialFriendProfilePageState extends State<SocialFriendProfilePage> {
         isError: true,
       );
       setState(() => _isRemovingFriend = false);
+    }
+  }
+
+  Future<void> _onReportPressed() async {
+    final result = await showSocialReportSheet(context);
+    if (result == null || !mounted) return;
+    try {
+      await widget.service.reportContent(
+        reason: result.reason.apiValue,
+        details: result.details,
+        targetUserId: widget.friendId,
+      );
+      if (!mounted) return;
+      AppToast.success(context, message: 'Denúncia enviada.');
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
+  Future<void> _onBlockPressed() async {
+    final profile = _profile;
+    if (profile == null || _isUpdatingBlock) return;
+
+    if (profile.isBlocked) {
+      setState(() => _isUpdatingBlock = true);
+      try {
+        await widget.service.unblockUser(widget.friendId);
+        if (!mounted) return;
+        setState(() {
+          _profile = profile.copyWith(isBlocked: false);
+          _isUpdatingBlock = false;
+        });
+        AppToast.success(context, message: 'Usuário desbloqueado.');
+      } catch (error) {
+        if (!mounted) return;
+        setState(() => _isUpdatingBlock = false);
+        AppToast.error(
+          context,
+          message: error.toString().replaceFirst('Exception: ', ''),
+        );
+      }
+      return;
+    }
+
+    final shouldBlock = await AppConfirmModal.show(
+      context,
+      title: 'Bloquear usuário?',
+      message:
+          'Vocês deixam de ser amigos e as mensagens dele deixam de aparecer para você nos grupos.',
+      confirmLabel: 'Bloquear',
+      cancelLabel: 'Cancelar',
+      isDanger: true,
+    );
+    if (!shouldBlock || !mounted) return;
+
+    setState(() => _isUpdatingBlock = true);
+    try {
+      await widget.service.blockUser(widget.friendId);
+      if (!mounted) return;
+      AppToast.success(context, message: 'Usuário bloqueado.');
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isUpdatingBlock = false);
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+      );
     }
   }
 

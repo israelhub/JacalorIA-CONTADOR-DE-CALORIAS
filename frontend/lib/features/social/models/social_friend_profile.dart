@@ -22,6 +22,7 @@ class SocialFriendProfile {
     required this.createdAt,
     this.isFriend = false,
     this.isSelf = false,
+    this.isBlocked = false,
     this.friendRequestStatus = 'none',
   });
 
@@ -45,6 +46,7 @@ class SocialFriendProfile {
   final DateTime? createdAt;
   final bool isFriend;
   final bool isSelf;
+  final bool isBlocked;
   final String friendRequestStatus;
 
   bool get isOutgoingRequest => friendRequestStatus == 'outgoing';
@@ -90,11 +92,16 @@ class SocialFriendProfile {
       ),
       isFriend: json['isFriend'] == true,
       isSelf: json['isSelf'] == true,
+      isBlocked: json['isBlocked'] == true,
       friendRequestStatus: json['friendRequestStatus']?.toString() ?? 'none',
     );
   }
 
-  SocialFriendProfile copyWith({bool? isFriend, String? friendRequestStatus}) {
+  SocialFriendProfile copyWith({
+    bool? isFriend,
+    bool? isBlocked,
+    String? friendRequestStatus,
+  }) {
     return SocialFriendProfile(
       id: id,
       name: name,
@@ -116,6 +123,7 @@ class SocialFriendProfile {
       createdAt: createdAt,
       isFriend: isFriend ?? this.isFriend,
       isSelf: isSelf,
+      isBlocked: isBlocked ?? this.isBlocked,
       friendRequestStatus: friendRequestStatus ?? this.friendRequestStatus,
     );
   }

@@ -250,6 +250,73 @@ class SocialService {
     throw Exception(_extractMessage(body, 'Erro ao desfazer amizade.'));
   }
 
+  Future<void> blockUser(String userId) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/social/blocks/${userId.trim()}'),
+      headers: _headers(),
+    );
+    final body = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Não foi possível bloquear o usuário.',
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      _friendProfileSeed.removeWhere(
+        (key, _) => key.startsWith('${userId.trim()}|'),
+      );
+      return;
+    }
+    throw Exception(_extractMessage(body, 'Erro ao bloquear usuário.'));
+  }
+
+  Future<void> unblockUser(String userId) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/social/blocks/${userId.trim()}'),
+      headers: _headers(),
+    );
+    final body = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Não foi possível desbloquear o usuário.',
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      _friendProfileSeed.removeWhere(
+        (key, _) => key.startsWith('${userId.trim()}|'),
+      );
+      return;
+    }
+    throw Exception(_extractMessage(body, 'Erro ao desbloquear usuário.'));
+  }
+
+  Future<void> reportContent({
+    required String reason,
+    String? details,
+    String? targetUserId,
+    String? messageId,
+    String? groupId,
+  }) async {
+    final payload = <String, dynamic>{
+      'reason': reason.trim(),
+      if (details != null && details.trim().isNotEmpty) 'details': details.trim(),
+      if (targetUserId != null && targetUserId.trim().isNotEmpty)
+        'targetUserId': targetUserId.trim(),
+      if (messageId != null && messageId.trim().isNotEmpty)
+        'messageId': messageId.trim(),
+      if (groupId != null && groupId.trim().isNotEmpty) 'groupId': groupId.trim(),
+    };
+    final response = await http.post(
+      Uri.parse('$_baseUrl/social/reports'),
+      headers: _headers(),
+      body: jsonEncode(payload),
+    );
+    final body = _decodeJsonMap(
+      response.body,
+      fallbackError: 'Não foi possível enviar a denúncia.',
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    }
+    throw Exception(_extractMessage(body, 'Erro ao enviar denúncia.'));
+  }
+
   Future<List<SocialUserSearchResult>> searchUsers(String query) async {
     final uri = Uri.parse(
       '$_baseUrl/social/users/search',
