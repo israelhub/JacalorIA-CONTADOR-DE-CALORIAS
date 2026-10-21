@@ -192,7 +192,7 @@ jobs:
           fi
 
           # Paginas legais publicas (Play Store exige HTML estatico, sem login).
-          for legal_page in privacidade excluir-conta; do
+          for legal_page in privacidade excluir-conta excluir-dados; do
             if [ -f "$WEB_DIR/${legal_page}.html" ]; then
               aws s3 cp "$WEB_DIR/${legal_page}.html" \
                 "s3://$BUCKET/${legal_page}.html" \
@@ -222,6 +222,8 @@ jobs:
               "/privacidade" \
               "/excluir-conta.html" \
               "/excluir-conta" \
+              "/excluir-dados.html" \
+              "/excluir-dados" \
               "/app/*" \
               "/main.dart.js" \
               "/main.dart.wasm" \
