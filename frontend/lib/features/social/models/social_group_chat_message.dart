@@ -73,6 +73,7 @@ class SocialGroupChatMessage {
     required this.senderAvatarUrl,
     required this.senderAvatarFrameId,
     required this.isCurrentUser,
+    this.canModerate = false,
     this.editedAt,
     this.isDeleted = false,
     this.replyTo,
@@ -92,6 +93,7 @@ class SocialGroupChatMessage {
   final String? senderAvatarUrl;
   final String? senderAvatarFrameId;
   final bool isCurrentUser;
+  final bool canModerate;
   final SocialGroupChatReplyTo? replyTo;
   final List<SocialGroupChatReaction> reactions;
 
@@ -101,7 +103,7 @@ class SocialGroupChatMessage {
   bool get isEdited => editedAt != null;
   bool get canReply => !isDeleted;
   bool get canEdit => isCurrentUser && isText && !isDeleted;
-  bool get canDelete => isCurrentUser && !isDeleted;
+  bool get canDelete => !isDeleted && (isCurrentUser || canModerate);
   bool get canReact => !isDeleted;
 
   String? get myReactionEmojiId {
@@ -134,6 +136,7 @@ class SocialGroupChatMessage {
     String? imageUrl,
     DateTime? editedAt,
     bool? isDeleted,
+    bool? canModerate,
     SocialGroupChatReplyTo? replyTo,
     List<SocialGroupChatReaction>? reactions,
   }) {
@@ -151,6 +154,7 @@ class SocialGroupChatMessage {
       senderAvatarUrl: senderAvatarUrl,
       senderAvatarFrameId: senderAvatarFrameId,
       isCurrentUser: isCurrentUser,
+      canModerate: canModerate ?? this.canModerate,
       replyTo: replyTo ?? this.replyTo,
       reactions: reactions ?? this.reactions,
     );
@@ -181,6 +185,7 @@ class SocialGroupChatMessage {
         'avatar_frame_id': json['sender_avatar_frame_id'],
       }),
       isCurrentUser: json['isCurrentUser'] == true,
+      canModerate: json['canModerate'] == true,
       replyTo: replyJson is Map<String, dynamic>
           ? SocialGroupChatReplyTo.fromJson(replyJson)
           : null,

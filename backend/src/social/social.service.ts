@@ -36,6 +36,7 @@ import {
   computeGoalDeviation,
   countInclusiveCalendarDays,
 } from './utils/goal-average.util';
+import { findChatModerationViolation } from './utils/chat-moderation.util';
 
 const GROUP_ACTIVITY_PREVIEW_LIMIT = 3;
 
@@ -1238,12 +1239,14 @@ export class SocialService {
     const reactionsByMessageId = await this.loadReactionsByMessageId(
       ordered.map((message) => message.id),
     );
+    const canModerate = await this.canModerateGroupChat(groupId, userId);
     return {
       messages: ordered.map((message) =>
         this.mapGroupMessage(
           message,
           userId,
           reactionsByMessageId.get(message.id) ?? [],
+          canModerate,
         ),
       ),
     };
@@ -1260,6 +1263,7 @@ export class SocialService {
       if (body.length < 1) {
         throw new BadRequestException('Escreva uma mensagem');
       }
+      this.assertChatTextAllowed(body);
     } else if (type === 'emoji') {
       if (!isJacaEmojiId(body)) {
         throw new BadRequestException('Emoji do Jaca inválido');
@@ -1298,6 +1302,7 @@ export class SocialService {
     if (body.length < 1) {
       throw new BadRequestException('Escreva uma mensagem');
     }
+    this.assertChatTextAllowed(body);
 
     await message.update({
       body,
@@ -1308,7 +1313,7 @@ export class SocialService {
   }
 
   async deleteGroupMessage(userId: string, groupId: string, messageId: string) {
-    const message = await this.findOwnGroupMessage(userId, groupId, messageId);
+    const message = await this.findDeletableGroupMessage(userId, groupId, messageId);
     await message.update({ deletedAt: new Date() });
     return this.loadMappedGroupMessage(message.id, userId);
   }
@@ -2175,8 +2180,10 @@ export class SocialService {
     message: SocialGroupMessage,
     currentUserId: string,
     reactions: Array<{ emojiId: string; userId: string }> = [],
+    canModerate = false,
   ) {
     const isDeleted = Boolean(message.deletedAt);
+    const isCurrentUser = message.userId === currentUserId;
     const replyTo = message.replyTo;
     return {
       id: message.id,
@@ -2192,7 +2199,8 @@ export class SocialService {
       senderName: message.user?.name ?? 'Sem nome',
       senderAvatarUrl: this.readUserAvatarUrl(message.user),
       senderAvatarFrameId: this.readUserAvatarFrameId(message.user),
-      isCurrentUser: message.userId === currentUserId,
+      isCurrentUser,
+      canModerate: canModerate && !isCurrentUser && !isDeleted,
       replyTo: replyTo
         ? {
             id: replyTo.id,
@@ -2239,11 +2247,36 @@ export class SocialService {
       throw new NotFoundException('Mensagem não encontrada');
     }
     const reactionsByMessageId = await this.loadReactionsByMessageId([messageId]);
+    const canModerate = await this.canModerateGroupChat(
+      message.groupId,
+      currentUserId,
+    );
     return this.mapGroupMessage(
       message,
       currentUserId,
       reactionsByMessageId.get(messageId) ?? [],
+      canModerate,
     );
+  }
+
+  private assertChatTextAllowed(text: string) {
+    const violation = findChatModerationViolation(text);
+    if (violation) {
+      throw new BadRequestException(violation);
+    }
+  }
+
+  private async canModerateGroupChat(groupId: string, userId: string): Promise<boolean> {
+    const group = await this.socialGroupModel.findByPk(groupId, {
+      attributes: ['id', 'ownerId'],
+    });
+    if (!group) return false;
+    if (group.ownerId === userId) return true;
+    const member = await this.socialGroupMemberModel.findOne({
+      where: { groupId, userId },
+      attributes: ['isLeader'],
+    });
+    return Boolean(member?.isLeader);
   }
 
   private async loadReactionsByMessageId(messageIds: string[]) {
@@ -2341,6 +2374,30 @@ export class SocialService {
     }
     if (message.deletedAt) {
       throw new BadRequestException('Mensagem apagada');
+    }
+    return message;
+  }
+
+  private async findDeletableGroupMessage(
+    userId: string,
+    groupId: string,
+    messageId: string,
+  ) {
+    await this.findGroupForMember(groupId, userId);
+    const message = await this.socialGroupMessageModel.findOne({
+      where: { id: messageId, groupId },
+    });
+    if (!message) {
+      throw new NotFoundException('Mensagem não encontrada');
+    }
+    if (message.deletedAt) {
+      throw new BadRequestException('Mensagem apagada');
+    }
+    if (message.userId === userId) {
+      return message;
+    }
+    if (!(await this.canModerateGroupChat(groupId, userId))) {
+      throw new ForbiddenException('Só o líder pode remover mensagens de outros');
     }
     return message;
   }
