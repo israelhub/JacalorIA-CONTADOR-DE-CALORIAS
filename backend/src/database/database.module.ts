@@ -12,12 +12,14 @@ import { UserCurrencyTransaction } from '../missions/models/user-currency-transa
 import { UserMission } from '../missions/models/user-mission.model';
 import { SocialFriendLink } from '../social/models/social-friend-link.model';
 import { SocialFriendRequest } from '../social/models/social-friend-request.model';
+import { SocialContentReport } from '../social/models/social-content-report.model';
 import { SocialFriendship } from '../social/models/social-friendship.model';
 import { SocialGroup } from '../social/models/social-group.model';
 import { SocialGroupActivity } from '../social/models/social-group-activity.model';
 import { SocialGroupMember } from '../social/models/social-group-member.model';
 import { SocialGroupMessage } from '../social/models/social-group-message.model';
 import { SocialGroupMessageReaction } from '../social/models/social-group-message-reaction.model';
+import { SocialUserBlock } from '../social/models/social-user-block.model';
 import { AnalyticsEvent } from '../analytics/models/analytics-event.model';
 import { FoodImageAnalysis } from '../ai/models/food-image-analysis.model';
 import { SupportMessage } from '../support/models/support-message.model';
@@ -87,6 +89,8 @@ import { WaterIntakeEntry } from '../water/models/water-intake-entry.model';
             SocialFriendship,
             SocialFriendLink,
             SocialFriendRequest,
+            SocialUserBlock,
+            SocialContentReport,
             AnalyticsEvent,
             FoodImageAnalysis,
             SupportMessage,

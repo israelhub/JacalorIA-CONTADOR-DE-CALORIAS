@@ -24,6 +24,7 @@ import '../widgets/social_group_chat_appear.dart';
 import '../widgets/social_group_chat_bubble.dart';
 import '../widgets/social_group_chat_composer.dart';
 import '../widgets/social_group_chat_message_actions.dart';
+import '../widgets/social_report_sheet.dart';
 import 'social_friend_profile_page.dart';
 
 class SocialGroupChatPage extends StatefulWidget {
@@ -297,6 +298,30 @@ class _SocialGroupChatPageState extends State<SocialGroupChatPage> {
         if (url.isNotEmpty) {
           await openSocialGroupChatImage(context, url);
         }
+      case SocialGroupChatMessageAction.report:
+        await _reportMessage(message);
+    }
+  }
+
+  Future<void> _reportMessage(SocialGroupChatMessage message) async {
+    final result = await showSocialReportSheet(context);
+    if (result == null || !mounted) return;
+    try {
+      await widget._service.reportContent(
+        reason: result.reason.apiValue,
+        details: result.details,
+        messageId: message.id,
+        groupId: widget.groupId,
+        targetUserId: message.userId,
+      );
+      if (!mounted) return;
+      AppToast.success(context, message: 'Denúncia enviada.');
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.error(
+        context,
+        message: error.toString().replaceFirst('Exception: ', ''),
+      );
     }
   }
 
