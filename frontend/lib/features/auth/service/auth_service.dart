@@ -24,11 +24,15 @@ class AuthService {
     defaultValue:
         '618330390967-emagf9ea3j4l5kaeroi2s1bs527ugc0i.apps.googleusercontent.com',
   );
+  // Web: clientId = OAuth Web.
+  // Android/iOS: nao passar o Web em clientId (gera ApiException 10 no Android).
+  // serverClientId = OAuth Web para o plugin emitir idToken ao backend.
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: const ['email', 'openid'],
-    clientId: (kIsWeb || defaultTargetPlatform == TargetPlatform.android)
-        ? _googleWebClientId
-        : null,
+    clientId: kIsWeb ? _googleWebClientId : null,
+    serverClientId: kIsWeb || _googleWebClientId.isEmpty
+        ? null
+        : _googleWebClientId,
   );
 
   static Future<void> initialize() async {
