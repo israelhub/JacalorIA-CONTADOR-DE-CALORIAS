@@ -167,14 +167,14 @@ function normalizeObjective(objective?: string | null): Objective {
 }
 
 function applyObjectiveAdjustment(tdee: number, objective: Objective): number {
-  // NIH/NHLBI e AND: déficit de 500 kcal/dia (~0,5 kg/semana).
-  // ABESO/PCDT: 500–1.000 kcal. Superávit de 300 kcal (faixa clínica 250–500).
+  // Emagrecer: −500 kcal (~0,5 kg/semana). Ganho: +1100 kcal (~1 kg/semana).
+  // 1 kg ≈ 7700 kcal → 7700/7 ≈ 1100 kcal/dia.
   if (objective === 'loseWeight') {
     return tdee - 500;
   }
 
   if (objective === 'gainMass') {
-    return tdee + 300;
+    return tdee + 1100;
   }
 
   return tdee;
