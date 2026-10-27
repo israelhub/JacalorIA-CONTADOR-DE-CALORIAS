@@ -18,8 +18,13 @@ export type NutritionGoalOutput = {
   dailyFatGoal: number;
 };
 
+export type NutritionGoalOptions = {
+  calorieCeiling?: number | null;
+};
+
 export function calculateNutritionGoalsFromProfile(
   input: NutritionProfileInput,
+  options?: NutritionGoalOptions,
 ): NutritionGoalOutput | null {
   const weightKg = toKilograms(input.weight, input.weightUnit);
   const heightCm = toCentimeters(input.height, input.heightUnit);
@@ -31,9 +36,10 @@ export function calculateNutritionGoalsFromProfile(
 
   const objective = normalizeObjective(input.objective);
   const bmi = calculateBmi(weightKg, heightCm);
-  // Peso real no BMR: interpolar peso ajustado no IMC 27–30 fazia a meta
-  // subir ao emagrecer (ex.: 83,3 → 82,2 kg). O déficit por IMC já corta TDEE alto.
-  const metabolicWeightKg = weightKg;
+  // Emagrecer: peso ajustado (IBW + 25% do excesso) para a meta não inflar.
+  // A interpolação rumo ao peso real no IMC 27–30 invertia e ainda subia
+  // o número (83,3 kg → 1.680 e 82,2 kg → 1.693 / 1.737).
+  const metabolicWeightKg = resolveMetabolicWeightKg(weightKg, heightCm, objective);
 
   const sexFactor = resolveSexFactor(input.sex);
   const bmr = (10 * metabolicWeightKg) + (6.25 * heightCm) - (5 * age) + sexFactor;
@@ -47,7 +53,12 @@ export function calculateNutritionGoalsFromProfile(
     input.activityLevel,
   );
   const minimumCalories = resolveCalorieFloor(input.sex);
-  const dailyCalorieGoal = Math.max(minimumCalories, Math.round(adjustedCalories));
+  let dailyCalorieGoal = Math.max(minimumCalories, Math.round(adjustedCalories));
+  const calorieCeiling = toNumber(options?.calorieCeiling);
+  if (calorieCeiling > 0) {
+    dailyCalorieGoal = Math.min(dailyCalorieGoal, Math.round(calorieCeiling));
+    dailyCalorieGoal = Math.max(minimumCalories, dailyCalorieGoal);
+  }
 
   const macros = resolveMacroGoals(
     dailyCalorieGoal,
@@ -216,8 +227,10 @@ function resolveLossDeficitPercent(
     percent = lerp(0.27, 0.3, (bmi - 35) / 5);
   } else if (bmi >= 30) {
     percent = lerp(0.25, 0.27, (bmi - 30) / 5);
-  } else if (bmi >= 27) {
-    percent = lerp(0.22, 0.25, (bmi - 27) / 3);
+  } else if (bmi >= 29) {
+    // Rampa só no último ponto antes da obesidade. Entre 27 e 29 fica em 22%
+    // para emagrecer no sobrepeso reduzir a meta (83,3 → 82,2 kg).
+    percent = lerp(0.22, 0.25, bmi - 29);
   } else if (bmi >= 22) {
     percent = lerp(0.18, 0.22, (bmi - 22) / 5);
   }
@@ -250,6 +263,29 @@ function resolveGainSurplusPercent(
   }
 
   return clamp(percent, 0.08, 0.22);
+}
+
+function resolveMetabolicWeightKg(
+  weightKg: number,
+  heightCm: number,
+  objective: Objective,
+): number {
+  if (objective !== 'loseWeight') {
+    return weightKg;
+  }
+
+  const heightM = heightCm / 100;
+  if (heightM <= 0) {
+    return weightKg;
+  }
+
+  return resolveAdjustedWeightKg(weightKg, heightM);
+}
+
+function resolveAdjustedWeightKg(weightKg: number, heightM: number): number {
+  const idealWeightKg = 24.9 * (heightM * heightM);
+  const adjustedWeightKg = idealWeightKg + ((weightKg - idealWeightKg) * 0.25);
+  return Math.max(idealWeightKg, Math.min(weightKg, adjustedWeightKg));
 }
 
 function resolveMacroGoals(

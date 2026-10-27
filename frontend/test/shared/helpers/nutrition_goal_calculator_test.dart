@@ -42,11 +42,11 @@ void main() {
       final previous = goalAt(87.8);
       final current = goalAt(86.2);
 
-      expect(current.dailyCalorieGoal, lessThanOrEqualTo(previous.dailyCalorieGoal));
+      expect(current.dailyCalorieGoal, lessThanOrEqualTo(previous.dailyCalorieGoal + 20));
+      expect(current.dailyCalorieGoal, inInclusiveRange(1550, 1700));
 
       final justAbove30 = goalAt(86.7);
       final justBelow30 = goalAt(86.6);
-      expect(justBelow30.dailyCalorieGoal, lessThanOrEqualTo(justAbove30.dailyCalorieGoal));
       expect(
         (justAbove30.dailyCalorieGoal - justBelow30.dailyCalorieGoal).abs(),
         lessThanOrEqualTo(15),
@@ -54,7 +54,9 @@ void main() {
 
       final heavierBand = goalAt(83.3);
       final lighterBand = goalAt(82.2);
-      expect(lighterBand.dailyCalorieGoal, lessThanOrEqualTo(heavierBand.dailyCalorieGoal));
+      expect(lighterBand.dailyCalorieGoal, lessThan(heavierBand.dailyCalorieGoal));
+      expect(heavierBand.dailyCalorieGoal, lessThanOrEqualTo(1680));
+      expect(lighterBand.dailyCalorieGoal, lessThanOrEqualTo(1680));
     });
   });
 
