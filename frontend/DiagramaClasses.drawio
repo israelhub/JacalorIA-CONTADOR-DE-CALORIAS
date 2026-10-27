@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="280" dy="757" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
+    <mxGraphModel dx="166" dy="697" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -585,7 +585,7 @@
           <mxGeometry height="16" width="298" y="130" as="geometry" />
         </mxCell>
         <mxCell id="c172" parent="p5" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="TransmissaoNotificacao" vertex="1">
-          <mxGeometry height="212" width="346.4" x="23" y="347" as="geometry" />
+          <mxGeometry height="194" width="346.4" x="23" y="347" as="geometry" />
         </mxCell>
         <mxCell id="f173" parent="c172" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="-id: UUID" vertex="1">
           <mxGeometry height="16" width="346.4" y="26" as="geometry" />
@@ -617,11 +617,8 @@
         <mxCell id="c172_msep" parent="c172" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" value="" vertex="1">
           <mxGeometry height="8" width="346.4" y="170" as="geometry" />
         </mxCell>
-        <mxCell id="c172_m0" parent="c172" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+criar(titulo, corpo, canal): TransmissaoNotificacao" vertex="1">
-          <mxGeometry height="16" width="346.4" y="178" as="geometry" />
-        </mxCell>
         <mxCell id="c172_m1" parent="c172" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+disparar(): void" vertex="1">
-          <mxGeometry height="16" width="346.4" y="194" as="geometry" />
+          <mxGeometry height="16" width="346.4" y="178" as="geometry" />
         </mxCell>
         <mxCell id="c184" parent="p5" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="NotificacaoUsuario" vertex="1">
           <mxGeometry height="194" width="220" x="23" y="64" as="geometry" />
