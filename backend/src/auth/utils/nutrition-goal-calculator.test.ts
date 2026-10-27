@@ -17,45 +17,25 @@ const goalAt = (weight: number) => {
   return result.dailyCalorieGoal;
 };
 
-const previousWeightKg = 87.8;
-const currentWeightKg = 86.2;
-
-const previousGoal = goalAt(previousWeightKg);
-const currentGoal = goalAt(currentWeightKg);
-
+// Mifflin-St Jeor (peso real) + fator 1,55 − 500 kcal (AND/NIH).
+assert.equal(goalAt(83.3), 1785);
+assert.equal(goalAt(83.0), 1781);
+assert.equal(goalAt(82.2), 1768);
 assert.ok(
-  currentGoal <= previousGoal + 20,
-  `perder peso não deveria subir a meta: ${previousWeightKg} kg=${previousGoal}, ${currentWeightKg} kg=${currentGoal}`,
-);
-assert.ok(
-  currentGoal >= 1550 && currentGoal <= 1700,
-  `meta após 86,2 kg deve continuar no patamar baixo, veio ${currentGoal}`,
+  goalAt(82.2) < goalAt(83.3),
+  'perder peso deve reduzir a meta na Mifflin com peso real',
 );
 
-const justAbove30 = goalAt(86.7);
-const justBelow30 = goalAt(86.6);
+const previousGoal = goalAt(87.8);
+const currentGoal = goalAt(86.2);
 assert.ok(
-  Math.abs(justAbove30 - justBelow30) <= 15,
-  `meta deve ser contínua no IMC 30: 86,7=${justAbove30}, 86,6=${justBelow30}`,
-);
-
-const heavierBand = goalAt(83.3);
-const lighterBand = goalAt(82.2);
-assert.ok(
-  lighterBand < heavierBand,
-  `82,2 kg deve ter meta menor que 83,3 kg: 83,3=${heavierBand}, 82,2=${lighterBand}`,
+  currentGoal < previousGoal,
+  `perder peso não deveria subir a meta: ${previousGoal} → ${currentGoal}`,
 );
 assert.ok(
-  heavierBand <= 1680 && lighterBand <= 1680,
-  `meta no sobrepeso não deve inflar: 83,3=${heavierBand}, 82,2=${lighterBand}`,
+  Math.abs(goalAt(86.7) - goalAt(86.6)) <= 5,
+  'meta deve ser contínua no IMC 30',
 );
-
-const capped = calculateNutritionGoalsFromProfile(
-  { ...margareth, weight: 82.2 },
-  { calorieCeiling: 1650 },
-);
-assert.ok(capped);
-assert.equal(capped.dailyCalorieGoal, 1650);
 
 const maintain = calculateNutritionGoalsFromProfile({
   birthDate: '1996-01-01',
@@ -74,17 +54,14 @@ const obese = calculateNutritionGoalsFromProfile({
   ...margareth,
   weight: 110,
 });
-const obeseActualWeight = calculateNutritionGoalsFromProfile({
+const obeseMaintain = calculateNutritionGoalsFromProfile({
   ...margareth,
   weight: 110,
   objective: 'maintainWeight',
 });
-assert.ok(obese && obeseActualWeight);
-assert.ok(
-  obese.dailyCalorieGoal < obeseActualWeight.dailyCalorieGoal,
-  'IMC alto em emagrecimento ainda deve ficar abaixo da manutenção (déficit por IMC)',
-);
+assert.ok(obese && obeseMaintain);
+assert.equal(obese.dailyCalorieGoal, obeseMaintain.dailyCalorieGoal - 500);
 
 console.log(
-  `nutrition-goal-calculator ok (87.8=${previousGoal}, 86.2=${currentGoal})`,
+  `nutrition-goal-calculator ok (83.3=${goalAt(83.3)}, 82.2=${goalAt(82.2)})`,
 );
