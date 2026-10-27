@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="2438" dy="1740" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
+    <mxGraphModel dx="1178" dy="1048" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -399,7 +399,7 @@
           <mxGeometry height="729" width="482" x="740" y="166" as="geometry" />
         </mxCell>
         <mxCell id="c49" parent="p3" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="Refeicao" vertex="1">
-          <mxGeometry height="354" width="229.5" x="29.5" y="49" as="geometry" />
+          <mxGeometry height="362" width="229.5" x="29.5" y="49" as="geometry" />
         </mxCell>
         <mxCell id="f50" parent="c49" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="-id: UUID" vertex="1">
           <mxGeometry height="16" width="229.5" y="26" as="geometry" />
@@ -452,20 +452,14 @@
         <mxCell id="c49_msep" parent="c49" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" value="" vertex="1">
           <mxGeometry height="8" width="229.5" y="282" as="geometry" />
         </mxCell>
-        <mxCell id="c49_m0" parent="c49" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+verificarDadosRefeicaoIA(): JSONB" vertex="1">
-          <mxGeometry height="16" width="229.5" y="290" as="geometry" />
-        </mxCell>
-        <mxCell id="C8joBilg9K3yLa2sr7IV-13" parent="c49" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+verificarDadosRefeicaoTACO(): JSONB" vertex="1">
-          <mxGeometry height="16" width="229.5" y="306" as="geometry" />
-        </mxCell>
-        <mxCell id="C8joBilg9K3yLa2sr7IV-14" parent="c49" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+atualizarDadosRefeicao(): void" vertex="1">
-          <mxGeometry height="16" width="229.5" y="322" as="geometry" />
+        <mxCell id="W7FLP3s0GqFXFu5NgRAp-1" parent="c49" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+atualizarDadosRefeicao(titulo: string, &lt;br&gt;descricao: text, calorias: decimal, &lt;br&gt;proteina: decimal, carboidratos: decimal, &lt;br&gt;gordura: decimal, itensAnalise: JSONB): void" vertex="1">
+          <mxGeometry height="56" width="229.5" y="290" as="geometry" />
         </mxCell>
         <mxCell id="c49_m2" parent="c49" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+listarRefeicaoPorDia(data: date): List&amp;lt;Refeicao&amp;gt;" vertex="1">
-          <mxGeometry height="16" width="229.5" y="338" as="geometry" />
+          <mxGeometry height="16" width="229.5" y="346" as="geometry" />
         </mxCell>
         <mxCell id="c69" parent="p3" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="RefeicaoSalva" vertex="1">
-          <mxGeometry height="258" width="229.5" x="29.5" y="429" as="geometry" />
+          <mxGeometry height="258" width="229.5" x="29.5" y="441" as="geometry" />
         </mxCell>
         <mxCell id="f70" parent="c69" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="-id: UUID" vertex="1">
           <mxGeometry height="16" width="229.5" y="26" as="geometry" />
@@ -537,7 +531,7 @@
           <mxGeometry height="16" width="143.5" y="56" as="geometry" />
         </mxCell>
         <mxCell id="enStatusTemplateRefeicao" parent="p3" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#E8E8E8;swimlaneFillColor=#E8E8E8;strokeColor=#000000;fontSize=10;" value="«enumeration»&#xa;StatusTemplateRefeicao" vertex="1">
-          <mxGeometry height="72" width="143.5" x="292" y="605" as="geometry" />
+          <mxGeometry height="72" width="143.5" x="294.5" y="617" as="geometry" />
         </mxCell>
         <mxCell id="enStatusTemplateRefeicao_l0" parent="enStatusTemplateRefeicao" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="ATIVO" vertex="1">
           <mxGeometry height="16" width="143.5" y="40" as="geometry" />
@@ -1067,13 +1061,13 @@
             <mxPoint x="2" y="-12" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e308" edge="1" parent="1" source="f74" style="endArrow=diamondThin;endFill=1;startArrow=none;edgeStyle=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=1.164;entryDx=0;entryDy=0;entryPerimeter=0;" target="f40" value="possui">
+        <mxCell id="e308" edge="1" parent="1" source="f74" style="endArrow=diamondThin;endFill=1;startArrow=none;edgeStyle=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.003;entryY=-0.007;entryDx=0;entryDy=0;entryPerimeter=0;" target="f42" value="possui">
           <mxGeometry relative="1" x="-0.0109" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="e308_ms" connectable="0" parent="e308" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..*" vertex="1">
-          <mxGeometry relative="1" x="-0.8968" as="geometry">
+          <mxGeometry relative="1" x="-0.8951" as="geometry">
             <mxPoint y="-8" as="offset" />
           </mxGeometry>
         </mxCell>
