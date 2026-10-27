@@ -30,27 +30,21 @@ export function calculateNutritionGoalsFromProfile(
   }
 
   const objective = normalizeObjective(input.objective);
-  const bmi = calculateBmi(weightKg, heightCm);
-  const metabolicWeightKg = resolveMetabolicWeightKg(weightKg, heightCm, objective);
-
+  // Mifflin-St Jeor (1990) com peso real — AND EAL e ABESO 2022.
+  // Peso ajustado subestima a TMB e quase não muda a meta ao emagrecer.
   const sexFactor = resolveSexFactor(input.sex);
-  const bmr = (10 * metabolicWeightKg) + (6.25 * heightCm) - (5 * age) + sexFactor;
+  const bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) + sexFactor;
   const activityMultiplier = resolveActivityMultiplier(input.activityLevel);
   const tdee = bmr * activityMultiplier;
 
-  const adjustedCalories = applyObjectiveAdjustment(
-    tdee,
-    objective,
-    bmi,
-    input.activityLevel,
-  );
+  const targetCalories = applyObjectiveAdjustment(tdee, objective);
   const minimumCalories = resolveCalorieFloor(input.sex);
-  const dailyCalorieGoal = Math.max(minimumCalories, Math.round(adjustedCalories));
+  const dailyCalorieGoal = Math.max(minimumCalories, Math.round(targetCalories));
 
   const macros = resolveMacroGoals(
     dailyCalorieGoal,
     objective,
-    metabolicWeightKg,
+    weightKg,
   );
 
   return {
@@ -125,15 +119,6 @@ function toCentimeters(
   }
 }
 
-function calculateBmi(weightKg: number, heightCm: number): number {
-  const heightM = heightCm / 100;
-  if (heightM <= 0) {
-    return 0;
-  }
-
-  return weightKg / (heightM * heightM);
-}
-
 function resolveActivityMultiplier(activityLevel?: string | null): number {
   switch ((activityLevel ?? 'sedentary').toLowerCase()) {
     case 'lightly':
@@ -181,111 +166,18 @@ function normalizeObjective(objective?: string | null): Objective {
   }
 }
 
-function applyObjectiveAdjustment(
-  tdee: number,
-  objective: Objective,
-  bmi: number,
-  activityLevel?: string | null,
-): number {
+function applyObjectiveAdjustment(tdee: number, objective: Objective): number {
+  // NIH/NHLBI e AND: déficit de 500 kcal/dia (~0,5 kg/semana).
+  // ABESO/PCDT: 500–1.000 kcal. Superávit de 300 kcal (faixa clínica 250–500).
   if (objective === 'loseWeight') {
-    const deficitPercent = resolveLossDeficitPercent(bmi, activityLevel);
-    return tdee * (1 - deficitPercent);
+    return tdee - 500;
   }
 
   if (objective === 'gainMass') {
-    const surplusPercent = resolveGainSurplusPercent(bmi, activityLevel);
-    return tdee * (1 + surplusPercent);
+    return tdee + 300;
   }
 
   return tdee;
-}
-
-function resolveLossDeficitPercent(
-  bmi: number,
-  activityLevel?: string | null,
-): number {
-  // Degraus originais: 30% (≥40), 27% (≥35), 25% (≥30), 22% (≥27), 18%.
-  // Interpolados para a meta não saltar ao cruzar um limiar de IMC.
-  let percent = 0.18;
-
-  if (bmi >= 40) {
-    percent = 0.3;
-  } else if (bmi >= 35) {
-    percent = lerp(0.27, 0.3, (bmi - 35) / 5);
-  } else if (bmi >= 30) {
-    percent = lerp(0.25, 0.27, (bmi - 30) / 5);
-  } else if (bmi >= 27) {
-    percent = lerp(0.22, 0.25, (bmi - 27) / 3);
-  } else if (bmi >= 22) {
-    percent = lerp(0.18, 0.22, (bmi - 22) / 5);
-  }
-
-  const normalizedActivity = (activityLevel ?? '').toLowerCase();
-  if (normalizedActivity === 'very' || normalizedActivity === 'extreme') {
-    percent -= 0.02;
-  }
-
-  return clamp(percent, 0.15, 0.3);
-}
-
-function resolveGainSurplusPercent(
-  bmi: number,
-  activityLevel?: string | null,
-): number {
-  let percent = 0.1;
-
-  if (bmi < 18.5) {
-    percent = 0.2;
-  } else if (bmi < 22) {
-    percent = 0.15;
-  } else if (bmi < 25) {
-    percent = 0.12;
-  }
-
-  const normalizedActivity = (activityLevel ?? '').toLowerCase();
-  if (normalizedActivity === 'very' || normalizedActivity === 'extreme') {
-    percent += 0.02;
-  }
-
-  return clamp(percent, 0.08, 0.22);
-}
-
-function resolveMetabolicWeightKg(
-  weightKg: number,
-  heightCm: number,
-  objective: Objective,
-): number {
-  if (objective !== 'loseWeight') {
-    return weightKg;
-  }
-
-  const heightM = heightCm / 100;
-  if (heightM <= 0) {
-    return weightKg;
-  }
-
-  const bmi = weightKg / (heightM * heightM);
-  const adjustedWeightKg = resolveAdjustedWeightKg(weightKg, heightM);
-
-  // IMC ≥ 30: peso ajustado (IBW + 25% do excesso) para não inflar o TDEE.
-  // IMC ≤ 27: peso real. Entre 27 e 30 interpola — senão cruzar obesidade
-  // (ex.: 87,8 → 86,2 kg / 1,70 m) sobe a meta de uma vez.
-  if (bmi >= 30) {
-    return adjustedWeightKg;
-  }
-
-  if (bmi <= 27) {
-    return weightKg;
-  }
-
-  const fadeToActual = (30 - bmi) / 3;
-  return lerp(adjustedWeightKg, weightKg, fadeToActual);
-}
-
-function resolveAdjustedWeightKg(weightKg: number, heightM: number): number {
-  const idealWeightKg = 24.9 * (heightM * heightM);
-  const adjustedWeightKg = idealWeightKg + ((weightKg - idealWeightKg) * 0.25);
-  return Math.max(idealWeightKg, Math.min(weightKg, adjustedWeightKg));
 }
 
 function resolveMacroGoals(
@@ -385,14 +277,6 @@ function resolveMacroDistribution(objective: Objective): {
   }
 
   return { protein: 0.25, fat: 0.3 };
-}
-
-function lerp(from: number, to: number, t: number): number {
-  return from + (to - from) * clamp(t, 0, 1);
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }
 
 function toNumber(value: number | string | null | undefined): number {

@@ -25,7 +25,7 @@ void main() {
       expect(result.dailyFatGoal, 65);
     });
 
-    test('perder peso cruzando IMC 30 não dispara a meta para cima', () {
+    test('Mifflin-St Jeor com peso real reduz a meta ao emagrecer', () {
       NutritionGoalResult goalAt(double weight) {
         return calculateNutritionGoals(
           NutritionGoalInput(
@@ -39,17 +39,18 @@ void main() {
         );
       }
 
-      final previous = goalAt(87.8);
-      final current = goalAt(86.2);
+      expect(goalAt(83.3).dailyCalorieGoal, 1785);
+      expect(goalAt(83.0).dailyCalorieGoal, 1781);
+      expect(goalAt(82.2).dailyCalorieGoal, 1768);
+      expect(goalAt(82.2).effectiveWeightKg, closeTo(82.2, 0.01));
 
-      expect(current.dailyCalorieGoal, lessThanOrEqualTo(previous.dailyCalorieGoal + 20));
-      expect(current.dailyCalorieGoal, inInclusiveRange(1550, 1700));
-
-      final justAbove30 = goalAt(86.7);
-      final justBelow30 = goalAt(86.6);
       expect(
-        (justAbove30.dailyCalorieGoal - justBelow30.dailyCalorieGoal).abs(),
-        lessThanOrEqualTo(15),
+        goalAt(86.2).dailyCalorieGoal,
+        lessThan(goalAt(87.8).dailyCalorieGoal),
+      );
+      expect(
+        (goalAt(86.7).dailyCalorieGoal - goalAt(86.6).dailyCalorieGoal).abs(),
+        lessThanOrEqualTo(5),
       );
     });
   });
