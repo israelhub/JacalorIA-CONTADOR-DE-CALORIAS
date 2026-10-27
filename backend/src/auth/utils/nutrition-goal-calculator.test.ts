@@ -23,21 +23,27 @@ const currentWeightKg = 86.2;
 const previousGoal = goalAt(previousWeightKg);
 const currentGoal = goalAt(currentWeightKg);
 
-// Bug original: 87,8 kg (IMC 30,4) → ~1628 kcal; 86,2 kg (IMC 29,8) → 1818 kcal.
 assert.ok(
-  currentGoal <= previousGoal + 20,
+  currentGoal <= previousGoal,
   `perder peso não deveria subir a meta: ${previousWeightKg} kg=${previousGoal}, ${currentWeightKg} kg=${currentGoal}`,
-);
-assert.ok(
-  currentGoal >= 1550 && currentGoal <= 1700,
-  `meta após 86,2 kg deveria ficar perto da anterior, veio ${currentGoal}`,
 );
 
 const justAbove30 = goalAt(86.7);
 const justBelow30 = goalAt(86.6);
 assert.ok(
+  justBelow30 <= justAbove30,
+  `cruzar IMC 30 emagrecendo não deve subir a meta: 86,7=${justAbove30}, 86,6=${justBelow30}`,
+);
+assert.ok(
   Math.abs(justAbove30 - justBelow30) <= 15,
   `meta deve ser contínua no IMC 30: 86,7=${justAbove30}, 86,6=${justBelow30}`,
+);
+
+const heavierBand = goalAt(83.3);
+const lighterBand = goalAt(82.2);
+assert.ok(
+  lighterBand <= heavierBand,
+  `IMC 27–30 também deve cair ao emagrecer: 83,3=${heavierBand}, 82,2=${lighterBand}`,
 );
 
 const maintain = calculateNutritionGoalsFromProfile({
@@ -65,7 +71,7 @@ const obeseActualWeight = calculateNutritionGoalsFromProfile({
 assert.ok(obese && obeseActualWeight);
 assert.ok(
   obese.dailyCalorieGoal < obeseActualWeight.dailyCalorieGoal,
-  'IMC alto em emagrecimento ainda deve usar peso ajustado',
+  'IMC alto em emagrecimento ainda deve ficar abaixo da manutenção (déficit por IMC)',
 );
 
 console.log(

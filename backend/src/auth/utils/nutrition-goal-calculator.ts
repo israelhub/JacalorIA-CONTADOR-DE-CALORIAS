@@ -31,7 +31,9 @@ export function calculateNutritionGoalsFromProfile(
 
   const objective = normalizeObjective(input.objective);
   const bmi = calculateBmi(weightKg, heightCm);
-  const metabolicWeightKg = resolveMetabolicWeightKg(weightKg, heightCm, objective);
+  // Peso real no BMR: interpolar peso ajustado no IMC 27–30 fazia a meta
+  // subir ao emagrecer (ex.: 83,3 → 82,2 kg). O déficit por IMC já corta TDEE alto.
+  const metabolicWeightKg = weightKg;
 
   const sexFactor = resolveSexFactor(input.sex);
   const bmr = (10 * metabolicWeightKg) + (6.25 * heightCm) - (5 * age) + sexFactor;
@@ -248,44 +250,6 @@ function resolveGainSurplusPercent(
   }
 
   return clamp(percent, 0.08, 0.22);
-}
-
-function resolveMetabolicWeightKg(
-  weightKg: number,
-  heightCm: number,
-  objective: Objective,
-): number {
-  if (objective !== 'loseWeight') {
-    return weightKg;
-  }
-
-  const heightM = heightCm / 100;
-  if (heightM <= 0) {
-    return weightKg;
-  }
-
-  const bmi = weightKg / (heightM * heightM);
-  const adjustedWeightKg = resolveAdjustedWeightKg(weightKg, heightM);
-
-  // IMC ≥ 30: peso ajustado (IBW + 25% do excesso) para não inflar o TDEE.
-  // IMC ≤ 27: peso real. Entre 27 e 30 interpola — senão cruzar obesidade
-  // (ex.: 87,8 → 86,2 kg / 1,70 m) sobe a meta de uma vez.
-  if (bmi >= 30) {
-    return adjustedWeightKg;
-  }
-
-  if (bmi <= 27) {
-    return weightKg;
-  }
-
-  const fadeToActual = (30 - bmi) / 3;
-  return lerp(adjustedWeightKg, weightKg, fadeToActual);
-}
-
-function resolveAdjustedWeightKg(weightKg: number, heightM: number): number {
-  const idealWeightKg = 24.9 * (heightM * heightM);
-  const adjustedWeightKg = idealWeightKg + ((weightKg - idealWeightKg) * 0.25);
-  return Math.max(idealWeightKg, Math.min(weightKg, adjustedWeightKg));
 }
 
 function resolveMacroGoals(

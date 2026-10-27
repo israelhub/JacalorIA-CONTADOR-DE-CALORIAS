@@ -45,11 +45,9 @@ NutritionGoalResult calculateNutritionGoals(NutritionGoalInput input) {
   final age = input.age.clamp(0, 150).toInt();
   final objective = _normalizeObjective(input.objective);
   final bmi = _calculateBmi(weightKg, heightCm);
-  final metabolicWeightKg = _resolveMetabolicWeightKg(
-    weightKg,
-    heightCm,
-    objective,
-  );
+  // Peso real no BMR: interpolar peso ajustado no IMC 27–30 fazia a meta
+  // subir ao emagrecer (ex.: 83,3 → 82,2 kg). O déficit por IMC já corta TDEE alto.
+  final metabolicWeightKg = weightKg;
 
   final baseMetabolism = input.sex == 'Feminino'
       ? (10 * metabolicWeightKg) + (6.25 * heightCm) - (5 * age) - 161
@@ -242,50 +240,6 @@ int _resolveCalorieFloor(String sex) {
     'masculino' => 1500,
     _ => 1350,
   };
-}
-
-double _resolveMetabolicWeightKg(
-  double weightKg,
-  double heightCm,
-  String objective,
-) {
-  if (objective != 'loseWeight') {
-    return weightKg;
-  }
-
-  final heightM = heightCm / 100;
-  if (heightM <= 0) {
-    return weightKg;
-  }
-
-  final bmi = weightKg / (heightM * heightM);
-  final adjustedWeightKg = _resolveAdjustedWeightKg(weightKg, heightM);
-
-  // IMC ≥ 30: peso ajustado (IBW + 25% do excesso) para não inflar o TDEE.
-  // IMC ≤ 27: peso real. Entre 27 e 30 interpola — senão cruzar obesidade
-  // (ex.: 87,8 → 86,2 kg / 1,70 m) sobe a meta de uma vez.
-  if (bmi >= 30) {
-    return adjustedWeightKg;
-  }
-
-  if (bmi <= 27) {
-    return weightKg;
-  }
-
-  final fadeToActual = (30 - bmi) / 3;
-  return _lerp(adjustedWeightKg, weightKg, fadeToActual);
-}
-
-double _resolveAdjustedWeightKg(double weightKg, double heightM) {
-  final idealWeightKg = 24.9 * (heightM * heightM);
-  final adjustedWeightKg = idealWeightKg + ((weightKg - idealWeightKg) * 0.25);
-  if (adjustedWeightKg < idealWeightKg) {
-    return idealWeightKg;
-  }
-  if (adjustedWeightKg > weightKg) {
-    return weightKg;
-  }
-  return adjustedWeightKg;
 }
 
 double _lerp(double from, double to, double t) {
