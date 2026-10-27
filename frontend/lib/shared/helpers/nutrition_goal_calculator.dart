@@ -44,19 +44,12 @@ NutritionGoalResult calculateNutritionGoals(NutritionGoalInput input) {
 
   final age = input.age.clamp(0, 150).toInt();
   final objective = _normalizeObjective(input.objective);
-  final bmi = _calculateBmi(weightKg, heightCm);
-  // Emagrecer: peso ajustado (IBW + 25% do excesso) para a meta não inflar.
-  // A interpolação rumo ao peso real no IMC 27–30 invertia e ainda subia
-  // o número (83,3 kg → 1.680 e 82,2 kg → 1.693 / 1.737).
-  final metabolicWeightKg = _resolveMetabolicWeightKg(
-    weightKg,
-    heightCm,
-    objective,
-  );
+  // Mifflin-St Jeor (1990) com peso real — AND EAL e ABESO 2022.
+  // Peso ajustado subestima a TMB e quase não muda a meta ao emagrecer.
 
   final baseMetabolism = input.sex == 'Feminino'
-      ? (10 * metabolicWeightKg) + (6.25 * heightCm) - (5 * age) - 161
-      : (10 * metabolicWeightKg) + (6.25 * heightCm) - (5 * age) + 5;
+      ? (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161
+      : (10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5;
 
   final activityMultiplier = switch (input.activityLevel) {
     'lightly' => 1.375,
@@ -67,23 +60,18 @@ NutritionGoalResult calculateNutritionGoals(NutritionGoalInput input) {
   };
 
   final tdee = baseMetabolism * activityMultiplier;
-  final adjustedCalories = _applyObjectiveAdjustment(
-    tdee,
-    objective,
-    bmi,
-    input.activityLevel,
-  );
+  final targetCalories = _applyObjectiveAdjustment(tdee, objective);
   final minimumCalories = _resolveCalorieFloor(input.sex);
-  final dailyCalorieGoal = adjustedCalories.round().clamp(minimumCalories, 9999);
+  final dailyCalorieGoal = targetCalories.round().clamp(minimumCalories, 9999);
 
   final macros = _resolveMacroGoals(
     dailyCalorieGoal,
     objective,
-    metabolicWeightKg,
+    weightKg,
   );
 
   return NutritionGoalResult(
-    effectiveWeightKg: metabolicWeightKg,
+    effectiveWeightKg: weightKg,
     effectiveHeightCm: heightCm,
     dailyCalorieGoal: dailyCalorieGoal,
     dailyProteinGoal: macros.protein,
@@ -161,15 +149,6 @@ double _toCentimeters(double value, String unit) {
   };
 }
 
-double _calculateBmi(double weightKg, double heightCm) {
-  final heightM = heightCm / 100;
-  if (heightM <= 0) {
-    return 0;
-  }
-
-  return weightKg / (heightM * heightM);
-}
-
 String _normalizeObjective(String objective) {
   return switch (objective) {
     'loseWeight' => 'loseWeight',
@@ -178,67 +157,18 @@ String _normalizeObjective(String objective) {
   };
 }
 
-double _applyObjectiveAdjustment(
-  double tdee,
-  String objective,
-  double bmi,
-  String activityLevel,
-) {
+double _applyObjectiveAdjustment(double tdee, String objective) {
+  // NIH/NHLBI e AND: déficit de 500 kcal/dia (~0,5 kg/semana).
+  // ABESO/PCDT: 500–1.000 kcal. Superávit de 300 kcal (faixa clínica 250–500).
   if (objective == 'loseWeight') {
-    final deficit = _resolveLossDeficitPercent(bmi, activityLevel);
-    return tdee * (1 - deficit);
+    return tdee - 500;
   }
 
   if (objective == 'gainMass') {
-    final surplus = _resolveGainSurplusPercent(bmi, activityLevel);
-    return tdee * (1 + surplus);
+    return tdee + 300;
   }
 
   return tdee;
-}
-
-double _resolveLossDeficitPercent(double bmi, String activityLevel) {
-  // Degraus originais: 30% (≥40), 27% (≥35), 25% (≥30), 22% (≥27), 18%.
-  // Interpolados para a meta não saltar ao cruzar um limiar de IMC.
-  var percent = 0.18;
-
-  if (bmi >= 40) {
-    percent = 0.3;
-  } else if (bmi >= 35) {
-    percent = _lerp(0.27, 0.3, (bmi - 35) / 5);
-  } else if (bmi >= 30) {
-    percent = _lerp(0.25, 0.27, (bmi - 30) / 5);
-  } else if (bmi >= 29) {
-    // Rampa só no último ponto antes da obesidade. Entre 27 e 29 fica em 22%
-    // para emagrecer no sobrepeso reduzir a meta (83,3 → 82,2 kg).
-    percent = _lerp(0.22, 0.25, bmi - 29);
-  } else if (bmi >= 22) {
-    percent = _lerp(0.18, 0.22, (bmi - 22) / 5);
-  }
-
-  if (activityLevel == 'very' || activityLevel == 'extreme') {
-    percent -= 0.02;
-  }
-
-  return percent.clamp(0.15, 0.3);
-}
-
-double _resolveGainSurplusPercent(double bmi, String activityLevel) {
-  var percent = 0.1;
-
-  if (bmi < 18.5) {
-    percent = 0.2;
-  } else if (bmi < 22) {
-    percent = 0.15;
-  } else if (bmi < 25) {
-    percent = 0.12;
-  }
-
-  if (activityLevel == 'very' || activityLevel == 'extreme') {
-    percent += 0.02;
-  }
-
-  return percent.clamp(0.08, 0.22);
 }
 
 int _resolveCalorieFloor(String sex) {
@@ -247,40 +177,6 @@ int _resolveCalorieFloor(String sex) {
     'masculino' => 1500,
     _ => 1350,
   };
-}
-
-double _resolveMetabolicWeightKg(
-  double weightKg,
-  double heightCm,
-  String objective,
-) {
-  if (objective != 'loseWeight') {
-    return weightKg;
-  }
-
-  final heightM = heightCm / 100;
-  if (heightM <= 0) {
-    return weightKg;
-  }
-
-  return _resolveAdjustedWeightKg(weightKg, heightM);
-}
-
-double _resolveAdjustedWeightKg(double weightKg, double heightM) {
-  final idealWeightKg = 24.9 * (heightM * heightM);
-  final adjustedWeightKg = idealWeightKg + ((weightKg - idealWeightKg) * 0.25);
-  if (adjustedWeightKg < idealWeightKg) {
-    return idealWeightKg;
-  }
-  if (adjustedWeightKg > weightKg) {
-    return weightKg;
-  }
-  return adjustedWeightKg;
-}
-
-double _lerp(double from, double to, double t) {
-  final clamped = t.clamp(0.0, 1.0);
-  return from + (to - from) * clamped;
 }
 
 _MacroGoals _resolveMacroGoals(
