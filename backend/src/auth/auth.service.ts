@@ -475,7 +475,17 @@ export class AuthService {
       activityLevel: dto.activityLevel ?? currentProfile.activityLevel,
     };
 
-    const calculatedGoals = calculateNutritionGoalsFromProfile(mergedProfileInput);
+    const previousWeight = parseNumber(currentProfile.weight);
+    const nextWeight = parseNumber(mergedProfileInput.weight);
+    const previousGoal = parseNumber(currentProfile.dailyCalorieGoal);
+    const calorieCeiling =
+      previousWeight > 0 && nextWeight > 0 && nextWeight < previousWeight && previousGoal > 0
+        ? previousGoal
+        : undefined;
+
+    const calculatedGoals = calculateNutritionGoalsFromProfile(mergedProfileInput, {
+      calorieCeiling,
+    });
     const hideAnyGuide =
       dto.hideGuideMe === true ||
       dto.hideSocialGuideMe === true ||
