@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="7442" dy="4489" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
+    <mxGraphModel dx="1414" dy="1177" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -1055,7 +1055,7 @@
             <mxPoint x="8" y="-12" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e310" edge="1" parent="1" source="c110_m1" style="endArrow=none;endFill=0;startArrow=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;entryX=0.095;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.863;exitY=1.012;exitDx=0;exitDy=0;exitPerimeter=0;" target="c9" value="possui">
+        <mxCell id="e310" edge="1" parent="1" source="c110_m1" style="endArrow=none;endFill=0;startArrow=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;entryX=0.095;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.872;exitY=0.989;exitDx=0;exitDy=0;exitPerimeter=0;" target="c9" value="possui">
           <mxGeometry relative="1" x="-0.3895" as="geometry">
             <mxPoint as="offset" />
             <mxPoint x="1299.098" y="11.840000000000032" as="sourcePoint" />
