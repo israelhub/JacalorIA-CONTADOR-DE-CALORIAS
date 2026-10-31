@@ -1483,7 +1483,7 @@
         <mxCell id="c9_m7" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+redefinirSenha(codigo: string, novaSenha: string): void" vertex="1">
           <mxGeometry height="16" width="343" y="722" as="geometry" />
         </mxCell>
-        <mxCell id="c9_m10" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+atualizarPerfil(dados: AtualizarPerfilDTO): Usuario" vertex="1">
+        <mxCell id="c9_m10" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+atualizarPerfil(dados: AtualizarPerfilDTO): void" vertex="1">
           <mxGeometry height="16" width="343" y="738" as="geometry" />
         </mxCell>
         <mxCell id="c9_m11" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+registrarRefeicao(dados: object): Refeicao" vertex="1">
