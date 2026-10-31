@@ -62,6 +62,19 @@ const obeseMaintain = calculateNutritionGoalsFromProfile({
 assert.ok(obese && obeseMaintain);
 assert.equal(obese.dailyCalorieGoal, obeseMaintain.dailyCalorieGoal - 500);
 
+const gain = calculateNutritionGoalsFromProfile({
+  ...margareth,
+  weight: 82.2,
+  objective: 'gainMass',
+});
+const maintainSameWeight = calculateNutritionGoalsFromProfile({
+  ...margareth,
+  weight: 82.2,
+  objective: 'maintainWeight',
+});
+assert.ok(gain && maintainSameWeight);
+assert.equal(gain.dailyCalorieGoal, maintainSameWeight.dailyCalorieGoal + 1100);
+
 console.log(
   `nutrition-goal-calculator ok (83.3=${goalAt(83.3)}, 82.2=${goalAt(82.2)})`,
 );
