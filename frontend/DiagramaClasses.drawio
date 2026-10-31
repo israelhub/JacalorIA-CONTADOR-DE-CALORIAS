@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="1178" dy="1048" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
+    <mxGraphModel dx="2438" dy="1740" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -178,7 +178,7 @@
           <mxGeometry height="16" width="225" y="194" as="geometry" />
         </mxCell>
         <mxCell id="c138" parent="p1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="CompraLoja" vertex="1">
-          <mxGeometry height="213" width="217" x="975" y="51" as="geometry" />
+          <mxGeometry height="206" width="217" x="975" y="51" as="geometry" />
         </mxCell>
         <mxCell id="f139" parent="c138" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="-id: UUID" vertex="1">
           <mxGeometry height="16" width="217" y="26" as="geometry" />
@@ -211,7 +211,7 @@
           <mxGeometry height="16" width="217" y="162" as="geometry" />
         </mxCell>
         <mxCell id="W7FLP3s0GqFXFu5NgRAp-10" parent="c138" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+debitar(valor: int, moeda: TipoMoeda,&lt;br&gt;origem: string): TransacaoMoedaUsuario" vertex="1">
-          <mxGeometry height="35" width="217" y="178" as="geometry" />
+          <mxGeometry height="28" width="217" y="178" as="geometry" />
         </mxCell>
         <mxCell id="enTipoMissao" parent="p1" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#E8E8E8;swimlaneFillColor=#E8E8E8;strokeColor=#000000;fontSize=10;" value="«enumeration»&#xa;TipoMissao" vertex="1">
           <mxGeometry height="104" width="105" x="49" y="311" as="geometry" />
@@ -292,8 +292,8 @@
         <mxCell id="ee502" edge="1" parent="p1" source="enOrigemAquisicaoLoja" style="endArrow=none;startArrow=none;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" target="f144">
           <mxGeometry relative="1" x="-0.6749" as="geometry">
             <Array as="points">
-              <mxPoint x="952" y="305" />
-              <mxPoint x="952" y="165" />
+              <mxPoint x="955" y="305" />
+              <mxPoint x="955" y="165" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -1064,11 +1064,11 @@
             <mxPoint x="-11" y="-5" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e311" edge="1" parent="1" source="W7FLP3s0GqFXFu5NgRAp-10" style="endArrow=none;endFill=0;startArrow=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;edgeStyle=orthogonalEdgeStyle;entryX=0.983;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.765;exitY=1.006;exitDx=0;exitDy=0;exitPerimeter=0;" target="c9" value="realiza">
-          <mxGeometry relative="1" x="-0.6135" as="geometry">
+        <mxCell id="e311" edge="1" parent="1" source="W7FLP3s0GqFXFu5NgRAp-10" style="endArrow=none;endFill=0;startArrow=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;edgeStyle=orthogonalEdgeStyle;entryX=0.983;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.729;exitY=0.999;exitDx=0;exitDy=0;exitPerimeter=0;" target="c9" value="realiza">
+          <mxGeometry relative="1" x="-0.541" y="1" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="1872.6" y="91.7" />
+              <mxPoint x="1873.2" y="91.7" />
               <mxPoint x="1603.2" y="91.7" />
             </Array>
             <mxPoint x="1872.1779999999999" y="-50.58400000000006" as="sourcePoint" />
@@ -1077,7 +1077,7 @@
         </mxCell>
         <mxCell id="e311_ms" connectable="0" parent="e311" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..*" vertex="1">
           <mxGeometry relative="1" x="-0.9998" as="geometry">
-            <mxPoint x="-13" y="8" as="offset" />
+            <mxPoint x="-14" y="10" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="e311_mt" connectable="0" parent="e311" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="1" vertex="1">
@@ -1214,7 +1214,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="e331" edge="1" parent="1" source="c243" style="endArrow=none;startArrow=none;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;dashed=1;dashPattern=8 4;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.858;entryY=1.067;entryDx=0;entryDy=0;entryPerimeter=0;" target="c125_m1" value="referencia">
-          <mxGeometry relative="1" x="0.6335" as="geometry">
+          <mxGeometry relative="1" x="0.5748" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
               <mxPoint x="1906.9" y="142" />
