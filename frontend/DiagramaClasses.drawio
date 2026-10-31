@@ -1471,7 +1471,7 @@
         <mxCell id="c9_m2" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+autenticarComGoogle(idToken: string): string" vertex="1">
           <mxGeometry height="16" width="343" y="658" as="geometry" />
         </mxCell>
-        <mxCell id="c9_m3" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+confirmarEmail(codigo: string): void" vertex="1">
+        <mxCell id="c9_m3" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+confirmarEmail(email: string, codigo: string): void" vertex="1">
           <mxGeometry height="16" width="343" y="674" as="geometry" />
         </mxCell>
         <mxCell id="c9_m4" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+reenviarCodigoVerificacao(): void" vertex="1">
