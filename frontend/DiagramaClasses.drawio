@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="3885" dy="2755" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
+    <mxGraphModel dx="2546" dy="2019" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -942,12 +942,15 @@
             <mxPoint x="-8" y="-8" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e330" edge="1" parent="p7" source="c229" style="endArrow=none;startArrow=none;edgeStyle=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=0;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.65;entryDx=0;entryDy=0;" target="c229" value="respondeA">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="e330" edge="1" parent="p7" style="endArrow=none;startArrow=none;edgeStyle=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=0;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.65;entryDx=0;entryDy=0;" value="respondeA">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-39" y="251.5" as="sourcePoint" />
+            <mxPoint x="-39" y="314.5" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
         <mxCell id="e330_ms" connectable="0" parent="e330" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..*" vertex="1">
           <mxGeometry relative="1" x="-0.9" as="geometry">
-            <mxPoint y="-8" as="offset" />
+            <mxPoint x="50" y="73" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="e330_mt" connectable="0" parent="e330" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..1" vertex="1">
@@ -1016,7 +1019,7 @@
           <mxGeometry height="16" width="137" y="72" as="geometry" />
         </mxCell>
         <mxCell id="enStatusSolicitacaoAmizade" parent="p7" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#E8E8E8;swimlaneFillColor=#E8E8E8;strokeColor=#000000;fontSize=10;" value="«enumeration»&#xa;StatusSolicitacaoAmizade" vertex="1">
-          <mxGeometry height="88" width="133" x="282" y="1164" as="geometry" />
+          <mxGeometry height="88" width="133" x="282" y="1158" as="geometry" />
         </mxCell>
         <mxCell id="enStatusSolicitacaoAmizade_l0" parent="enStatusSolicitacaoAmizade" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="PENDENTE" vertex="1">
           <mxGeometry height="16" width="133" y="40" as="geometry" />
@@ -1202,14 +1205,14 @@
             <mxPoint y="-8" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e327" edge="1" parent="1" style="endArrow=none;endFill=0;startArrow=none;edgeStyle=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="f29" value="autor">
+        <mxCell id="e327" edge="1" parent="1" source="f235" style="endArrow=none;endFill=0;startArrow=none;edgeStyle=none;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.001;exitY=0.125;exitDx=0;exitDy=0;exitPerimeter=0;" target="f29" value="autor">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="1728.7" y="504" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="e327_ms" connectable="0" parent="e327" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..*" vertex="1">
           <mxGeometry relative="1" x="-0.9" as="geometry">
-            <mxPoint y="-8" as="offset" />
+            <mxPoint x="-63" y="-60" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="e327_mt" connectable="0" parent="e327" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="1" vertex="1">
