@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="1704" dy="1336" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
+    <mxGraphModel dx="1178" dy="1048" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -515,14 +515,14 @@
         <mxCell id="enTipoRefeicao_l3" parent="enTipoRefeicao" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="LIVRE" vertex="1">
           <mxGeometry height="16" width="143.5" y="88" as="geometry" />
         </mxCell>
-        <mxCell id="enStatusRefeicao" parent="p3" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#E8E8E8;swimlaneFillColor=#E8E8E8;strokeColor=#000000;fontSize=10;" value="«enumeration»&#xa;StatusRefeicao" vertex="1">
-          <mxGeometry height="72" width="143.5" x="294.5" y="331" as="geometry" />
+        <mxCell id="enStatusRefeicao" parent="p3" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=35;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#E8E8E8;swimlaneFillColor=#E8E8E8;strokeColor=#000000;fontSize=10;" value="«enumeration»&#xa;StatusRefeicao" vertex="1">
+          <mxGeometry height="67" width="143.5" x="294.5" y="328" as="geometry" />
         </mxCell>
         <mxCell id="enStatusRefeicao_l0" parent="enStatusRefeicao" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="ATIVO" vertex="1">
-          <mxGeometry height="16" width="143.5" y="40" as="geometry" />
+          <mxGeometry height="16" width="143.5" y="35" as="geometry" />
         </mxCell>
         <mxCell id="enStatusRefeicao_l1" parent="enStatusRefeicao" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="EXCLUIDO" vertex="1">
-          <mxGeometry height="16" width="143.5" y="56" as="geometry" />
+          <mxGeometry height="16" width="143.5" y="51" as="geometry" />
         </mxCell>
         <mxCell id="enStatusTemplateRefeicao" parent="p3" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#E8E8E8;swimlaneFillColor=#E8E8E8;strokeColor=#000000;fontSize=10;" value="«enumeration»&#xa;StatusTemplateRefeicao" vertex="1">
           <mxGeometry height="72" width="143.5" x="294.5" y="617" as="geometry" />
