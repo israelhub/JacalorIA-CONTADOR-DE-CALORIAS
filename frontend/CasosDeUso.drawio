@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent" pages="4">
   <diagram id="CasosDeUsoUsuario" name="Usuário">
-    <mxGraphModel dx="2906" dy="2054" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
+    <mxGraphModel dx="3538" dy="2081" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -141,43 +141,38 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_p52" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Missões e loja" vertex="1">
-          <mxGeometry height="386" width="410" x="327" y="110" as="geometry" />
+          <mxGeometry height="339" width="410" x="327" y="131.5" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u53" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver missões" vertex="1">
-          <mxGeometry height="44" width="150" x="24" y="36" as="geometry" />
-        </mxCell>
-        <mxCell id="CasosDeUsoUsuario_u55" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Resgatar check-in diário" vertex="1">
-          <mxGeometry height="44" width="150" x="24" y="92" as="geometry" />
+          <mxGeometry height="44" width="150" x="21" y="41" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u56" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Acessar loja" vertex="1">
-          <mxGeometry height="44" width="160" x="19" y="151" as="geometry" />
+          <mxGeometry height="44" width="160" x="16" y="105" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u57" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Comprar item" vertex="1">
-          <mxGeometry height="44" width="150" x="237" y="201" as="geometry" />
+          <mxGeometry height="44" width="150" x="234" y="155" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u92" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver moeda atual" vertex="1">
-          <mxGeometry height="44" width="160" x="19" y="211" as="geometry" />
+          <mxGeometry height="44" width="160" x="16" y="165" as="geometry" />
         </mxCell>
         <mxCell id="FS8ltg5pygJqf3JQv5k2-10" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver XP atual" vertex="1">
-          <mxGeometry height="44" width="160" x="19" y="271" as="geometry" />
+          <mxGeometry height="44" width="160" x="16" y="225" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u58" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Equipar item comprado" vertex="1">
-          <mxGeometry height="44" width="160" x="237" y="103" as="geometry" />
+          <mxGeometry height="44" width="160" x="234" y="57" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_inc_equipar_loja" edge="1" parent="CasosDeUsoUsuario_p52" source="CasosDeUsoUsuario_u58" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="CasosDeUsoUsuario_u56" value="«extend»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u59" parent="CasosDeUsoUsuario_p52" style="ellipse;whiteSpace=wrap;html=1;" value="Ver extrato de moeda" vertex="1">
-          <mxGeometry height="44" width="160" x="19" y="325" as="geometry" />
+          <mxGeometry height="44" width="160" x="16" y="279" as="geometry" />
+        </mxCell>
+        <mxCell id="CasosDeUsoUsuario_inc_comprar_loja" edge="1" parent="CasosDeUsoUsuario_p52" source="CasosDeUsoUsuario_u57" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="CasosDeUsoUsuario_u56" value="«extend»">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_e60" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeWidth=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="CasosDeUsoUsuario_u53">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="80.68" y="302.94" as="sourcePoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="CasosDeUsoUsuario_e61" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeWidth=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="CasosDeUsoUsuario_u55">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="80.61" y="302.94" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_e62" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeWidth=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="CasosDeUsoUsuario_u56">
@@ -189,9 +184,6 @@
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="80.61" y="302.87" as="sourcePoint" />
           </mxGeometry>
-        </mxCell>
-        <mxCell id="CasosDeUsoUsuario_inc_comprar_loja" edge="1" parent="1" source="CasosDeUsoUsuario_u57" style="endArrow=open;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="CasosDeUsoUsuario_u56" value="«extend»">
-          <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_p67" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Social" vertex="1">
           <mxGeometry height="415" width="359" x="-542" y="182" as="geometry" />
@@ -250,7 +242,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_p80" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Notificações e suporte" vertex="1">
-          <mxGeometry height="410" width="179" x="327" y="554" as="geometry" />
+          <mxGeometry height="410" width="179" x="327" y="534" as="geometry" />
         </mxCell>
         <mxCell id="CasosDeUsoUsuario_u81" parent="CasosDeUsoUsuario_p80" style="ellipse;whiteSpace=wrap;html=1;" value="Ver notificações" vertex="1">
           <mxGeometry height="44" width="130" x="24" y="100" as="geometry" />
