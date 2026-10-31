@@ -1465,7 +1465,7 @@
         <mxCell id="Y35bAZXwFI5029KagSS1-7" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+cadastrarComGoogle(idToken: string): Usuario" vertex="1">
           <mxGeometry height="16" width="343" y="626" as="geometry" />
         </mxCell>
-        <mxCell id="c9_m1" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+autenticar(email:&amp;nbsp; string, senha: string): string" vertex="1">
+        <mxCell id="c9_m1" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+autenticar(email: string, senha: string): string" vertex="1">
           <mxGeometry height="16" width="343" y="642" as="geometry" />
         </mxCell>
         <mxCell id="c9_m2" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+autenticarComGoogle(idToken: string): string" vertex="1">
