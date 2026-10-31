@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="1304" dy="1336" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
+    <mxGraphModel dx="3640" dy="2620" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -746,6 +746,25 @@
         <mxCell id="c229_msep" parent="c229" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" value="" vertex="1">
           <mxGeometry height="8" width="203.3" y="202" as="geometry" />
         </mxCell>
+        <mxCell id="e330" edge="1" parent="c229" source="c229" style="endArrow=none;startArrow=none;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;exitX=1;exitY=0.06;exitDx=0;exitDy=0;entryX=1.002;entryY=0.619;entryDx=0;entryDy=0;innerLoopWaypoints=1;entryPerimeter=0;exitPerimeter=0;" target="f232" value="responde">
+          <mxGeometry relative="1" x="-0.0807" y="1" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="239" y="12.6" />
+              <mxPoint x="239" y="67.9" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e330_ms" connectable="0" parent="e330" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="-0.0182" as="geometry">
+            <mxPoint x="-25" y="18" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e330_mt" connectable="0" parent="e330" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..1" vertex="1">
+          <mxGeometry relative="1" x="0.0927" as="geometry">
+            <mxPoint x="-24" y="-43" as="offset" />
+          </mxGeometry>
+        </mxCell>
         <mxCell id="c243" parent="p7" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="ReacaoMensagemGrupo" vertex="1">
           <mxGeometry height="114" width="206" x="24" y="51" as="geometry" />
         </mxCell>
@@ -940,19 +959,6 @@
         <mxCell id="e324_mt" connectable="0" parent="e324" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="1" vertex="1">
           <mxGeometry relative="1" x="0.9" as="geometry">
             <mxPoint y="-8" as="offset" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e330" edge="1" parent="p7" source="c229" style="endArrow=none;startArrow=none;edgeStyle=none;rounded=0;html=1;fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;exitX=0;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.65;entryDx=0;entryDy=0;" target="c229" value="respondeA">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e330_ms" connectable="0" parent="e330" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..*" vertex="1">
-          <mxGeometry relative="1" x="-0.9" as="geometry">
-            <mxPoint x="0" y="-8" as="offset" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e330_mt" connectable="0" parent="e330" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..1" vertex="1">
-          <mxGeometry relative="1" x="0.9" as="geometry">
-            <mxPoint x="0" y="-8" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="c219" parent="p7" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="MembroGrupo" vertex="1">
@@ -1209,7 +1215,7 @@
         </mxCell>
         <mxCell id="e327_ms" connectable="0" parent="e327" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..*" vertex="1">
           <mxGeometry relative="1" x="-0.9" as="geometry">
-            <mxPoint x="0" y="-8" as="offset" />
+            <mxPoint y="-8" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="e327_mt" connectable="0" parent="e327" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="1" vertex="1">
