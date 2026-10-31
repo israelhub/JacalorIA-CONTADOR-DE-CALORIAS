@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="2438" dy="1740" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
+    <mxGraphModel dx="982" dy="940" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -67,7 +67,7 @@
             <mxPoint x="4" y="-8" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e318" edge="1" parent="p1" source="f141" style="endArrow=none;startArrow=none;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=1.002;exitY=-0.048;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.381;entryDx=0;entryDy=0;entryPerimeter=0;" target="gen_c125_3" value="adquire">
+        <mxCell id="e318" edge="1" parent="p1" source="f141" style="endArrow=none;startArrow=none;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=1.002;exitY=-0.048;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.381;entryDx=0;entryDy=0;entryPerimeter=0;" target="gen_c125_3" value="possui">
           <mxGeometry relative="1" x="-0.0003" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
@@ -1097,7 +1097,7 @@
         </mxCell>
         <mxCell id="e312_ms" connectable="0" parent="e312" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="0..*" vertex="1">
           <mxGeometry relative="1" x="-0.4271" as="geometry">
-            <mxPoint x="-12" y="-72" as="offset" />
+            <mxPoint x="-14" y="-69" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="e312_mt" connectable="0" parent="e312" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;labelBackgroundColor=#ffffff;" value="1" vertex="1">
