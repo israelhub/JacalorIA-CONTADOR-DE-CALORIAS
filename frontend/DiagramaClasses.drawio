@@ -1,11 +1,11 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="2438" dy="1740" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
+    <mxGraphModel dx="1178" dy="1048" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="p1" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;startSize=26;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;collapsible=0;html=1;" value="Missões e loja" vertex="1">
-          <mxGeometry height="445" width="1542" x="740" y="-331" as="geometry" />
+          <mxGeometry height="451" width="1542" x="740" y="-331" as="geometry" />
         </mxCell>
         <mxCell id="c94" parent="p1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="Missao" vertex="1">
           <mxGeometry height="242" width="206" x="49" y="51" as="geometry" />
@@ -229,7 +229,7 @@
           <mxGeometry height="16" width="105" y="88" as="geometry" />
         </mxCell>
         <mxCell id="enStatusMissaoUsuario" parent="p1" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#E8E8E8;swimlaneFillColor=#E8E8E8;strokeColor=#000000;fontSize=10;" value="«enumeration»&#xa;StatusMissaoUsuario" vertex="1">
-          <mxGeometry height="72" width="105" x="348" y="355" as="geometry" />
+          <mxGeometry height="72" width="105" x="348" y="351" as="geometry" />
         </mxCell>
         <mxCell id="enStatusMissaoUsuario_l0" parent="enStatusMissaoUsuario" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="EM_ANDAMENTO" vertex="1">
           <mxGeometry height="16" width="105" y="40" as="geometry" />
@@ -282,10 +282,9 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="ee501" edge="1" parent="p1" source="enStatusMissaoUsuario" style="endArrow=none;startArrow=none;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" target="f116">
-          <mxGeometry relative="1" x="-0.686" as="geometry">
+          <mxGeometry relative="1" x="-0.7508" as="geometry">
             <Array as="points">
-              <mxPoint x="348" y="374" />
-              <mxPoint x="325.6" y="374" />
+              <mxPoint x="325.6" y="369" />
               <mxPoint x="325.6" y="165" />
             </Array>
           </mxGeometry>
