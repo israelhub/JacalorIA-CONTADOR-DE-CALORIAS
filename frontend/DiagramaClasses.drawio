@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Jacaloria-agent">
   <diagram id="DiagramaClassesJacaloria" name="Classes">
-    <mxGraphModel dx="417" dy="849" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
+    <mxGraphModel dx="582" dy="940" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3280" pageHeight="2936" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -1489,7 +1489,7 @@
         <mxCell id="c9_m11" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+registrarRefeicao(dados: object): Refeicao" vertex="1">
           <mxGeometry height="16" width="343" y="754" as="geometry" />
         </mxCell>
-        <mxCell id="C8joBilg9K3yLa2sr7IV-20" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+atualizarRefeicao(dados: object): Refeicao" vertex="1">
+        <mxCell id="C8joBilg9K3yLa2sr7IV-20" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+atualizarRefeicao(refeicao: Refeicao, dados: AtualizarRefeicaoDTO): void" vertex="1">
           <mxGeometry height="16" width="343" y="770" as="geometry" />
         </mxCell>
         <mxCell id="c9_m12" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+salvarRefeicao(refeicao: Refeicao): RefeicaoSalva" vertex="1">
@@ -1519,7 +1519,7 @@
         <mxCell id="c9_m23" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+enviarMensagemGrupo(grupo: Grupo, corpo: text): MensagemGrupo" vertex="1">
           <mxGeometry height="16" width="343" y="914" as="geometry" />
         </mxCell>
-        <mxCell id="C8joBilg9K3yLa2sr7IV-27" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;+reagirMensagemGrupo(grupo: Grupo, Emoji: string): ReacaoMensagemGrupo&lt;/font&gt;" vertex="1">
+        <mxCell id="C8joBilg9K3yLa2sr7IV-27" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="&lt;font style=&quot;font-size: 7.8px;&quot;&gt;+reagirMensagemGrupo(mensagem: MensagemGrupo, emoji: string): ReacaoMensagemGrupo&lt;/font&gt;" vertex="1">
           <mxGeometry height="16" width="343" y="930" as="geometry" />
         </mxCell>
         <mxCell id="c9_m24" parent="c9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;html=1;" value="+enviarSolicitacaoAmizade(destinatario: Usuario): SolicitacaoAmizade" vertex="1">
