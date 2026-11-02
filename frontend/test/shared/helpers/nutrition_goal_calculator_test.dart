@@ -53,6 +53,30 @@ void main() {
         lessThanOrEqualTo(5),
       );
     });
+
+    test('ganhar massa usa superávit de 1100 kcal (~1 kg/semana)', () {
+      const input = NutritionGoalInput(
+        weight: 82.2,
+        height: 170,
+        age: 52,
+        sex: 'Feminino',
+        activityLevel: 'moderate',
+        objective: 'maintainWeight',
+      );
+      final maintain = calculateNutritionGoals(input);
+      final gain = calculateNutritionGoals(
+        NutritionGoalInput(
+          weight: input.weight,
+          height: input.height,
+          age: input.age,
+          sex: input.sex,
+          activityLevel: input.activityLevel,
+          objective: 'gainMass',
+        ),
+      );
+
+      expect(gain.dailyCalorieGoal, maintain.dailyCalorieGoal + 1100);
+    });
   });
 
   group('calculateAgeFromBirthDate', () {
