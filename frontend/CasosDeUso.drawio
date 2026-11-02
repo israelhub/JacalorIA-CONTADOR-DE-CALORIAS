@@ -501,7 +501,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="CasosDeUsoIA" name="IA">
-    <mxGraphModel dx="982" dy="516" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
+    <mxGraphModel dx="817" dy="429" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="800" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -533,7 +533,7 @@
         <mxCell id="C7coqnuB62zCEEFmLYZ1-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;container=0;" value="Revisar tabela TACO" vertex="1">
           <mxGeometry height="44" width="180" x="480" y="279" as="geometry" />
         </mxCell>
-        <mxCell id="CasosDeUsoIA_inc_taco_analisa" edge="1" parent="1" source="C7coqnuB62zCEEFmLYZ1-1" style="endArrow=none;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;startArrow=classic;startFill=1;endFill=0;entryX=0.986;entryY=0.323;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.047;exitY=0.236;exitDx=0;exitDy=0;exitPerimeter=0;" target="CasosDeUsoIA_u7" value="«include»">
+        <mxCell id="CasosDeUsoIA_inc_taco_analisa" edge="1" parent="1" source="C7coqnuB62zCEEFmLYZ1-1" style="endArrow=none;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;startArrow=classic;startFill=1;endFill=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.047;exitY=0.236;exitDx=0;exitDy=0;exitPerimeter=0;" target="CasosDeUsoIA_u7" value="«include»">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="qtTkRJZxjnYy85K4vrC1-1" edge="1" parent="1" source="C7coqnuB62zCEEFmLYZ1-1" style="endArrow=none;html=1;endSize=12;dashed=1;dashPattern=8 4;rounded=0;startArrow=classic;startFill=1;endFill=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.05;exitY=0.76;exitDx=0;exitDy=0;exitPerimeter=0;" target="CasosDeUsoIA_u11" value="«include»">
