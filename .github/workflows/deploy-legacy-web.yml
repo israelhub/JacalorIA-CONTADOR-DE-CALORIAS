@@ -51,6 +51,13 @@ jobs:
           aws s3 sync frontend/build/web "s3://${{ vars.S3_BUCKET }}/app/v1" --delete \
             --cache-control "no-cache,must-revalidate"
 
+      - name: Servir index em /app/v1/ (CloudFront nao resolve index de subpasta)
+        run: |
+          aws s3api put-object --bucket "${{ vars.S3_BUCKET }}" --key "app/v1/" \
+            --body frontend/build/web/index.html \
+            --content-type "text/html; charset=utf-8" \
+            --cache-control "no-cache,must-revalidate" >/dev/null
+
       - name: Invalidar cache
         run: |
           aws cloudfront create-invalidation \
