@@ -1,0 +1,57 @@
+name: Deploy web legado (pre-redesign)
+
+# Publica a versao antiga do front em https://jacaloria.online/app/v1/
+# Nao mexe no site principal: o prefixo app/* e ignorado pelo --delete do deploy.yml.
+on:
+  push:
+    branches: [legacy/web-pre-redesign]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-legacy-web
+  cancel-in-progress: true
+
+jobs:
+  legacy-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: flutter pub get
+
+      - name: Build web (base-href /app/v1/)
+        working-directory: frontend
+        run: |
+          flutter build web --release \
+            --base-href /app/v1/ \
+            --pwa-strategy=none \
+            --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }} \
+            --dart-define=SHARE_BASE_URL=${{ vars.SHARE_BASE_URL }} \
+            --dart-define=GOOGLE_WEB_CLIENT_ID=${{ vars.GOOGLE_WEB_CLIENT_ID }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Sync para s3://BUCKET/app/v1
+        run: |
+          aws s3 sync frontend/build/web "s3://${{ vars.S3_BUCKET }}/app/v1" --delete \
+            --cache-control "no-cache,must-revalidate"
+
+      - name: Invalidar cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/app/v1/*" >/dev/null
