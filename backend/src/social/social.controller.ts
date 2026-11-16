@@ -102,13 +102,8 @@ export class SocialController {
   }
 
   @Get('xp-ranking')
-  getXpRanking(
-    @Req() req: any,
-    @Query('period') period?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.socialService.getXpRanking(req.user.sub, period, page, limit);
+  getXpRanking(@Req() req: any, @Query('period') period?: string) {
+    return this.socialService.getXpRanking(req.user.sub, period);
   }
 
   @Get('groups')

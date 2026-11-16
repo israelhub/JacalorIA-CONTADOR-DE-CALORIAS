@@ -16,7 +16,9 @@ class FrameSilhouetteIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(painter: _FrameSilhouettePainter(color: color)),
+      child: CustomPaint(
+        painter: _FrameSilhouettePainter(color: color),
+      ),
     );
   }
 }

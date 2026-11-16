@@ -19,8 +19,7 @@ class SocialUserSearchResult {
 
   bool get isOutgoingRequest => friendRequestStatus == 'outgoing';
   bool get isIncomingRequest => friendRequestStatus == 'incoming';
-  bool get canSendRequest =>
-      !isFriend && !isOutgoingRequest && !isIncomingRequest;
+  bool get canSendRequest => !isFriend && !isOutgoingRequest && !isIncomingRequest;
 
   factory SocialUserSearchResult.fromJson(Map<String, dynamic> json) {
     return SocialUserSearchResult(

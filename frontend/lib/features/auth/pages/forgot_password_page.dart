@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_page_route.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../controllers/auth_controller.dart';
 import '../helpers/auth_helpers.dart';
-import '../widgets/auth_form_card.dart';
 import 'reset_password_code_page.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -69,10 +67,18 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      extendBodyBehindAppBar: true,
-      appBar: const AppBackPageHeader(title: 'Redefinir senha'),
-      body: AppBackPageContent(
+      backgroundColor: AppColors.surface,
+      appBar: AppBar(
+        title: Text(
+          'Redefinir senha',
+          style: AppTextStyles.homeSectionTitle.copyWith(
+            color: AppColors.brand900Variant,
+          ),
+        ),
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: SafeArea(
         child: AnimatedBuilder(
           animation: _authController,
           builder: (context, _) {
@@ -80,52 +86,45 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.pageHorizontal,
+                    horizontal: AppSpacing.xxl,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: AppSpacing.xl),
-                      AuthFormCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              'Informe seu e-mail para receber o codigo de redefinicao.',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.xl),
-                            AppInputField(
-                              label: 'E-mail',
-                              hint: 'Ex.: maria@email.com',
-                              controller: _emailController,
-                              onChanged: (_) => _authController.clearError(),
-                            ),
-                            if (_authController.error != null) ...[
-                              const SizedBox(height: AppSpacing.md),
-                              Text(
-                                _authController.error!,
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: AppColors.textError,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: AppSpacing.xxl),
-                            SizedBox(
-                              height: AppSpacing.huge + AppSpacing.xs,
-                              child: AppButton(
-                                label: 'Enviar codigo',
-                                onPressed: _authController.isLoading
-                                    ? null
-                                    : _handleSendCode,
-                                variant: AppButtonVariant.primary,
-                              ),
-                            ),
-                          ],
+                      Text(
+                        'Informe seu e-mail para receber o codigo de redefinicao.',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      AppInputField(
+                        label: 'E-mail',
+                        hint: 'Digite seu e-mail',
+                        controller: _emailController,
+                        onChanged: (_) => _authController.clearError(),
+                      ),
+                      if (_authController.error != null) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          _authController.error!,
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textError,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.xxl),
+                      SizedBox(
+                        height: AppSpacing.huge + AppSpacing.xs,
+                        child: AppButton(
+                          label: 'Enviar codigo',
+                          onPressed: _authController.isLoading
+                              ? null
+                              : _handleSendCode,
+                          variant: AppButtonVariant.primary,
                         ),
                       ),
                     ],

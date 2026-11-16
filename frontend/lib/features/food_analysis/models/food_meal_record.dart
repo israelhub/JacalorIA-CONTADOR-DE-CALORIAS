@@ -78,12 +78,13 @@ class FoodMealRecord {
   }
 
   factory FoodMealRecord.fromJson(Map<String, dynamic> json) {
-    final rawImageUrl = _readImageUrl(json);
-    final isNetwork = rawImageUrl != null &&
-        rawImageUrl.toLowerCase().startsWith('http');
+    final imageUrl = json['imageUrl'] as String?;
+    final isNetwork =
+        imageUrl != null &&
+        (imageUrl.startsWith('http') || imageUrl.startsWith('https'));
     final items = (json['analysisItems'] as List<dynamic>? ?? <dynamic>[])
-        .whereType<Map>()
-        .map((item) => FoodAnalysisItem.fromJson(Map<String, dynamic>.from(item)))
+        .whereType<Map<String, dynamic>>()
+        .map(FoodAnalysisItem.fromJson)
         .toList(growable: false);
     final title = json['title'] as String? ?? 'Refeição';
     final mealTypeRaw = json['mealType'] ?? json['meal_type'];
@@ -94,8 +95,8 @@ class FoodMealRecord {
     return FoodMealRecord(
       id: json['id'] as String?,
       imageBytes: null,
-      imageAsset: isNetwork ? null : _asAssetPath(rawImageUrl),
-      imageUrl: isNetwork ? rawImageUrl : null,
+      imageAsset: isNetwork ? null : _asAssetPath(imageUrl),
+      imageUrl: isNetwork ? imageUrl : null,
       createdAt: _parseDateTime(json['createdAt'] ?? json['created_at']),
       title: title,
       description: json['description'] as String? ?? '',
@@ -188,16 +189,6 @@ String? _asAssetPath(String? value) {
     return raw;
   }
 
-  return null;
-}
-
-String? _readImageUrl(Map<String, dynamic> json) {
-  for (final key in const ['imageUrl', 'image_url']) {
-    final value = json[key]?.toString().trim();
-    if (value != null && value.isNotEmpty) {
-      return value;
-    }
-  }
   return null;
 }
 

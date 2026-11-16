@@ -5,8 +5,6 @@ import '../../avatar_frames/pages/avatar_frame_store_page.dart';
 import '../../auth/service/auth_service.dart';
 import '../../home/widgets/home_weight_quick_edit_button.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_ambient_page_glow.dart';
-import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_guide_card.dart';
 import '../../../shared/widgets/app_page_route.dart';
@@ -167,26 +165,24 @@ class _MissionsPageState extends State<MissionsPage>
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      body: AppAmbientPageBody(
-        child: Stack(
-          children: <Widget>[
-            _buildContent(),
-            Positioned(
-              width: 1,
-              height: 1,
-              right: 0,
-              bottom: 0,
-              child: HomeWeightQuickEditButton(
-                userProfile: _profile,
-                authService: widget.authService,
-                controller: _weightController,
-                showTrigger: false,
-                onWeightUpdated: _onWeightUpdated,
-              ),
+      backgroundColor: AppColors.surface,
+      body: Stack(
+        children: <Widget>[
+          _buildContent(),
+          Positioned(
+            width: 1,
+            height: 1,
+            right: 0,
+            bottom: 0,
+            child: HomeWeightQuickEditButton(
+              userProfile: _profile,
+              authService: widget.authService,
+              controller: _weightController,
+              showTrigger: false,
+              onWeightUpdated: _onWeightUpdated,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -248,9 +244,9 @@ class _MissionsPageState extends State<MissionsPage>
           ),
           Padding(
             padding: EdgeInsets.fromLTRB(
-              AppSpacing.pageHorizontal,
               AppSpacing.lg,
-              AppSpacing.pageHorizontal,
+              AppSpacing.lg,
+              AppSpacing.lg,
               bottomInset,
             ),
             child: Column(
@@ -266,7 +262,7 @@ class _MissionsPageState extends State<MissionsPage>
                           : null,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.cardGap),
+                  const SizedBox(height: AppSpacing.lg),
                 ],
                 if (_showIntro) ...<Widget>[
                   AppScrollReveal(
@@ -291,19 +287,25 @@ class _MissionsPageState extends State<MissionsPage>
                       },
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.cardGap),
+                  const SizedBox(height: AppSpacing.lg),
                 ],
                 if (showWeekendSection) ...<Widget>[
                   AppScrollReveal(
-                    child: _MissionSectionCard(
+                    child: AppSectionHeader(
                       title: weekendSection.title,
                       subtitle: weekendSection.subtitle,
-                      children: _buildMissionCards(
-                        _sortedMissions(weekendSection.missions),
+                      subtitleIcon: Icons.schedule_rounded,
+                      titleStyle: AppTextStyles.missionsSectionTitle.copyWith(
+                        color: AppColors.brand900Variant,
                       ),
+                      subtitleColor: AppColors.socialMetricStreak,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.cardGap),
+                  const SizedBox(height: AppSpacing.sm),
+                  ..._buildMissionCards(
+                    _sortedMissions(weekendSection.missions),
+                  ),
+                  const SizedBox(height: AppSpacing.xxxl),
                 ],
                 for (
                   var sectionIndex = 0;
@@ -311,16 +313,22 @@ class _MissionsPageState extends State<MissionsPage>
                   sectionIndex += 1
                 ) ...<Widget>[
                   AppScrollReveal(
-                    child: _MissionSectionCard(
+                    child: AppSectionHeader(
                       title: regularSections[sectionIndex].title,
                       subtitle: regularSections[sectionIndex].subtitle,
-                      children: _buildMissionCards(
-                        _sortedMissions(regularSections[sectionIndex].missions),
+                      subtitleIcon: Icons.schedule_rounded,
+                      titleStyle: AppTextStyles.missionsSectionTitle.copyWith(
+                        color: AppColors.brand900Variant,
                       ),
+                      subtitleColor: AppColors.socialMetricStreak,
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.sm),
+                  ..._buildMissionCards(
+                    _sortedMissions(regularSections[sectionIndex].missions),
+                  ),
                   if (sectionIndex < regularSections.length - 1)
-                    const SizedBox(height: AppSpacing.cardGap),
+                    const SizedBox(height: AppSpacing.xxxl),
                 ],
               ],
             ),
@@ -534,21 +542,23 @@ class _GoldStatementPageState extends State<_GoldStatementPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      extendBodyBehindAppBar: true,
-      appBar: const AppBackPageHeader(title: 'Extrato de ouro'),
-      body: AppBackPageContent(
-        child: FutureBuilder<List<Map<String, dynamic>>>(
+      backgroundColor: AppColors.surface,
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: AppColors.surface,
+        title: Text(
+          'Extrato de ouro',
+          style: AppTextStyles.headingSmall.copyWith(
+            color: AppColors.brand900Variant,
+          ),
+        ),
+      ),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _statementFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const AppSkeletonList(
-              itemCount: 5,
-              itemHeight: 64,
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.pageHorizontal,
-                vertical: AppSpacing.md,
-              ),
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.action500),
             );
           }
 
@@ -558,10 +568,7 @@ class _GoldStatementPageState extends State<_GoldStatementPage> {
                 'Erro ao carregar extrato.';
             return Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.pageHorizontal,
-                  vertical: AppSpacing.lg,
-                ),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Text(
                   message,
                   textAlign: TextAlign.center,
@@ -586,10 +593,7 @@ class _GoldStatementPageState extends State<_GoldStatementPage> {
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.pageHorizontal,
-              vertical: AppSpacing.lg,
-            ),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             itemCount: entries.length,
             separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
             itemBuilder: (context, index) {
@@ -614,6 +618,8 @@ class _GoldStatementPageState extends State<_GoldStatementPage> {
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.performanceCardBorder),
+                  boxShadow: AppShadows.sm,
                 ),
                 child: Row(
                   children: [
@@ -661,7 +667,6 @@ class _GoldStatementPageState extends State<_GoldStatementPage> {
             },
           );
         },
-        ),
       ),
     );
   }
@@ -746,16 +751,16 @@ class _MissionsBodySkeleton extends StatelessWidget {
           const _MissionsHeroHeaderSkeleton(),
           Padding(
             padding: EdgeInsets.fromLTRB(
-              AppSpacing.pageHorizontal,
               AppSpacing.lg,
-              AppSpacing.pageHorizontal,
+              AppSpacing.lg,
+              AppSpacing.lg,
               bottomInset,
             ),
             child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 _CheckInRewardsSkeleton(),
-                SizedBox(height: AppSpacing.cardGap),
+                SizedBox(height: AppSpacing.lg),
                 _MissionSectionSkeleton(cardCount: 3),
                 SizedBox(height: AppSpacing.xxxl),
                 _MissionSectionSkeleton(cardCount: 2),
@@ -926,48 +931,6 @@ class _CheckInDaySkeleton extends StatelessWidget {
   }
 }
 
-class _MissionSectionCard extends StatelessWidget {
-  const _MissionSectionCard({
-    required this.title,
-    required this.subtitle,
-    required this.children,
-  });
-
-  final String title;
-  final String? subtitle;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppSectionHeader(
-            title: title,
-            subtitle: subtitle,
-            subtitleIcon: Icons.schedule_rounded,
-            titleStyle: AppTextStyles.missionsSectionTitle.copyWith(
-              color: AppColors.brand900Variant,
-            ),
-            subtitleColor: AppColors.socialMetricStreak,
-          ),
-          if (children.isNotEmpty) ...<Widget>[
-            const SizedBox(height: AppSpacing.md),
-            ...children,
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _MissionSectionSkeleton extends StatelessWidget {
   const _MissionSectionSkeleton({this.cardCount = 3});
 
@@ -975,29 +938,21 @@ class _MissionSectionSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: Column(
-        children: <Widget>[
-          const Row(
-            children: <Widget>[
-              AppSkeletonBox(height: 22, width: 160),
-              Spacer(),
-              AppSkeletonBox(height: 14, width: 88),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          for (var index = 0; index < cardCount; index += 1) ...<Widget>[
-            if (index > 0) const SizedBox(height: AppSpacing.md),
-            const _MissionCardSkeleton(),
+    return Column(
+      children: <Widget>[
+        const Row(
+          children: <Widget>[
+            AppSkeletonBox(height: 22, width: 160),
+            Spacer(),
+            AppSkeletonBox(height: 14, width: 88),
           ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (var index = 0; index < cardCount; index += 1) ...<Widget>[
+          if (index > 0) const SizedBox(height: AppSpacing.md),
+          const _MissionCardSkeleton(),
         ],
-      ),
+      ],
     );
   }
 }
@@ -1010,8 +965,9 @@ class _MissionCardSkeleton extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
       decoration: BoxDecoration(
-        color: AppColors.insetSurface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.performanceCardBorder, width: 1.5),
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,

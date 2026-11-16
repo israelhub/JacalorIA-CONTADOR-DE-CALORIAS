@@ -5,16 +5,10 @@ import '../../../shared/widgets/app_svg_icon.dart';
 import '../models/missions_overview.dart';
 
 class MissionCard extends StatelessWidget {
-  const MissionCard({
-    super.key,
-    required this.mission,
-    this.onTap,
-    this.backgroundColor = AppColors.insetSurface,
-  });
+  const MissionCard({super.key, required this.mission, this.onTap});
 
   final MissionItem mission;
   final VoidCallback? onTap;
-  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +21,6 @@ class MissionCard extends StatelessWidget {
 
     final percent = mission.progressPercent.clamp(0, 100);
     const barHeight = 22.0;
-    final baseColor = backgroundColor;
 
     final card = Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
@@ -35,10 +28,17 @@ class MissionCard extends StatelessWidget {
         color: isCompleted
             ? Color.alphaBlend(
                 accentColor.withValues(alpha: 0.10),
-                baseColor,
+                AppColors.surface,
               )
-            : baseColor,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isCompleted
+              ? accentColor.withValues(alpha: 0.28)
+              : AppColors.performanceCardBorder,
+          width: 1.5,
+        ),
+        boxShadow: AppShadows.performanceCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,7 +74,7 @@ class MissionCard extends StatelessWidget {
                         ColoredBox(
                           color: isCompleted
                               ? accentColor.withValues(alpha: 0.18)
-                              : AppColors.surface,
+                              : AppColors.performanceTrack,
                         ),
                         FractionallySizedBox(
                           widthFactor: percent / 100,

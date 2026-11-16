@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_icons/phosphor_icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme/app_theme.dart';
-import 'app_nav_icons.dart';
 
 class AppBottomNavigation extends StatelessWidget {
   const AppBottomNavigation({
@@ -12,12 +11,10 @@ class AppBottomNavigation extends StatelessWidget {
     this.surfaceKey = const ValueKey('app-bottom-nav-surface'),
     this.contentKey = const ValueKey('app-bottom-nav-content'),
     this.centerActionKey = const ValueKey('app-bottom-nav-center-action'),
-    this.surfaceHeight = appBottomNavCardHeight,
-    this.cameraButtonSize = appBottomNavCameraSize,
+    this.surfaceHeight = 56,
+    this.cameraButtonSize = AppSpacing.huge + AppSpacing.xl,
+    this.cameraOverlap = AppSpacing.xs,
     this.contentHorizontalPadding = 0,
-    this.includeBottomSafeArea = true,
-    this.showTopBorder = true,
-    this.backgroundColor = AppColors.surface,
   }) : assert(items.length == 4);
 
   final List<Widget> items;
@@ -27,77 +24,104 @@ class AppBottomNavigation extends StatelessWidget {
   final Key centerActionKey;
   final double surfaceHeight;
   final double cameraButtonSize;
+  final double cameraOverlap;
   final double contentHorizontalPadding;
-  final bool includeBottomSafeArea;
-  final bool showTopBorder;
-  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = includeBottomSafeArea
-        ? MediaQuery.viewPaddingOf(context).bottom
-        : 0.0;
+    // viewPadding.bottom comes from the OS on native, and from CSS safe-area
+    // (via WebSafeAreaMediaQuery) on web — just enough to clear the home
+    // indicator / gesture bar. Surface fills that band; icons sit above it.
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
+    final centerSlotWidth = cameraButtonSize;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (showTopBorder) const _TopBorderSegment(),
-        Container(
-          key: surfaceKey,
-          height: surfaceHeight + bottomInset,
-          padding: EdgeInsets.only(bottom: bottomInset),
-          decoration: BoxDecoration(color: backgroundColor),
-          child: Padding(
-            key: contentKey,
-            padding: EdgeInsets.symmetric(horizontal: contentHorizontalPadding),
-            child: Row(
-              children: [
-                Expanded(child: Center(child: items[0])),
-                Expanded(child: Center(child: items[1])),
-                Expanded(
-                  child: Center(
-                    child: SizedBox(
-                      width: cameraButtonSize,
-                      height: cameraButtonSize,
-                      child: _PressableCenterActionButton(
-                        key: centerActionKey,
-                        onTap: onCenterActionTap,
-                        size: cameraButtonSize,
+    return SizedBox(
+      height: surfaceHeight + cameraOverlap + bottomPadding,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              key: surfaceKey,
+              height: surfaceHeight + bottomPadding,
+              padding: EdgeInsets.only(bottom: bottomPadding),
+              decoration: const BoxDecoration(color: AppColors.surface),
+              child: Stack(
+                children: [
+                  // Linha superior dividida para "abraçar" o botão central.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              top: BorderSide(
+                                color: AppColors.borderBrandAlt,
+                                width: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
+                      SizedBox(width: centerSlotWidth),
+                      Expanded(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              top: BorderSide(
+                                color: AppColors.borderBrandAlt,
+                                width: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    key: contentKey,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: contentHorizontalPadding,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Expanded(child: Center(child: items[0])),
+                              Expanded(child: Center(child: items[1])),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: centerSlotWidth),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Expanded(child: Center(child: items[2])),
+                              Expanded(child: Center(child: items[3])),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                Expanded(child: Center(child: items[2])),
-                Expanded(child: Center(child: items[3])),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-const double appBottomNavCameraSize = AppSpacing.huge + AppSpacing.sm;
-
-const double appBottomNavCardHeight =
-    AppSpacing.huge + AppSpacing.xl + AppSpacing.sm;
-
-const double appBottomNavHorizontalInset = AppSpacing.xxxl;
-
-class _TopBorderSegment extends StatelessWidget {
-  const _TopBorderSegment();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: AppColors.borderBrandAlt,
-            width: 1.4,
+          Positioned(
+            top: -8,
+            child: _PressableCenterActionButton(
+              key: centerActionKey,
+              onTap: onCenterActionTap,
+              size: cameraButtonSize,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -107,29 +131,40 @@ class AppBottomNavigationItem extends StatelessWidget {
   const AppBottomNavigationItem({
     super.key,
     required this.label,
-    required this.icon,
+    required this.iconAsset,
     required this.color,
+    this.labelKey,
     this.iconKey,
   });
 
   final String label;
-  final IconData icon;
+  final String iconAsset;
   final Color color;
+  final Key? labelKey;
   final Key? iconKey;
 
-  static const double _iconSize = AppSpacing.xxxl;
+  static const double _iconSize = AppSpacing.xxl + AppSpacing.xs;
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: label,
-      child: PhosphorIcon(
-        icon,
-        key: iconKey,
-        size: _iconSize,
-        color: color,
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SvgPicture.asset(
+          iconAsset,
+          key: iconKey,
+          width: _iconSize,
+          height: _iconSize,
+          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          label,
+          key: labelKey,
+          style: AppTextStyles.homeBottomNav.copyWith(color: color, height: 1),
+        ),
+      ],
     );
   }
 }
@@ -206,8 +241,8 @@ class _PressableCenterActionButtonState
               color: _isHovered ? AppColors.brand900 : AppColors.action500,
               shape: BoxShape.circle,
             ),
-            child: PhosphorIcon(
-              AppNavIcons.camera,
+            child: const Icon(
+              Icons.camera_alt_outlined,
               color: AppColors.surface,
               size: AppSpacing.xxxl,
             ),

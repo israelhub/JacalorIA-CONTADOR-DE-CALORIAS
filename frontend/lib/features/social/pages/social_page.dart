@@ -5,7 +5,6 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/invite/invite_link_service.dart';
 import '../../auth/service/auth_service.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_floating_circle_button.dart';
 import '../../../shared/widgets/app_guide_card.dart';
@@ -14,7 +13,7 @@ import '../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../shared/widgets/app_page_route.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../home/widgets/home_shell_layout.dart';
+import '../../home/widgets/home_weight_quick_edit_button.dart';
 import '../controllers/social_page_controller.dart';
 import '../helpers/social_data_invalidator.dart';
 import '../models/social_group_models.dart';
@@ -161,7 +160,7 @@ class _SocialPageState extends State<SocialPage>
             _controller.pendingFriendRequestCount > 0;
 
         return Scaffold(
-          backgroundColor: AppColors.pageBackground,
+          backgroundColor: AppColors.surface,
           floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           floatingActionButton: showRequestsFab
               ? Padding(
@@ -176,9 +175,7 @@ class _SocialPageState extends State<SocialPage>
                   ),
                 )
               : null,
-          body: AppAmbientPageBody(
-            child: SafeArea(bottom: false, child: _buildContent()),
-          ),
+          body: SafeArea(child: _buildContent()),
         );
       },
     );
@@ -223,12 +220,7 @@ class _SocialPageState extends State<SocialPage>
 
     return AppRefreshScrollView(
       onRefresh: () => _controller.loadAll(silent: true),
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.pageHorizontal,
-        AppSpacing.lg,
-        AppSpacing.pageHorizontal,
-        homeShellScrollBottomInset(context),
-      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -248,7 +240,7 @@ class _SocialPageState extends State<SocialPage>
               icon: Icons.emoji_events_rounded,
               onClose: _controller.hideIntro,
             ),
-            const SizedBox(height: AppSpacing.cardGap),
+            const SizedBox(height: AppSpacing.lg),
           ],
           AnimatedSwitcher(
             duration: _tabTransitionDuration,
@@ -302,9 +294,6 @@ class _SocialPageState extends State<SocialPage>
                   errorMessage: _controller.xpRankingErrorMessage,
                   onRetry: () => _controller.loadXpRanking(),
                   onOpenProfile: _openRankingProfile,
-                  page: _controller.xpRankingPage,
-                  totalPages: _controller.xpRankingTotalPages,
-                  onPageChanged: _controller.changeXpRankingPage,
                 ),
               },
             ),
@@ -566,13 +555,18 @@ class _SocialBodySkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset =
+        homeShellBottomNavBodyHeight +
+        MediaQuery.viewPaddingOf(context).bottom +
+        AppSpacing.lg;
+
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
-        AppSpacing.pageHorizontal,
         AppSpacing.lg,
-        AppSpacing.pageHorizontal,
-        homeShellScrollBottomInset(context, extra: AppSpacing.lg),
+        AppSpacing.lg,
+        AppSpacing.lg,
+        bottomInset,
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -614,6 +608,7 @@ class _SocialTabsSkeleton extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
       ),
       child: const Row(
         children: [
@@ -667,6 +662,7 @@ class _SocialFriendItemSkeleton extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
       ),
       child: const Row(
         children: [

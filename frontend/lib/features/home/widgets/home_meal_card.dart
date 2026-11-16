@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/faded_meal_image.dart';
+import '../../../shared/widgets/app_network_image.dart';
 
 class HomeMealCard extends StatelessWidget {
   const HomeMealCard({
@@ -16,14 +16,9 @@ class HomeMealCard extends StatelessWidget {
     this.imageAsset,
     this.imageBytes,
     this.imageUrl,
-    this.height = defaultHeight,
-    this.backgroundColor = AppColors.homeCardSurface,
+    required this.height,
     this.onTap,
   });
-
-  static const double defaultHeight =
-      AppSpacing.huge + AppSpacing.xl + AppSpacing.sm;
-  static const double imagePadding = AppSpacing.sm;
 
   final Key cardKey;
   final String title;
@@ -34,108 +29,124 @@ class HomeMealCard extends StatelessWidget {
   final Uint8List? imageBytes;
   final String? imageUrl;
   final double height;
-  final Color backgroundColor;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(AppRadius.lg - AppSpacing.xs);
-    final imageSize = height - (imagePadding * 2);
-    final hasImage = hasFadedMealImage(
-      imageAsset: imageAsset,
-      imageBytes: imageBytes,
-      imageUrl: imageUrl,
-    );
+    final thumbnailSize = AppSpacing.huge + AppSpacing.xs;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: radius,
+        borderRadius: BorderRadius.circular(AppRadius.lg - AppSpacing.xs),
         child: Container(
           key: cardKey,
           width: double.infinity,
           height: height,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: radius,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg - 2,
+            vertical: AppSpacing.sm,
           ),
-          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: AppColors.homeCardSurface,
+            borderRadius: BorderRadius.circular(AppRadius.lg - AppSpacing.xs),
+            border: Border.all(color: AppColors.homeMealCardBorder),
+            boxShadow: AppShadows.homeMealCard,
+          ),
           child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(imagePadding),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  child: SizedBox(
-                    width: imageSize,
-                    height: imageSize,
-                    child: hasImage
-                        ? FadedMealImage(
-                            imageAsset: imageAsset,
-                            imageBytes: imageBytes,
-                            imageUrl: imageUrl,
-                          )
-                        : const MealImageFallback(),
-                  ),
+              Container(
+                width: thumbnailSize,
+                height: thumbnailSize,
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.brand300),
+                ),
+                child: imageBytes != null
+                    ? Image.memory(
+                        imageBytes!,
+                        fit: BoxFit.cover,
+                      )
+                    : imageUrl != null
+                    ? AppNetworkImage(
+                        url: imageUrl!,
+                        fit: BoxFit.cover,
+                        width: thumbnailSize,
+                        height: thumbnailSize,
+                        error: const ColoredBox(
+                          color: AppColors.homeMetaCardSurface,
+                          child: Icon(
+                            Icons.restaurant_outlined,
+                            color: AppColors.action500,
+                          ),
+                        ),
+                      )
+                    : Builder(
+                        builder: (context) {
+                          final asset = imageAsset;
+                          if (asset != null) {
+                            return Image.asset(
+                              asset,
+                              fit: BoxFit.cover,
+                            );
+                          }
+
+                          return const ColoredBox(
+                            color: AppColors.homeMetaCardSurface,
+                            child: Icon(
+                              Icons.restaurant_outlined,
+                              color: AppColors.action500,
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTextStyles.homeMealTitle.copyWith(
+                        color: AppColors.brand900Variant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xs - 2),
+                    Text(
+                      description,
+                      style: AppTextStyles.homeMealSubtitle.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.lg - 2),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              title,
-                              style: AppTextStyles.homeMealTitle.copyWith(
-                                color: AppColors.brand900Variant,
-                              ),
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: AppSpacing.xs - 2),
-                            Text(
-                              description,
-                              style: AppTextStyles.homeMealSubtitle.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            kcal,
-                            style: AppTextStyles.homeMealKcal.copyWith(
-                              color: AppColors.brand900Variant,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.xs - 2),
-                          Text(
-                            time,
-                            style: AppTextStyles.captionStrong.copyWith(
-                              color: AppColors.textTertiary,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+              const SizedBox(width: AppSpacing.sm),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    kcal,
+                    style: AppTextStyles.homeMealKcal.copyWith(
+                      color: AppColors.brand900Variant,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: AppSpacing.xs - 2),
+                  Text(
+                    time,
+                    style: AppTextStyles.captionStrong.copyWith(
+                      color: AppColors.textTertiary,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

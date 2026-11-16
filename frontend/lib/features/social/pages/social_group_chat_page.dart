@@ -6,11 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/analytics/analytics_service.dart';
 import '../../../shared/services/supabase_storage_service.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_ambient_page_glow.dart';
-import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_confirm_modal.dart';
 import '../../../shared/widgets/app_page_route.dart';
-import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../auth/service/auth_service.dart';
 import '../../food_analysis/helpers/image_optimizer.dart';
@@ -407,7 +404,9 @@ class _SocialGroupChatPageState extends State<SocialGroupChatPage> {
 
   Future<void> _pickAndSendImage() async {
     if (_isSending) return;
-    final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+    );
     if (picked == null) return;
 
     setState(() => _isSending = true);
@@ -477,37 +476,35 @@ class _SocialGroupChatPageState extends State<SocialGroupChatPage> {
     return Scaffold(
       backgroundColor: AppColors.surface,
       resizeToAvoidBottomInset: false,
-      body: AppAmbientPageBody(
-        child: Column(
-          children: [
-            const ChatViewPadding(top: true),
-            _buildHeader(),
-            Expanded(
-              child: ClipRect(
-                child: ChatKeyboardLift(
-                  child: Column(
-                    children: [
-                      Expanded(child: _buildMessages()),
-                      _buildStickerPanel(),
-                      _buildComposerContext(),
-                      SocialGroupChatComposer(
-                        controller: _textController,
-                        focusNode: _focusNode,
-                        enabled: !_isSending,
-                        isEditing: _editingMessage != null,
-                        showEmojiPicker: _showEmojiPicker,
-                        onToggleEmoji: _toggleEmojiPicker,
-                        onPickImage: _pickAndSendImage,
-                        onSend: _sendText,
-                      ),
-                      const ChatViewPadding(top: false),
-                    ],
-                  ),
+      body: Column(
+        children: [
+          const ChatViewPadding(top: true),
+          _buildHeader(),
+          Expanded(
+            child: ClipRect(
+              child: ChatKeyboardLift(
+                child: Column(
+                  children: [
+                    Expanded(child: _buildMessages()),
+                    _buildStickerPanel(),
+                    _buildComposerContext(),
+                    SocialGroupChatComposer(
+                      controller: _textController,
+                      focusNode: _focusNode,
+                      enabled: !_isSending,
+                      isEditing: _editingMessage != null,
+                      showEmojiPicker: _showEmojiPicker,
+                      onToggleEmoji: _toggleEmojiPicker,
+                      onPickImage: _pickAndSendImage,
+                      onSend: _sendText,
+                    ),
+                    const ChatViewPadding(top: false),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -515,12 +512,43 @@ class _SocialGroupChatPageState extends State<SocialGroupChatPage> {
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.pageHorizontal,
         AppSpacing.lg,
-        AppSpacing.pageHorizontal,
+        AppSpacing.lg,
+        AppSpacing.lg,
         AppSpacing.md,
       ),
-      child: AppBackPageHeaderBar(title: widget.groupName),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.of(context).maybePop(),
+            behavior: HitTestBehavior.opaque,
+            child: const Padding(
+              padding: EdgeInsets.all(6),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppColors.brand900Variant,
+                size: 22,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              widget.groupName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.homeSectionTitle.copyWith(
+                color: AppColors.brand900Variant,
+              ),
+            ),
+          ),
+          const Icon(
+            Icons.chat_bubble_rounded,
+            color: AppColors.action500,
+            size: 22,
+          ),
+        ],
+      ),
     );
   }
 
@@ -535,31 +563,8 @@ class _SocialGroupChatPageState extends State<SocialGroupChatPage> {
 
   Widget _buildMessages() {
     if (_isLoading) {
-      return const Padding(
-        padding: EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: AppSkeletonBox(height: 56, width: 220, borderRadius: 18),
-            ),
-            SizedBox(height: AppSpacing.md),
-            Align(
-              alignment: Alignment.centerRight,
-              child: AppSkeletonBox(height: 56, width: 180, borderRadius: 18),
-            ),
-            SizedBox(height: AppSpacing.md),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: AppSkeletonBox(height: 72, width: 240, borderRadius: 18),
-            ),
-            SizedBox(height: AppSpacing.md),
-            Align(
-              alignment: Alignment.centerRight,
-              child: AppSkeletonBox(height: 48, width: 140, borderRadius: 18),
-            ),
-          ],
-        ),
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.action500),
       );
     }
 
@@ -600,18 +605,16 @@ class _SocialGroupChatPageState extends State<SocialGroupChatPage> {
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
         addAutomaticKeepAlives: false,
         padding: const EdgeInsets.fromLTRB(
-          AppSpacing.pageHorizontal,
+          AppSpacing.lg,
           AppSpacing.md,
-          AppSpacing.pageHorizontal,
+          AppSpacing.lg,
           AppSpacing.sm,
         ),
         itemCount: _messages.length,
         itemBuilder: (context, index) {
           final messageIndex = _messages.length - 1 - index;
           final message = _messages[messageIndex];
-          final previous = messageIndex > 0
-              ? _messages[messageIndex - 1]
-              : null;
+          final previous = messageIndex > 0 ? _messages[messageIndex - 1] : null;
           final next = messageIndex < _messages.length - 1
               ? _messages[messageIndex + 1]
               : null;

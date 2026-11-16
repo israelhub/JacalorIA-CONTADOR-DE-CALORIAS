@@ -7,9 +7,7 @@ import { MealTemplate } from '../meal-templates/models/meal-template.model';
 import { UserWeightEntry } from '../performance/models/user-weight-entry.model';
 import { Mission } from '../missions/models/mission.model';
 import { StoreCatalogItem } from '../missions/models/store-catalog-item.model';
-import { StorePurchase } from '../missions/models/store-purchase.model';
 import { UserCurrencyTransaction } from '../missions/models/user-currency-transaction.model';
-import { UserMission } from '../missions/models/user-mission.model';
 import { SocialFriendLink } from '../social/models/social-friend-link.model';
 import { SocialFriendRequest } from '../social/models/social-friend-request.model';
 import { SocialFriendship } from '../social/models/social-friendship.model';
@@ -24,10 +22,6 @@ import { SupportMessage } from '../support/models/support-message.model';
 import { NotificationBroadcast } from '../notifications/models/notification-broadcast.model';
 import { UserMealReminderSettings } from '../notifications/models/user-meal-reminder-settings.model';
 import { UserNotification } from '../notifications/models/user-notification.model';
-import { WorkoutExercise } from '../workouts/models/workout-exercise.model';
-import { WorkoutLoadEntry } from '../workouts/models/workout-load-entry.model';
-import { WorkoutRoutine } from '../workouts/models/workout-routine.model';
-import { WaterIntakeEntry } from '../water/models/water-intake-entry.model';
 
 @Module({
   imports: [
@@ -76,9 +70,7 @@ import { WaterIntakeEntry } from '../water/models/water-intake-entry.model';
             UserWeightEntry,
             Mission,
             StoreCatalogItem,
-            StorePurchase,
             UserCurrencyTransaction,
-            UserMission,
             SocialGroup,
             SocialGroupMember,
             SocialGroupActivity,
@@ -93,10 +85,6 @@ import { WaterIntakeEntry } from '../water/models/water-intake-entry.model';
             NotificationBroadcast,
             UserNotification,
             UserMealReminderSettings,
-            WorkoutRoutine,
-            WorkoutExercise,
-            WorkoutLoadEntry,
-            WaterIntakeEntry,
           ],
           autoLoadModels: true,
           synchronize: !isProd,

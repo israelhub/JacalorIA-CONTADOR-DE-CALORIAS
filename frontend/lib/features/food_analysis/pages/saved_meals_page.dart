@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_back_page_header.dart';
+import '../../../shared/widgets/app_network_image.dart';
 import '../../../shared/widgets/app_page_route.dart';
-import '../../../shared/widgets/faded_meal_image.dart';
 import '../../../shared/widgets/app_skeleton.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../home/widgets/home_meal_card.dart';
-import '../helpers/food_review_helpers.dart';
 import '../models/food_meal_record.dart';
 import '../models/saved_meal_template.dart';
 import '../services/food_analysis_service.dart';
 import '../services/meal_template_service.dart';
 import '../widgets/food_analysis_page_header.dart';
-import '../widgets/food_meal_type_chips.dart';
 import 'food_review_page.dart';
 
 class SavedMealsPage extends StatefulWidget {
@@ -35,7 +31,6 @@ class SavedMealsPage extends StatefulWidget {
 
 class _SavedMealsPageState extends State<SavedMealsPage> {
   late Future<List<SavedMealTemplate>> _templatesFuture;
-  FoodMealType? _selectedMealType;
   bool _isBusy = false;
 
   @override
@@ -65,7 +60,6 @@ class _SavedMealsPageState extends State<SavedMealsPage> {
           analysis: template.toAnalysis(),
           analysisService: widget._analysisService,
           initialMealTitle: template.title,
-          initialMealType: template.mealType,
           recordedAt: widget.recordedAt,
         ),
       );
@@ -155,28 +149,31 @@ class _SavedMealsPageState extends State<SavedMealsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      extendBodyBehindAppBar: true,
+      backgroundColor: AppColors.surface,
       appBar: const FoodAnalysisPageHeader(title: 'Refeições salvas'),
-      body: AppBackPageContent(
+      body: SafeArea(
         child: FutureBuilder<List<SavedMealTemplate>>(
           future: _templatesFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
-              return const AppSkeletonList(
-                itemCount: 3,
-                itemHeight: HomeMealCard.defaultHeight,
-                borderRadius: AppRadius.lg,
+              return const Padding(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  children: [
+                    AppSkeletonBox(height: 88, borderRadius: 12),
+                    SizedBox(height: AppSpacing.md),
+                    AppSkeletonBox(height: 88, borderRadius: 12),
+                    SizedBox(height: AppSpacing.md),
+                    AppSkeletonBox(height: 88, borderRadius: 12),
+                  ],
+                ),
               );
             }
 
             if (snapshot.hasError) {
               return Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.pageHorizontal,
-                    vertical: AppSpacing.lg,
-                  ),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -235,71 +232,24 @@ class _SavedMealsPageState extends State<SavedMealsPage> {
               );
             }
 
-            final selectedType = _selectedMealType;
-            final filtered = selectedType == null
-                ? templates
-                : templates
-                      .where((template) => template.mealType == selectedType)
-                      .toList(growable: false);
-
-            return Padding(
+            return ListView.separated(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.pageHorizontal,
+                AppSpacing.lg,
                 AppSpacing.sm,
-                AppSpacing.pageHorizontal,
+                AppSpacing.lg,
                 AppSpacing.xxl,
               ),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    FoodMealTypeChips(
-                      selected: _selectedMealType,
-                      includeAll: true,
-                      onSelected: (type) {
-                        setState(() => _selectedMealType = type);
-                      },
-                      keyPrefix: 'saved-meals-filter',
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Expanded(
-                      child: filtered.isEmpty
-                          ? Center(
-                              child: Text(
-                                selectedType == null
-                                    ? 'Nenhuma refeição salva'
-                                    : 'Nenhuma refeição salva de ${selectedType.chipLabel.toLowerCase()}',
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            )
-                          : ListView.separated(
-                              padding: EdgeInsets.zero,
-                              itemCount: filtered.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: AppSpacing.md),
-                              itemBuilder: (context, index) {
-                                final template = filtered[index];
-                                return _SavedMealCard(
-                                  template: template,
-                                  enabled: !_isBusy,
-                                  onTap: () => _useTemplate(template),
-                                  onDelete: () => _deleteTemplate(template),
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
-              ),
+              itemCount: templates.length,
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+              itemBuilder: (context, index) {
+                final template = templates[index];
+                return _SavedMealCard(
+                  template: template,
+                  enabled: !_isBusy,
+                  onTap: () => _useTemplate(template),
+                  onDelete: () => _deleteTemplate(template),
+                );
+              },
             );
           },
         ),
@@ -321,97 +271,91 @@ class _SavedMealCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
-  static const _height = HomeMealCard.defaultHeight;
-  static const _imagePadding = HomeMealCard.imagePadding;
-
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(AppRadius.lg - AppSpacing.xs);
-    final imageSize = _height - (_imagePadding * 2);
-    final imageUrl = template.imageUrl;
-    final hasImage = hasFadedMealImage(
-      imageAsset: null,
-      imageBytes: null,
-      imageUrl: imageUrl,
-    );
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: radius,
+        borderRadius: BorderRadius.circular(AppRadius.lg - AppSpacing.xs),
         child: Container(
           width: double.infinity,
-          height: _height,
-          decoration: BoxDecoration(
-            color: AppColors.insetSurface,
-            borderRadius: radius,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg - 2,
+            vertical: AppSpacing.sm,
           ),
-          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: AppColors.homeCardSurface,
+            borderRadius: BorderRadius.circular(AppRadius.lg - AppSpacing.xs),
+            border: Border.all(color: AppColors.homeMealCardBorder),
+            boxShadow: AppShadows.homeMealCard,
+          ),
           child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(_imagePadding),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  child: SizedBox(
-                    width: imageSize,
-                    height: imageSize,
-                    child: hasImage
-                        ? FadedMealImage(imageUrl: imageUrl)
-                        : const MealImageFallback(),
-                  ),
+              Container(
+                width: AppSpacing.huge + AppSpacing.xs,
+                height: AppSpacing.huge + AppSpacing.xs,
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.brand300),
+                ),
+                child: template.imageUrl != null
+                    ? AppNetworkImage(
+                        url: template.imageUrl!,
+                        fit: BoxFit.cover,
+                        error: const ColoredBox(
+                          color: AppColors.homeMetaCardSurface,
+                          child: Icon(
+                            Icons.restaurant_outlined,
+                            color: AppColors.action500,
+                          ),
+                        ),
+                      )
+                    : const ColoredBox(
+                        color: AppColors.homeMetaCardSurface,
+                        child: Icon(
+                          Icons.restaurant_outlined,
+                          color: AppColors.action500,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      template.title,
+                      style: AppTextStyles.homeMealTitle.copyWith(
+                        color: AppColors.brand900Variant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xs - 2),
+                    Text(
+                      template.description,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xs - 2),
+                    Text(
+                      template.kcalLabel,
+                      style: AppTextStyles.captionStrong.copyWith(
+                        color: AppColors.brand900Variant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.xs),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              template.title,
-                              style: AppTextStyles.homeMealTitle.copyWith(
-                                color: AppColors.brand900Variant,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: AppSpacing.xs - 2),
-                            Text(
-                              template.description,
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: AppSpacing.xs - 2),
-                            Text(
-                              template.kcalLabel,
-                              style: AppTextStyles.captionStrong.copyWith(
-                                color: AppColors.brand900Variant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Remover',
-                        onPressed: enabled ? onDelete : null,
-                        visualDensity: VisualDensity.compact,
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: AppColors.foodReviewDeleteIcon,
-                        ),
-                      ),
-                    ],
-                  ),
+              IconButton(
+                tooltip: 'Remover',
+                onPressed: enabled ? onDelete : null,
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.foodReviewDeleteIcon,
                 ),
               ),
             ],

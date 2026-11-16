@@ -6,7 +6,6 @@ import 'activity_level_page.dart';
 import '../widgets/onboarding_select_option_button.dart';
 import '../widgets/onboarding_step_header.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_ambient_page_glow.dart';
 import '../../../shared/widgets/app_button.dart';
 
 enum ObjectiveType { loseWeight, gainMass, maintainWeight }
@@ -33,13 +32,10 @@ class _ObjectivePageState extends State<ObjectivePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: AppAmbientPageBody(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.pageHorizontal,
-            ),
-            child: Column(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: AppSpacing.lg),
@@ -126,7 +122,6 @@ class _ObjectivePageState extends State<ObjectivePage> {
                 ),
               ),
             ],
-          ),
           ),
         ),
       ),

@@ -99,9 +99,7 @@ class _PrimaryButton extends StatelessWidget {
         child: (leadingIcon == null && trailingIcon == null)
             ? Text(
                 label,
-                style: (textStyle ?? AppTextStyles.buttonLarge).copyWith(
-                  color: Colors.white,
-                ),
+                style: (textStyle ?? AppTextStyles.buttonLarge).copyWith(color: Colors.white),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -282,9 +280,7 @@ class _DangerButton extends StatelessWidget {
           children: [
             Text(
               label,
-              style: (textStyle ?? AppTextStyles.buttonLarge).copyWith(
-                color: Colors.white,
-              ),
+              style: (textStyle ?? AppTextStyles.buttonLarge).copyWith(color: Colors.white),
             ),
             if (leadingIcon != null) ...[
               const SizedBox(width: AppSpacing.xs),
@@ -355,8 +351,7 @@ class _PressableButtonSurface extends StatefulWidget {
   final VoidCallback? onTap;
 
   @override
-  State<_PressableButtonSurface> createState() =>
-      _PressableButtonSurfaceState();
+  State<_PressableButtonSurface> createState() => _PressableButtonSurfaceState();
 }
 
 class _PressableButtonSurfaceState extends State<_PressableButtonSurface> {

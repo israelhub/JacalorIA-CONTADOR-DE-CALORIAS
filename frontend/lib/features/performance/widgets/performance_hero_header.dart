@@ -24,9 +24,9 @@ class PerformanceHeroBackdrop extends StatelessWidget {
               const Positioned.fill(child: PerformanceHeroJacaSilhouette()),
               Padding(
                 padding: EdgeInsets.fromLTRB(
-                  AppSpacing.pageHorizontal,
+                  AppSpacing.lg,
                   topInset + AppSpacing.xl,
-                  AppSpacing.pageHorizontal,
+                  AppSpacing.lg,
                   72,
                 ),
                 child: child,
@@ -60,7 +60,11 @@ class PerformanceHeroJacaSilhouette extends StatelessWidget {
                     AppColors.brand300.withValues(alpha: 0.22),
                     BlendMode.srcIn,
                   ),
-                  child: Image.asset(_asset, height: size, fit: BoxFit.contain),
+                  child: Image.asset(
+                    _asset,
+                    height: size,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
@@ -92,7 +96,7 @@ class PerformanceHeroHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
-            'Progresso',
+            'Desempenho',
             textAlign: TextAlign.start,
             style: AppTextStyles.performanceTitle.copyWith(
               color: AppColors.surface,

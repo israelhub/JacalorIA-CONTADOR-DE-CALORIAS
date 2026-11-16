@@ -43,7 +43,9 @@ class SocialGroupChatBubble extends StatelessWidget {
       child: isMine
           ? Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              children: [Flexible(child: _buildBubbleColumn(isMine: true))],
+              children: [
+                Flexible(child: _buildBubbleColumn(isMine: true)),
+              ],
             )
           : Stack(
               clipBehavior: Clip.none,
@@ -319,7 +321,10 @@ class SocialGroupChatBubble extends StatelessWidget {
                   ),
                 ),
               ),
-              error: _textBubble('Não foi possível carregar a imagem', isMine),
+              error: _textBubble(
+                'Não foi possível carregar a imagem',
+                isMine,
+              ),
             ),
           ),
         ),

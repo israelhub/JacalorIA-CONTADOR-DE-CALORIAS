@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_network_image.dart';
 import '../models/food_analysis_result.dart';
@@ -39,13 +38,12 @@ const List<_StatusStage> _analysisStatusStages = [
   _StatusStage(
     after: Duration(seconds: 28),
     title: 'Quase pronto...',
-    message: 'Demorando um pouco mais; refinando a estimativa das calorias.',
+        message: 'Demorando um pouco mais; refinando a estimativa das calorias.',
   ),
   _StatusStage(
     after: Duration(seconds: 42),
     title: 'Só mais um instante...',
-    message:
-        'Obrigado pela paciência. Se não concluir, você pode tentar de novo.',
+    message: 'Obrigado pela paciência. Se não concluir, você pode tentar de novo.',
   ),
 ];
 
@@ -223,165 +221,136 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
         (widget.imageAsset ?? '').trim().startsWith('assets/');
 
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      extendBodyBehindAppBar: true,
+      backgroundColor: AppColors.surface,
       appBar: FoodAnalysisPageHeader(title: widget.appBarTitle),
-      body: AppBackPageContent(
+      body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.pageHorizontal,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           child: Column(
             children: [
               const SizedBox(height: AppSpacing.xxl),
               Expanded(
                 child: Center(
-                  child: hasPreviewImage
-                      ? Container(
-                          constraints: const BoxConstraints(maxWidth: 360),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
-                            border: Border.all(
-                              color: AppColors.foodReviewFieldBorder,
-                            ),
-                            boxShadow: AppShadows.foodReviewField,
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      border: Border.all(
+                        color: AppColors.foodReviewFieldBorder,
+                      ),
+                      boxShadow: AppShadows.foodReviewField,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      child: Stack(
+                        children: [
+                          AspectRatio(
+                            aspectRatio: 0.88,
+                            child: _buildPreviewImage(),
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
-                            child: Stack(
-                              children: [
-                                AspectRatio(
-                                  aspectRatio: 0.88,
-                                  child: _buildPreviewImage(),
+                          if (hasPreviewImage)
+                            Positioned.fill(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      AppColors.brand900Variant.withValues(
+                                        alpha: 0.28,
+                                      ),
+                                      AppColors.brand900Variant.withValues(
+                                        alpha: 0.08,
+                                      ),
+                                      Colors.transparent,
+                                    ],
+                                  ),
                                 ),
-                                Positioned.fill(
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          AppColors.brand900Variant.withValues(
-                                            alpha: 0.28,
-                                          ),
-                                          AppColors.brand900Variant.withValues(
-                                            alpha: 0.08,
-                                          ),
-                                          Colors.transparent,
-                                        ],
+                              ),
+                            ),
+                          if (widget.showScanner &&
+                              hasPreviewImage &&
+                              !_hasError)
+                            Positioned.fill(
+                              child: AnimatedBuilder(
+                                animation: _scannerController,
+                                builder: (context, child) {
+                                  return Align(
+                                    alignment: Alignment(
+                                      0,
+                                      (_scannerController.value * 2) - 1,
+                                    ),
+                                    child: Container(
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.transparent,
+                                            AppColors.action500.withValues(
+                                              alpha: 0.2,
+                                            ),
+                                            AppColors.action500.withValues(
+                                              alpha: 0.42,
+                                            ),
+                                            AppColors.action500.withValues(
+                                              alpha: 0.2,
+                                            ),
+                                            Colors.transparent,
+                                          ],
+                                          stops: const [0, 0.2, 0.5, 0.8, 1],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                                if (widget.showScanner && !_hasError)
-                                  Positioned.fill(
-                                    child: AnimatedBuilder(
-                                      animation: _scannerController,
-                                      builder: (context, child) {
-                                        return Align(
-                                          alignment: Alignment(
-                                            0,
-                                            (_scannerController.value * 2) - 1,
-                                          ),
-                                          child: Container(
-                                            height: 42,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: [
-                                                  Colors.transparent,
-                                                  AppColors.action500
-                                                      .withValues(alpha: 0.2),
-                                                  AppColors.action500
-                                                      .withValues(alpha: 0.42),
-                                                  AppColors.action500
-                                                      .withValues(alpha: 0.2),
-                                                  Colors.transparent,
-                                                ],
-                                                stops: const [
-                                                  0,
-                                                  0.2,
-                                                  0.5,
-                                                  0.8,
-                                                  1,
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                Positioned.fill(
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(
-                                            AppSpacing.md,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.surface.withValues(
-                                              alpha: 0.9,
-                                            ),
-                                            shape: BoxShape.circle,
-                                            boxShadow: AppShadows.sm,
-                                          ),
-                                          child: Icon(
-                                            _displayIcon,
-                                            color: _displayIconColor,
-                                            size: 32,
-                                          ),
+                                  );
+                                },
+                              ),
+                            ),
+                          Positioned.fill(
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Sem imagem: sem ícone no meio (só a mensagem embaixo).
+                                  if (hasPreviewImage || _hasError) ...[
+                                    Container(
+                                      padding: const EdgeInsets.all(
+                                        AppSpacing.md,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface.withValues(
+                                          alpha: 0.9,
                                         ),
-                                        if (_displayTitle.isNotEmpty) ...[
-                                          const SizedBox(height: AppSpacing.md),
-                                          Text(
-                                            _displayTitle,
-                                            style: AppTextStyles
-                                                .homeSectionTitle
-                                                .copyWith(
-                                                  color: AppColors.surface,
-                                                ),
-                                          ),
-                                        ],
-                                      ],
+                                        shape: BoxShape.circle,
+                                        boxShadow: AppShadows.sm,
+                                      ),
+                                      child: Icon(
+                                        _displayIcon,
+                                        color: _displayIconColor,
+                                        size: 32,
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ],
+                                    if (_displayTitle.isNotEmpty)
+                                      const SizedBox(height: AppSpacing.md),
+                                  ],
+                                  if (_displayTitle.isNotEmpty)
+                                    Text(
+                                      _displayTitle,
+                                      style: AppTextStyles.homeSectionTitle
+                                          .copyWith(
+                                        color: hasPreviewImage
+                                            ? AppColors.surface
+                                            : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
-                        )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_hasError) ...[
-                              Container(
-                                padding: const EdgeInsets.all(AppSpacing.md),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  shape: BoxShape.circle,
-                                  boxShadow: AppShadows.sm,
-                                ),
-                                child: Icon(
-                                  _displayIcon,
-                                  color: _displayIconColor,
-                                  size: 32,
-                                ),
-                              ),
-                              if (_displayTitle.isNotEmpty)
-                                const SizedBox(height: AppSpacing.md),
-                            ],
-                            if (_displayTitle.isNotEmpty)
-                              Text(
-                                _displayTitle,
-                                style: AppTextStyles.homeSectionTitle.copyWith(
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                          ],
-                        ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.xxl),
@@ -444,12 +413,7 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
   Widget _buildPreviewImage() {
     final bytes = widget.imageBytes;
     if (bytes != null) {
-      return Image.memory(
-        bytes,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-      );
+      return Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, height: double.infinity);
     }
 
     final imageUrl = (widget.imageUrl ?? '').trim();
@@ -459,7 +423,7 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        error: const SizedBox.expand(),
+        error: _buildMissingImage(),
       );
     }
 
@@ -468,7 +432,33 @@ class _FoodAnalysisProcessingPageState extends State<FoodAnalysisProcessingPage>
       return Image.asset(imageAsset, fit: BoxFit.cover, width: double.infinity);
     }
 
-    return const SizedBox.expand();
+    return _buildMissingImage();
+  }
+
+  Widget _buildMissingImage() {
+    return Container(
+      color: AppColors.surfaceAlt,
+      width: double.infinity,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.image_not_supported_outlined,
+            color: AppColors.textSecondary,
+            size: 42,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Imagem não cadastrada',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _retry() {
@@ -495,7 +485,10 @@ class _RetryActions extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        AppButton(label: 'Tentar novamente', onPressed: onRetry),
+        AppButton(
+          label: 'Tentar novamente',
+          onPressed: onRetry,
+        ),
         const SizedBox(height: AppSpacing.md),
         AppButton(
           label: 'Voltar',

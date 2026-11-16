@@ -161,7 +161,6 @@ export class AuthRepository {
         'equippedAvatarBackgroundId',
         'purchasedAvatarBackgroundIds',
         'purchasedJacaEmojiIds',
-        'equippedProfileReactionEmojiId',
         'equippedOffensiveBlockerId',
         'offensiveBlockerInventoryCount',
         'streakBlockerAppliedDayKeys',

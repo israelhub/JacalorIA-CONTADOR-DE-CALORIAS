@@ -84,69 +84,7 @@ const UNCOMMON_CUT_PENALTY: Record<string, number> = {
 const CUT_QUERY_TOKENS = new Set([
   ...Object.keys(DEFAULT_CUT_PREFERENCE),
   ...Object.keys(UNCOMMON_CUT_PENALTY),
-  'bife',
 ]);
-
-/**
- * Tokens que sozinhos não identificam o alimento (água ⊂ bolacha de água e sal).
- * Só sustentam match se forem a cabeça da query (ex.: "água", "água mineral").
- */
-const GENERIC_TOKENS = new Set([
-  'agua',
-  'sal',
-  'oleo',
-  'azeite',
-  'acucar',
-  'mineral',
-  'refinado',
-]);
-
-/**
- * Adjetivos que o usuário/IA acrescenta sem mudar a identidade
- * (ex.: "arroz branco cozido" vs "Arroz, tipo 1, cozido").
- * Não incluir variedades que mudam o alimento (condensado, desnatado, formosa).
- */
-const SAFE_UNMATCHED_TOKENS = new Set([
-  'branco',
-  'branca',
-  'preto',
-  'preta',
-  'vermelho',
-  'vermelha',
-  'verde',
-  'amarelo',
-  'amarela',
-  'roxo',
-  'roxa',
-  'rosa',
-  'integral',
-  'organico',
-  'organica',
-  'natural',
-  'caseiro',
-  'caseira',
-  'caipira',
-  'grande',
-  'pequeno',
-  'pequena',
-  'medio',
-  'media',
-  'tipo',
-  'comum',
-  'fresco',
-  'fresca',
-  'maduro',
-  'madura',
-  'salgado',
-  'salgada',
-]);
-
-const TOKEN_SYNONYMS: Record<string, readonly string[]> = {
-  bolacha: ['biscoito'],
-  biscoito: ['bolacha'],
-};
-
-export const DEFAULT_FOOD_MATCH_THRESHOLD = 0.58;
 
 const PREP_QUERY_TOKENS = new Set([
   ...HIGH_IMPACT_MODIFIERS,
@@ -296,62 +234,6 @@ function contentTokens(tokens: string[]): string[] {
   return tokens.filter((token) => !isPrepOrStateToken(token));
 }
 
-function synonymTokens(token: string): readonly string[] {
-  return TOKEN_SYNONYMS[token] ?? [];
-}
-
-function tokensEquivalent(left: string, right: string): boolean {
-  return left === right || synonymTokens(left).includes(right);
-}
-
-function foodHasToken(food: MatchableFood, token: string): boolean {
-  if (food.tokenSet.has(token)) {
-    return true;
-  }
-  return synonymTokens(token).some((synonym) => food.tokenSet.has(synonym));
-}
-
-function isAllowedUnmatchedQueryToken(token: string): boolean {
-  return (
-    GENERIC_TOKENS.has(token) ||
-    SAFE_UNMATCHED_TOKENS.has(token) ||
-    isPrepOrStateToken(token) ||
-    CUT_QUERY_TOKENS.has(token)
-  );
-}
-
-/**
- * Match TACO só vale se for o mesmo alimento — não um ingrediente/modificador.
- * Empadão de frango ≠ peito de frango; bolacha de água e sal ≠ água.
- */
-export function isConfidentFoodIdentityMatch(
-  queryTokens: string[],
-  food: MatchableFood,
-): boolean {
-  const queryContent = contentTokens(queryTokens);
-  const head = queryContent[0] ?? queryTokens[0];
-  if (!head) {
-    return false;
-  }
-
-  const headInFood = foodHasToken(food, head);
-  if (!headInFood) {
-    const foodHead = contentTokens(food.tokens)[0] ?? food.tokens[0];
-    const foodHeadInQuery = Boolean(
-      foodHead &&
-        queryTokens.some((token) => tokensEquivalent(token, foodHead)),
-    );
-    const headIsCutOrPrep =
-      CUT_QUERY_TOKENS.has(head) || isPrepOrStateToken(head);
-    if (!foodHeadInQuery || !headIsCutOrPrep) {
-      return false;
-    }
-  }
-
-  const unmatched = queryContent.filter((token) => !foodHasToken(food, token));
-  return unmatched.every(isAllowedUnmatchedQueryToken);
-}
-
 function queryMentionsPrep(queryTokens: string[]): boolean {
   return queryTokens.some((token) => PREP_QUERY_TOKENS.has(token));
 }
@@ -363,7 +245,7 @@ function queryMentionsCut(queryTokens: string[]): boolean {
 function countSharedTokens(tokens: string[], food: MatchableFood): number {
   let shared = 0;
   for (const token of tokens) {
-    if (foodHasToken(food, token)) {
+    if (food.tokenSet.has(token)) {
       shared += 1;
     }
   }
@@ -385,11 +267,11 @@ export function isPotentialFoodCandidate(
   // Não candidatar só por "cozido"/"cru" — precisa overlap do alimento em si.
   const queryContent = contentTokens(queryTokens);
   if (queryContent.length > 0) {
-    return queryContent.some((token) => foodHasToken(food, token));
+    return queryContent.some((token) => food.tokenSet.has(token));
   }
 
   for (const token of queryTokens) {
-    if (foodHasToken(food, token)) {
+    if (food.tokenSet.has(token)) {
       return true;
     }
   }
@@ -543,20 +425,13 @@ export function scoreFoodMatch(
   const shared = countSharedTokens(queryTokens, food);
   const tokenOverlap = queryTokens.length ? shared / queryTokens.length : 0;
   const foodCoverage = food.tokens.length ? shared / food.tokens.length : 0;
+  const hasPhraseMatch =
+    hasWordBoundaryMatch(food.normalizedDescription, normalizedQuery) ||
+    hasWordBoundaryMatch(normalizedQuery, food.normalizedDescription);
   const sameFirstToken =
     queryTokens.length > 0 &&
     food.tokens.length > 0 &&
-    tokensEquivalent(queryTokens[0], food.tokens[0]);
-  // "água" ⊂ "bolacha de água e sal" não é match de frase do alimento.
-  const queryInFood = hasWordBoundaryMatch(
-    food.normalizedDescription,
-    normalizedQuery,
-  );
-  const foodInQuery = hasWordBoundaryMatch(
-    normalizedQuery,
-    food.normalizedDescription,
-  );
-  const hasPhraseMatch = queryInFood || (foodInQuery && sameFirstToken);
+    queryTokens[0] === food.tokens[0];
 
   const shortQueryExtraPenalty =
     queryTokens.length <= 2
@@ -570,7 +445,7 @@ export function scoreFoodMatch(
   const queryContent = contentTokens(queryTokens);
   if (queryContent.length > 0) {
     const sharedContent = queryContent.filter((token) =>
-      foodHasToken(food, token),
+      food.tokenSet.has(token),
     ).length;
     if (sharedContent === 0) {
       return {
@@ -639,10 +514,6 @@ export function findBestFoodMatch<T extends MatchableFood>(
 
   for (const food of foods) {
     if (!isPotentialFoodCandidate(normalized, tokens, food)) {
-      continue;
-    }
-
-    if (!isConfidentFoodIdentityMatch(tokens, food)) {
       continue;
     }
 

@@ -1,5 +1,8 @@
 class WeightHistoryPoint {
-  const WeightHistoryPoint({required this.date, required this.weight});
+  const WeightHistoryPoint({
+    required this.date,
+    required this.weight,
+  });
 
   final DateTime date;
   final double weight;
@@ -36,7 +39,10 @@ class WeightHistoryRange {
 }
 
 class WeightHistory {
-  const WeightHistory({required this.range, required this.points});
+  const WeightHistory({
+    required this.range,
+    required this.points,
+  });
 
   final WeightHistoryRange range;
   final List<WeightHistoryPoint> points;
@@ -44,9 +50,9 @@ class WeightHistory {
   factory WeightHistory.fromJson(Map<String, dynamic> json) {
     return WeightHistory(
       range: WeightHistoryRange.fromJson(_asStringMap(json['range'])),
-      points: _asObjectList(
-        json['points'],
-      ).map(WeightHistoryPoint.fromJson).toList(growable: false),
+      points: _asObjectList(json['points'])
+          .map(WeightHistoryPoint.fromJson)
+          .toList(growable: false),
     );
   }
 }

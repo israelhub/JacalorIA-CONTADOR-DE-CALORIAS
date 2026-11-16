@@ -76,11 +76,7 @@ class AuthService {
 
           final rawUser = body['user'];
           if (rawUser is Map) {
-            final nextUser = Map<String, dynamic>.from(
-              globalUser ?? const <String, dynamic>{},
-            );
-            nextUser.addAll(Map<String, dynamic>.from(rawUser));
-            globalUser = nextUser;
+            globalUser = Map<String, dynamic>.from(rawUser);
             await prefs.setString('auth_user', jsonEncode(globalUser));
           }
           return true;

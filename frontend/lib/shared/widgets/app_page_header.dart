@@ -35,7 +35,11 @@ class AppPageHeader extends StatelessWidget {
         ),
         if (trailing != null) trailing!,
         if (trailing != null) const SizedBox(width: AppSpacing.sm),
-        Icon(icon, size: iconSize, color: AppColors.brand900Variant),
+        Icon(
+          icon,
+          size: iconSize,
+          color: AppColors.brand900Variant,
+        ),
       ],
     );
   }

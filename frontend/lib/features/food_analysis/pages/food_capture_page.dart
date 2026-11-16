@@ -8,10 +8,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/analytics/analytics_service.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../helpers/food_capture_camera.dart';
 import '../helpers/food_review_helpers.dart';
 import '../helpers/image_optimizer.dart';
 import '../models/food_analysis_result.dart';
@@ -75,39 +73,25 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
   @override
   void dispose() {
-    final controller = _cameraController;
-    _cameraController = null;
-    if (controller != null) {
-      unawaited(_releaseCamera(controller));
-    }
+    _cameraController?.dispose();
     super.dispose();
-  }
-
-  Future<void> _releaseCamera(CameraController controller) async {
-    try {
-      if (controller.value.isInitialized) {
-        await controller.setFlashMode(FlashMode.off);
-      }
-    } catch (_) {}
-    await controller.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      extendBodyBehindAppBar: true,
+      backgroundColor: AppColors.surface,
       appBar: const FoodAnalysisPageHeader(title: 'Nova refeição'),
-      body: AppBackPageContent(
+      body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.pageHorizontal,
+                  AppSpacing.lg,
                   AppSpacing.xs,
-                  AppSpacing.pageHorizontal,
+                  AppSpacing.lg,
                   AppSpacing.sm,
                 ),
                 child: _buildCameraArea(context),
@@ -115,9 +99,9 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.pageHorizontal,
+                AppSpacing.xl,
                 AppSpacing.lg,
-                AppSpacing.pageHorizontal,
+                AppSpacing.xl,
                 AppSpacing.xxl,
               ),
               child: Column(
@@ -161,9 +145,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
             const SizedBox(height: AppSpacing.lg),
             Text(
               'Preparando a câmera...',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.surface,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.surface),
             ),
           ],
         ),
@@ -173,10 +155,7 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
     if (_cameraError != null || _cameraController == null) {
       return _CameraShell(
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.pageHorizontal,
-            vertical: AppSpacing.lg,
-          ),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -235,57 +214,22 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
     }
 
     final next = !_isFlashOn;
-    final applied = await _applyFlashMode(
-      controller,
-      next ? FlashMode.torch : FlashMode.off,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (applied) {
+    try {
+      await controller.setFlashMode(next ? FlashMode.torch : FlashMode.off);
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _isFlashOn = next;
       });
-      return;
-    }
-    AppToast.error(context, message: 'Flash não disponível neste dispositivo.');
-  }
-
-  Future<bool> _applyFlashMode(
-    CameraController controller,
-    FlashMode mode, {
-    int retries = 2,
-  }) async {
-    for (var attempt = 0; attempt <= retries; attempt++) {
-      try {
-        await controller.setFlashMode(mode);
-        return true;
-      } catch (_) {
-        if (attempt == retries) {
-          return false;
-        }
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+    } catch (_) {
+      if (!mounted) {
+        return;
       }
-    }
-    return false;
-  }
-
-  Future<void> _turnFlashOff() async {
-    final controller = _cameraController;
-    if (controller == null || !controller.value.isInitialized) {
-      _isFlashOn = false;
-      return;
-    }
-
-    await _applyFlashMode(controller, FlashMode.off, retries: 1);
-    if (!mounted) {
-      _isFlashOn = false;
-      return;
-    }
-    if (_isFlashOn) {
-      setState(() {
-        _isFlashOn = false;
-      });
+      AppToast.error(
+        context,
+        message: 'Flash não disponível neste dispositivo.',
+      );
     }
   }
 
@@ -298,7 +242,16 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       });
 
       final cameras = await availableCameras();
-      final selectedCamera = selectFoodCaptureCamera(cameras);
+      if (cameras.isEmpty) {
+        throw StateError('Nenhuma câmera disponível neste dispositivo.');
+      }
+
+      final backCamera = cameras
+          .where((camera) => camera.lensDirection == CameraLensDirection.back)
+          .toList();
+      final selectedCamera = backCamera.isNotEmpty
+          ? backCamera.first
+          : cameras.first;
 
       final controller = CameraController(
         selectedCamera,
@@ -311,16 +264,13 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
       await controller.initialize();
 
       if (!mounted) {
-        await _releaseCamera(controller);
+        await controller.dispose();
         return;
       }
 
-      final previous = _cameraController;
-      _cameraController = controller;
-      if (previous != null) {
-        await _releaseCamera(previous);
-      }
+      await _cameraController?.dispose();
       setState(() {
+        _cameraController = controller;
         _isCameraInitializing = false;
         _isFlashOn = false;
       });
@@ -329,12 +279,9 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
         return;
       }
 
-      final previous = _cameraController;
-      _cameraController = null;
-      if (previous != null) {
-        await _releaseCamera(previous);
-      }
+      await _cameraController?.dispose();
       setState(() {
+        _cameraController = null;
         _isCameraInitializing = false;
         _isFlashOn = false;
         _cameraError = _mapCameraError(error);
@@ -485,7 +432,6 @@ class _FoodCapturePageState extends State<FoodCapturePage> {
 
     try {
       final picture = await _cameraController!.takePicture();
-      await _turnFlashOff();
       final rawBytes = await picture.readAsBytes();
       final optimized = await optimizeForAnalysis(rawBytes);
       final bytes = optimized.bytes;
@@ -703,100 +649,87 @@ class _CaptureActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.xl,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 280),
-            child: SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: Material(
-                color: AppColors.surface,
-                elevation: 1,
-                shadowColor: Colors.black12,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 280),
+          child: SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: Material(
+              color: AppColors.surface,
+              elevation: 1,
+              shadowColor: Colors.black12,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: InkWell(
+                onTap: isBusy ? null : onSavedMeals,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
-                child: InkWell(
-                  onTap: isBusy ? null : onSavedMeals,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.bookmark_border,
-                          size: 16,
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.bookmark_border,
+                        size: 16,
+                        color: isBusy
+                            ? AppColors.textTertiary
+                            : const Color(0xFF4B5563),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Usar refeição salva',
+                        style: AppTextStyles.bodySmall.copyWith(
                           color: isBusy
                               ? AppColors.textTertiary
-                              : const Color(0xFF4B5563),
+                              : const Color(0xFF374151),
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text(
-                          'Usar refeição salva',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: isBusy
-                                ? AppColors.textTertiary
-                                : const Color(0xFF374151),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 320),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _CaptureActionButton(
-                  icon: Icons.edit_outlined,
-                  label: 'Digitar',
-                  size: _sideButtonSize,
-                  onTap: isBusy ? null : onTextEntry,
+        ),
+        const SizedBox(height: 20),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _CaptureActionButton(
+                icon: Icons.edit_outlined,
+                label: 'Digitar',
+                size: _sideButtonSize,
+                onTap: isBusy ? null : onTextEntry,
+              ),
+              SizedBox(
+                width: _shutterSize,
+                height: _shutterSize,
+                child: _CameraShutterButton(
+                  onTap: isCameraReady && !isBusy ? onCapture : null,
+                  isBusy: isBusy,
                 ),
-                SizedBox(
-                  width: _shutterSize,
-                  height: _shutterSize,
-                  child: _CameraShutterButton(
-                    onTap: isCameraReady && !isBusy ? onCapture : null,
-                    isBusy: isBusy,
-                  ),
-                ),
-                _CaptureActionButton(
-                  icon: Icons.image_outlined,
-                  label: 'Galeria',
-                  size: _sideButtonSize,
-                  onTap: isBusy ? null : onGallery,
-                ),
-              ],
-            ),
+              ),
+              _CaptureActionButton(
+                icon: Icons.image_outlined,
+                label: 'Galeria',
+                size: _sideButtonSize,
+                onTap: isBusy ? null : onGallery,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -902,7 +835,11 @@ class _CameraShutterButton extends StatelessWidget {
                       color: ringColor,
                     ),
                   )
-                : Icon(Icons.photo_camera, color: ringColor, size: 32),
+                : Icon(
+                    Icons.photo_camera,
+                    color: ringColor,
+                    size: 32,
+                  ),
           ),
         ),
       ),
@@ -932,7 +869,9 @@ class _FlashToggleButton extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Colors.black.withValues(alpha: isOn ? 0.45 : 0.28),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.55),
+            ),
           ),
           child: Icon(
             isOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
@@ -1001,14 +940,16 @@ class _CameraShell extends StatelessWidget {
   final Widget child;
   final bool clipContent;
 
-  static const double _radius = AppRadius.md;
+  static const double _radius = 32;
 
   @override
   Widget build(BuildContext context) {
     final content = ColoredBox(
       color: Colors.black,
       child: DefaultTextStyle(
-        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.surface),
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.surface,
+        ),
         child: IconTheme(
           data: const IconThemeData(color: AppColors.action500),
           child: child,
@@ -1040,8 +981,7 @@ class _ManualFoodEntrySheet extends StatefulWidget {
 }
 
 class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
-  static const String _entryHint =
-      'Ex.: Arroz branco cozido 120g, feijão preto cozido 100g e frango grelhado 150g';
+  static const String _entryHint = 'Arroz branco cozido 120g, feijão preto cozido 100g e frango grelhado 150g';
 
   static const String _entryInstructions =
       'Escreva os alimentos com seus preparos e quantidade que você consumiu.\n'
@@ -1078,8 +1018,8 @@ class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
-          left: AppSpacing.pageHorizontal,
-          right: AppSpacing.pageHorizontal,
+          left: AppSpacing.xl,
+          right: AppSpacing.xl,
           top: AppSpacing.lg,
           bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
         ),
@@ -1189,7 +1129,6 @@ class _ManualFoodEntrySheetState extends State<_ManualFoodEntrySheet> {
     Navigator.of(context).pop(text);
   }
 }
-
 class _NoFoodIdentifiedSheet extends StatelessWidget {
   const _NoFoodIdentifiedSheet();
 
@@ -1198,9 +1137,9 @@ class _NoFoodIdentifiedSheet extends StatelessWidget {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
-          AppSpacing.pageHorizontal,
           AppSpacing.xl,
-          AppSpacing.pageHorizontal,
+          AppSpacing.xl,
+          AppSpacing.xl,
           AppSpacing.xl,
         ),
         child: Column(

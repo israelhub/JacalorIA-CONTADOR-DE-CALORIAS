@@ -41,11 +41,9 @@ assert.ok(
 );
 
 const maintain = calculateNutritionGoalsFromProfile({
-  birthDate: '1996-01-01',
-  weight: 154,
-  height: 1.75,
-  weightUnit: 'lb',
-  heightUnit: 'm',
+  birthDate: '2000-01-01',
+  weight: 70,
+  height: 175,
   sex: 'Masculino',
   objective: 'maintainWeight',
   activityLevel: 'sedentary',

@@ -10,18 +10,16 @@ class SocialGroupCard extends StatelessWidget {
     required this.group,
     this.isFinished = false,
     this.onTap,
-    this.backgroundColor = AppColors.surface,
   });
 
   final SocialGroupSummary group;
   final bool isFinished;
   final VoidCallback? onTap;
-  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: backgroundColor,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
@@ -30,8 +28,13 @@ class SocialGroupCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: backgroundColor,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: AppColors.performanceCardBorder,
+              width: 2,
+            ),
+            boxShadow: AppShadows.performanceCard,
           ),
           child: Column(
             children: [
@@ -138,9 +141,7 @@ class SocialGroupCard extends StatelessWidget {
                         ? 'Grupo finalizado'
                         : group.remainingDaysLabel,
                     style: AppTextStyles.captionStrong.copyWith(
-                      color: isFinished
-                          ? AppColors.textError
-                          : AppColors.missionsRewardGold,
+                      color: isFinished ? AppColors.textError : AppColors.missionsRewardGold,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

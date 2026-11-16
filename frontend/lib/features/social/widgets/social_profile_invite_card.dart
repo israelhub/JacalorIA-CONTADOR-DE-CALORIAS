@@ -25,6 +25,7 @@ class SocialProfileInviteCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceAlt,
         borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.performanceCardBorder),
       ),
       child: Row(
         children: [
@@ -63,4 +64,5 @@ class SocialProfileInviteCard extends StatelessWidget {
       ),
     );
   }
+
 }

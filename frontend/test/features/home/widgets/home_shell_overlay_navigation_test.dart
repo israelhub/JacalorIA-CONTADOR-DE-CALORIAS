@@ -11,8 +11,6 @@ import 'package:jacaloria/shared/widgets/app_main_bottom_navigation.dart';
 import 'package:jacaloria/shared/widgets/app_page_route.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../helpers/fake_steps_service.dart';
-
 class _OpenOverlayPage extends StatelessWidget {
   const _OpenOverlayPage({required this.page});
 
@@ -60,11 +58,6 @@ Widget _shell({required Widget homePage}) {
         color: Colors.orange,
         child: Text('social-page'),
       ),
-      workoutPage: const ColoredBox(
-        color: Colors.purple,
-        child: Text('treino-page'),
-      ),
-      stepsService: FakeStepsService(),
     ),
   );
 }
@@ -88,16 +81,14 @@ void main() {
     expect(find.byType(AppMainBottomNavigation), findsOneWidget);
   });
 
-  testWidgets('tap em Progresso fecha o overlay e abre a aba', (tester) async {
+  testWidgets('tap em Missões fecha o overlay e abre a aba', (tester) async {
     await _openOverlay(tester, const _OverlayDummyPage());
 
-    await tester.tap(find.text('Mais'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Progresso'));
+    await tester.tap(find.text('Missões'));
     await tester.pumpAndSettle();
 
     expect(find.text('Overlay dummy'), findsNothing);
-    expect(find.text('desempenho-page'), findsOneWidget);
+    expect(find.text('missoes-page'), findsOneWidget);
     expect(find.byType(AppMainBottomNavigation), findsOneWidget);
   });
 

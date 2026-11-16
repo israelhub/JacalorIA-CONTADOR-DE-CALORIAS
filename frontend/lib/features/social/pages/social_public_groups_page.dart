@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../home/widgets/home_shell_layout.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_select_input_field.dart';
-import '../../../shared/widgets/app_skeleton.dart';
 import '../models/social_group_models.dart';
 import '../widgets/social_group_card.dart';
 
 class SocialPublicGroupsPage extends StatefulWidget {
-  const SocialPublicGroupsPage({super.key, required this.fetchGroups});
+  const SocialPublicGroupsPage({
+    super.key,
+    required this.fetchGroups,
+  });
 
   final Future<List<SocialGroupSummary>> Function({
     required String query,
     int? durationDays,
     String? competitionType,
-  })
-  fetchGroups;
+  }) fetchGroups;
 
   @override
   State<SocialPublicGroupsPage> createState() => _SocialPublicGroupsPageState();
@@ -33,14 +33,13 @@ class _SocialPublicGroupsPageState extends State<SocialPublicGroupsPage> {
   List<SocialGroupSummary> _groups = const [];
 
   static const List<int> _durations = <int>[7, 14, 21, 30, 0];
-  static const List<MapEntry<String, String>> _types =
-      <MapEntry<String, String>>[
-        MapEntry('offensive', 'Sequência'),
-        MapEntry('daily_goal', 'Meta diária'),
-        MapEntry('goal_average', 'Média de meta'),
-        MapEntry('xp', 'XP'),
-        MapEntry('group_streak', 'Sequência dos amigos'),
-      ];
+  static const List<MapEntry<String, String>> _types = <MapEntry<String, String>>[
+    MapEntry('offensive', 'Sequência'),
+    MapEntry('daily_goal', 'Meta diária'),
+    MapEntry('goal_average', 'Média de meta'),
+    MapEntry('xp', 'XP'),
+    MapEntry('group_streak', 'Sequência dos amigos'),
+  ];
   static const String _anyDuration = 'Qualquer';
   static const String _anyCompetition = 'Qualquer';
 
@@ -106,10 +105,19 @@ class _SocialPublicGroupsPageState extends State<SocialPublicGroupsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      extendBodyBehindAppBar: true,
-      appBar: const AppBackPageHeader(title: 'Grupos públicos'),
-      body: AppBackPageContent(
+      backgroundColor: AppColors.surface,
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        foregroundColor: AppColors.brand900Variant,
+        title: Text(
+          'Grupos públicos',
+          style: AppTextStyles.missionsSectionTitle.copyWith(
+            color: AppColors.brand900Variant,
+          ),
+        ),
+      ),
+      body: SafeArea(
         bottom: false,
         child: Padding(
           padding: homeShellNestedFillPadding(context),
@@ -117,7 +125,7 @@ class _SocialPublicGroupsPageState extends State<SocialPublicGroupsPage> {
             children: [
               AppInputField(
                 label: '',
-                hint: 'Ex.: Família Saudável',
+                hint: 'Nome do grupo',
                 controller: _queryController,
                 suffixIcon: IconButton(
                   onPressed: _load,
@@ -165,12 +173,8 @@ class _SocialPublicGroupsPageState extends State<SocialPublicGroupsPage> {
                             _competitionType = null;
                             return;
                           }
-                          final match = _types.where(
-                            (entry) => entry.value == value,
-                          );
-                          _competitionType = match.isEmpty
-                              ? null
-                              : match.first.key;
+                          final match = _types.where((entry) => entry.value == value);
+                          _competitionType = match.isEmpty ? null : match.first.key;
                         });
                       },
                     ),
@@ -186,21 +190,16 @@ class _SocialPublicGroupsPageState extends State<SocialPublicGroupsPage> {
               const SizedBox(height: AppSpacing.md),
               Expanded(
                 child: _loading
-                    ? const AppSkeletonList(
-                        itemCount: 4,
-                        itemHeight: 96,
-                        padding: EdgeInsets.zero,
+                    ? const Center(
+                        child: CircularProgressIndicator(color: AppColors.action500),
                       )
                     : _error != null
                     ? Center(child: Text(_error!))
                     : _groups.isEmpty
-                    ? const Center(
-                        child: Text('Nenhum grupo público encontrado.'),
-                      )
+                    ? const Center(child: Text('Nenhum grupo público encontrado.'))
                     : ListView.separated(
                         itemCount: _groups.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: AppSpacing.sm),
+                        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                         itemBuilder: (context, index) {
                           final group = _groups[index];
                           return SocialGroupCard(

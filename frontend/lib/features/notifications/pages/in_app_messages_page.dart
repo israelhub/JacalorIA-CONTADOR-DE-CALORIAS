@@ -4,8 +4,7 @@ import '../../../core/analytics/analytics_service.dart';
 import '../../../core/notifications/in_app_message_models.dart';
 import '../../../core/notifications/in_app_message_store.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_back_page_header.dart';
-import '../../../shared/widgets/app_skeleton.dart';
+import '../../../shared/widgets/app_page_header.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 class InAppMessagesPage extends StatefulWidget {
@@ -72,17 +71,6 @@ class _InAppMessagesPageState extends State<InAppMessagesPage> {
     AppToast.success(context, message: 'Mensagem excluída.');
   }
 
-  Future<void> _markAllRead() async {
-    if (_store.unreadCount == 0) {
-      return;
-    }
-    await _store.markAllRead();
-    if (!mounted) {
-      return;
-    }
-    AppToast.success(context, message: 'Todas as mensagens foram lidas.');
-  }
-
   String _formatWhen(DateTime value) {
     final local = value.toLocal();
     final day = local.day.toString().padLeft(2, '0');
@@ -95,48 +83,40 @@ class _InAppMessagesPageState extends State<InAppMessagesPage> {
   @override
   Widget build(BuildContext context) {
     final messages = _store.messages;
-    final hasUnread = _store.unreadCount > 0;
 
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      extendBodyBehindAppBar: true,
-      appBar: AppBackPageHeader(
-        title: 'Notificações',
-        backButtonKey: const ValueKey('in-app-messages-back'),
-        onBack: () => Navigator.of(context).maybePop(),
-        trailing: (!_loading && messages.isNotEmpty)
-            ? Material(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                clipBehavior: Clip.antiAlias,
-                child: TextButton(
-                  key: const ValueKey('in-app-messages-mark-all-read'),
-                  onPressed: hasUnread ? _markAllRead : null,
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.brand900Variant,
-                    disabledForegroundColor: AppColors.textSecondary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ),
-                    minimumSize: const Size(0, AppBackPageHeaderBar.chipHeight),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'Ler tudo',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              )
-            : null,
-      ),
-      body: AppBackPageContent(
+      backgroundColor: AppColors.surface,
+      body: SafeArea(
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.xxl,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    key: const ValueKey('in-app-messages-back'),
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    color: AppColors.brand900Variant,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  const Expanded(
+                    child: AppPageHeader(
+                      title: 'Notificações',
+                      icon: Icons.notifications_outlined,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: _loading
-                  ? const AppSkeletonList(itemCount: 4, itemHeight: 96)
+                  ? const Center(child: CircularProgressIndicator())
                   : messages.isEmpty
                   ? Center(
                       child: Padding(
@@ -152,9 +132,9 @@ class _InAppMessagesPageState extends State<InAppMessagesPage> {
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.pageHorizontal,
+                        AppSpacing.lg,
                         AppSpacing.sm,
-                        AppSpacing.pageHorizontal,
+                        AppSpacing.lg,
                         AppSpacing.xxxl,
                       ),
                       itemCount: messages.length,
@@ -225,10 +205,7 @@ class _MessageCard extends StatelessWidget {
                     Container(
                       width: 8,
                       height: 8,
-                      margin: const EdgeInsets.only(
-                        top: 6,
-                        right: AppSpacing.sm,
-                      ),
+                      margin: const EdgeInsets.only(top: 6, right: AppSpacing.sm),
                       decoration: const BoxDecoration(
                         color: AppColors.action500,
                         shape: BoxShape.circle,
@@ -266,9 +243,7 @@ class _MessageCard extends StatelessWidget {
                 Text(
                   message.body,
                   maxLines: expanded ? null : 2,
-                  overflow: expanded
-                      ? TextOverflow.visible
-                      : TextOverflow.ellipsis,
+                  overflow: expanded ? TextOverflow.visible : TextOverflow.ellipsis,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textPrimary,
                   ),

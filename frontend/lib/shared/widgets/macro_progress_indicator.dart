@@ -51,8 +51,7 @@ class _MacroProgressIndicatorState extends State<MacroProgressIndicator>
   void didUpdateWidget(covariant MacroProgressIndicator oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.consumed != widget.consumed ||
-        oldWidget.goal != widget.goal) {
+    if (oldWidget.consumed != widget.consumed || oldWidget.goal != widget.goal) {
       _configureAnimations();
       _controller
         ..reset()

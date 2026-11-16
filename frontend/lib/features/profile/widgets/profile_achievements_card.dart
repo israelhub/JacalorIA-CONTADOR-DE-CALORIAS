@@ -239,8 +239,9 @@ class ProfileAchievementsCard extends StatelessWidget {
         vertical: AppSpacing.lg,
       ),
       decoration: BoxDecoration(
-        color: AppColors.insetSurface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.performanceCardBorder, width: 2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

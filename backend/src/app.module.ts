@@ -13,8 +13,6 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { SupportModule } from './support/support.module';
 import { HealthModule } from './health/health.module';
 import { NotificationsModule } from './notifications/notifications.module';
-import { WorkoutsModule } from './workouts/workouts.module';
-import { WaterModule } from './water/water.module';
 
 @Module({
   imports: [
@@ -36,8 +34,6 @@ import { WaterModule } from './water/water.module';
     SupportModule,
     HealthModule,
     NotificationsModule,
-    WorkoutsModule,
-    WaterModule,
   ],
 })
 export class AppModule {}

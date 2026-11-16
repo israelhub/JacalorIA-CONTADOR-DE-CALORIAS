@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -57,7 +56,7 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
   bool get _isEditing => widget.existingGroup != null;
 
   static const List<int> _durationOptions = <int>[7, 14, 21, 30, 0];
-  static const double _sectionGap = AppSpacing.cardGap;
+  static const double _sectionGap = AppSpacing.lg;
 
   List<int> get _visibleDurationOptions {
     if (_selectedCompetitionType == 'group_streak') {
@@ -88,7 +87,8 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
     super.dispose();
   }
 
-  bool get _canSubmit => _nameController.text.trim().isNotEmpty && !_isSaving;
+  bool get _canSubmit =>
+      _nameController.text.trim().isNotEmpty && !_isSaving;
 
   Future<void> _submit() async {
     if (!_canSubmit) {
@@ -143,23 +143,31 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      extendBodyBehindAppBar: true,
-      appBar: AppBackPageHeader(
-        title: _isEditing ? 'Editar grupo' : 'Novo grupo',
+      backgroundColor: AppColors.surface,
+      extendBody: HomeShellOverlayNavigationBar.isAvailable,
+      bottomNavigationBar: HomeShellOverlayNavigationBar.maybeOf(),
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        foregroundColor: AppColors.brand900Variant,
+        title: Text(
+          _isEditing ? 'Editar grupo' : 'Novo grupo',
+          style: AppTextStyles.missionsSectionTitle.copyWith(
+            color: AppColors.brand900Variant,
+          ),
+        ),
       ),
-      body: HomeShellOverlayNavigationBar.wrap(
-        child: AppBackPageContent(
-          bottom: false,
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.pageHorizontal,
-              AppSpacing.md,
-              AppSpacing.pageHorizontal,
-              MediaQuery.viewInsetsOf(context).bottom +
-                  homeShellScrollBottomInset(context),
-            ),
-            child: Column(
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            MediaQuery.viewInsetsOf(context).bottom +
+                homeShellScrollBottomInset(context),
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -188,14 +196,14 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
               const SizedBox(height: AppSpacing.lg),
               AppInputField(
                 label: 'Nome do grupo',
-                hint: 'Ex.: Família Saudável',
+                hint: 'Ex: Família Saudável',
                 controller: _nameController,
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: AppSpacing.md),
               AppInputField(
                 label: 'Descrição (opcional)',
-                hint: 'Ex.: Grupo para compartilhar metas',
+                hint: 'Sobre o grupo',
                 controller: _descriptionController,
                 onChanged: (_) => setState(() {}),
               ),
@@ -211,24 +219,15 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    for (
-                      var index = 0;
-                      index < _visibleDurationOptions.length;
-                      index++
-                    ) ...[
+                    for (var index = 0; index < _visibleDurationOptions.length; index++) ...[
                       if (index > 0) const SizedBox(width: AppSpacing.sm),
                       _DurationChip(
                         value: _visibleDurationOptions[index],
-                        label: socialDurationLabel(
-                          _visibleDurationOptions[index],
-                        ),
-                        selected:
-                            _visibleDurationOptions[index] ==
-                            _selectedDurationDays,
+                        label: socialDurationLabel(_visibleDurationOptions[index]),
+                        selected: _visibleDurationOptions[index] == _selectedDurationDays,
                         onTap: () {
                           setState(() {
-                            _selectedDurationDays =
-                                _visibleDurationOptions[index];
+                            _selectedDurationDays = _visibleDurationOptions[index];
                           });
                         },
                       ),
@@ -244,11 +243,7 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              for (
-                var index = 0;
-                index < _competitionTypeKeys.length;
-                index++
-              ) ...[
+              for (var index = 0; index < _competitionTypeKeys.length; index++) ...[
                 if (index > 0) const SizedBox(height: AppSpacing.sm),
                 _CompetitionTypeTile(
                   typeKey: _competitionTypeKeys[index],
@@ -340,7 +335,6 @@ class _SocialCreateGroupPageState extends State<SocialCreateGroupPage> {
               ],
             ],
           ),
-        ),
         ),
       ),
     );

@@ -92,10 +92,9 @@ class _AppFloatingCircleButtonState extends State<AppFloatingCircleButton> {
                       switchOutCurve: Curves.easeInCubic,
                       transitionBuilder: (child, animation) {
                         return RotationTransition(
-                          turns: Tween<double>(
-                            begin: 0.75,
-                            end: 1,
-                          ).animate(animation),
+                          turns: Tween<double>(begin: 0.75, end: 1).animate(
+                            animation,
+                          ),
                           child: FadeTransition(
                             opacity: animation,
                             child: child,

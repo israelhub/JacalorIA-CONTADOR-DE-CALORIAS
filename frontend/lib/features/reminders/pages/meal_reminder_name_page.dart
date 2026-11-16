@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/notifications/meal_reminder_models.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_back_page_header.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 
@@ -41,13 +40,21 @@ class _MealReminderNamePageState extends State<MealReminderNamePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      extendBodyBehindAppBar: true,
-      appBar: const AppBackPageHeader(title: 'Nome do lembrete'),
-      body: AppBackPageContent(
+      backgroundColor: AppColors.surface,
+      appBar: AppBar(
+        title: Text(
+          'Nome do lembrete',
+          style: AppTextStyles.homeSectionTitle.copyWith(
+            color: AppColors.brand900Variant,
+          ),
+        ),
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.pageHorizontal,
+            horizontal: AppSpacing.lg,
             vertical: AppSpacing.lg,
           ),
           child: Column(

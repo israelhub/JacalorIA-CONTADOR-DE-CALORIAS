@@ -9,7 +9,6 @@ import {
 } from '../providers/food-analysis.provider';
 import {
   buildMatchableFood,
-  DEFAULT_FOOD_MATCH_THRESHOLD,
   findBestFoodMatch,
   hasCookedRawConflict,
   MatchableFood,
@@ -38,7 +37,7 @@ type RecipeTemplate = {
   ingredients: Array<{ name: string; ratio: number }>;
 };
 
-const MATCH_THRESHOLD = DEFAULT_FOOD_MATCH_THRESHOLD;
+const MATCH_THRESHOLD = 0.58;
 const RECIPE_INGREDIENT_THRESHOLD = 0.5;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 

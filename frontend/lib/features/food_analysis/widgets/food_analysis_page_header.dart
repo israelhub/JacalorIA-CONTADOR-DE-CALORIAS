@@ -1,29 +1,43 @@
 import 'package:flutter/material.dart';
 
-import '../../../shared/widgets/app_back_page_header.dart';
+import '../../../shared/theme/app_theme.dart';
 
 class FoodAnalysisPageHeader extends StatelessWidget
     implements PreferredSizeWidget {
   const FoodAnalysisPageHeader({
     super.key,
     required this.title,
-    this.backgroundColor = Colors.transparent,
+    this.backgroundColor = AppColors.surface,
+    this.titleColor = AppColors.textPrimary,
+    this.leadingIconColor = AppColors.brand900Variant,
     this.actions,
   });
 
   final String title;
   final Color backgroundColor;
+  final Color titleColor;
+  final Color leadingIconColor;
   final List<Widget>? actions;
 
   @override
-  Size get preferredSize => const AppBackPageHeader(title: '').preferredSize;
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
-    return AppBackPageHeader(
-      title: title,
+    return AppBar(
       backgroundColor: backgroundColor,
-      actions: actions ?? const <Widget>[],
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      titleSpacing: 0,
+      iconTheme: IconThemeData(color: leadingIconColor),
+      actions: actions,
+      title: Text(
+        title,
+        style: AppTextStyles.homeSectionTitle.copyWith(
+          color: titleColor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
